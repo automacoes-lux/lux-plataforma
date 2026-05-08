@@ -1453,6 +1453,386 @@ async function downloadAllFromSession(id) {
   }
 }
 
+
+// ═══ MAESTRO AI ══════════════════════════════════════
+let _musicaLoaded = false;
+
+function mountMusica() {
+  if (_musicaLoaded) return;
+  _musicaLoaded = true;
+  const template = document.getElementById('maestro-template');
+  const container = document.getElementById('musica-container');
+  if (template && container) {
+    container.innerHTML = template.innerHTML;
+    setTimeout(() => {
+      if (typeof renderHistorico === 'function') renderHistorico();
+    }, 150);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════
+const SYSTEM_PROMPT = "Voc\u00ea \u00e9 o Maestro AI, um especialista profissional em cria\u00e7\u00e3o de m\u00fasicas personalizadas para Suno AI.\n\nFLUXO OBRIGAT\u00d3RIO:\n- ETAPA 1: Ao receber o briefing, analise o conte\u00fado. N\u00c3O gere a m\u00fasica ainda. Pergunte obrigatoriamente: \"Qual ser\u00e1 o ritmo ou g\u00eanero musical da m\u00fasica?\" e aguarde resposta.\n- ETAPA 2: Ap\u00f3s receber o ritmo, gere a letra e os blocos t\u00e9cnicos no formato abaixo.\n\nTAMANHO PADR\u00c3O DA LETRA - Estrutura obrigat\u00f3ria:\n[Verse] \u2013 4 linhas\n[Chorus] \u2013 4 linhas  \n[Bridge] \u2013 4 linhas\n[Outro] \u2013 2 linhas\nM\u00e1ximo 18\u201322 linhas totais.\n\nUse APENAS: [Verse], [Chorus], [Bridge], [Outro]\nNUNCA use: [Intro], [Pre-Chorus], [Post-Chorus], [Instrumental] ou outras varia\u00e7\u00f5es.\n\nFORMATO FINAL DE ENTREGA OBRIGAT\u00d3RIO:\nAp\u00f3s receber o ritmo, entregue EXATAMENTE neste formato JSON:\n\n{\n  \"etapa\": \"entrega\",\n  \"musica_nome\": \"Nome da m\u00fasica\",\n  \"lyrics\": \"[Verse]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Chorus]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Bridge]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Outro]\\nLinha 1\\nLinha 2\",\n  \"style_prompt\": \"G\u00eanero principal, Humor, Ritmo, Instrumentos, BPM\",\n  \"weirdness\": 25,\n  \"style_influence\": 60,\n  \"persona\": \"Descri\u00e7\u00e3o da persona vocal\"\n}\n\nSe estiver na ETAPA 1 aguardando o ritmo, entregue:\n{\n  \"etapa\": \"aguardando_ritmo\",\n  \"pergunta\": \"Sua pergunta sobre o ritmo/g\u00eanero\"\n}\n\nREGRAS T\u00c9CNICAS:\n- Weirdness: Comercial \u2192 15\u201330 | Alternativo \u2192 30\u201355 | Experimental \u2192 55\u201380\n- Style Influence: Ritmo dominante (EDM, Piseiro, Funk) \u2192 65\u201385 | Comercial/Narrativo \u2192 50\u201365\n- Idioma da letra: SEMPRE o mesmo idioma do briefing fornecido\n- Se briefing em portugu\u00eas \u2192 letra em portugu\u00eas\n- Se briefing em ingl\u00eas \u2192 letra em ingl\u00eas\n\nPROIBIDO:\n- Gerar m\u00fasica antes de perguntar o ritmo\n- Usar metatags fora do padr\u00e3o permitido\n- Fazer letras longas (m\u00e1ximo 22 linhas)\n- Misturar campos\n- Responder fora do formato JSON\n\nBASE DE CONHECIMENTO - ARTISTAS REFER\u00caNCIA:\nFunk/Pagode/Samba: ritmos brasileiros com batidas marcadas, refr\u00f5es grudentos, letras que contam hist\u00f3rias do cotidiano.\nForr\u00f3/Piseiro: ritmo acelerado, sanfona, tri\u00e2ngulo, zabumba, letras de amor e saudade.\nSertanejo: duplas, viola caipira, hist\u00f3rias rom\u00e2nticas e do campo.\nPop brasileiro: letras urbanas, produ\u00e7\u00e3o moderna, refr\u00f5es marcantes.\nFunk carioca: batida eletr\u00f4nica, letras festivas ou de romance.\n\nUse o documento de treinamento Maestro AI como base para Style Prompts, tags vocais e instrumentais.";
+
+let conversationHistory = [];
+let currentResult = null;
+let historico = JSON.parse(localStorage.getItem('maestro_historico') || '[]');
+
+// ═══════════════════════════════════════════════════════
+// INICIALIZAR
+// ═══════════════════════════════════════════════════════
+renderHistorico();
+
+// ═══════════════════════════════════════════════════════
+// NOVA CRIAÇÃO
+// ═══════════════════════════════════════════════════════
+function newCreation() {
+  document.getElementById('newView').classList.remove('hidden');
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('chatWrap').classList.remove('show');
+  document.getElementById('resultCard').classList.remove('show');
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('fieldPara').value = '';
+  document.getElementById('fieldOcasiao').value = '';
+  document.getElementById('fieldTema').value = '';
+  document.getElementById('fieldObs').value = '';
+  document.getElementById('btnGerar').disabled = false;
+  conversationHistory = [];
+  currentResult = null;
+  document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+}
+
+// ═══════════════════════════════════════════════════════
+// ETAPA 1 — ENVIAR BRIEFING
+// ═══════════════════════════════════════════════════════
+async function iniciarMaestro() {
+  const para     = document.getElementById('fieldPara').value.trim();
+  const ocasiao  = document.getElementById('fieldOcasiao').value.trim();
+  const tema     = document.getElementById('fieldTema').value.trim();
+  const obs      = document.getElementById('fieldObs').value.trim();
+
+  if (!tema) { alert('Por favor, descreva o tema/história da música.'); return; }
+
+  const briefing = [
+    para     ? `Para: ${para}`       : '',
+    ocasiao  ? `Ocasião: ${ocasiao}` : '',
+    `Tema: ${tema}`,
+    obs      ? `Obs: ${obs}`         : ''
+  ].filter(Boolean).join('\n');
+
+  setLoading(true);
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('chatWrap').classList.add('show');
+
+  addMsg('user', briefing);
+  conversationHistory = [{ role: 'user', content: briefing }];
+
+  const resposta = await chamarClaude(conversationHistory);
+  if (!resposta) { setLoading(false); return; }
+
+  const parsed = parsearResposta(resposta);
+  if (!parsed) { setLoading(false); return; }
+
+  if (parsed.etapa === 'aguardando_ritmo') {
+    addMsg('ai', parsed.pergunta);
+    document.getElementById('chatInput').focus();
+  } else if (parsed.etapa === 'entrega') {
+    mostrarResultado(parsed);
+  }
+
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════
+// ETAPA 2 — ENVIAR RESPOSTA (RITMO)
+// ═══════════════════════════════════════════════════════
+async function enviarResposta() {
+  const input = document.getElementById('chatInput');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  input.value = '';
+  addMsg('user', texto);
+  conversationHistory.push({ role: 'user', content: texto });
+
+  setLoading(true);
+  document.getElementById('btnSend').disabled = true;
+
+  const resposta = await chamarClaude(conversationHistory);
+  if (!resposta) { setLoading(false); document.getElementById('btnSend').disabled = false; return; }
+
+  const parsed = parsearResposta(resposta);
+  if (!parsed) { setLoading(false); document.getElementById('btnSend').disabled = false; return; }
+
+  if (parsed.etapa === 'aguardando_ritmo') {
+    addMsg('ai', parsed.pergunta);
+    document.getElementById('btnSend').disabled = false;
+  } else if (parsed.etapa === 'entrega') {
+    addMsg('ai', '✓ Letra criada com sucesso! Confira o resultado abaixo.');
+    mostrarResultado(parsed);
+    document.getElementById('chatWrap').classList.remove('show');
+  }
+
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════
+// CHAMAR CLAUDE API
+// ═══════════════════════════════════════════════════════
+async function chamarClaude(messages) {
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: messages
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('');
+    if (text) {
+      conversationHistory.push({ role: 'assistant', content: text });
+    }
+    return text;
+  } catch(e) {
+    addMsg('ai', '⚠️ Erro ao conectar com a IA: ' + e.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PARSEAR RESPOSTA JSON
+// ═══════════════════════════════════════════════════════
+function parsearResposta(texto) {
+  try {
+    const clean = texto.replace(/```json|```/g, '').trim();
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  } catch(e) {}
+  // Fallback: se não vier JSON, tratar como pergunta
+  return { etapa: 'aguardando_ritmo', pergunta: texto };
+}
+
+// ═══════════════════════════════════════════════════════
+// MOSTRAR RESULTADO
+// ═══════════════════════════════════════════════════════
+function mostrarResultado(data) {
+  currentResult = data;
+
+  document.getElementById('resultTitle').textContent  = data.musica_nome || 'Sem título';
+  document.getElementById('resultGenre').textContent  = extrairGenero(data.style_prompt);
+
+  const grid = document.getElementById('blocksGrid');
+  grid.innerHTML = '';
+
+  const blocos = [
+    { num: '1', titulo: 'Letra (Lyrics)',               conteudo: data.lyrics },
+    { num: '2', titulo: 'Prompt de Estilo (Style Prompt)', conteudo: data.style_prompt },
+    { num: '3', titulo: 'Nível de Estranheza (Weirdness)',  conteudo: String(data.weirdness) },
+    { num: '4', titulo: 'Influência de Estilo (Style Influence)', conteudo: String(data.style_influence) },
+  ];
+
+  if (data.persona) {
+    blocos.push({ num: '5', titulo: 'Persona', conteudo: data.persona });
+  }
+
+  blocos.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'block-item';
+    el.innerHTML = `
+      <div class="block-header">
+        <div class="block-title">${b.num}️⃣ ${b.titulo}</div>
+        <button class="btn-copy" onclick="copiarBloco(this, \`${escapar(b.conteudo)}\`)">Copiar</button>
+      </div>
+      <div class="block-content">${escapeHtml(b.conteudo)}</div>`;
+    grid.appendChild(el);
+  });
+
+  document.getElementById('resultCard').classList.add('show');
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════════════
+// COPIAR BLOCO
+// ═══════════════════════════════════════════════════════
+function copiarBloco(btn, texto) {
+  navigator.clipboard.writeText(texto).then(() => {
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SALVAR NO HISTÓRICO
+// ═══════════════════════════════════════════════════════
+function salvarNoHistorico() {
+  if (!currentResult) return;
+  const item = {
+    id: Date.now(),
+    ts: Date.now(),
+    nome: currentResult.musica_nome || 'Sem título',
+    genero: extrairGenero(currentResult.style_prompt),
+    data: currentResult
+  };
+  historico.unshift(item);
+  localStorage.setItem('maestro_historico', JSON.stringify(historico));
+  renderHistorico();
+  alert('✓ Salvo no histórico!');
+}
+
+// ═══════════════════════════════════════════════════════
+// REGENERAR
+// ═══════════════════════════════════════════════════════
+async function regenerar() {
+  if (!conversationHistory.length) return;
+  conversationHistory.push({ role: 'user', content: 'Por favor, gere uma versão diferente e alternativa desta letra, mantendo o mesmo tema e gênero.' });
+  setLoading(true);
+  document.getElementById('resultCard').classList.remove('show');
+  const resposta = await chamarClaude(conversationHistory);
+  if (resposta) {
+    const parsed = parsearResposta(resposta);
+    if (parsed && parsed.etapa === 'entrega') mostrarResultado(parsed);
+  }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTÓRICO
+// ═══════════════════════════════════════════════════════
+function renderHistorico(filtro = '') {
+  const list  = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  const items = filtro
+    ? historico.filter(h =>
+        h.nome.toLowerCase().includes(filtro.toLowerCase()) ||
+        h.genero.toLowerCase().includes(filtro.toLowerCase()))
+    : historico;
+
+  list.querySelectorAll('.history-item').forEach(el => el.remove());
+
+  if (!items.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.dataset.id = item.id;
+    const data = new Date(item.ts).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'});
+    el.innerHTML = `
+      <div class="hi-name">${escapeHtml(item.nome)}</div>
+      <div class="hi-meta">
+        <span class="hi-genre">${escapeHtml(item.genero)}</span>
+        <span>${data}</span>
+      </div>`;
+    el.onclick = () => abrirDetalhe(item);
+    list.appendChild(el);
+  });
+}
+
+function filterHistory(valor) {
+  renderHistorico(valor);
+}
+
+function abrirDetalhe(item) {
+  document.getElementById('newView').classList.add('hidden');
+  document.querySelectorAll('.history-item').forEach(i => {
+    i.classList.toggle('active', i.dataset.id == item.id);
+  });
+
+  const detail = document.getElementById('detailView');
+  detail.classList.add('show');
+
+  const data = new Date(item.ts).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  const blocos = [
+    { num: '1', titulo: 'Letra (Lyrics)',               conteudo: item.data.lyrics },
+    { num: '2', titulo: 'Prompt de Estilo (Style Prompt)', conteudo: item.data.style_prompt },
+    { num: '3', titulo: 'Nível de Estranheza (Weirdness)',  conteudo: String(item.data.weirdness) },
+    { num: '4', titulo: 'Influência de Estilo (Style Influence)', conteudo: String(item.data.style_influence) },
+  ];
+  if (item.data.persona) blocos.push({ num: '5', titulo: 'Persona', conteudo: item.data.persona });
+
+  detail.innerHTML = `
+    <div class="page-header" style="margin-bottom:20px">
+      <div>
+        <div class="page-title" style="font-size:16px">${escapeHtml(item.nome)}</div>
+        <div class="page-sub">${data} · ${escapeHtml(item.genero)}</div>
+      </div>
+      <button class="btn-new" onclick="newCreation()" style="margin-left:auto">+ Nova Letra</button>
+    </div>
+    <div class="blocks-grid">
+      ${blocos.map(b => `
+        <div class="block-item">
+          <div class="block-header">
+            <div class="block-title">${b.num}️⃣ ${b.titulo}</div>
+            <button class="btn-copy" onclick="copiarBloco(this, \`${escapar(b.conteudo)}\`)">Copiar</button>
+          </div>
+          <div class="block-content">${escapeHtml(b.conteudo)}</div>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn-action btn-regen" onclick="excluirDoHistorico(${item.id})" 
+              style="color:var(--red);border-color:rgba(232,122,122,.3);width:auto;padding:9px 16px">
+        🗑 Excluir do histórico
+      </button>
+    </div>`;
+}
+
+function excluirDoHistorico(id) {
+  if (!confirm('Excluir esta criação do histórico?')) return;
+  historico = historico.filter(h => h.id !== id);
+  localStorage.setItem('maestro_historico', JSON.stringify(historico));
+  renderHistorico();
+  newCreation();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════════════
+function setLoading(on) {
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btnGerar').disabled = on;
+}
+
+function addMsg(tipo, texto) {
+  const msgs = document.getElementById('chatMessages');
+  const div  = document.createElement('div');
+  div.className = `msg ${tipo}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${tipo === 'ai' ? '🎵' : '👤'}</div>
+    <div class="msg-bubble">${escapeHtml(texto)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function extrairGenero(stylePrompt) {
+  if (!stylePrompt) return '—';
+  return stylePrompt.split(',')[0].trim().substring(0, 30);
+}
+
+function escapeHtml(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function escapar(str) {
+  return String(str||'')
+    .replace(/\\/g,'\\\\')
+    .replace(/`/g,'\\`')
+    .replace(/\$/g,'\\$');
+}
+
 </script>
-</body>
-</html>
