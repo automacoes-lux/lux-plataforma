@@ -983,14 +983,23 @@ function fileToBase64(file) {
 }
 
 async function callAppsScript(payload) {
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload)
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', APPS_SCRIPT_URL, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+    xhr.withCredentials = false;
+    xhr.onload = function() {
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch(e) {
+        reject(new Error('Resposta inválida: ' + xhr.responseText.substring(0, 100)));
+      }
+    };
+    xhr.onerror = function() {
+      reject(new Error('Erro de rede ao conectar com o Apps Script'));
+    };
+    xhr.send(JSON.stringify(payload));
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return await res.json();
 }
 
 async function generateStickers() {
