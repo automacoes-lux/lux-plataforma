@@ -20,7 +20,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 
 .app{display:flex;min-height:100vh}
 
-/* ═══ SIDEBAR HISTÓRICO ═══════════════════════════════ */
+/* â•â•â• SIDEBAR HISTÃ“RICO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .sidebar{
   width:260px;flex-shrink:0;background:var(--bg2);
   border-right:1px solid var(--border);
@@ -61,7 +61,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
   text-overflow:ellipsis;max-width:90px;
 }
 
-/* ═══ MAIN ═══════════════════════════════════════════ */
+/* â•â•â• MAIN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .main{flex:1;overflow-y:auto;padding:0}
 
 /* TOPO */
@@ -85,7 +85,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 /* CONTENT */
 .content{padding:0 40px 48px}
 
-/* ═══ FORMULÁRIO ════════════════════════════════════ */
+/* â•â•â• FORMULÃRIO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .form-wrap{max-width:680px;margin:0 auto}
 
 .briefing-card{
@@ -140,7 +140,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .ritmo-input:focus{border-color:var(--border-bright)}
 .ritmo-input::placeholder{color:var(--text-muted)}
 
-/* BOTÃO GERAR */
+/* BOTÃƒO GERAR */
 .btn-generate{
   width:100%;margin-top:20px;padding:17px;
   background:linear-gradient(135deg,#C9A84C 0%,#E2BA5F 50%,#C9A84C 100%);
@@ -156,7 +156,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .spinner{width:16px;height:16px;border:2px solid rgba(10,10,11,.3);border-top-color:#0A0A0B;border-radius:50%;animation:spin .7s linear infinite;display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ═══ RESULTADO ════════════════════════════════════ */
+/* â•â•â• RESULTADO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .result-wrap{max-width:680px;margin:0 auto;display:none;animation:fadeUp .4s ease}
 .result-wrap.show{display:block}
 
@@ -210,7 +210,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .btn-regen{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim)}
 .btn-regen:hover{border-color:var(--gold-dim);color:var(--gold)}
 
-/* ═══ DETAIL VIEW ══════════════════════════════════ */
+/* â•â•â• DETAIL VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .detail{display:none;max-width:680px;margin:0 auto}
 .detail.show{display:block;animation:fadeUp .3s ease}
 
@@ -236,14 +236,14 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-head">
-      <div class="sidebar-title">🎵 Histórico</div>
+      <div class="sidebar-title">ðŸŽµ HistÃ³rico</div>
       <div class="search-wrap">
-        <span class="search-ico">🔍</span>
-        <input class="search-input" type="text" placeholder="Buscar criações..." id="searchInput" oninput="filtrar(this.value)"/>
+        <span class="search-ico">ðŸ”</span>
+        <input class="search-input" type="text" placeholder="Buscar criaÃ§Ãµes..." id="searchInput" oninput="filtrar(this.value)"/>
       </div>
     </div>
     <div class="hist-list" id="histList">
-      <div class="hist-empty" id="histEmpty">Nenhuma criação ainda.<br/>Gere sua primeira letra!</div>
+      <div class="hist-empty" id="histEmpty">Nenhuma criaÃ§Ã£o ainda.<br/>Gere sua primeira letra!</div>
     </div>
   </aside>
 
@@ -262,10 +262,10 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
       <!-- FORM -->
       <div class="form-wrap" id="formWrap">
         <div class="briefing-card">
-          <label class="briefing-label">Briefing da Música</label>
+          <label class="briefing-label">Briefing da MÃºsica</label>
 
           <textarea class="briefing-textarea" id="briefing"
-            placeholder="Descreva a música que você quer criar...&#10;&#10;Para quem é? Qual a ocasião? Qual a história?&#10;&#10;Ex: Música de aniversário para João, 35 anos, personal trainer apaixonado por seu trabalho e pela filha Ana. Tom alegre e emocionante."></textarea>
+            placeholder="Descreva a mÃºsica que vocÃª quer criar...&#10;&#10;Para quem Ã©? Qual a ocasiÃ£o? Qual a histÃ³ria?&#10;&#10;Ex: MÃºsica de aniversÃ¡rio para JoÃ£o, 35 anos, personal trainer apaixonado por seu trabalho e pela filha Ana. Tom alegre e emocionante."></textarea>
 
           <div class="divider">
             <div class="divider-line"></div>
@@ -276,12 +276,12 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
           <div class="ritmo-wrap">
             <span class="ritmo-label">Estilo Musical</span>
             <input class="ritmo-input" type="text" id="ritmo"
-                   placeholder="Ex: Sertanejo, Funk, Pagode, Forró, Pop..."/>
+                   placeholder="Ex: Sertanejo, Funk, Pagode, ForrÃ³, Pop..."/>
           </div>
 
           <button class="btn-generate" id="btnGerar" onclick="gerar()">
             <span class="spinner" id="spinner"></span>
-            ✦ GERAR COM LUX MUSIC
+            âœ¦ GERAR COM LUX MUSIC
           </button>
         </div>
       </div>
@@ -289,17 +289,17 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
       <!-- RESULTADO -->
       <div class="result-wrap" id="resultWrap">
         <div class="result-header">
-          <div class="result-nome" id="resultNome">—</div>
-          <div class="result-tag" id="resultTag">—</div>
+          <div class="result-nome" id="resultNome">â€”</div>
+          <div class="result-tag" id="resultTag">â€”</div>
         </div>
         <div class="blocks" id="blocks"></div>
         <div class="result-btns">
-          <button class="btn-sec btn-salvar" onclick="salvar()">💾 Salvar no Histórico</button>
-          <button class="btn-sec btn-regen"  onclick="regenerar()">↻ Regenerar</button>
+          <button class="btn-sec btn-salvar" onclick="salvar()">ðŸ’¾ Salvar no HistÃ³rico</button>
+          <button class="btn-sec btn-regen"  onclick="regenerar()">â†» Regenerar</button>
         </div>
       </div>
 
-      <!-- DETALHE HISTÓRICO -->
+      <!-- DETALHE HISTÃ“RICO -->
       <div class="detail" id="detail"></div>
 
     </div>
@@ -307,19 +307,18 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 </div>
 
 <script>
-const SYS = // não usado — processado no Apps Script
-// "Voc\u00ea \u00e9 o Lux Music AI, um especialista profissional em cria\u00e7\u00e3o de m\u00fasicas personalizadas para Suno AI.\n\nVoc\u00ea receber\u00e1 um briefing completo com o tema/hist\u00f3ria da m\u00fasica E o ritmo/g\u00eanero j\u00e1 definidos.\nGere a letra IMEDIATAMENTE sem fazer perguntas.\n\nTAMANHO PADR\u00c3O DA LETRA - Estrutura obrigat\u00f3ria:\n[Verse] \u2013 4 linhas\n[Chorus] \u2013 4 linhas  \n[Bridge] \u2013 4 linhas\n[Outro] \u2013 2 linhas\nM\u00e1ximo 18\u201322 linhas totais.\n\nUse APENAS: [Verse], [Chorus], [Bridge], [Outro]\nNUNCA use: [Intro], [Pre-Chorus], [Post-Chorus], [Instrumental] ou outras varia\u00e7\u00f5es.\n\nRESPONDA OBRIGATORIAMENTE neste formato JSON:\n\n{\n  \"musica_nome\": \"Nome da m\u00fasica\",\n  \"lyrics\": \"[Verse]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Chorus]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Bridge]\\nLinha 1\\nLinha 2\\nLinha 3\\nLinha 4\\n\\n[Outro]\\nLinha 1\\nLinha 2\",\n  \"style_prompt\": \"G\u00eanero principal, Humor, Ritmo, Instrumentos, BPM\",\n  \"weirdness\": 25,\n  \"style_influence\": 60,\n  \"persona\": \"Descri\u00e7\u00e3o da persona vocal\"\n}\n\nREGRAS T\u00c9CNICAS:\n- Weirdness: Comercial \u2192 15\u201330 | Alternativo \u2192 30\u201355 | Experimental \u2192 55\u201380\n- Style Influence: Ritmo dominante (EDM, Piseiro, Funk) \u2192 65\u201385 | Comercial/Narrativo \u2192 50\u201365\n- Idioma da letra: SEMPRE o mesmo idioma do briefing fornecido\n- Se briefing em portugu\u00eas \u2192 letra em portugu\u00eas\n- Se briefing em ingl\u00eas \u2192 letra em ingl\u00eas\n\nPROIBIDO:\n- Fazer perguntas \u2014 gere direto\n- Usar metatags fora do padr\u00e3o\n- Letras longas (m\u00e1ximo 22 linhas)\n- Responder fora do formato JSON\n\nBASE DE CONHECIMENTO:\nFunk/Pagode/Samba: ritmos brasileiros, refr\u00f5es grudentos, hist\u00f3rias do cotidiano.\nForr\u00f3/Piseiro: ritmo acelerado, sanfona, tri\u00e2ngulo, zabumba, amor e saudade.\nSertanejo: viola caipira, hist\u00f3rias rom\u00e2nticas e do campo.\nPop brasileiro: letras urbanas, produ\u00e7\u00e3o moderna, refr\u00f5es marcantes.\nFunk carioca: batida eletr\u00f4nica, letras festivas ou de romance.";
+const SYS = null; // nÃ£o usado â€” processado no Apps Script
 let hist    = JSON.parse(localStorage.getItem('luxmusic_hist') || '[]');
 let msgs    = [];
 let current = null;
 
 renderHist();
 
-// ═══ GERAR ══════════════════════════════════════════
+// â•â•â• GERAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function gerar() {
   const briefing = document.getElementById('briefing').value.trim();
   const ritmo    = document.getElementById('ritmo').value.trim();
-  if (!briefing) { alert('Por favor, descreva a música no campo de briefing.'); return; }
+  if (!briefing) { alert('Por favor, descreva a mÃºsica no campo de briefing.'); return; }
   if (!ritmo)    { alert('Por favor, informe o ritmo ou estilo musical.'); return; }
 
   const prompt = briefing + '\n\nRitmo/Estilo: ' + ritmo;
@@ -339,23 +338,23 @@ async function gerar() {
     current._ritmo    = ritmo;
     mostrar(data);
   } else {
-    alert('Não foi possível gerar a letra. Tente novamente.');
+    alert('NÃ£o foi possÃ­vel gerar a letra. Tente novamente.');
   }
   setLoad(false);
 }
 
-// ═══ REGENERAR ══════════════════════════════════════
+// â•â•â• REGENERAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function regenerar() {
   if (!current || !current._briefing) return;
   setLoad(true);
   document.getElementById('resultWrap').classList.remove('show');
-  const briefingAlt = current._briefing + '\n\nIMPORTANTE: Gere uma versão DIFERENTE e alternativa, com outras palavras, rimas e estrutura poética. Mantenha o mesmo tema.';
+  const briefingAlt = current._briefing + '\n\nIMPORTANTE: Gere uma versÃ£o DIFERENTE e alternativa, com outras palavras, rimas e estrutura poÃ©tica. Mantenha o mesmo tema.';
   const resp = await api(briefingAlt, current._ritmo || '');
   if (resp) { const d = parse(resp); if (d) { d._briefing = current._briefing; d._ritmo = current._ritmo; current = d; mostrar(d); } }
   setLoad(false);
 }
 
-// ═══ API CLAUDE ══════════════════════════════════════
+// â•â•â• API CLAUDE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const APPS_SCRIPT_URL_MUSIC = 'https://script.google.com/macros/s/AKfycbwSeuNpNNq4fiuFMJN4Y8GMrbdHa0OrArUG8bKZDpXMIByOPscIxC8G9P73s4p3XPIwAQ/exec';
 
 async function api(briefing, ritmo) {
@@ -370,7 +369,7 @@ async function api(briefing, ritmo) {
         if (data.ok && data.result) {
           resolve(JSON.stringify(data.result));
         } else {
-          alert('Erro: ' + (data.error || 'Resposta inválida'));
+          alert('Erro: ' + (data.error || 'Resposta invÃ¡lida'));
           resolve(null);
         }
       } catch(e) {
@@ -390,7 +389,7 @@ async function api(briefing, ritmo) {
   });
 }
 
-// ═══ PARSE ══════════════════════════════════════════
+// â•â•â• PARSE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function parse(texto) {
   try {
     const clean = texto.replace(/```json|```/g, '').trim();
@@ -400,21 +399,21 @@ function parse(texto) {
   return null;
 }
 
-// ═══ MOSTRAR RESULTADO ══════════════════════════════
+// â•â•â• MOSTRAR RESULTADO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function mostrar(data) {
-  document.getElementById('resultNome').textContent = data.musica_nome || 'Sem título';
+  document.getElementById('resultNome').textContent = data.musica_nome || 'Sem tÃ­tulo';
   document.getElementById('resultTag').textContent  = genero(data.style_prompt);
 
   const blocks = document.getElementById('blocks');
   blocks.innerHTML = '';
 
   const lista = [
-    ['1️⃣ Letra (Lyrics)',                    data.lyrics],
-    ['2️⃣ Prompt de Estilo (Style Prompt)',    data.style_prompt],
-    ['3️⃣ Nível de Estranheza (Weirdness)',    String(data.weirdness)],
-    ['4️⃣ Influência de Estilo',               String(data.style_influence)],
+    ['1ï¸âƒ£ Letra (Lyrics)',                    data.lyrics],
+    ['2ï¸âƒ£ Prompt de Estilo (Style Prompt)',    data.style_prompt],
+    ['3ï¸âƒ£ NÃ­vel de Estranheza (Weirdness)',    String(data.weirdness)],
+    ['4ï¸âƒ£ InfluÃªncia de Estilo',               String(data.style_influence)],
   ];
-  if (data.persona) lista.push(['5️⃣ Persona', data.persona]);
+  if (data.persona) lista.push(['5ï¸âƒ£ Persona', data.persona]);
 
   lista.forEach(([titulo, conteudo]) => {
     const el = document.createElement('div');
@@ -432,32 +431,32 @@ function mostrar(data) {
   document.getElementById('resultWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ═══ COPIAR ══════════════════════════════════════════
+// â•â•â• COPIAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function copiar(btn, texto) {
   navigator.clipboard.writeText(texto).then(() => {
-    btn.textContent = '✓ Copiado!';
+    btn.textContent = 'âœ“ Copiado!';
     btn.classList.add('ok');
     setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('ok'); }, 2000);
   });
 }
 
-// ═══ SALVAR ══════════════════════════════════════════
+// â•â•â• SALVAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function salvar() {
   if (!current) return;
   const item = {
     id:    Date.now(),
     ts:    Date.now(),
-    nome:  current.musica_nome || 'Sem título',
+    nome:  current.musica_nome || 'Sem tÃ­tulo',
     genre: genero(current.style_prompt),
     data:  current
   };
   hist.unshift(item);
   localStorage.setItem('luxmusic_hist', JSON.stringify(hist));
   renderHist();
-  alert('✓ Salvo no histórico!');
+  alert('âœ“ Salvo no histÃ³rico!');
 }
 
-// ═══ HISTÓRICO ══════════════════════════════════════
+// â•â•â• HISTÃ“RICO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function renderHist(filtro) {
   const list  = document.getElementById('histList');
   const empty = document.getElementById('histEmpty');
@@ -494,17 +493,17 @@ function abrirDetalhe(item) {
   const dt = new Date(item.ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
   const lista = [
-    ['1️⃣ Letra (Lyrics)',                    item.data.lyrics],
-    ['2️⃣ Prompt de Estilo (Style Prompt)',    item.data.style_prompt],
-    ['3️⃣ Nível de Estranheza (Weirdness)',    String(item.data.weirdness)],
-    ['4️⃣ Influência de Estilo',               String(item.data.style_influence)],
+    ['1ï¸âƒ£ Letra (Lyrics)',                    item.data.lyrics],
+    ['2ï¸âƒ£ Prompt de Estilo (Style Prompt)',    item.data.style_prompt],
+    ['3ï¸âƒ£ NÃ­vel de Estranheza (Weirdness)',    String(item.data.weirdness)],
+    ['4ï¸âƒ£ InfluÃªncia de Estilo',               String(item.data.style_influence)],
   ];
-  if (item.data.persona) lista.push(['5️⃣ Persona', item.data.persona]);
+  if (item.data.persona) lista.push(['5ï¸âƒ£ Persona', item.data.persona]);
 
   detail.innerHTML =
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px">'
     + '<div><div style="font-family:Cinzel,serif;font-size:17px;font-weight:700;color:var(--gold)">' + esc(item.nome) + '</div>'
-    + '<div style="font-size:11px;color:var(--text-muted);margin-top:3px">' + dt + ' · ' + esc(item.genre) + '</div></div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-top:3px">' + dt + ' Â· ' + esc(item.genre) + '</div></div>'
     + '<button class="btn-new" onclick="novaLetra()">+ Nova Letra</button></div>'
     + '<div class="blocks">'
     + lista.map(([t, c]) =>
@@ -515,12 +514,12 @@ function abrirDetalhe(item) {
       ).join('')
     + '</div>'
     + '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">'
-    + '<button class="btn-sec btn-regen" onclick="excluir(' + item.id + ')" style="color:var(--red);border-color:rgba(232,122,122,.3);width:auto;padding:8px 14px">🗑 Excluir</button>'
+    + '<button class="btn-sec btn-regen" onclick="excluir(' + item.id + ')" style="color:var(--red);border-color:rgba(232,122,122,.3);width:auto;padding:8px 14px">ðŸ—‘ Excluir</button>'
     + '</div>';
 }
 
 function excluir(id) {
-  if (!confirm('Excluir esta criação?')) return;
+  if (!confirm('Excluir esta criaÃ§Ã£o?')) return;
   hist = hist.filter(h => h.id !== id);
   localStorage.setItem('luxmusic_hist', JSON.stringify(hist));
   renderHist();
@@ -538,12 +537,12 @@ function novaLetra() {
   current = null;
 }
 
-// ═══ UTILS ══════════════════════════════════════════
+// â•â•â• UTILS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function setLoad(on) {
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
   document.getElementById('btnGerar').disabled = on;
 }
-function genero(s) { return s ? s.split(',')[0].trim().substring(0, 28) : '—'; }
+function genero(s) { return s ? s.split(',')[0].trim().substring(0, 28) : 'â€”'; }
 function esc(s) {
   return String(s || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
