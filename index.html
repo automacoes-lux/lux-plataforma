@@ -262,9 +262,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 }
 @media(max-width:400px){.dash-grid{grid-template-columns:1fr}}
 
-/* FIGURINHAS EMBEDDED — override header */
+/* FIGURINHAS EMBEDDED — override header e elementos desnecessários */
 #figurinhas-container .lux-header{display:none !important}
+#figurinhas-container .main-wrap > .lux-header{display:none !important}
+#figurinhas-container [class*="header"]{display:none !important}
 #figurinhas-container > div > .tabs-wrap{margin-top:0}
+/* Esconder qualquer img quebrada no topo do container */
+#figurinhas-container > div > img,
+#figurinhas-container > div > .header-wrap,
+#figurinhas-container .tool-header{display:none !important}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -764,8 +770,8 @@ function mountFigurinhas() {
   document.getElementById('figurinhas-container').innerHTML = `
 <div class="container">
 
-  <!-- HEADER -->
-  <div class="header">
+  <!-- HEADER (oculto dentro da plataforma) -->
+  <div class="header" style="display:none">
     <div class="logo-wrap">
       <img id="luxLogo" src="" alt="Lux"/>
     </div>
@@ -873,6 +879,20 @@ function mountFigurinhas() {
 </div>
 
 `;
+  // Reinicializar estado da ferramenta após embed
+  currentFormat = 'padrao';
+  customPhrases = [...DEFAULT_PHRASES_10];
+  
+  // Garantir que o painel de frases está correto
+  const phrasesBox = document.getElementById('phrasesBox');
+  if (phrasesBox) phrasesBox.style.display = 'none';
+  
+  const fmtPadrao = document.getElementById('fmt-padrao');
+  const fmtCustom = document.getElementById('fmt-custom');
+  if (fmtPadrao) fmtPadrao.classList.add('active');
+  if (fmtCustom) fmtCustom.classList.remove('active');
+  
+  if (typeof buildPhrasesList === 'function') buildPhrasesList();
   if (typeof renderAllSessions === 'function') renderAllSessions();
 }
 
@@ -923,6 +943,7 @@ function selectFormat(fmt) {
   document.getElementById('fmt-padrao').classList.toggle('active', fmt === 'padrao');
   document.getElementById('fmt-custom').classList.toggle('active', fmt === 'custom');
   document.getElementById('phrasesBox').style.display = fmt === 'custom' ? 'block' : 'none';
+  if (fmt === 'custom' && typeof buildPhrasesList === 'function') buildPhrasesList();
 }
 
 function buildPhrasesList() {
