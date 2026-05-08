@@ -985,9 +985,11 @@ function fileToBase64(file) {
 async function callAppsScript(payload) {
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload)
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return await res.json();
 }
 
