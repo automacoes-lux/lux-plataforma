@@ -1,0 +1,41 @@
+/* ═══ TEMA LUX — variáveis compartilhadas ═══════════════════
+   Reusado por todas as ferramentas e pelo shell.
+   Para mudar a identidade visual, edite só este arquivo.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  /* Cores principais */
+  --gold:#C9A84C;
+  --gold-bright:#E2BA5F;
+  --gold-dim:#9A7A38;
+
+  /* Fundos */
+  --bg:#0A0A0B;
+  --bg2:#111114;
+  --bg3:#18181C;
+  --bg4:#1F1F25;
+
+  /* Bordas */
+  --border:rgba(201,168,76,.15);
+  --border-bright:rgba(201,168,76,.35);
+
+  /* Texto */
+  --text:#E8E4DC;
+  --text-dim:#8A8680;
+  --text-muted:#4A4844;
+
+  /* Estados */
+  --green:#7FB87A;
+  --red:#E87A7A;
+  --amber:#E8A84C;
+
+  /* Layout */
+  --radius:10px;
+  --radius-lg:16px;
+  --shadow:0 8px 32px rgba(0,0,0,.6);
+  --sidebar-w:240px;
+}
+
+/* Scrollbar discreta padrão */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
