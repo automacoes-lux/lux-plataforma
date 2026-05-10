@@ -321,7 +321,13 @@ input[type="file"]{display:none}
 }
 .modal-btn.secondary:hover{border-color:var(--text-dim);color:var(--text)}
 
-@keyframes logoSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes logoDance{
+  0%,100%{transform:translate(0,0) rotate(0deg) scale(1)}
+  20%{transform:translate(-2px,-6px) rotate(5deg) scale(1.06)}
+  40%{transform:translate(1px,-1px) rotate(-4deg) scale(0.97)}
+  60%{transform:translate(-1px,-5px) rotate(3deg) scale(1.04)}
+  80%{transform:translate(2px,-3px) rotate(-3deg) scale(1.02)}
+}
 
 @media (max-width:600px){
   .container{padding:1.2rem 1rem 4rem}
@@ -413,15 +419,15 @@ input[type="file"]{display:none}
         <input type="file" id="logoInput" accept="image/png,image/gif,image/webp" onchange="handleLogo(event)"/>
         <span class="icon">✨</span>
         <p>Clique para enviar o logo</p>
-        <span><strong>PNG transparente é o ideal</strong> · ~300×300px quadrado · O logo vai girar no canto inferior esquerdo<br/>(GIF é aceito mas só o 1º frame é usado)</span>
+        <span><strong>PNG transparente é o ideal</strong> · ~300×300px quadrado · O logo aparece animado no canto inferior esquerdo<br/>(GIF é aceito mas só o 1º frame é usado)</span>
       </div>
       <div class="music-preview" id="logoPreview">
-        <div class="music-icon" id="logoThumbWrap" style="overflow:hidden;background:transparent;padding:2px">
-          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;animation:logoSpin 4s linear infinite"/>
+        <div class="music-icon" id="logoThumbWrap" style="overflow:visible;background:transparent;padding:2px">
+          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;animation:logoDance 2.5s ease-in-out infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))"/>
         </div>
         <div class="music-info">
           <strong id="logoName">—</strong>
-          <span><span id="logoSize">—</span> · gira no vídeo a cada 4s</span>
+          <span><span id="logoSize">—</span> · animação "dance" no vídeo</span>
         </div>
         <button class="music-remove" onclick="removeLogo()">✕</button>
       </div>
