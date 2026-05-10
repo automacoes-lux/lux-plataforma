@@ -402,6 +402,29 @@ input[type="file"]{display:none}
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-title">
+        Logo do cliente
+        <span class="card-title-count" style="background:rgba(180,180,180,.08);color:var(--text-dim)">opcional</span>
+      </div>
+      <div class="upload-area" id="logoUploadArea" onclick="document.getElementById('logoInput').click()">
+        <input type="file" id="logoInput" accept="image/gif,image/png,image/webp" onchange="handleLogo(event)"/>
+        <span class="icon">✨</span>
+        <p>Clique para enviar o logo (GIF animado ou PNG)</p>
+        <span>Aparece no canto inferior esquerdo durante todo o vídeo · Recomendado ~300×300px com fundo transparente</span>
+      </div>
+      <div class="music-preview" id="logoPreview">
+        <div class="music-icon" id="logoThumbWrap" style="overflow:hidden;background:#000;padding:2px">
+          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:50%"/>
+        </div>
+        <div class="music-info">
+          <strong id="logoName">—</strong>
+          <span><span id="logoSize">—</span></span>
+        </div>
+        <button class="music-remove" onclick="removeLogo()">✕</button>
+      </div>
+    </div>
+
     <div class="video-preview-info" id="videoPreviewInfo">
       <span style="font-size:18px">🎞️</span>
       <span>Previsão: <strong><span id="previewSlots">—</span> trocas de imagem</strong> em um vídeo de <strong><span id="previewDuration">—</span></strong></span>
@@ -464,6 +487,8 @@ const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 30;
 const MIN_MUSIC_SECONDS = 5;
 const MAX_MUSIC_SECONDS = 180;
+const LOGO_MAX_BYTES = 8 * 1024 * 1024;   // 8MB - alerta acima disso
+const LOGO_HARD_LIMIT_BYTES = 15 * 1024 * 1024;  // 15MB - bloqueia acima
 
 // Polling automático após renderização iniciar
 const POLL_INTERVAL_MS = 15000;        // 15s entre verificações
@@ -473,6 +498,8 @@ const POLL_MAX_DURATION_MS = 5*60*1000; // máx 5 min de polling auto
 let photos = [];                       // [{ file: Blob, originalSize, optimizedSize, thumbUrl }]
 let musicFile = null;                  // Blob otimizado da música
 let musicMeta = { name:'', size:0, duration:0 };
+let logoFile = null;                   // Blob do GIF/PNG da logo (opcional)
+let logoMeta = { name:'', size:0 };
 let currentClientName = null;
 let currentOperator = null;
 let videoSessions = JSON.parse(localStorage.getItem('lux_video_sessions') || '[]');
@@ -670,6 +697,55 @@ function removeMusic() {
   updatePreviewInfo();
 }
 
+// ═══ LOGO (opcional) ════════════════════════════════════════
+function handleLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Valida formato
+  const validExt = ['.gif','.png','.webp'];
+  const fileLower = file.name.toLowerCase();
+  const isValid = file.type === 'image/gif' || file.type === 'image/png' ||
+                  file.type === 'image/webp' ||
+                  validExt.some(ext => fileLower.endsWith(ext));
+  if (!isValid) {
+    alert('Formato não suportado. Use GIF, PNG ou WEBP.');
+    return;
+  }
+
+  // Valida tamanho
+  if (file.size > LOGO_HARD_LIMIT_BYTES) {
+    alert(`Logo muito grande (${(file.size/(1024*1024)).toFixed(1)} MB). Máximo: 15 MB. Otimize o GIF antes de enviar.`);
+    return;
+  }
+  if (file.size > LOGO_MAX_BYTES) {
+    if (!confirm(`O logo tem ${(file.size/(1024*1024)).toFixed(1)} MB, o que pode deixar o envio lento. Recomendamos abaixo de 8 MB. Deseja continuar mesmo assim?`)) {
+      return;
+    }
+  }
+
+  logoFile = file;
+  logoMeta = { name: file.name, size: file.size };
+
+  document.getElementById('logoUploadArea').style.display = 'none';
+  document.getElementById('logoPreview').style.display = 'flex';
+  document.getElementById('logoThumb').src = URL.createObjectURL(file);
+  document.getElementById('logoName').textContent = file.name;
+  document.getElementById('logoSize').textContent = formatSize(file.size);
+}
+
+function removeLogo() {
+  if (logoFile) {
+    const oldSrc = document.getElementById('logoThumb').src;
+    if (oldSrc.startsWith('blob:')) URL.revokeObjectURL(oldSrc);
+  }
+  logoFile = null;
+  logoMeta = { name:'', size:0 };
+  document.getElementById('logoInput').value = '';
+  document.getElementById('logoUploadArea').style.display = 'block';
+  document.getElementById('logoPreview').style.display = 'none';
+}
+
 // ═══ PREVISÃO ═══════════════════════════════════════════════
 function updatePreviewInfo() {
   const box = document.getElementById('videoPreviewInfo');
@@ -864,11 +940,23 @@ async function generateVideo() {
     document.getElementById('statusSub').textContent = 'Codificando música...';
     const musicBase64 = await fileToBase64(musicFile);
 
+    // Codifica logo (se existir)
+    let logoPayload = null;
+    if (logoFile) {
+      document.getElementById('statusSub').textContent = 'Codificando logo...';
+      const logoBase64 = await fileToBase64(logoFile);
+      logoPayload = {
+        name: logoMeta.name,
+        mimeType: logoFile.type || 'image/gif',
+        base64: logoBase64
+      };
+    }
+
     // Cria pedido
     document.getElementById('statusText').textContent = 'Enviando arquivos para o Drive...';
     document.getElementById('statusSub').textContent = 'Aguarde, estamos transferindo';
 
-    const orderRes = await callAppsScript({
+    const orderPayload = {
       action: 'createOrder',
       clientName,
       attendantName: operator,
@@ -879,7 +967,10 @@ async function generateVideo() {
         base64: musicBase64
       },
       musicDuration: musicMeta.duration
-    });
+    };
+    if (logoPayload) orderPayload.logoGif = logoPayload;
+
+    const orderRes = await callAppsScript(orderPayload);
 
     if (!orderRes.ok) {
       stopStatusTimer();
