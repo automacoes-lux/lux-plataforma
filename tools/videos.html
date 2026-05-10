@@ -4,27 +4,1112 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lux — Vídeos</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
 <link rel="stylesheet" href="../css/theme.css"/>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
-.wrap{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;gap:20px;padding:40px;text-align:center;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
 }
-.icon{font-size:64px;opacity:.4}
-h3{font-family:'Cinzel',serif;font-size:22px;color:var(--text-dim);letter-spacing:.1em}
-p{font-size:14px;color:var(--text-muted);max-width:380px;line-height:1.6}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:760px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+/* BANNER pendente */
+.pending-banner{
+  display:none;background:rgba(232,168,76,.08);border:1px solid rgba(232,168,76,.35);
+  border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1.2rem;
+  align-items:center;gap:14px;animation:fadeIn .3s ease;
+}
+.pending-banner.show{display:flex}
+.pending-icon{font-size:24px;flex-shrink:0}
+.pending-text{flex:1;font-size:13px;line-height:1.5;color:var(--text-mid);min-width:0}
+.pending-text strong{color:#E8A84C;font-weight:600;display:block;margin-bottom:2px;font-size:14px}
+.pending-text small{color:var(--text-dim);font-size:12px;display:block;margin-top:2px}
+.pending-actions{display:flex;gap:8px;flex-shrink:0}
+@media(max-width:600px){
+  .pending-banner{flex-direction:column;align-items:stretch;gap:12px}
+  .pending-actions{justify-content:stretch}
+  .pending-actions button{flex:1}
+}
+.btn-pending-check{
+  padding:9px 14px;background:rgba(232,168,76,.18);border:1px solid rgba(232,168,76,.4);
+  color:#E8A84C;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s;
+}
+.btn-pending-check:hover{background:rgba(232,168,76,.28)}
+.btn-pending-clear{
+  padding:9px 14px;background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;
+  transition:all .15s;
+}
+.btn-pending-clear:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* TABS */
+.tabs{
+  display:flex;gap:4px;margin-bottom:2rem;
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:5px;
+}
+.tab{
+  flex:1;padding:12px;text-align:center;
+  font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;
+  border-radius:7px;cursor:pointer;color:var(--text-dim);
+  transition:all .2s;border:none;background:transparent;letter-spacing:.02em;
+}
+.tab.active{
+  background:rgba(201,168,76,.1);color:var(--gold);
+  border:.5px solid var(--border-bright);
+  font-family:'Cinzel',serif;font-size:14px;letter-spacing:.08em;
+}
+.tab:hover:not(.active){color:var(--text-mid);background:rgba(255,255,255,.03)}
+
+.panel{display:none;animation:fadeIn .3s ease both}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:1.75rem;margin-bottom:1.1rem;
+}
+.card-title{
+  font-family:'Cinzel',serif;font-size:12px;font-weight:600;
+  color:#FFFFFF;letter-spacing:.14em;text-transform:uppercase;
+  margin-bottom:1.4rem;display:flex;align-items:center;gap:8px;
+}
+.card-title::after{
+  content:'';flex:1;height:.5px;
+  background:linear-gradient(90deg,var(--border) 0%,transparent 100%);
+}
+.card-title-count{
+  font-family:'DM Sans',sans-serif;text-transform:none;font-size:11px;
+  color:var(--gold-dim);letter-spacing:.04em;
+  background:rgba(201,168,76,.1);padding:3px 10px;border-radius:20px;
+  border:.5px solid var(--border);
+}
+
+.field{margin-bottom:1.1rem}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;color:var(--gold-dim);display:block;margin-bottom:6px;letter-spacing:.14em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.field input{
+  width:100%;padding:12px 15px;
+  font-size:15px;font-family:'DM Sans',sans-serif;
+  background:var(--bg-input);color:var(--text);
+  border:.5px solid var(--border);border-radius:var(--radius);
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.field input:focus{
+  border-color:var(--border-bright);
+  box-shadow:0 0 0 3px rgba(201,168,76,.07);
+}
+.field input::placeholder{color:var(--text-dim);opacity:.5;font-size:15px}
+
+/* UPLOAD áreas */
+.upload-area{
+  border:1.5px dashed var(--border);border-radius:var(--radius-lg);
+  padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s;
+}
+.upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
+.upload-area .icon{font-size:30px;display:block;margin-bottom:9px;opacity:.55}
+.upload-area p{font-size:15px;color:var(--text-mid)}
+.upload-area span{font-size:13px;color:var(--text-dim);margin-top:3px;display:block}
+input[type="file"]{display:none}
+
+/* GRID DE FOTOS */
+.photos-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:8px;margin-top:12px;
+}
+.photo-item{
+  position:relative;aspect-ratio:1;
+  background:var(--bg-input);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.photo-item img{width:100%;height:100%;object-fit:cover}
+.photo-item .photo-num{
+  position:absolute;top:4px;left:4px;
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;
+  color:#080808;background:rgba(201,168,76,.95);
+  padding:2px 7px;border-radius:10px;letter-spacing:.04em;
+}
+.photo-item .photo-remove{
+  position:absolute;top:4px;right:4px;
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(0,0,0,.7);color:#fff;
+  border:none;cursor:pointer;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.photo-item .photo-remove:hover{background:rgba(232,122,122,.9)}
+.photo-info-bar{
+  font-size:12px;color:var(--text-dim);margin-top:10px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+}
+.photo-info-bar span strong{color:var(--gold-dim)}
+
+/* PRÉVIA DE MÚSICA */
+.music-preview{
+  display:none;align-items:center;gap:14px;margin-top:12px;
+  padding:14px 16px;background:rgba(201,168,76,.05);
+  border-radius:var(--radius);border:.5px solid var(--border);
+}
+.music-icon{
+  width:48px;height:48px;border-radius:50%;background:rgba(201,168,76,.15);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.music-info{flex:1;min-width:0}
+.music-info strong{display:block;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-info span{font-size:12px;color:var(--text-dim)}
+.music-info .duration{color:var(--gold-dim);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em}
+.music-remove{
+  font-size:18px;color:var(--text-dim);cursor:pointer;
+  background:none;border:none;padding:4px;flex-shrink:0;
+}
+.music-remove:hover{color:var(--text)}
+
+/* PREVISÃO */
+.video-preview-info{
+  margin-top:1rem;padding:14px 16px;
+  background:rgba(127,184,122,.05);border:.5px solid rgba(127,184,122,.25);
+  border-radius:var(--radius);font-size:13px;color:var(--text-mid);
+  display:none;align-items:center;gap:10px;line-height:1.5;
+}
+.video-preview-info.show{display:flex}
+.video-preview-info strong{color:#7FB87A}
+
+/* GERAR */
+.btn-generate{
+  width:100%;padding:17px;margin-top:1.6rem;
+  background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);
+  color:#080808;border:none;border-radius:var(--radius-lg);
+  font-size:15px;font-weight:700;font-family:'Cinzel',serif;
+  letter-spacing:.1em;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:opacity .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 24px rgba(201,168,76,.22);
+}
+.btn-generate:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 30px rgba(201,168,76,.32)}
+.btn-generate:active{transform:translateY(0)}
+.btn-generate:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* STATUS */
+.status-bar{
+  display:none;align-items:center;gap:12px;
+  background:rgba(201,168,76,.06);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:14px 18px;
+  font-size:15px;color:var(--text-mid);margin-top:1rem;
+}
+.status-bar.show{display:flex}
+.spinner{
+  width:16px;height:16px;flex-shrink:0;
+  border:2px solid var(--border);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-progress{flex:1;min-width:0}
+.status-sub{font-size:13px;color:var(--text-dim);margin-top:3px}
+.status-timer{font-family:'Cinzel',serif;font-size:13px;color:var(--gold-dim);margin-top:3px}
+
+/* RESULTADOS */
+.results-empty{text-align:center;padding:4rem 1rem;color:var(--text-dim);font-size:15px}
+.results-empty .big{font-size:44px;display:block;margin-bottom:14px;opacity:.3}
+.result-session{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:1.5rem 1.75rem;margin-bottom:1.1rem;
+  animation:fadeIn .4s ease both;
+}
+.session-header{
+  display:flex;align-items:center;gap:14px;margin-bottom:1.4rem;
+  padding-bottom:1.1rem;border-bottom:.5px solid var(--border);
+}
+.session-avatar{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(201,168,76,.3),rgba(201,168,76,.05));
+  border:.5px solid var(--border-bright);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold);
+}
+.session-info{flex:1;min-width:0}
+.session-info strong{display:block;font-size:17px;color:var(--text)}
+.session-info .atendente{font-size:13px;color:var(--text-dim);margin-top:2px;display:block}
+.session-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.meta-tag{
+  font-size:11px;padding:3px 10px;border-radius:20px;
+  background:rgba(201,168,76,.08);color:var(--gold-dim);
+  border:.5px solid var(--border);font-weight:500;
+}
+.session-status{
+  text-align:right;flex-shrink:0;
+  font-family:'Cinzel',serif;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.session-status.completed{color:#7FB87A}
+.session-status.rendering{color:#E8A84C}
+.session-status.error{color:#E87A7A}
+.btn-drive{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;margin-top:8px;
+  background:rgba(201,168,76,.07);color:var(--gold);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  font-size:14px;font-weight:500;text-decoration:none;
+  transition:all .15s;letter-spacing:.02em;
+}
+.btn-drive:hover{background:rgba(201,168,76,.16)}
+.btn-recheck{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;margin-top:8px;
+  background:rgba(232,168,76,.1);color:#E8A84C;
+  border:.5px solid rgba(232,168,76,.35);border-radius:var(--radius);
+  font-size:14px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.btn-recheck:hover{background:rgba(232,168,76,.2)}
+
+/* MODAL */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.75);
+  align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);max-width:440px;width:100%;
+  padding:28px 24px;animation:fadeIn .3s ease;
+}
+.modal-icon{font-size:42px;text-align:center;display:block;margin-bottom:12px}
+.modal-title{
+  font-family:'Cinzel',serif;font-size:16px;font-weight:600;
+  color:var(--gold);text-align:center;letter-spacing:.06em;
+  margin-bottom:10px;text-transform:uppercase;
+}
+.modal-text{font-size:14px;color:var(--text-mid);line-height:1.6;text-align:center;margin-bottom:22px}
+.modal-text strong{color:var(--text)}
+.modal-buttons{display:flex;gap:10px;flex-direction:column}
+.modal-btn{
+  width:100%;padding:13px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.modal-btn.primary{
+  background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));
+  color:#080808;border:none;
+}
+.modal-btn.primary:hover{opacity:.9}
+.modal-btn.secondary{
+  background:transparent;color:var(--text-dim);
+  border:1px solid var(--border);
+}
+.modal-btn.secondary:hover{border-color:var(--text-dim);color:var(--text)}
+
+@media (max-width:600px){
+  .container{padding:1.2rem 1rem 4rem}
+  .photos-grid{grid-template-columns:repeat(3,1fr)}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="icon">🎬</div>
-  <h3>EM DESENVOLVIMENTO</h3>
-  <p>O gerador de vídeos da plataforma Lux estará disponível em breve. Volte em alguns dias.</p>
+
+<div class="container">
+
+  <!-- BANNER PEDIDO PENDENTE -->
+  <div class="pending-banner" id="pendingBanner">
+    <span class="pending-icon">📌</span>
+    <div class="pending-text">
+      <strong>Vídeo em renderização</strong>
+      <span id="pendingInfo">—</span>
+      <small id="pendingTime">—</small>
+    </div>
+    <div class="pending-actions">
+      <button class="btn-pending-check" onclick="recoverPendingOrder()">↻ Verificar</button>
+      <button class="btn-pending-clear" onclick="clearPendingOrder()">Limpar</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('gerador',this)">🎬 &nbsp;GERADOR</button>
+    <button class="tab" onclick="switchTab('resultados',this)">◈ &nbsp;RESULTADOS</button>
+  </div>
+
+  <!-- PANEL GERADOR -->
+  <div class="panel active" id="panel-gerador">
+
+    <div class="card">
+      <div class="card-title">Identificação</div>
+      <div class="field">
+        <label>Nome do cliente</label>
+        <input type="text" id="clientName" placeholder="Ex: Ana Distribuidora"/>
+      </div>
+      <div class="field">
+        <label>Nome do atendente</label>
+        <input type="text" id="operatorName" placeholder="Ex: Thiago"/>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Fotos do comércio
+        <span class="card-title-count" id="photosCount">0 fotos</span>
+      </div>
+      <div class="upload-area" onclick="document.getElementById('photosInput').click()">
+        <input type="file" id="photosInput" accept="image/*" multiple onchange="handlePhotos(event)"/>
+        <span class="icon">📷</span>
+        <p>Clique para enviar as fotos</p>
+        <span>Mínimo 3 · Recomendado 8 a 15 · Máximo 30 · JPG ou PNG</span>
+      </div>
+      <div class="photos-grid" id="photosGrid"></div>
+      <div class="photo-info-bar" id="photoInfoBar" style="display:none">
+        <span>Total <strong id="photosTotalSize">—</strong></span>
+        <span>Após otimização <strong id="photosOptSize">—</strong></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Trilha sonora</div>
+      <div class="upload-area" id="musicUploadArea" onclick="document.getElementById('musicInput').click()">
+        <input type="file" id="musicInput" accept="audio/*,.mp3,.wav,.m4a,.ogg" onchange="handleMusic(event)"/>
+        <span class="icon">🎵</span>
+        <p>Clique para enviar a música</p>
+        <span>MP3, WAV, M4A ou OGG · Máximo 3 minutos</span>
+      </div>
+      <div class="music-preview" id="musicPreview">
+        <div class="music-icon">🎵</div>
+        <div class="music-info">
+          <strong id="musicName">—</strong>
+          <span><span class="duration" id="musicDuration">—</span> · <span id="musicSize">—</span></span>
+        </div>
+        <button class="music-remove" onclick="removeMusic()">✕</button>
+      </div>
+    </div>
+
+    <div class="video-preview-info" id="videoPreviewInfo">
+      <span style="font-size:18px">🎞️</span>
+      <span>Previsão: <strong><span id="previewSlots">—</span> trocas de imagem</strong> em um vídeo de <strong><span id="previewDuration">—</span></strong></span>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generateVideo()">
+      🎬 &nbsp;GERAR VÍDEO
+    </button>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <div class="status-progress">
+        <div id="statusText">Preparando...</div>
+        <div class="status-sub" id="statusSub"></div>
+        <div class="status-timer" id="statusTimer"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PANEL RESULTADOS -->
+  <div class="panel" id="panel-resultados">
+    <div id="resultsSessions">
+      <div class="results-empty" id="resultsEmpty">
+        <span class="big">🎬</span>
+        Nenhum vídeo gerado ainda.<br/>
+        Os vídeos aparecem aqui após a renderização.
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<!-- MODAL erro de rede -->
+<div class="modal-overlay" id="networkErrorModal">
+  <div class="modal">
+    <span class="modal-icon">📡</span>
+    <div class="modal-title">Conexão interrompida</div>
+    <div class="modal-text">
+      Sua conexão caiu durante o envio, mas <strong>o servidor pode ter continuado</strong> trabalhando.<br/><br/>
+      Aguarde 2-3 minutos e clique em <strong>Verificar agora</strong> para conferir se o vídeo já está pronto no Drive.
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" onclick="closeModalAndRecover()">↻ Verificar agora</button>
+      <button class="modal-btn secondary" onclick="closeNetworkErrorModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ LUX VÍDEOS — JS ════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhd0GmIUEzayDOf9eGorawtjwpXhN-XwArKwMppVt5V8M28nb0jvANopsNeCDRpxld/exec';
+
+// Configuração de redimensionamento das fotos
+const MAX_IMAGE_DIMENSION = 1280;
+const IMAGE_QUALITY = 0.82;
+
+// Limites
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 30;
+const MIN_MUSIC_SECONDS = 5;
+const MAX_MUSIC_SECONDS = 180;
+
+// Polling automático após renderização iniciar
+const POLL_INTERVAL_MS = 15000;        // 15s entre verificações
+const POLL_MAX_DURATION_MS = 5*60*1000; // máx 5 min de polling auto
+
+// Estado
+let photos = [];                       // [{ file: Blob, originalSize, optimizedSize, thumbUrl }]
+let musicFile = null;                  // Blob otimizado da música
+let musicMeta = { name:'', size:0, duration:0 };
+let currentClientName = null;
+let currentOperator = null;
+let videoSessions = JSON.parse(localStorage.getItem('lux_video_sessions') || '[]');
+
+// Cronômetro
+let statusTimerInterval = null;
+let statusStartTime = 0;
+
+// Polling automático
+let pollIntervalId = null;
+let pollStartTime = 0;
+
+// Limpa sessões corrompidas
+videoSessions = videoSessions.filter(s => s.clientName && s.id);
+localStorage.setItem('lux_video_sessions', JSON.stringify(videoSessions));
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderAllSessions();
+  checkPendingOrder();
+});
+
+// ═══ TABS ═══════════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ═══ FOTOS ══════════════════════════════════════════════════
+async function handlePhotos(e) {
+  const newFiles = Array.from(e.target.files);
+  if (!newFiles.length) return;
+  e.target.value = '';
+
+  if (photos.length + newFiles.length > MAX_PHOTOS) {
+    alert(`Máximo de ${MAX_PHOTOS} fotos. Você está tentando adicionar ${newFiles.length} (total ficaria ${photos.length + newFiles.length}).`);
+    return;
+  }
+
+  // Processa cada foto individualmente
+  for (const file of newFiles) {
+    const photo = {
+      file: null,
+      originalSize: file.size,
+      optimizedSize: 0,
+      thumbUrl: URL.createObjectURL(file),
+      name: file.name
+    };
+    photos.push(photo);
+
+    try {
+      photo.file = await resizeImage(file, MAX_IMAGE_DIMENSION, IMAGE_QUALITY);
+      photo.optimizedSize = photo.file.size;
+    } catch (err) {
+      console.error('Erro ao redimensionar:', err);
+      photo.file = file;
+      photo.optimizedSize = file.size;
+    }
+  }
+
+  renderPhotos();
+  updatePreviewInfo();
+}
+
+function removePhoto(index) {
+  if (photos[index] && photos[index].thumbUrl) {
+    URL.revokeObjectURL(photos[index].thumbUrl);
+  }
+  photos.splice(index, 1);
+  renderPhotos();
+  updatePreviewInfo();
+}
+
+function renderPhotos() {
+  const grid = document.getElementById('photosGrid');
+  grid.innerHTML = photos.map((p, i) => `
+    <div class="photo-item">
+      <span class="photo-num">${String(i+1).padStart(2,'0')}</span>
+      <button class="photo-remove" onclick="removePhoto(${i})">✕</button>
+      <img src="${p.thumbUrl}" alt="Foto ${i+1}"/>
+    </div>
+  `).join('');
+
+  document.getElementById('photosCount').textContent =
+    `${photos.length} ${photos.length === 1 ? 'foto' : 'fotos'}`;
+
+  if (photos.length > 0) {
+    const totalOrig = photos.reduce((s,p) => s + p.originalSize, 0);
+    const totalOpt  = photos.reduce((s,p) => s + p.optimizedSize, 0);
+    document.getElementById('photoInfoBar').style.display = 'flex';
+    document.getElementById('photosTotalSize').textContent = formatSize(totalOrig);
+    document.getElementById('photosOptSize').textContent = formatSize(totalOpt);
+  } else {
+    document.getElementById('photoInfoBar').style.display = 'none';
+  }
+}
+
+// Redimensiona via canvas
+function resizeImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round(height * maxDim / width);
+          width  = maxDim;
+        } else {
+          width  = Math.round(width * maxDim / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('toBlob falhou')),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erro ao carregar imagem')); };
+    img.src = url;
+  });
+}
+
+// ═══ MÚSICA ═════════════════════════════════════════════════
+function handleMusic(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Verifica formato
+  const validExt = ['.mp3','.wav','.m4a','.ogg'];
+  const fileLower = file.name.toLowerCase();
+  const isAudio = file.type.startsWith('audio/') ||
+                  validExt.some(ext => fileLower.endsWith(ext));
+  if (!isAudio) {
+    alert('Formato não suportado. Use MP3, WAV, M4A ou OGG.');
+    return;
+  }
+
+  // Carrega e detecta duração
+  const audio = new Audio();
+  const url = URL.createObjectURL(file);
+  audio.src = url;
+
+  audio.addEventListener('loadedmetadata', () => {
+    const duration = audio.duration;
+    URL.revokeObjectURL(url);
+
+    if (duration < MIN_MUSIC_SECONDS) {
+      alert(`Música muito curta. Mínimo: ${MIN_MUSIC_SECONDS} segundos.`);
+      return;
+    }
+    if (duration > MAX_MUSIC_SECONDS) {
+      alert(`Música muito longa. Máximo: ${MAX_MUSIC_SECONDS/60} minutos (${MAX_MUSIC_SECONDS}s).`);
+      return;
+    }
+
+    musicFile = file;
+    musicMeta = {
+      name: file.name,
+      size: file.size,
+      duration: duration
+    };
+
+    document.getElementById('musicUploadArea').style.display = 'none';
+    document.getElementById('musicPreview').style.display = 'flex';
+    document.getElementById('musicName').textContent = file.name;
+    document.getElementById('musicDuration').textContent = formatDuration(duration);
+    document.getElementById('musicSize').textContent = formatSize(file.size);
+
+    updatePreviewInfo();
+  });
+
+  audio.addEventListener('error', () => {
+    URL.revokeObjectURL(url);
+    alert('Não foi possível ler o arquivo de áudio. Tente outro.');
+  });
+}
+
+function removeMusic() {
+  musicFile = null;
+  musicMeta = { name:'', size:0, duration:0 };
+  document.getElementById('musicInput').value = '';
+  document.getElementById('musicUploadArea').style.display = 'block';
+  document.getElementById('musicPreview').style.display = 'none';
+  updatePreviewInfo();
+}
+
+// ═══ PREVISÃO ═══════════════════════════════════════════════
+function updatePreviewInfo() {
+  const box = document.getElementById('videoPreviewInfo');
+  if (photos.length >= 2 && musicMeta.duration > 0) {
+    const SECONDS_PER_IMAGE = 3;
+    const slots = Math.ceil(musicMeta.duration / SECONDS_PER_IMAGE);
+    document.getElementById('previewSlots').textContent = slots;
+    document.getElementById('previewDuration').textContent = formatDuration(musicMeta.duration);
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
+}
+
+// ═══ FORMATADORES ═══════════════════════════════════════════
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══ BACKEND ════════════════════════════════════════════════
+function callAppsScript(payload) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', APPS_SCRIPT_URL, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+    xhr.withCredentials = false;
+    xhr.timeout = 0;
+    xhr.onload = () => {
+      try { resolve(JSON.parse(xhr.responseText)); }
+      catch { reject({ type:'parse', message:'Resposta inválida do servidor' }); }
+    };
+    xhr.onerror   = () => reject({ type:'network', message:'Erro de rede' });
+    xhr.ontimeout = () => reject({ type:'timeout', message:'Timeout' });
+    xhr.send(JSON.stringify(payload));
+  });
+}
+
+// ═══ PEDIDO PENDENTE — localStorage ═════════════════════════
+function savePendingOrder(extra) {
+  const data = Object.assign({
+    clientName: currentClientName,
+    operator: currentOperator,
+    startedAt: Date.now()
+  }, extra || {});
+  localStorage.setItem('lux_pending_video_order', JSON.stringify(data));
+}
+
+function getPendingOrder() {
+  try { return JSON.parse(localStorage.getItem('lux_pending_video_order') || 'null'); }
+  catch { return null; }
+}
+
+function clearPendingOrder() {
+  localStorage.removeItem('lux_pending_video_order');
+  document.getElementById('pendingBanner').classList.remove('show');
+}
+
+function checkPendingOrder() {
+  const pending = getPendingOrder();
+  if (!pending) return;
+  const minutesAgo = Math.floor((Date.now() - pending.startedAt) / 60000);
+  const timeText = minutesAgo < 1 ? 'há menos de 1 minuto'
+                 : minutesAgo === 1 ? 'há 1 minuto'
+                 : `há ${minutesAgo} minutos`;
+  document.getElementById('pendingInfo').textContent =
+    `${pending.clientName} · Atendente: ${pending.operator}`;
+  document.getElementById('pendingTime').textContent = `Iniciado ${timeText}`;
+  document.getElementById('pendingBanner').classList.add('show');
+}
+
+async function recoverPendingOrder() {
+  const pending = getPendingOrder();
+  if (!pending) return;
+
+  currentClientName = pending.clientName;
+  currentOperator   = pending.operator;
+
+  document.getElementById('pendingBanner').classList.remove('show');
+  document.getElementById('statusBar').classList.add('show');
+  document.getElementById('statusText').textContent = 'Verificando status no servidor...';
+  document.getElementById('statusSub').textContent = 'Consultando o Drive (sem regerar)';
+  startStatusTimer();
+  document.getElementById('genBtn').disabled = true;
+
+  try {
+    const res = await callAppsScript({
+      action: 'checkVideoStatus',
+      clientName: pending.clientName
+    });
+    handleStatusResponse(res);
+  } catch (err) {
+    stopStatusTimer();
+    handleRequestError(err);
+  }
+}
+
+// ═══ TIMER ══════════════════════════════════════════════════
+function startStatusTimer() {
+  statusStartTime = Date.now();
+  if (statusTimerInterval) clearInterval(statusTimerInterval);
+  updateStatusTimer();
+  statusTimerInterval = setInterval(updateStatusTimer, 1000);
+}
+
+function updateStatusTimer() {
+  const seconds = Math.floor((Date.now() - statusStartTime) / 1000);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  document.getElementById('statusTimer').textContent =
+    `⏱ ${m}:${String(s).padStart(2,'0')} (vídeos levam de 1 a 4 min para renderizar)`;
+}
+
+function stopStatusTimer() {
+  if (statusTimerInterval) clearInterval(statusTimerInterval);
+  statusTimerInterval = null;
+  document.getElementById('statusTimer').textContent = '';
+}
+
+// ═══ MODAL ══════════════════════════════════════════════════
+function showNetworkErrorModal() {
+  document.getElementById('networkErrorModal').classList.add('show');
+}
+
+function closeNetworkErrorModal() {
+  document.getElementById('networkErrorModal').classList.remove('show');
+  checkPendingOrder();
+}
+
+function closeModalAndRecover() {
+  document.getElementById('networkErrorModal').classList.remove('show');
+  recoverPendingOrder();
+}
+
+// ═══ GERAR VÍDEO ════════════════════════════════════════════
+async function generateVideo() {
+  const clientName = document.getElementById('clientName').value.trim();
+  const operator   = document.getElementById('operatorName').value.trim();
+
+  // Validações
+  if (!clientName) { alert('Por favor, informe o nome do cliente.'); return; }
+  if (!operator)   { alert('Por favor, informe o nome do atendente.'); return; }
+  if (photos.length < MIN_PHOTOS) {
+    alert(`Mínimo de ${MIN_PHOTOS} fotos. Você enviou ${photos.length}.`);
+    return;
+  }
+  if (!musicFile) { alert('Por favor, envie a trilha sonora.'); return; }
+
+  currentClientName = clientName;
+  currentOperator   = operator;
+
+  // Salva pedido pendente ANTES de começar
+  savePendingOrder();
+
+  document.getElementById('pendingBanner').classList.remove('show');
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('statusBar').classList.add('show');
+  document.getElementById('statusText').textContent = 'Codificando arquivos...';
+  document.getElementById('statusSub').textContent = `${photos.length} fotos + 1 música`;
+  startStatusTimer();
+
+  try {
+    // Codifica fotos em base64
+    const photoPayloads = [];
+    for (let i = 0; i < photos.length; i++) {
+      document.getElementById('statusSub').textContent = `Codificando foto ${i+1}/${photos.length}...`;
+      const base64 = await fileToBase64(photos[i].file);
+      photoPayloads.push({
+        name: photos[i].name || `foto-${i+1}.jpg`,
+        mimeType: photos[i].file.type || 'image/jpeg',
+        base64: base64
+      });
+    }
+
+    // Codifica música
+    document.getElementById('statusSub').textContent = 'Codificando música...';
+    const musicBase64 = await fileToBase64(musicFile);
+
+    // Cria pedido
+    document.getElementById('statusText').textContent = 'Enviando arquivos para o Drive...';
+    document.getElementById('statusSub').textContent = 'Aguarde, estamos transferindo';
+
+    const orderRes = await callAppsScript({
+      action: 'createOrder',
+      clientName,
+      attendantName: operator,
+      photos: photoPayloads,
+      music: {
+        name: musicMeta.name,
+        mimeType: musicFile.type || 'audio/mpeg',
+        base64: musicBase64
+      },
+      musicDuration: musicMeta.duration
+    });
+
+    if (!orderRes.ok) {
+      stopStatusTimer();
+      alert('Erro ao criar pedido: ' + (orderRes.error || 'desconhecido'));
+      document.getElementById('genBtn').disabled = false;
+      document.getElementById('statusBar').classList.remove('show');
+      return;
+    }
+
+    // Inicia renderização
+    document.getElementById('statusText').textContent = 'Renderizando vídeo via JSON2Video...';
+    document.getElementById('statusSub').textContent = 'Tipicamente 1 a 4 minutos';
+
+    const produceRes = await callAppsScript({
+      action: 'produceVideo',
+      clientName
+    });
+
+    handleStatusResponse(produceRes);
+
+  } catch (err) {
+    stopStatusTimer();
+    handleRequestError(err);
+  }
+}
+
+// Decide o que fazer baseado na resposta do servidor
+function handleStatusResponse(res) {
+  if (!res.ok && res.status !== 'error') {
+    stopStatusTimer();
+    alert('Erro do servidor: ' + (res.error || 'desconhecido'));
+    document.getElementById('genBtn').disabled = false;
+    document.getElementById('statusBar').classList.remove('show');
+    return;
+  }
+
+  if (res.status === 'completed') {
+    stopStatusTimer();
+    stopPolling();
+    saveSession({
+      status: 'completed',
+      videoUrl: res.videoUrl,
+      folderUrl: res.folderUrl
+    });
+    clearPendingOrder();
+    document.getElementById('statusBar').classList.remove('show');
+    document.getElementById('genBtn').disabled = false;
+    goToResults();
+    return;
+  }
+
+  if (res.status === 'rendering') {
+    // Servidor estourou polling síncrono — front-end assume polling
+    document.getElementById('statusText').textContent = 'Renderizando... (verificando a cada 15s)';
+    startAutoPolling(currentClientName);
+    return;
+  }
+
+  if (res.status === 'error') {
+    stopStatusTimer();
+    stopPolling();
+    saveSession({ status:'error', errorMessage: res.error });
+    clearPendingOrder();
+    alert('Erro na renderização: ' + (res.error || 'desconhecido'));
+    document.getElementById('statusBar').classList.remove('show');
+    document.getElementById('genBtn').disabled = false;
+    goToResults();
+    return;
+  }
+}
+
+// Polling automático com check a cada 15s
+function startAutoPolling(clientName) {
+  pollStartTime = Date.now();
+  if (pollIntervalId) clearInterval(pollIntervalId);
+
+  pollIntervalId = setInterval(async () => {
+    if (Date.now() - pollStartTime > POLL_MAX_DURATION_MS) {
+      // Para o polling automático e mostra banner pra verificação manual
+      stopPolling();
+      stopStatusTimer();
+      document.getElementById('statusBar').classList.remove('show');
+      document.getElementById('genBtn').disabled = false;
+      checkPendingOrder();
+      alert('A renderização está demorando mais que o normal. Você pode continuar usando a plataforma — o vídeo será salvo no Drive quando ficar pronto. Use o banner "Verificar" para conferir.');
+      return;
+    }
+
+    try {
+      const res = await callAppsScript({ action:'checkVideoStatus', clientName });
+      if (res.status === 'completed' || res.status === 'error') {
+        handleStatusResponse(res);
+      }
+      // Se ainda 'rendering', continua loop
+    } catch (err) {
+      // Erro de rede no polling — não para, tenta de novo na próxima
+      console.warn('Polling error (continua tentando):', err);
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  if (pollIntervalId) clearInterval(pollIntervalId);
+  pollIntervalId = null;
+}
+
+function handleRequestError(err) {
+  console.error('Erro request:', err);
+  document.getElementById('statusBar').classList.remove('show');
+  document.getElementById('genBtn').disabled = false;
+  stopPolling();
+
+  if (err && (err.type === 'network' || err.type === 'timeout')) {
+    showNetworkErrorModal();
+  } else {
+    const msg = (err && err.message) ? err.message : String(err);
+    alert('Erro inesperado: ' + msg + '\n\nSe o pedido já foi enviado, verifique no Drive.');
+  }
+}
+
+function goToResults() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.getElementById('panel-resultados').classList.add('active');
+}
+
+// ═══ SESSÕES ════════════════════════════════════════════════
+function saveSession(extra) {
+  const existingIdx = videoSessions.findIndex(s =>
+    s.clientName === currentClientName && s.operator === currentOperator
+  );
+  const session = Object.assign(
+    {
+      id: existingIdx >= 0 ? videoSessions[existingIdx].id : Date.now(),
+      clientName: currentClientName,
+      operator: currentOperator,
+      photoCount: photos.length || (existingIdx >= 0 ? videoSessions[existingIdx].photoCount : 0),
+      musicDuration: musicMeta.duration || (existingIdx >= 0 ? videoSessions[existingIdx].musicDuration : 0),
+      ts: Date.now()
+    },
+    extra
+  );
+
+  if (existingIdx >= 0) videoSessions[existingIdx] = session;
+  else videoSessions.unshift(session);
+
+  localStorage.setItem('lux_video_sessions', JSON.stringify(videoSessions));
+  renderAllSessions();
+}
+
+function renderAllSessions() {
+  const container = document.getElementById('resultsSessions');
+  if (!container) return;
+  document.getElementById('resultsEmpty').style.display = videoSessions.length ? 'none' : 'block';
+  [...container.querySelectorAll('.result-session')].forEach(el => el.remove());
+  videoSessions.forEach(s => container.appendChild(buildSessionEl(s)));
+}
+
+function buildSessionEl(session) {
+  const date = new Date(session.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const status = session.status || 'completed';
+
+  const statusLabel = status === 'completed' ? '✓ Pronto'
+                    : status === 'rendering' ? '⏳ Renderizando'
+                    : '✕ Erro';
+
+  const div = document.createElement('div');
+  div.className = 'result-session';
+  div.dataset.sessionId = session.id;
+
+  let actionsHtml = '';
+  if (status === 'completed' && session.folderUrl) {
+    actionsHtml = `<a class="btn-drive" href="${session.folderUrl}" target="_blank">📁 &nbsp;Abrir pasta no Google Drive</a>`;
+  } else if (status === 'rendering') {
+    actionsHtml = `<button class="btn-recheck" onclick="recheckSession('${session.clientName.replace(/'/g, "\\'")}')">↻ Verificar status agora</button>`;
+  } else if (status === 'error') {
+    actionsHtml = `<div style="font-size:13px;color:#E87A7A;text-align:center;margin-top:8px;padding:10px;background:rgba(232,122,122,.05);border-radius:8px;border:.5px solid rgba(232,122,122,.3)">${session.errorMessage || 'Erro desconhecido na renderização'}</div>`;
+  }
+
+  div.innerHTML = `
+    <div class="session-header">
+      <div class="session-avatar">${session.clientName[0].toUpperCase()}</div>
+      <div class="session-info">
+        <strong>${session.clientName}</strong>
+        <span class="atendente">Atendente: ${session.operator}</span>
+        <div class="session-meta">
+          <span class="meta-tag">${date}</span>
+          <span class="meta-tag">${session.photoCount} fotos</span>
+          ${session.musicDuration ? `<span class="meta-tag">🎵 ${formatDuration(session.musicDuration)}</span>` : ''}
+        </div>
+      </div>
+      <div class="session-status ${status}">${statusLabel}</div>
+    </div>
+    ${actionsHtml}`;
+  return div;
+}
+
+async function recheckSession(clientName) {
+  try {
+    const res = await callAppsScript({ action:'checkVideoStatus', clientName });
+    if (res.status === 'completed') {
+      // Atualiza sessão pra completed
+      const idx = videoSessions.findIndex(s => s.clientName === clientName);
+      if (idx >= 0) {
+        videoSessions[idx].status = 'completed';
+        videoSessions[idx].videoUrl = res.videoUrl;
+        videoSessions[idx].folderUrl = res.folderUrl;
+        localStorage.setItem('lux_video_sessions', JSON.stringify(videoSessions));
+        renderAllSessions();
+      }
+      const pending = getPendingOrder();
+      if (pending && pending.clientName === clientName) clearPendingOrder();
+    } else if (res.status === 'error') {
+      const idx = videoSessions.findIndex(s => s.clientName === clientName);
+      if (idx >= 0) {
+        videoSessions[idx].status = 'error';
+        videoSessions[idx].errorMessage = res.error;
+        localStorage.setItem('lux_video_sessions', JSON.stringify(videoSessions));
+        renderAllSessions();
+      }
+      alert('Erro: ' + (res.error || 'desconhecido'));
+    } else {
+      alert('Vídeo ainda renderizando. Aguarde mais um pouco e clique de novo.');
+    }
+  } catch (err) {
+    alert('Erro ao consultar: ' + (err.message || JSON.stringify(err)));
+  }
+}
+</script>
+
 </body>
 </html>
