@@ -233,10 +233,15 @@ input[type="file"]{display:none}
 }
 .field-input:focus{border-color:var(--gold)}
 .field-input::placeholder{color:var(--text-dim)}
+.field-textarea{
+  resize:vertical;min-height:90px;line-height:1.5;
+  font-family:inherit;
+}
 .field-hint{
   display:block;margin-top:6px;
-  font-size:11px;color:var(--text-dim);line-height:1.5;
+  font-size:11px;color:var(--text-dim);line-height:1.6;
 }
+.field-hint strong{color:var(--text-mid);font-weight:500}
 
 /* PREVISÃO */
 .video-preview-info{
@@ -493,12 +498,15 @@ input[type="file"]{display:none}
         <span>A letra da música aparece em legendas grandes no centro, destacando a palavra cantada em <strong style="color:var(--gold)">dourado Lux</strong>. Estilo viral tipo Reels/TikTok.</span>
       </div>
       <div class="subtitle-options" id="subtitleOptions">
-        <label class="field-label" for="subtitleKeywords">
-          Palavras especiais da letra <span class="opt-tag">opcional</span>
+        <label class="field-label" for="lyricsInput">
+          Letra da música <span class="opt-tag">opcional</span>
         </label>
-        <input type="text" id="subtitleKeywords" class="field-input"
-               placeholder="Ex: Lúxx, Jeitin Minero, Marketing"/>
-        <span class="field-hint">Nomes próprios, marcas ou gírias da letra. Separe por vírgula. Ajuda a IA a transcrever corretamente.</span>
+        <textarea id="lyricsInput" class="field-input field-textarea" rows="5"
+                  placeholder="Cole aqui a letra completa do jingle, linha por linha..."></textarea>
+        <span class="field-hint">
+          <strong>Se vazio:</strong> a IA transcreve automaticamente da música (estilo Reels com palavra cantada em dourado, mas pode pular palavras em jingles com muito instrumental).<br/>
+          <strong>Se preenchido:</strong> usa essa letra direto — 100% das palavras corretas, sincronização aproximada, sem destaque da palavra cantada.
+        </span>
       </div>
     </div>
 
@@ -837,13 +845,9 @@ function toggleSubtitleOptions() {
   }
 }
 
-function parseKeywords_() {
-  if (!document.getElementById('enableSubtitles').checked) return [];
-  const raw = document.getElementById('subtitleKeywords').value.trim();
-  if (!raw) return [];
-  return raw.split(',')
-    .map(function (s) { return s.trim(); })
-    .filter(function (s) { return s.length > 0; });
+function getLyrics_() {
+  if (!document.getElementById('enableSubtitles').checked) return '';
+  return document.getElementById('lyricsInput').value.trim();
 }
 
 // ═══ PREVISÃO ═══════════════════════════════════════════════
@@ -1068,7 +1072,7 @@ async function generateVideo() {
       },
       musicDuration: musicMeta.duration,
       enableSubtitles: document.getElementById('enableSubtitles').checked,
-      subtitleKeywords: parseKeywords_()
+      lyrics: getLyrics_()
     };
     if (logoPayload) orderPayload.logoGif = logoPayload;
 
