@@ -321,14 +321,9 @@ input[type="file"]{display:none}
 }
 .modal-btn.secondary:hover{border-color:var(--text-dim);color:var(--text)}
 
-@keyframes logoDance{
-  0%{transform:translate(0,0) rotate(0deg) scale(1)}
-  17%{transform:translate(-2px,-5px) rotate(4deg) scale(1.05)}
-  33%{transform:translate(1px,-1px) rotate(-3deg) scale(0.98)}
-  50%{transform:translate(0,0) rotate(0deg) scale(1)}
-  67%{transform:translate(2px,-4px) rotate(-5deg) scale(1.04)}
-  83%{transform:translate(-1px,-2px) rotate(2deg) scale(1.02)}
-  100%{transform:translate(0,0) rotate(0deg) scale(1)}
+@keyframes logoSpin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
 }
 
 @media (max-width:600px){
@@ -425,11 +420,11 @@ input[type="file"]{display:none}
       </div>
       <div class="music-preview" id="logoPreview">
         <div class="music-icon" id="logoThumbWrap" style="overflow:visible;background:transparent;padding:2px">
-          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;animation:logoDance 4s ease-in-out infinite both;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))"/>
+          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;animation:logoSpin 8s linear infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))"/>
         </div>
         <div class="music-info">
           <strong id="logoName">—</strong>
-          <span><span id="logoSize">—</span> · animação dance contínua</span>
+          <span><span id="logoSize">—</span> · gira lentamente no canto inferior</span>
         </div>
         <button class="music-remove" onclick="removeLogo()">✕</button>
       </div>
