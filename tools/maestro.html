@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lux — Music (Em Breve)</title>
+<title>Lux Music — Gerador de Letras</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -11,123 +11,751 @@
 
 <link rel="stylesheet" href="../css/theme.css"/>
 
+<script type="module" src="../js/auth-iframe.js"></script>
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
 body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);color:var(--text);
-  min-height:100vh;font-size:16px;
+  min-height:100vh;font-size:15px;line-height:1.6;
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.06) 0%,transparent 70%),
     radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
-  display:flex;align-items:center;justify-content:center;padding:2rem 1rem;
+}
+.container{max-width:780px;margin:0 auto;padding:2rem 1.2rem 4rem}
+
+/* Tabs */
+.tabs{
+  display:flex;gap:6px;border-bottom:1px solid var(--border);
+  margin-bottom:1.8rem;flex-wrap:wrap;
+}
+.tab-btn{
+  background:none;border:none;color:var(--text-dim);
+  padding:12px 18px;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:500;letter-spacing:.04em;
+  cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .15s;text-transform:uppercase;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{
+  color:var(--gold);border-bottom-color:var(--gold);
+}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Form */
+.form-grid{display:grid;gap:1.2rem}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.row-2{grid-template-columns:1fr}}
+
+.field label{
+  display:block;font-size:11px;font-weight:600;letter-spacing:.1em;
+  color:var(--gold-dim);margin-bottom:6px;text-transform:uppercase;
+}
+.field input,.field textarea,.field select{
+  width:100%;background:#0E0E0E;border:1px solid var(--border);
+  color:var(--text);padding:11px 13px;border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:14px;
+  transition:border-color .15s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:none;border-color:var(--gold-dim);
+}
+.field input[readonly]{
+  background:rgba(255,255,255,.03);color:var(--text-dim);cursor:not-allowed;
+}
+.field textarea{min-height:130px;resize:vertical;line-height:1.5}
+.field .hint{
+  display:block;font-size:11px;color:var(--text-dim);margin-top:5px;
+  line-height:1.5;
+}
+.field .hint strong{color:var(--gold-dim)}
+
+/* Image upload */
+.image-upload{
+  border:2px dashed var(--border);border-radius:10px;
+  padding:1.5rem;text-align:center;cursor:pointer;
+  transition:all .15s;background:rgba(255,255,255,.02);
+}
+.image-upload:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
+.image-upload input{display:none}
+.image-upload-text{font-size:13px;color:var(--text-dim)}
+.image-upload-text strong{color:var(--gold-dim)}
+.image-preview{
+  margin-top:12px;display:none;position:relative;
+}
+.image-preview img{
+  max-width:100%;max-height:200px;border-radius:8px;
+  border:1px solid var(--border);
+}
+.image-preview .remove-img{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,.7);border:1px solid var(--border);
+  color:#fff;width:28px;height:28px;border-radius:50%;
+  cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+}
+.image-preview.has-img{display:block}
+
+/* Button */
+.btn-primary{
+  width:100%;padding:14px 24px;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-bright) 100%);
+  border:none;border-radius:10px;
+  color:#1A1A1A;font-family:'Cinzel',serif;
+  font-size:14px;font-weight:600;letter-spacing:.15em;
+  cursor:pointer;text-transform:uppercase;
+  transition:transform .1s,box-shadow .15s;
+}
+.btn-primary:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(201,168,76,.25);
+}
+.btn-primary:disabled{opacity:.5;cursor:wait}
+
+.btn-secondary{
+  display:inline-block;padding:8px 16px;
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);border-radius:6px;
+  font-size:12px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:.04em;
+  transition:all .15s;text-decoration:none;
+}
+.btn-secondary:hover{background:rgba(201,168,76,.08)}
+
+/* Status box */
+.status-box{
+  margin-top:1.2rem;padding:14px 16px;border-radius:8px;
+  border:1px solid var(--border);background:rgba(255,255,255,.02);
+  font-size:13px;color:var(--text-dim);display:none;
+}
+.status-box.show{display:block}
+.status-box.error{
+  border-color:rgba(220,80,80,.4);background:rgba(220,80,80,.06);
+  color:#E89090;
+}
+.status-box.loading::before{
+  content:'';display:inline-block;width:14px;height:14px;
+  border:2px solid var(--gold-dim);border-top-color:transparent;
+  border-radius:50%;animation:spin 1s linear infinite;
+  vertical-align:middle;margin-right:10px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Lyrics display */
+.lyrics-header{
+  margin-bottom:1.5rem;padding-bottom:1rem;
+  border-bottom:1px solid var(--border);
+}
+.lyrics-header h2{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:22px;letter-spacing:.06em;margin-bottom:8px;
+}
+.lyrics-header .meta{
+  font-size:12px;color:var(--text-dim);
+}
+.lyrics-header .meta span{color:var(--gold-dim)}
+
+.lyrics-section{
+  margin-bottom:1.4rem;padding:14px 16px;
+  background:rgba(255,255,255,.02);border-radius:10px;
+  border:1px solid var(--border);position:relative;
+}
+.lyrics-section.regenerating{
+  border-color:var(--gold-dim);
+  background:rgba(201,168,76,.04);
+}
+.lyrics-section-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+}
+.lyrics-section-tag{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:13px;font-weight:600;letter-spacing:.1em;
+}
+.btn-regen{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);border-radius:6px;
+  padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:.04em;
+  transition:all .15s;display:flex;align-items:center;gap:5px;
+}
+.btn-regen:hover:not(:disabled){background:rgba(201,168,76,.1)}
+.btn-regen:disabled{opacity:.5;cursor:wait}
+.btn-regen .spin-icon{display:inline-block;animation:spin 1s linear infinite}
+
+.lyrics-section-content{
+  white-space:pre-wrap;font-family:'DM Sans',sans-serif;
+  font-size:14px;line-height:1.7;color:var(--text);
 }
 
-.coming-soon{
-  max-width:540px;width:100%;text-align:center;
-  background:#121212;border:.5px solid var(--border);
-  border-radius:24px;padding:3rem 2rem;
-  box-shadow:0 8px 32px rgba(0,0,0,.3);
+.lyrics-actions{
+  margin-top:1.5rem;display:flex;gap:10px;flex-wrap:wrap;
 }
-.coming-soon .badge{
-  display:inline-block;
-  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;
-  color:var(--gold);background:rgba(201,168,76,.1);
-  border:.5px solid var(--border-bright);
-  padding:5px 14px;border-radius:30px;
-  margin-bottom:1.8rem;
-}
-.coming-soon .icon-big{
-  font-size:64px;margin-bottom:1.2rem;display:block;
-  filter:drop-shadow(0 4px 12px rgba(201,168,76,.25));
-}
-.coming-soon h1{
-  font-family:'Cinzel',serif;font-size:24px;font-weight:600;
-  color:var(--gold);letter-spacing:.08em;margin-bottom:0.8rem;
-}
-.coming-soon .sub{
-  font-size:15px;color:#B0A080;line-height:1.7;
-  margin-bottom:2rem;
-}
-.coming-soon .description{
-  font-size:13px;color:var(--text-dim);line-height:1.7;
-  margin-bottom:2rem;padding:1rem;
-  background:rgba(201,168,76,.03);border:.5px solid var(--border);
-  border-radius:12px;
-}
-.coming-soon .description strong{color:var(--gold-dim);}
+.lyrics-actions button{flex:1;min-width:140px}
 
-.features-list{
-  display:flex;flex-direction:column;gap:8px;
-  margin:1.5rem 0;text-align:left;
-}
-.feature-item{
-  display:flex;align-items:center;gap:10px;
-  font-size:13px;color:var(--text-dim);
-  padding:8px 12px;background:rgba(255,255,255,.02);
+/* Style prompt box */
+.style-box{
+  margin-top:1.5rem;padding:14px;
+  background:rgba(201,168,76,.04);border:1px solid var(--border);
   border-radius:8px;
 }
-.feature-item .check{
-  color:var(--gold);font-size:14px;font-weight:bold;flex-shrink:0;
+.style-box-label{
+  font-size:11px;color:var(--gold-dim);letter-spacing:.1em;
+  font-weight:600;text-transform:uppercase;margin-bottom:6px;
+}
+.style-box-content{font-size:13px;color:var(--text)}
+.style-box-meta{
+  margin-top:6px;font-size:11px;color:var(--text-dim);
 }
 
-.progress-bar{
-  height:4px;background:rgba(201,168,76,.1);border-radius:30px;
-  overflow:hidden;margin:1.5rem 0;
+/* Toast */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:#121212;border:1px solid var(--gold-dim);
+  color:var(--gold);padding:12px 22px;border-radius:8px;
+  font-size:13px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.4);
+  opacity:0;transition:opacity .25s;pointer-events:none;
 }
-.progress-bar-fill{
-  height:100%;width:35%;
-  background:linear-gradient(90deg,var(--gold-bright) 0%,var(--gold) 100%);
-  border-radius:30px;animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.toast.show{opacity:1}
+.toast.error{border-color:#C25050;color:#E89090}
 
-.eta{
-  font-size:11px;color:var(--gold-dim);
-  font-family:'Cinzel',serif;letter-spacing:.1em;
+/* História */
+.history-empty{
+  text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px;
 }
-
-.back-link{
-  display:inline-block;margin-top:1.5rem;
-  font-size:13px;color:var(--text-dim);
-  text-decoration:none;transition:color .15s;
+.history-item{
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;margin-bottom:10px;
+  cursor:pointer;transition:all .15s;
 }
-.back-link:hover{color:var(--gold);}
-
-@media(max-width:600px){
-  .coming-soon{padding:2rem 1.5rem}
-  .coming-soon h1{font-size:20px}
-  .coming-soon .icon-big{font-size:48px}
+.history-item:hover{
+  border-color:var(--gold-dim);background:rgba(201,168,76,.04);
+}
+.history-item-top{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px;flex-wrap:wrap;gap:6px;
+}
+.history-item-title{
+  font-family:'Cinzel',serif;color:var(--gold);font-size:14px;
+  font-weight:600;letter-spacing:.04em;
+}
+.history-item-date{font-size:11px;color:var(--text-dim)}
+.history-item-meta{font-size:12px;color:var(--text-dim);line-height:1.5}
+.history-item-meta strong{color:var(--gold-dim)}
+.history-item-badge{
+  display:inline-block;font-size:10px;padding:2px 8px;border-radius:30px;
+  background:rgba(201,168,76,.1);color:var(--gold-dim);
+  border:.5px solid var(--border-bright);letter-spacing:.06em;
 }
 </style>
 </head>
 <body>
 
-<div class="coming-soon">
-  <span class="badge">EM DESENVOLVIMENTO</span>
-  <span class="icon-big">🎵</span>
-  <h1>Lux Music</h1>
-  <p class="sub">Gerador de letras para o Suno</p>
+<div class="container">
 
-  <div class="description">
-    Estamos preparando o <strong>Lux Music</strong> v2 — a ferramenta de geração de
-    letras que irá te ajudar a criar músicas de alta performance para seus clientes.
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="new">✦ Novo Pedido</button>
+    <button class="tab-btn" data-tab="lyrics" id="tab-lyrics-btn" style="display:none">🎵 Letra Gerada</button>
+    <button class="tab-btn" data-tab="history">📜 Histórico</button>
   </div>
 
-  <div class="features-list">
-    <div class="feature-item"><span class="check">✓</span> Letras mais profissionais</div>
-    <div class="feature-item"><span class="check">✓</span> Armazenamento de histórico</div>
-    <div class="feature-item"><span class="check">✓</span> Correção de letra com 1 clique</div>
+  <!-- TAB: NOVO PEDIDO -->
+  <div id="tab-new" class="tab-content active">
+    <div class="form-grid">
+
+      <div class="row-2">
+        <div class="field">
+          <label>Atendente</label>
+          <input type="text" id="atendente" readonly value="Carregando..."/>
+        </div>
+        <div class="field">
+          <label>Nome do Cliente / Negócio</label>
+          <input type="text" id="clientName" placeholder="Ex: Cantinho da Festa" maxlength="80"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Briefing</label>
+        <textarea id="briefing" placeholder="Conte sobre o cliente, produto/serviço, tom desejado, mensagem-chave, endereço, telefone, diferenciais..."></textarea>
+        <span class="hint">💡 <strong>Dica:</strong> endereços, telefones e locais entram automaticamente no Spoken Word do final da música.</span>
+      </div>
+
+      <div class="field">
+        <label>📎 Imagem de Referência (opcional)</label>
+        <label class="image-upload" id="imageUploadLabel">
+          <input type="file" id="imageInput" accept="image/*"/>
+          <div class="image-upload-text">
+            <strong>Clique para enviar</strong> panfleto, cartão ou foto do estabelecimento<br/>
+            <small>A IA vai ler todas as informações da imagem (até 10MB)</small>
+          </div>
+        </label>
+        <div class="image-preview" id="imagePreview">
+          <img id="imagePreviewImg" alt=""/>
+          <button type="button" class="remove-img" id="removeImg" title="Remover">✕</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ritmo / Estilo Musical</label>
+        <input type="text" id="ritmo" placeholder="Ex: Forró pé-de-serra, Sertanejo dance, Pagode romântico, Funk consciente..."/>
+        <span class="hint">Quanto mais específico, melhor a IA acerta o estilo.</span>
+      </div>
+
+      <button class="btn-primary" id="btnGerar">✦ Gerar Letra</button>
+
+      <div class="status-box" id="statusGerar"></div>
+    </div>
   </div>
 
-  <div class="progress-bar">
-    <div class="progress-bar-fill"></div>
+  <!-- TAB: LETRA -->
+  <div id="tab-lyrics" class="tab-content">
+    <div id="lyricsContent"></div>
   </div>
-  <div class="eta">EM BREVE</div>
 
-  <a href="../index.html" class="back-link">← Voltar ao painel</a>
+  <!-- TAB: HISTÓRICO -->
+  <div id="tab-history" class="tab-content">
+    <div id="historyContent">
+      <div class="history-empty">Carregando histórico...</div>
+    </div>
+  </div>
+
 </div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════
+const API_URL = 'https://lux-music.plataformalux.workers.dev';
+
+let currentOrder = null;     // { orderId, briefing, ritmo, clientName, result }
+let compressedImage = null;  // { base64, mime } ou null
+
+// ════════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'history') loadHistory();
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ════════════════════════════════════════════════════════════
+// AUTH — pega nome do atendente via /admin/me (Worker figurinhas)
+// ════════════════════════════════════════════════════════════
+const FIGURINHAS_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
+
+async function initAtendente() {
+  const input = document.getElementById('atendente');
+  try {
+    // espera __luxFetch ficar disponível (vem do auth-iframe.js)
+    let tries = 0;
+    while (!window.__luxFetch && tries < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      tries++;
+    }
+    if (!window.__luxFetch) {
+      input.value = '(recarregue a página)';
+      return;
+    }
+    const resp = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
+    const data = await resp.json();
+    if (data.ok && data.user) {
+      input.value = data.user.name || data.user.email || 'Atendente';
+    } else {
+      input.value = 'Atendente';
+    }
+  } catch (e) {
+    input.value = '(erro)';
+  }
+}
+initAtendente();
+
+// ════════════════════════════════════════════════════════════
+// UPLOAD DE IMAGEM (com compressão)
+// ════════════════════════════════════════════════════════════
+const imageInput   = document.getElementById('imageInput');
+const imagePreview = document.getElementById('imagePreview');
+const imagePreviewImg = document.getElementById('imagePreviewImg');
+const removeImgBtn = document.getElementById('removeImg');
+
+imageInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Imagem maior que 10MB. Use uma menor.', true);
+    imageInput.value = '';
+    return;
+  }
+
+  try {
+    const { base64, mime, dataUrl } = await compressImage(file);
+    compressedImage = { base64, mime };
+    imagePreviewImg.src = dataUrl;
+    imagePreview.classList.add('has-img');
+    showToast('✓ Imagem carregada');
+  } catch (err) {
+    showToast('Erro ao processar imagem: ' + err.message, true);
+    imageInput.value = '';
+  }
+});
+
+removeImgBtn.addEventListener('click', () => {
+  compressedImage = null;
+  imageInput.value = '';
+  imagePreview.classList.remove('has-img');
+});
+
+// Comprime para max 1600px no lado maior, JPEG 0.85
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1600;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const base64  = dataUrl.split(',')[1];
+        resolve({ base64, mime: 'image/jpeg', dataUrl });
+      };
+      img.onerror = () => reject(new Error('Imagem inválida'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// GERAR LETRA
+// ════════════════════════════════════════════════════════════
+document.getElementById('btnGerar').addEventListener('click', async () => {
+  const briefing   = document.getElementById('briefing').value.trim();
+  const ritmo      = document.getElementById('ritmo').value.trim();
+  const clientName = document.getElementById('clientName').value.trim();
+  const status     = document.getElementById('statusGerar');
+
+  if (!briefing) { showToast('Preencha o briefing.', true); return; }
+  if (!ritmo)    { showToast('Preencha o ritmo.', true); return; }
+
+  const btn = document.getElementById('btnGerar');
+  btn.disabled = true;
+  status.className = 'status-box show loading';
+  status.textContent = 'Gerando letra com IA... pode levar até 30 segundos.';
+
+  try {
+    const body = { briefing, ritmo, clientName };
+    if (compressedImage) {
+      body.imageBase64 = compressedImage.base64;
+      body.imageMime   = compressedImage.mime;
+    }
+
+    const resp = await window.__luxFetch(API_URL + '/createOrder', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+    const data = await resp.json();
+
+    if (!data.ok) {
+      status.className = 'status-box show error';
+      status.textContent = '✘ ' + (data.error || 'Erro desconhecido');
+      btn.disabled = false;
+      return;
+    }
+
+    currentOrder = {
+      orderId:    data.orderId,
+      briefing,
+      ritmo,
+      clientName: clientName || data.result.nome_negocio,
+      result:     data.result
+    };
+
+    status.className = 'status-box show';
+    status.textContent = '✓ Letra gerada com sucesso!';
+    btn.disabled = false;
+
+    renderLyrics(currentOrder);
+    document.getElementById('tab-lyrics-btn').style.display = '';
+    document.querySelector('[data-tab="lyrics"]').click();
+  } catch (err) {
+    status.className = 'status-box show error';
+    status.textContent = '✘ Erro de rede: ' + err.message;
+    btn.disabled = false;
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// RENDER LYRICS — separa em seções e adiciona botão regenerar
+// ════════════════════════════════════════════════════════════
+function renderLyrics(order) {
+  const c = document.getElementById('lyricsContent');
+  const r = order.result;
+  const sections = parseLyrics(r.lyrics);
+
+  let html = `
+    <div class="lyrics-header">
+      <h2>${escapeHtml(r.musica_nome || 'Letra sem título')}</h2>
+      <div class="meta">
+        Cliente: <span>${escapeHtml(order.clientName)}</span> · Ritmo: <span>${escapeHtml(order.ritmo)}</span>
+      </div>
+    </div>
+  `;
+
+  sections.forEach((sec, idx) => {
+    html += `
+      <div class="lyrics-section" data-section-idx="${idx}" data-section-name="${escapeHtml(sec.name)}">
+        <div class="lyrics-section-header">
+          <span class="lyrics-section-tag">[${escapeHtml(sec.name)}]</span>
+          <button class="btn-regen" data-regen-idx="${idx}">
+            <span class="icon">↻</span> Regenerar
+          </button>
+        </div>
+        <div class="lyrics-section-content">${escapeHtml(sec.body)}</div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="style-box">
+      <div class="style-box-label">Estilo / Style Prompt</div>
+      <div class="style-box-content">${escapeHtml(r.style_prompt || '')}</div>
+      <div class="style-box-meta">Weirdness: ${r.weirdness ?? '-'} · Style Influence: ${r.style_influence ?? '-'}</div>
+    </div>
+
+    <div class="lyrics-actions">
+      <button class="btn-primary" id="btnCopyAll">📋 Copiar Letra</button>
+      <button class="btn-secondary" id="btnNew">+ Novo Pedido</button>
+    </div>
+  `;
+
+  c.innerHTML = html;
+
+  // Bind botões de regenerar
+  c.querySelectorAll('[data-regen-idx]').forEach(b => {
+    b.addEventListener('click', () => regenerateSection(parseInt(b.dataset.regenIdx)));
+  });
+  document.getElementById('btnCopyAll').addEventListener('click', copyAllLyrics);
+  document.getElementById('btnNew').addEventListener('click', () => {
+    document.querySelector('[data-tab="new"]').click();
+    resetForm();
+  });
+}
+
+// Quebra "[Verse]\nbla\n[Chorus]\nble\n..." em array {name, body}
+function parseLyrics(text) {
+  if (!text) return [];
+  const parts = text.split(/\n(?=\[)/); // quebra a cada linha que começa com [
+  return parts.map(block => {
+    const m = block.match(/^\[([^\]]+)\]\s*\n?([\s\S]*)$/);
+    if (!m) return { name: 'Section', body: block.trim() };
+    return { name: m[1].trim(), body: m[2].trim() };
+  });
+}
+
+// Reconstrói a letra a partir das seções
+function buildLyricsFromSections(sections) {
+  return sections.map(s => `[${s.name}]\n${s.body}`).join('\n\n');
+}
+
+// ════════════════════════════════════════════════════════════
+// REGENERAR SEÇÃO
+// ════════════════════════════════════════════════════════════
+async function regenerateSection(idx) {
+  if (!currentOrder) return;
+  const sections = parseLyrics(currentOrder.result.lyrics);
+  if (!sections[idx]) return;
+
+  const sectionName = sections[idx].name;
+  const validNames = ['Verse', 'Chorus', 'Bridge', 'Outro'];
+  if (!validNames.includes(sectionName)) {
+    showToast('Seção "' + sectionName + '" não pode ser regenerada.', true);
+    return;
+  }
+
+  const sectionEl = document.querySelector(`[data-section-idx="${idx}"]`);
+  const btn       = sectionEl.querySelector('.btn-regen');
+  const content   = sectionEl.querySelector('.lyrics-section-content');
+  const originalBody = sections[idx].body;
+
+  sectionEl.classList.add('regenerating');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="icon spin-icon">↻</span> Regenerando...';
+
+  try {
+    const resp = await window.__luxFetch(API_URL + '/regenerateSection', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        orderId:     currentOrder.orderId,
+        sectionName,
+        lyrics:      currentOrder.result.lyrics,
+        briefing:    currentOrder.briefing
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      showToast('Erro ao regenerar: ' + data.error, true);
+      sectionEl.classList.remove('regenerating');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="icon">↻</span> Regenerar';
+      return;
+    }
+    // Atualiza a letra completa no currentOrder
+    currentOrder.result.lyrics = data.lyrics;
+    // Re-renderiza só essa seção
+    const newSections = parseLyrics(data.lyrics);
+    if (newSections[idx]) {
+      content.textContent = newSections[idx].body;
+    }
+    sectionEl.classList.remove('regenerating');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">↻</span> Regenerar';
+    showToast('✓ Seção regenerada');
+  } catch (err) {
+    showToast('Erro de rede: ' + err.message, true);
+    sectionEl.classList.remove('regenerating');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">↻</span> Regenerar';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// COPIAR LETRA INTEIRA
+// ════════════════════════════════════════════════════════════
+function copyAllLyrics() {
+  if (!currentOrder) return;
+  const r = currentOrder.result;
+  const text =
+    `${r.musica_nome || ''}\n\n` +
+    `${r.lyrics}\n\n` +
+    `--- Estilo (Suno) ---\n` +
+    `${r.style_prompt || ''}\n` +
+    `Weirdness: ${r.weirdness ?? '-'}\n` +
+    `Style Influence: ${r.style_influence ?? '-'}`;
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('✓ Letra copiada!'))
+    .catch(() => showToast('Erro ao copiar', true));
+}
+
+// ════════════════════════════════════════════════════════════
+// RESET FORM
+// ════════════════════════════════════════════════════════════
+function resetForm() {
+  document.getElementById('briefing').value = '';
+  document.getElementById('ritmo').value = '';
+  document.getElementById('clientName').value = '';
+  compressedImage = null;
+  imageInput.value = '';
+  imagePreview.classList.remove('has-img');
+  document.getElementById('statusGerar').className = 'status-box';
+  document.getElementById('statusGerar').textContent = '';
+}
+
+// ════════════════════════════════════════════════════════════
+// HISTÓRICO
+// ════════════════════════════════════════════════════════════
+async function loadHistory() {
+  const c = document.getElementById('historyContent');
+  c.innerHTML = '<div class="history-empty">Carregando...</div>';
+  try {
+    const resp = await window.__luxFetch(API_URL + '/listOrders?limit=30');
+    const data = await resp.json();
+    if (!data.ok) {
+      c.innerHTML = '<div class="history-empty">Erro: ' + escapeHtml(data.error || '') + '</div>';
+      return;
+    }
+    if (!data.orders || !data.orders.length) {
+      c.innerHTML = '<div class="history-empty">Nenhum pedido ainda. Gere sua primeira letra!</div>';
+      return;
+    }
+    let html = '';
+    data.orders.forEach(o => {
+      html += `
+        <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
+          <div class="history-item-top">
+            <span class="history-item-title">${escapeHtml(o.musicaNome || '(sem nome)')}</span>
+            <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
+          </div>
+          <div class="history-item-meta">
+            <strong>${escapeHtml(o.clientName || '-')}</strong>
+            · ${escapeHtml(o.ritmo || '-')}
+            · ${escapeHtml(o.attendantName || '-')}
+            ${o.hasImage ? '<span class="history-item-badge">📎 c/ imagem</span>' : ''}
+            ${o.regenerations ? '<span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
+          </div>
+        </div>
+      `;
+    });
+    c.innerHTML = html;
+    c.querySelectorAll('.history-item').forEach(el => {
+      el.addEventListener('click', () => openHistoryOrder(el.dataset.orderId));
+    });
+  } catch (err) {
+    c.innerHTML = '<div class="history-empty">Erro de rede: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+async function openHistoryOrder(orderId) {
+  try {
+    const resp = await window.__luxFetch(API_URL + '/getOrder?orderId=' + encodeURIComponent(orderId));
+    const data = await resp.json();
+    if (!data.ok) { showToast('Erro: ' + data.error, true); return; }
+    const o = data.order;
+    currentOrder = {
+      orderId:    o.orderId,
+      briefing:   o.briefing,
+      ritmo:      o.ritmo,
+      clientName: o.clientName,
+      result:     o.result
+    };
+    renderLyrics(currentOrder);
+    document.getElementById('tab-lyrics-btn').style.display = '';
+    document.querySelector('[data-tab="lyrics"]').click();
+  } catch (err) {
+    showToast('Erro: ' + err.message, true);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// UTIL
+// ════════════════════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+</script>
 
 </body>
 </html>
