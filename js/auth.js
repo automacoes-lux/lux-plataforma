@@ -91,7 +91,7 @@ window.__luxSignIn = async () => {
 
 window.__luxSignOut = () => signOut(auth);
 
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     window.__luxUser = user;
     document.getElementById('screen-login').style.display = 'none';
@@ -111,13 +111,38 @@ onAuthStateChanged(auth, user => {
       window.__appReady = true;
       if (typeof window.showDashboard === 'function') window.showDashboard();
     }
+
+    // Busca o role do usuário no Worker (mostra/esconde menu Admin)
+    try {
+      const resp = await window.__luxFetch(
+        'https://lux-figurinhas.plataformalux.workers.dev/admin/me'
+      );
+      const data = await resp.json();
+      if (data.ok && data.user) {
+        window.__luxRole = data.user.role;
+        applyRole(data.user.role);
+      }
+    } catch (e) {
+      // se falhar, segue como atendente (role mais restrito)
+      console.warn('Falha ao obter role:', e.message);
+    }
   } else {
     window.__luxUser = null;
+    window.__luxRole = null;
     document.getElementById('screen-login').style.display = 'flex';
     document.getElementById('screen-app').style.display   = 'none';
     window.__appReady = false;
+    applyRole(null);
   }
 });
+
+// ── Mostra/esconde itens da sidebar baseado no role ────────
+function applyRole(role) {
+  document.querySelectorAll('[data-role-required]').forEach(el => {
+    const required = el.getAttribute('data-role-required');
+    el.style.display = (required === role) ? '' : 'none';
+  });
+}
 
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
