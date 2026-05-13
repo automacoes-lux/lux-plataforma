@@ -12,6 +12,36 @@
 <link rel="stylesheet" href="css/theme.css"/>
 <link rel="stylesheet" href="css/shell.css"/>
 
+<style>
+/* Badge "EM BREVE" amarelo dourado (alinhado com gold da plataforma) */
+.badge-warning{
+  background:rgba(201,168,76,0.12);
+  color:#D4B968;
+  border:1px solid rgba(201,168,76,0.35);
+}
+.status-soon-warning{
+  color:#D4B968;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.06em;
+}
+/* Cards "Em Breve" desativados visualmente */
+.tool-card.soon{
+  opacity:0.6;
+  cursor:not-allowed;
+  filter:saturate(0.6);
+}
+.tool-card.soon:hover{
+  transform:none;
+  border-color:var(--border);
+}
+.nav-item.soon{
+  opacity:0.55;
+  cursor:not-allowed;
+  pointer-events:none;
+}
+</style>
+
 <script type="module" src="js/auth.js"></script>
 </head>
 <body>
@@ -58,9 +88,17 @@
         <div class="nav-icon">🎵</div> Letra de Música
         <span class="nav-badge badge-live">LIVE</span>
       </a>
-      <a class="nav-item" data-tool="videos" href="#">
-        <div class="nav-icon">🎬</div> Vídeos
-        <span class="nav-badge badge-live">LIVE</span>
+      <a class="nav-item soon" data-tool="videos" href="#">
+        <div class="nav-icon">🎬</div> Vídeo Padrão
+        <span class="nav-badge badge-warning">EM BREVE</span>
+      </a>
+      <a class="nav-item soon" data-tool="videos-premium" href="#">
+        <div class="nav-icon">🤖</div> Vídeo Premium
+        <span class="nav-badge badge-warning">EM BREVE</span>
+      </a>
+      <a class="nav-item soon" data-tool="logo3d" href="#">
+        <div class="nav-icon">💎</div> Logo 3D
+        <span class="nav-badge badge-warning">EM BREVE</span>
       </a>
       <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">⚙</div> Admin
@@ -129,12 +167,32 @@
           </div>
         </div>
 
-        <div class="tool-card" onclick="loadTool('videos')">
+        <div class="tool-card soon">
           <div class="tool-card-icon">🎬</div>
-          <div class="tool-card-name">VÍDEOS</div>
+          <div class="tool-card-name">VÍDEO PADRÃO</div>
           <div class="tool-card-desc">Slideshow renderizado com fotos do comércio + trilha sonora, pronto para Reels e Stories.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
+            <span class="status-soon-warning">● Em breve</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
+        <div class="tool-card soon">
+          <div class="tool-card-icon">🤖</div>
+          <div class="tool-card-name">VÍDEO PREMIUM</div>
+          <div class="tool-card-desc">Vídeos com IA imagem-para-vídeo (Wan 2.6 Flash). Animações realistas a partir de fotos estáticas.</div>
+          <div class="tool-card-footer">
+            <span class="status-soon-warning">● Em breve</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
+        <div class="tool-card soon">
+          <div class="tool-card-icon">💎</div>
+          <div class="tool-card-name">LOGO 3D</div>
+          <div class="tool-card-desc">Geração de logos em 3D com IA para apresentações, abertura de vídeos e branding.</div>
+          <div class="tool-card-footer">
+            <span class="status-soon-warning">● Em breve</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
@@ -160,11 +218,11 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- VÍDEOS -->
+    <!-- VÍDEO PADRÃO -->
     <div id="view-videos" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">🎬 GERADOR DE VÍDEOS</span>
+        <span class="tool-panel-title">🎬 GERADOR DE VÍDEO PADRÃO</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
