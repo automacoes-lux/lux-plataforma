@@ -598,9 +598,8 @@ async function generateStickers() {
   }, 1000);
 
   try {
-    const orderResp = await fetch(WORKER_URL + '/createOrder', {
+    const orderResp = await window.__luxFetch(WORKER_URL + '/createOrder', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientName: state.cliente, attendantName: state.atendente,
         imageBase64: state.photoBase64, imageMimeType: state.photoMime
@@ -613,9 +612,8 @@ async function generateStickers() {
     document.getElementById('statusText').textContent = `Gerando ${totalToGenerate} figurinha${totalToGenerate > 1 ? 's' : ''}...`;
     document.getElementById('statusSub').textContent  = `Pode demorar ~${(totalToGenerate * 25 / 60).toFixed(1)} min`;
 
-    const produceResp = await fetch(WORKER_URL + '/produceStickers', {
+    const produceResp = await window.__luxFetch(WORKER_URL + '/produceStickers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId: state.currentOrderId, mode: state.mode, phrases: phrasesPayload })
     });
     const produceData = await produceResp.json();
@@ -668,7 +666,7 @@ function renderResults() {
 
     card.innerHTML = `
       <div class="sticker-thumb-wrap">
-        ${okFlag ? `<img class="sticker-thumb" src="${getStickerUrl(num)}" alt="Figurinha ${num}"/>` : ''}
+        ${okFlag ? `<img class="sticker-thumb" data-num="${num}" alt="Figurinha ${num}"/>` : ''}
         ${!okFlag ? `<div class="sticker-error-overlay show"><span class="err-icon">⚠</span><span>${truncate(errMsg, 60)}</span></div>` : ''}
       </div>
       <div class="sticker-info">
@@ -677,6 +675,23 @@ function renderResults() {
       </div>
     `;
     grid.appendChild(card);
+
+    // Carrega a imagem via fetch autenticado (img tag não manda Bearer)
+    if (okFlag) {
+      const imgEl = card.querySelector('img.sticker-thumb');
+      loadStickerImage(num, imgEl);
+    }
+  }
+}
+
+async function loadStickerImage(num, imgEl) {
+  try {
+    const resp = await window.__luxFetch(getStickerUrl(num));
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    imgEl.src = URL.createObjectURL(blob);
+  } catch (err) {
+    console.error('Erro ao carregar figurinha ' + num, err);
   }
 }
 
@@ -686,7 +701,7 @@ function getStickerUrl(num) {
 
 async function downloadOne(num) {
   try {
-    const resp = await fetch(getStickerUrl(num));
+    const resp = await window.__luxFetch(getStickerUrl(num));
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const blob = await resp.blob();
     const link = document.createElement('a');
@@ -715,7 +730,7 @@ async function loadHistory() {
   const container = document.getElementById('historyContainer');
   container.innerHTML = '<div class="history-loading">Carregando histórico...</div>';
   try {
-    const resp = await fetch(WORKER_URL + '/listOrders?limit=10');
+    const resp = await window.__luxFetch(WORKER_URL + '/listOrders?limit=10');
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao carregar histórico');
 
@@ -764,7 +779,7 @@ async function loadHistory() {
 async function openHistoryOrder(orderSummary) {
   try {
     showToast('Carregando pedido...', 'info');
-    const resp = await fetch(WORKER_URL + '/getOrder?orderId=' + encodeURIComponent(orderSummary.orderId));
+    const resp = await window.__luxFetch(WORKER_URL + '/getOrder?orderId=' + encodeURIComponent(orderSummary.orderId));
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao carregar pedido');
 
