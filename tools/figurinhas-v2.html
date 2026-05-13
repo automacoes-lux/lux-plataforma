@@ -64,23 +64,26 @@ input[type="file"]{display:none}
 .photo-remove{font-size:18px;color:var(--text-dim);cursor:pointer;background:none;border:none;padding:4px}
 .photo-remove:hover{color:var(--text)}
 
-.format-selector{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:600px){.format-selector{grid-template-columns:1fr}}
-.format-btn{border:.5px solid var(--border);border-radius:var(--radius);padding:18px 16px;cursor:pointer;transition:all .18s;background:var(--bg-input);text-align:left}
+/* FORMAT SELECTOR - 3 colunas */
+.format-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:680px){.format-selector{grid-template-columns:1fr}}
+.format-btn{border:.5px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .18s;background:var(--bg-input);text-align:left}
 .format-btn:hover{border-color:var(--border-bright);background:var(--bg-hover)}
 .format-btn.active{border:1.5px solid var(--gold);background:rgba(201,168,76,.08)}
-.format-btn .f-icon{font-size:22px;margin-bottom:9px;display:block}
-.format-btn .f-title{font-size:15px;font-weight:600;color:var(--text);display:block;margin-bottom:4px}
-.format-btn .f-count{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(201,168,76,.12);color:var(--gold-dim);border:.5px solid var(--border);margin-bottom:6px}
-.format-btn .f-desc{font-size:13px;color:var(--text-dim);line-height:1.5}
+.format-btn .f-icon{font-size:20px;margin-bottom:8px;display:block}
+.format-btn .f-title{font-size:14px;font-weight:600;color:var(--text);display:block;margin-bottom:4px}
+.format-btn .f-count{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(201,168,76,.12);color:var(--gold-dim);border:.5px solid var(--border);margin-bottom:6px}
+.format-btn .f-desc{font-size:12px;color:var(--text-dim);line-height:1.4}
 .format-btn.active .f-title{color:var(--gold)}
 .format-btn.active .f-count{background:rgba(201,168,76,.2);color:var(--gold)}
 
 .phrases-box{margin-top:1.1rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;animation:fadeIn .3s ease both}
-.phrases-header{padding:12px 18px;background:rgba(201,168,76,.05);border-bottom:.5px solid var(--border);font-size:13px;color:var(--text-dim);letter-spacing:.04em;display:flex;align-items:center;justify-content:space-between}
+.phrases-header{padding:12px 18px;background:rgba(201,168,76,.05);border-bottom:.5px solid var(--border);font-size:13px;color:var(--text-dim);letter-spacing:.04em;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .phrases-header strong{color:var(--text);font-weight:500}
 .phrases-header em{font-size:11px;color:var(--gold-dim);font-family:'Cinzel',serif;letter-spacing:.06em;font-style:normal}
 .phrases-hint{padding:10px 18px;background:rgba(201,168,76,.02);font-size:12px;color:var(--text-dim);line-height:1.5;border-bottom:.5px solid var(--border)}
+
+/* MODO FRASE PERSONALIZADA */
 .phrase-row{display:flex;align-items:center;padding:10px 18px;border-bottom:.5px solid var(--border);gap:14px;transition:background .15s}
 .phrase-row:last-child{border-bottom:none}
 .phrase-row:hover{background:rgba(201,168,76,.03)}
@@ -89,6 +92,31 @@ input[type="file"]{display:none}
 .phrase-input:focus{border-bottom-color:var(--border-bright)}
 .phrase-clear{font-size:14px;color:var(--text-dim);cursor:pointer;background:none;border:none;padding:2px 6px;flex-shrink:0;opacity:.5;transition:opacity .15s,color .15s}
 .phrase-clear:hover{opacity:1;color:var(--text)}
+
+/* MODO SUPER PERSONALIZADA */
+.super-row{padding:14px 18px;border-bottom:.5px solid var(--border);transition:background .15s}
+.super-row:last-child{border-bottom:none}
+.super-row:hover{background:rgba(201,168,76,.03)}
+.super-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.super-row-num{font-family:'Cinzel',serif;font-size:12px;color:var(--gold-dim);font-weight:600}
+.super-row-clear{font-size:14px;color:var(--text-dim);cursor:pointer;background:none;border:none;padding:2px 6px;opacity:.5;transition:opacity .15s,color .15s}
+.super-row-clear:hover{opacity:1;color:var(--text)}
+.super-field{margin-bottom:8px}
+.super-field:last-child{margin-bottom:0}
+.super-field label{font-size:10px;color:var(--gold-dim);display:block;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.super-field input{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);border:.5px solid var(--border);border-radius:6px;outline:none;transition:border-color .15s}
+.super-field input:focus{border-color:var(--border-bright)}
+.super-field input::placeholder{color:var(--text-dim);opacity:.5}
+
+.replicate-btn{
+  padding:6px 12px;background:rgba(201,168,76,.1);
+  border:.5px solid var(--border-bright);color:var(--gold);
+  border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;
+  font-family:'Cinzel',serif;letter-spacing:.05em;transition:all .15s;
+  white-space:nowrap;
+}
+.replicate-btn:hover{background:rgba(201,168,76,.2)}
+.replicate-btn:disabled{opacity:.4;cursor:not-allowed}
 
 .btn-generate{width:100%;padding:17px;margin-top:1.6rem;background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);color:#080808;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.1em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 20px rgba(201,168,76,.15)}
 .btn-generate:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.25)}
@@ -121,38 +149,25 @@ input[type="file"]{display:none}
 .sticker-card:hover{border-color:var(--border-bright)}
 .sticker-thumb-wrap{position:relative;aspect-ratio:1/1;background:linear-gradient(45deg,#1a1a1a 25%,transparent 25%),linear-gradient(-45deg,#1a1a1a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1a1a1a 75%),linear-gradient(-45deg,transparent 75%,#1a1a1a 75%);background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0;background-color:#0d0d0d}
 .sticker-thumb{width:100%;height:100%;object-fit:contain;display:block}
-.sticker-loading-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:rgba(10,10,10,.78);backdrop-filter:blur(3px)}
-.sticker-loading-overlay.show{display:flex}
-.sticker-loading-overlay .spinner-small{width:22px;height:22px;border-radius:50%;border:2px solid rgba(201,168,76,.2);border-top-color:var(--gold);animation:spin 1s linear infinite}
-.sticker-loading-overlay span{font-size:11px;color:var(--text-mid);font-family:'Cinzel',serif;letter-spacing:.1em}
 .sticker-error-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:rgba(232,122,122,.08);padding:12px}
 .sticker-error-overlay.show{display:flex}
 .sticker-error-overlay .err-icon{font-size:22px;color:#E87A7A}
 .sticker-error-overlay span{font-size:11px;color:#E87A7A;text-align:center;line-height:1.4}
 
-/* INFO: linha do número + botão download ⬇ MAIOR */
-.sticker-info{padding:8px 12px;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sticker-info{padding:10px 12px;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sticker-label{font-size:11px;font-family:'Cinzel',serif;letter-spacing:.08em;color:var(--text-dim);font-weight:600}
-.sticker-btn-download{
-  background:rgba(255,255,255,.04);border:.5px solid var(--border);color:var(--text-dim);
-  width:38px;height:34px;border-radius:6px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:bold;transition:all .15s;line-height:1;
-}
-.sticker-btn-download:hover:not(:disabled){background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
-.sticker-btn-download:disabled{opacity:.3;cursor:not-allowed}
 
-/* REFRESH: centralizado embaixo, separado pra evitar clique errado */
-.sticker-refresh-row{border-top:.5px solid var(--border);padding:8px 12px;display:flex;justify-content:center}
-.sticker-btn-refresh{
-  background:rgba(255,255,255,.04);border:.5px solid var(--border);color:var(--text-dim);
-  padding:6px 16px;border-radius:6px;cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  font-size:12px;font-weight:600;transition:all .15s;
-  font-family:'Cinzel',serif;letter-spacing:.06em;
+/* BOTÃO DOWNLOAD DOURADO */
+.sticker-btn-download{
+  background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);
+  border:.5px solid var(--gold);color:#080808;
+  width:42px;height:36px;border-radius:6px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:bold;transition:all .15s;line-height:1;
+  box-shadow:0 2px 10px rgba(201,168,76,.2);
 }
-.sticker-btn-refresh:hover:not(:disabled){background:rgba(127,184,122,.1);border-color:rgba(127,184,122,.4);color:#7FB87A}
-.sticker-btn-refresh:disabled{opacity:.3;cursor:not-allowed}
+.sticker-btn-download:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,.35)}
+.sticker-btn-download:disabled{opacity:.3;cursor:not-allowed;background:rgba(255,255,255,.04);color:var(--text-dim);box-shadow:none}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -167,14 +182,8 @@ input[type="file"]{display:none}
 .panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* HISTÓRICO */
 .history-list{display:flex;flex-direction:column;gap:10px}
-.history-item{
-  background:var(--bg-card);border:.5px solid var(--border);
-  border-radius:var(--radius-lg);padding:14px 18px;
-  display:flex;align-items:center;justify-content:space-between;gap:14px;
-  transition:all .15s;animation:fadeIn .3s ease both;
-}
+.history-item{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;transition:all .15s;animation:fadeIn .3s ease both}
 .history-item:hover{border-color:var(--border-bright);background:var(--bg-hover)}
 .history-item-info{flex:1;min-width:0}
 .history-client{font-size:15px;color:var(--text);font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -184,22 +193,12 @@ input[type="file"]{display:none}
 .badge.completed{background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.3)}
 .badge.error{background:rgba(232,122,122,.15);color:#E87A7A;border:.5px solid rgba(232,122,122,.3)}
 .badge.partial{background:rgba(232,168,76,.15);color:#E8A84C;border:.5px solid rgba(232,168,76,.3)}
-.history-btn-view{
-  padding:8px 14px;background:rgba(201,168,76,.1);
-  border:.5px solid var(--border-bright);color:var(--gold);
-  border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600;
-  font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;
-  white-space:nowrap;flex-shrink:0;
-}
+.history-btn-view{padding:8px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .history-btn-view:hover{background:rgba(201,168,76,.2)}
 .history-loading{text-align:center;padding:40px 20px;color:var(--text-dim)}
 .history-empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
 .history-empty .icon{font-size:48px;opacity:.3;margin-bottom:14px;display:block}
-.history-refresh{
-  background:transparent;border:.5px solid var(--border);color:var(--text-dim);
-  padding:7px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;
-  transition:all .15s;display:inline-flex;align-items:center;gap:6px;
-}
+.history-refresh{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:7px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .history-refresh:hover{border-color:var(--text-dim);color:var(--text)}
 
 @media(max-width:600px){
@@ -225,7 +224,7 @@ input[type="file"]{display:none}
     <button class="tab-mini" data-panel="historico">Histórico</button>
   </div>
 
-  <!-- ═══ NOVO PEDIDO ════════════════════════════════════════════ -->
+  <!-- ═══ NOVO PEDIDO ═══════════════════════════════════════════ -->
   <div class="panel active" id="panel-novo">
 
     <div class="card">
@@ -267,25 +266,44 @@ input[type="file"]{display:none}
           <span class="f-icon">✦</span>
           <span class="f-title">Padrão</span>
           <span class="f-count">10 frases</span>
-          <span class="f-desc">Pack com as 10 frases já definidas, pronto para gerar</span>
+          <span class="f-desc">Pack pronto com as 10 frases clássicas</span>
         </div>
-        <div class="format-btn" id="fmt-custom" onclick="selectFormat('personalizado')">
+        <div class="format-btn" id="fmt-frase" onclick="selectFormat('frase_personalizada')">
           <span class="f-icon">✎</span>
-          <span class="f-title">Texto Personalizado</span>
-          <span class="f-count">1 a 10 frases</span>
-          <span class="f-desc">Edite as frases ou deixe em branco para gerar menos</span>
+          <span class="f-title">Frase Personalizada</span>
+          <span class="f-count">1 a 10</span>
+          <span class="f-desc">Mesmas poses, você escolhe as frases</span>
+        </div>
+        <div class="format-btn" id="fmt-super" onclick="selectFormat('super_personalizada')">
+          <span class="f-icon">⚡</span>
+          <span class="f-title">Super Personalizada</span>
+          <span class="f-count">1 a 10</span>
+          <span class="f-desc">Você define o gesto E a frase de cada uma</span>
         </div>
       </div>
 
-      <div class="phrases-box" id="phrasesBox" style="display:none">
+      <!-- BOX FRASE PERSONALIZADA -->
+      <div class="phrases-box" id="phrasesBoxFrase" style="display:none">
         <div class="phrases-header">
           <strong>✎ Edite as frases</strong>
-          <em>ESTILO BLOQUEADO 🔒</em>
+          <em>POSES PADRÃO MANTIDAS 🔒</em>
         </div>
         <div class="phrases-hint">
-          💡 Deixe em branco para PULAR a figurinha. Você pode gerar de 1 até 10.
+          💡 As 10 poses originais são mantidas. Você só personaliza o texto do balão. Deixe em branco para PULAR a figurinha.
         </div>
-        <div id="phrasesList"></div>
+        <div id="phrasesListFrase"></div>
+      </div>
+
+      <!-- BOX SUPER PERSONALIZADA -->
+      <div class="phrases-box" id="phrasesBoxSuper" style="display:none">
+        <div class="phrases-header">
+          <strong>⚡ Gesto + Frase de cada figurinha</strong>
+          <button class="replicate-btn" id="replicateBtn" onclick="replicateFirstGesture()">🔁 Replicar gesto #1 para todos</button>
+        </div>
+        <div class="phrases-hint">
+          💡 Descreva o GESTO (ex: "segurando uma caneca de chope") e a FRASE do balão. Deixe em branco para pular. Identidade visual e estilo chibi serão mantidos.
+        </div>
+        <div id="phrasesListSuper"></div>
       </div>
     </div>
 
@@ -304,7 +322,7 @@ input[type="file"]{display:none}
 
   </div>
 
-  <!-- ═══ RESULTADOS ═════════════════════════════════════════════ -->
+  <!-- ═══ RESULTADOS ════════════════════════════════════════════ -->
   <div class="panel" id="panel-resultados">
     <div id="resultsEmpty" style="text-align:center;padding:60px 20px;color:var(--text-dim)">
       <div style="font-size:48px;opacity:.3;margin-bottom:14px">✦</div>
@@ -328,7 +346,7 @@ input[type="file"]{display:none}
     </div>
   </div>
 
-  <!-- ═══ HISTÓRICO ══════════════════════════════════════════════ -->
+  <!-- ═══ HISTÓRICO ═════════════════════════════════════════════ -->
   <div class="panel" id="panel-historico">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px">
       <div>
@@ -360,10 +378,9 @@ let state = {
   atendente: '', cliente: '',
   photoFile: null, photoBase64: null, photoMime: 'image/jpeg',
   mode: 'padrao',
-  customPhrases: [...DEFAULT_PHRASES],
+  fraseList:  [...DEFAULT_PHRASES],
+  superList:  Array.from({ length: 10 }, () => ({ gesto: '', frase: '' })),
   currentOrderId: null, currentResults: [], currentTotal: 10,
-  busyStickers: new Set(),
-  historyLoaded: false,
 };
 
 document.querySelectorAll('.tab-mini').forEach(t => {
@@ -378,7 +395,6 @@ document.querySelectorAll('.tab-mini').forEach(t => {
 
 function goNewOrder() { document.querySelector('.tab-mini[data-panel="novo"]').click(); }
 function goResults()  { document.querySelector('.tab-mini[data-panel="resultados"]').click(); }
-function goHistory()  { document.querySelector('.tab-mini[data-panel="historico"]').click(); }
 
 document.getElementById('photoInput').addEventListener('change', handlePhoto);
 
@@ -447,14 +463,19 @@ function blobToBase64(blob) {
 function selectFormat(mode) {
   state.mode = mode;
   document.getElementById('fmt-padrao').classList.toggle('active', mode === 'padrao');
-  document.getElementById('fmt-custom').classList.toggle('active', mode === 'personalizado');
-  const box = document.getElementById('phrasesBox');
-  if (mode === 'personalizado') { renderPhrases(); box.style.display = ''; }
-  else { box.style.display = 'none'; }
+  document.getElementById('fmt-frase').classList.toggle('active', mode === 'frase_personalizada');
+  document.getElementById('fmt-super').classList.toggle('active', mode === 'super_personalizada');
+
+  document.getElementById('phrasesBoxFrase').style.display = (mode === 'frase_personalizada') ? '' : 'none';
+  document.getElementById('phrasesBoxSuper').style.display = (mode === 'super_personalizada') ? '' : 'none';
+
+  if (mode === 'frase_personalizada') renderFrasePersonalizada();
+  if (mode === 'super_personalizada') renderSuperPersonalizada();
 }
 
-function renderPhrases() {
-  const list = document.getElementById('phrasesList');
+// Frase Personalizada: 10 inputs pre-preenchidos com frases padrao
+function renderFrasePersonalizada() {
+  const list = document.getElementById('phrasesListFrase');
   list.innerHTML = '';
   for (let i = 0; i < 10; i++) {
     const row = document.createElement('div');
@@ -462,22 +483,79 @@ function renderPhrases() {
     row.innerHTML = `
       <span class="phrase-num">${String(i + 1).padStart(2, '0')}</span>
       <input class="phrase-input" type="text" maxlength="40" data-i="${i}"
-             value="${state.customPhrases[i] || ''}" placeholder="Deixe em branco para pular"/>
+             value="${escapeAttr(state.fraseList[i] || '')}" placeholder="Deixe em branco para pular"/>
       <button class="phrase-clear" data-i="${i}" title="Limpar">✕</button>
     `;
     list.appendChild(row);
   }
   list.querySelectorAll('.phrase-input').forEach(inp => {
-    inp.addEventListener('input', e => { state.customPhrases[Number(e.target.dataset.i)] = e.target.value; });
+    inp.addEventListener('input', e => { state.fraseList[Number(e.target.dataset.i)] = e.target.value; });
   });
   list.querySelectorAll('.phrase-clear').forEach(btn => {
     btn.addEventListener('click', e => {
       const i = Number(e.target.dataset.i);
-      state.customPhrases[i] = '';
+      state.fraseList[i] = '';
       const inp = list.querySelector(`.phrase-input[data-i="${i}"]`);
       if (inp) inp.value = '';
     });
   });
+}
+
+// Super Personalizada: 10 blocos com Gesto + Frase (ambos em branco)
+function renderSuperPersonalizada() {
+  const list = document.getElementById('phrasesListSuper');
+  list.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const row = document.createElement('div');
+    row.className = 'super-row';
+    row.innerHTML = `
+      <div class="super-row-head">
+        <span class="super-row-num">FIGURINHA ${String(i + 1).padStart(2, '0')}</span>
+        <button class="super-row-clear" data-i="${i}" title="Limpar">✕</button>
+      </div>
+      <div class="super-field">
+        <label>Gesto</label>
+        <input type="text" maxlength="120" data-i="${i}" data-field="gesto"
+               value="${escapeAttr(state.superList[i].gesto)}"
+               placeholder="Ex: segurando uma caneca de chope"/>
+      </div>
+      <div class="super-field">
+        <label>Frase do balão</label>
+        <input type="text" maxlength="40" data-i="${i}" data-field="frase"
+               value="${escapeAttr(state.superList[i].frase)}"
+               placeholder="Ex: TÁ BEM GELADO!"/>
+      </div>
+    `;
+    list.appendChild(row);
+  }
+  list.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = Number(e.target.dataset.i);
+      const field = e.target.dataset.field;
+      state.superList[i][field] = e.target.value;
+    });
+  });
+  list.querySelectorAll('.super-row-clear').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const i = Number(e.target.dataset.i);
+      state.superList[i] = { gesto: '', frase: '' };
+      const inps = list.querySelectorAll(`input[data-i="${i}"]`);
+      inps.forEach(inp => inp.value = '');
+    });
+  });
+}
+
+// Replica o gesto da figurinha #1 pra todas as outras
+function replicateFirstGesture() {
+  const firstGesto = (state.superList[0].gesto || '').trim();
+  if (!firstGesto) {
+    return toast('Preencha primeiro o gesto da figurinha #1.', 'error');
+  }
+  for (let i = 1; i < 10; i++) {
+    state.superList[i].gesto = firstGesto;
+  }
+  renderSuperPersonalizada();
+  toast('Gesto replicado para todas as 10 figurinhas ✓', 'success');
 }
 
 async function generateStickers() {
@@ -490,10 +568,16 @@ async function generateStickers() {
 
   let phrasesPayload = null;
   let totalToGenerate = 10;
-  if (state.mode === 'personalizado') {
-    const filled = state.customPhrases.map(p => (p || '').trim()).filter(p => p.length > 0);
+
+  if (state.mode === 'frase_personalizada') {
+    const filled = state.fraseList.map(p => (p || '').trim()).filter(p => p.length > 0);
     if (filled.length === 0) return toast('Preencha pelo menos 1 frase.', 'error');
-    phrasesPayload = state.customPhrases;
+    phrasesPayload = state.fraseList;
+    totalToGenerate = filled.length;
+  } else if (state.mode === 'super_personalizada') {
+    const filled = state.superList.filter(item => (item.frase || '').trim().length > 0);
+    if (filled.length === 0) return toast('Preencha pelo menos 1 frase no Super Personalizada.', 'error');
+    phrasesPayload = state.superList;
     totalToGenerate = filled.length;
   }
 
@@ -546,11 +630,10 @@ async function generateStickers() {
 
     const totalOk = produceData.totalGenerated || 0;
     if (totalOk === state.currentTotal) toast(`✓ ${totalOk} figurinha${totalOk > 1 ? 's geradas' : ' gerada'}!`, 'success');
-    else toast(`⚠ Geradas ${totalOk}/${state.currentTotal}. Use 🔄 nas que falharam.`, 'error');
+    else toast(`⚠ Geradas ${totalOk}/${state.currentTotal}. Alguma falhou — verifique o pack.`, 'error');
 
     renderResults();
     goResults();
-    state.historyLoaded = false; // Forçar reload do histórico
 
   } catch (err) {
     clearInterval(timerInterval);
@@ -586,18 +669,11 @@ function renderResults() {
     card.innerHTML = `
       <div class="sticker-thumb-wrap">
         ${okFlag ? `<img class="sticker-thumb" src="${getStickerUrl(num)}" alt="Figurinha ${num}"/>` : ''}
-        <div class="sticker-loading-overlay" data-loading>
-          <div class="spinner-small"></div>
-          <span>Gerando...</span>
-        </div>
-        ${!okFlag ? `<div class="sticker-error-overlay show" data-error><span class="err-icon">⚠</span><span>${truncate(errMsg, 60)}</span></div>` : ''}
+        ${!okFlag ? `<div class="sticker-error-overlay show"><span class="err-icon">⚠</span><span>${truncate(errMsg, 60)}</span></div>` : ''}
       </div>
       <div class="sticker-info">
         <span class="sticker-label">#${String(num).padStart(2,'0')}</span>
         <button class="sticker-btn-download" title="Baixar" onclick="downloadOne(${num})" ${okFlag ? '' : 'disabled'}>⬇</button>
-      </div>
-      <div class="sticker-refresh-row">
-        <button class="sticker-btn-refresh" title="Refazer esta figurinha" onclick="correctSticker(${num})">🔄 REFAZER</button>
       </div>
     `;
     grid.appendChild(card);
@@ -606,51 +682,6 @@ function renderResults() {
 
 function getStickerUrl(num) {
   return `${WORKER_URL}/getSticker?orderId=${encodeURIComponent(state.currentOrderId)}&n=${num}&_=${Date.now()}`;
-}
-
-async function correctSticker(num) {
-  if (state.busyStickers.has(num)) return;
-  state.busyStickers.add(num);
-
-  const card = document.querySelector(`.sticker-card[data-idx="${num}"]`);
-  if (!card) return;
-  const loading = card.querySelector('[data-loading]');
-  const errOverlay = card.querySelector('[data-error]');
-  if (errOverlay) errOverlay.classList.remove('show');
-  if (loading) loading.classList.add('show');
-  card.querySelectorAll('button').forEach(b => b.disabled = true);
-
-  try {
-    const resp = await fetch(WORKER_URL + '/correctSticker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId: state.currentOrderId, stickerNumber: num })
-    });
-    const data = await resp.json();
-    if (!data.ok) throw new Error(data.error || 'Erro ao refazer');
-
-    let img = card.querySelector('.sticker-thumb');
-    if (!img) {
-      img = document.createElement('img');
-      img.className = 'sticker-thumb';
-      img.alt = 'Figurinha ' + num;
-      card.querySelector('.sticker-thumb-wrap').prepend(img);
-    }
-    img.src = getStickerUrl(num);
-
-    const idx = state.currentResults.findIndex(r => r.index === num);
-    if (idx >= 0) state.currentResults[idx] = { index: num, ok: true, key: data.stickerKey };
-    else          state.currentResults.push({ index: num, ok: true, key: data.stickerKey });
-
-    toast(`Figurinha #${num} refeita ✓`, 'success');
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-    if (errOverlay) errOverlay.classList.add('show');
-  } finally {
-    if (loading) loading.classList.remove('show');
-    card.querySelectorAll('button').forEach(b => b.disabled = false);
-    state.busyStickers.delete(num);
-  }
 }
 
 async function downloadOne(num) {
@@ -680,13 +711,9 @@ async function downloadAll() {
   toast('Downloads iniciados ✓', 'success');
 }
 
-// ════════════════════════════════════════════════════════════════
-// HISTÓRICO
-// ════════════════════════════════════════════════════════════════
 async function loadHistory() {
   const container = document.getElementById('historyContainer');
   container.innerHTML = '<div class="history-loading">Carregando histórico...</div>';
-
   try {
     const resp = await fetch(WORKER_URL + '/listOrders?limit=10');
     const data = await resp.json();
@@ -697,7 +724,6 @@ async function loadHistory() {
         <div class="history-empty">
           <span class="icon">📋</span>
           <p style="font-size:14px">Nenhum pedido no histórico ainda.</p>
-          <p style="font-size:12px;margin-top:6px">Gere seu primeiro pack na aba "Novo Pedido".</p>
         </div>`;
       return;
     }
@@ -718,20 +744,18 @@ async function loadHistory() {
           <div class="history-client">${escapeHtml(order.clientName)}</div>
           <div class="history-meta">
             <span>👤 ${escapeHtml(order.attendantName)}</span>
-            <span>📅 ${order.createdAt}</span>
+            <span>📅 ${escapeHtml(order.createdAt)}</span>
             <span>📦 ${order.totalGenerated}/${order.totalRequested}</span>
             <span class="badge ${statusClass}">${statusLabel}</span>
           </div>
         </div>
-        <button class="history-btn-view" data-orderid="${order.orderId}">Ver detalhes →</button>
+        <button class="history-btn-view">Ver detalhes →</button>
       `;
       item.querySelector('.history-btn-view').addEventListener('click', () => openHistoryOrder(order));
       list.appendChild(item);
     });
     container.innerHTML = '';
     container.appendChild(list);
-    state.historyLoaded = true;
-
   } catch (err) {
     container.innerHTML = `<div class="history-empty"><span class="icon">⚠️</span><p style="font-size:13px;color:#E87A7A">${escapeHtml(err.message)}</p></div>`;
   }
@@ -762,7 +786,9 @@ async function openHistoryOrder(orderSummary) {
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
-
+function escapeAttr(s) {
+  return String(s || '').replace(/"/g, '&quot;');
+}
 function truncate(s, n) { return s.length > n ? s.substring(0, n - 1) + '…' : s; }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -782,11 +808,11 @@ function hideToast() { document.getElementById('toast').classList.remove('show')
 window.removePhoto = removePhoto;
 window.selectFormat = selectFormat;
 window.generateStickers = generateStickers;
-window.correctSticker = correctSticker;
 window.downloadOne = downloadOne;
 window.downloadAll = downloadAll;
 window.goNewOrder = goNewOrder;
 window.loadHistory = loadHistory;
+window.replicateFirstGesture = replicateFirstGesture;
 
 try {
   const saved = localStorage.getItem('lux_atendente');
