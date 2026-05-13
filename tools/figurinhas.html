@@ -268,7 +268,7 @@ input[type="file"]{display:none}
           <span class="f-icon">✦</span>
           <span class="f-title">Padrão</span>
           <span class="f-count">10 frases</span>
-          <span class="f-desc">Pack pronto com as 10 frases clássicas</span>
+          <span class="f-desc">Pack pronto com as 10 frases e poses clássicas</span>
         </div>
         <div class="format-btn" id="fmt-frase" onclick="selectFormat('frase_personalizada')">
           <span class="f-icon">✎</span>
@@ -280,7 +280,7 @@ input[type="file"]{display:none}
           <span class="f-icon">⚡</span>
           <span class="f-title">Super Personalizada</span>
           <span class="f-count">1 a 10</span>
-          <span class="f-desc">Você define o gesto E a frase de cada uma</span>
+          <span class="f-desc">Você define o gesto e a frase de cada uma</span>
         </div>
       </div>
 
@@ -303,7 +303,7 @@ input[type="file"]{display:none}
           <button class="replicate-btn" id="replicateBtn" onclick="replicateFirstGesture()">🔁 Replicar gesto #1 para todos</button>
         </div>
         <div class="phrases-hint">
-          💡 Descreva o GESTO (ex: "segurando uma caneca de chope") e a FRASE do balão. Deixe em branco para pular. Identidade visual e estilo chibi serão mantidos.
+          💡 Descreva o GESTO (ex: "segurando uma caneca de chope") e a FRASE do balão. Deixe em branco para pular. O restante da Identidade visual de referência será mantido.
         </div>
         <div id="phrasesListSuper"></div>
       </div>
@@ -831,13 +831,48 @@ window.goNewOrder = goNewOrder;
 window.loadHistory = loadHistory;
 window.replicateFirstGesture = replicateFirstGesture;
 
-try {
-  const saved = localStorage.getItem('lux_atendente');
-  if (saved) document.getElementById('inAtendente').value = saved;
-} catch(e){}
-document.getElementById('inAtendente').addEventListener('change', e => {
-  try { localStorage.setItem('lux_atendente', e.target.value.trim()); } catch(err){}
-});
+// ───────────────────────────────────────────────────────────
+// Auto-preencher atendente com nome do usuário logado (vem do KV)
+// Atendente comum: input bloqueado (readonly + style visual)
+// Admin: input editável (pode criar pedidos em nome de outros)
+// ───────────────────────────────────────────────────────────
+(async function initAtendente() {
+  const input = document.getElementById('inAtendente');
+  input.value = 'Carregando…';
+  input.disabled = true;
+
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/me');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro em /admin/me');
+
+    const userName = data.user.name || data.user.email;
+    const isAdmin  = (data.user.role === 'admin');
+
+    input.value = userName;
+    state.atendente = userName;
+
+    if (isAdmin) {
+      // Admin pode editar
+      input.disabled = false;
+      input.removeAttribute('readonly');
+      input.title = 'Como admin, você pode criar pedidos em nome de outros atendentes.';
+    } else {
+      // Atendente: bloqueado 100%
+      input.disabled = false;          // habilita pra cor ficar normal
+      input.setAttribute('readonly', 'readonly');
+      input.style.cursor       = 'not-allowed';
+      input.style.opacity      = '0.75';
+      input.style.background   = 'rgba(255,255,255,0.02)';
+      input.title = 'Seu nome é definido pelo administrador. Para alterar, entre em contato com o admin.';
+    }
+  } catch (err) {
+    input.disabled = false;
+    input.value = '';
+    input.placeholder = 'Erro ao carregar';
+    console.error('Falha ao preencher atendente:', err);
+  }
+})();
 </script>
 
 </body>
