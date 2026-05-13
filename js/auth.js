@@ -1,7 +1,7 @@
 // ═══ AUTENTICAÇÃO LUX ════════════════════════════════════════
-// Login com Google via Firebase + lista de e-mails autorizados.
-// Para restringir acesso: adicione e-mails em ALLOWED_EMAILS abaixo.
-// Para liberar geral: deixe ALLOWED_EMAILS = [].
+// Login com Google via Firebase.
+// A whitelist de e-mails agora é gerenciada NO WORKER (KV LUX_USERS),
+// não mais aqui. O front confia no que o Worker responder.
 // ═══════════════════════════════════════════════════════════════
 
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -18,32 +18,42 @@ const firebaseConfig = {
   appId:             "1:510483796904:web:e20b57de4598fa08e1839d"
 };
 
-// ── E-mails autorizados ─────────────────────────────────────
-// EXEMPLO de uso quando quiser restringir:
-//   const ALLOWED_EMAILS = [
-//     'thiago@empresa.com',
-//     'ana@empresa.com',
-//     'maria@empresa.com',
-//   ];
-// Deixe [] para liberar qualquer conta Google.
-const ALLOWED_EMAILS = [];
-
 // ────────────────────────────────────────────────────────────
 const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-const isAllowed = e =>
-  !ALLOWED_EMAILS.length ||
-  ALLOWED_EMAILS.includes(String(e).toLowerCase());
+// Guarda o usuário atual e dados vindos do Worker (role, nome)
+window.__luxUser = null;     // objeto Firebase user
 
+// ── Helper global: __luxFetch ──────────────────────────────
+// Use SEMPRE essa função no lugar de fetch() pra chamar o Worker.
+// Ela anexa o ID Token do Firebase no header Authorization.
+//
+// Uso:  const r = await window.__luxFetch(WORKER_URL + '/createOrder', {
+//         method: 'POST', body: JSON.stringify({...})
+//       });
+// ───────────────────────────────────────────────────────────
+window.__luxFetch = async (url, options = {}) => {
+  if (!window.__luxUser) {
+    throw new Error('Usuário não autenticado.');
+  }
+  const idToken = await window.__luxUser.getIdToken();
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', 'Bearer ' + idToken);
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  return fetch(url, { ...options, headers });
+};
+
+// ───────────────────────────────────────────────────────────
 window.__luxSignIn = async () => {
   try {
-    const result = await signInWithPopup(auth, provider);
-    if (!isAllowed(result.user.email)) {
-      await signOut(auth);
-      showAuthError('Acesso não autorizado: ' + result.user.email);
-    }
+    await signInWithPopup(auth, provider);
+    // A validação real (whitelist) acontece quando o usuário faz
+    // qualquer chamada ao Worker. Se o email não estiver no KV,
+    // o Worker retorna 403 e o app exibe o erro.
   } catch (e) {
     if (e.code !== 'auth/popup-closed-by-user') showAuthError(e.message);
   }
@@ -52,7 +62,8 @@ window.__luxSignIn = async () => {
 window.__luxSignOut = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
-  if (user && isAllowed(user.email)) {
+  if (user) {
+    window.__luxUser = user;
     document.getElementById('screen-login').style.display = 'none';
     document.getElementById('screen-app').style.display   = 'flex';
     document.getElementById('user-name').textContent  = user.displayName || user.email;
@@ -71,6 +82,7 @@ onAuthStateChanged(auth, user => {
       if (typeof window.showDashboard === 'function') window.showDashboard();
     }
   } else {
+    window.__luxUser = null;
     document.getElementById('screen-login').style.display = 'flex';
     document.getElementById('screen-app').style.display   = 'none';
     window.__appReady = false;
