@@ -129,13 +129,30 @@ input[type="file"]{display:none}
 .sticker-error-overlay.show{display:flex}
 .sticker-error-overlay .err-icon{font-size:22px;color:#E87A7A}
 .sticker-error-overlay span{font-size:11px;color:#E87A7A;text-align:center;line-height:1.4}
-.sticker-info{padding:10px 12px;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+/* INFO: linha do número + botão download ⬇ MAIOR */
+.sticker-info{padding:8px 12px;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sticker-label{font-size:11px;font-family:'Cinzel',serif;letter-spacing:.08em;color:var(--text-dim);font-weight:600}
-.sticker-actions{display:flex;gap:6px;flex-shrink:0}
-.sticker-btn{background:rgba(255,255,255,.04);border:.5px solid var(--border);color:var(--text-dim);width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
-.sticker-btn:hover:not(:disabled){background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
-.sticker-btn:disabled{opacity:.3;cursor:not-allowed}
-.sticker-btn.refresh:hover:not(:disabled){color:#7FB87A;border-color:rgba(127,184,122,.4)}
+.sticker-btn-download{
+  background:rgba(255,255,255,.04);border:.5px solid var(--border);color:var(--text-dim);
+  width:38px;height:34px;border-radius:6px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:bold;transition:all .15s;line-height:1;
+}
+.sticker-btn-download:hover:not(:disabled){background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
+.sticker-btn-download:disabled{opacity:.3;cursor:not-allowed}
+
+/* REFRESH: centralizado embaixo, separado pra evitar clique errado */
+.sticker-refresh-row{border-top:.5px solid var(--border);padding:8px 12px;display:flex;justify-content:center}
+.sticker-btn-refresh{
+  background:rgba(255,255,255,.04);border:.5px solid var(--border);color:var(--text-dim);
+  padding:6px 16px;border-radius:6px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:12px;font-weight:600;transition:all .15s;
+  font-family:'Cinzel',serif;letter-spacing:.06em;
+}
+.sticker-btn-refresh:hover:not(:disabled){background:rgba(127,184,122,.1);border-color:rgba(127,184,122,.4);color:#7FB87A}
+.sticker-btn-refresh:disabled{opacity:.3;cursor:not-allowed}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -150,10 +167,47 @@ input[type="file"]{display:none}
 .panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
+/* HISTÓRICO */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.history-item{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  transition:all .15s;animation:fadeIn .3s ease both;
+}
+.history-item:hover{border-color:var(--border-bright);background:var(--bg-hover)}
+.history-item-info{flex:1;min-width:0}
+.history-client{font-size:15px;color:var(--text);font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta{font-size:12px;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:10px}
+.history-meta span{display:inline-flex;align-items:center;gap:4px}
+.history-meta .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge.completed{background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.3)}
+.badge.error{background:rgba(232,122,122,.15);color:#E87A7A;border:.5px solid rgba(232,122,122,.3)}
+.badge.partial{background:rgba(232,168,76,.15);color:#E8A84C;border:.5px solid rgba(232,168,76,.3)}
+.history-btn-view{
+  padding:8px 14px;background:rgba(201,168,76,.1);
+  border:.5px solid var(--border-bright);color:var(--gold);
+  border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600;
+  font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;
+  white-space:nowrap;flex-shrink:0;
+}
+.history-btn-view:hover{background:rgba(201,168,76,.2)}
+.history-loading{text-align:center;padding:40px 20px;color:var(--text-dim)}
+.history-empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.history-empty .icon{font-size:48px;opacity:.3;margin-bottom:14px;display:block}
+.history-refresh{
+  background:transparent;border:.5px solid var(--border);color:var(--text-dim);
+  padding:7px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;
+}
+.history-refresh:hover{border-color:var(--text-dim);color:var(--text)}
+
 @media(max-width:600px){
   .container{padding:1.2rem 1rem 4rem}
   .card{padding:1.2rem}
   .page-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .history-item{flex-direction:column;align-items:stretch}
+  .history-btn-view{width:100%}
 }
 </style>
 </head>
@@ -168,8 +222,10 @@ input[type="file"]{display:none}
   <div class="tabs-mini">
     <button class="tab-mini active" data-panel="novo">Novo Pedido</button>
     <button class="tab-mini" data-panel="resultados">Resultados</button>
+    <button class="tab-mini" data-panel="historico">Histórico</button>
   </div>
 
+  <!-- ═══ NOVO PEDIDO ════════════════════════════════════════════ -->
   <div class="panel active" id="panel-novo">
 
     <div class="card">
@@ -215,7 +271,7 @@ input[type="file"]{display:none}
         </div>
         <div class="format-btn" id="fmt-custom" onclick="selectFormat('personalizado')">
           <span class="f-icon">✎</span>
-          <span class="f-title">Personalizado</span>
+          <span class="f-title">Texto Personalizado</span>
           <span class="f-count">1 a 10 frases</span>
           <span class="f-desc">Edite as frases ou deixe em branco para gerar menos</span>
         </div>
@@ -227,7 +283,7 @@ input[type="file"]{display:none}
           <em>ESTILO BLOQUEADO 🔒</em>
         </div>
         <div class="phrases-hint">
-          💡 Deixe em branco para PULAR aquela figurinha. Você pode gerar de 1 até 10.
+          💡 Deixe em branco para PULAR a figurinha. Você pode gerar de 1 até 10.
         </div>
         <div id="phrasesList"></div>
       </div>
@@ -248,6 +304,7 @@ input[type="file"]{display:none}
 
   </div>
 
+  <!-- ═══ RESULTADOS ═════════════════════════════════════════════ -->
   <div class="panel" id="panel-resultados">
     <div id="resultsEmpty" style="text-align:center;padding:60px 20px;color:var(--text-dim)">
       <div style="font-size:48px;opacity:.3;margin-bottom:14px">✦</div>
@@ -268,6 +325,20 @@ input[type="file"]{display:none}
         </div>
         <div class="stickers-grid" id="stickersGrid"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTÓRICO ══════════════════════════════════════════════ -->
+  <div class="panel" id="panel-historico">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="results-title">Últimos 10 pedidos</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Clique em "Ver detalhes" para abrir o pack</div>
+      </div>
+      <button class="history-refresh" onclick="loadHistory()">🔄 Atualizar</button>
+    </div>
+    <div id="historyContainer">
+      <div class="history-loading">Carregando histórico...</div>
     </div>
   </div>
 
@@ -292,6 +363,7 @@ let state = {
   customPhrases: [...DEFAULT_PHRASES],
   currentOrderId: null, currentResults: [], currentTotal: 10,
   busyStickers: new Set(),
+  historyLoaded: false,
 };
 
 document.querySelectorAll('.tab-mini').forEach(t => {
@@ -300,11 +372,13 @@ document.querySelectorAll('.tab-mini').forEach(t => {
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('panel-' + t.dataset.panel).classList.add('active');
+    if (t.dataset.panel === 'historico') loadHistory();
   });
 });
 
 function goNewOrder() { document.querySelector('.tab-mini[data-panel="novo"]').click(); }
 function goResults()  { document.querySelector('.tab-mini[data-panel="resultados"]').click(); }
+function goHistory()  { document.querySelector('.tab-mini[data-panel="historico"]').click(); }
 
 document.getElementById('photoInput').addEventListener('change', handlePhoto);
 
@@ -472,10 +546,11 @@ async function generateStickers() {
 
     const totalOk = produceData.totalGenerated || 0;
     if (totalOk === state.currentTotal) toast(`✓ ${totalOk} figurinha${totalOk > 1 ? 's geradas' : ' gerada'}!`, 'success');
-    else toast(`⚠ Geradas ${totalOk}/${state.currentTotal}. Use o botão 🔄 nas que falharam.`, 'error');
+    else toast(`⚠ Geradas ${totalOk}/${state.currentTotal}. Use 🔄 nas que falharam.`, 'error');
 
     renderResults();
     goResults();
+    state.historyLoaded = false; // Forçar reload do histórico
 
   } catch (err) {
     clearInterval(timerInterval);
@@ -519,10 +594,10 @@ function renderResults() {
       </div>
       <div class="sticker-info">
         <span class="sticker-label">#${String(num).padStart(2,'0')}</span>
-        <div class="sticker-actions">
-          <button class="sticker-btn refresh" title="Refazer esta figurinha" onclick="correctSticker(${num})">🔄</button>
-          <button class="sticker-btn" title="Baixar" onclick="downloadOne(${num})" ${okFlag ? '' : 'disabled'}>⬇</button>
-        </div>
+        <button class="sticker-btn-download" title="Baixar" onclick="downloadOne(${num})" ${okFlag ? '' : 'disabled'}>⬇</button>
+      </div>
+      <div class="sticker-refresh-row">
+        <button class="sticker-btn-refresh" title="Refazer esta figurinha" onclick="correctSticker(${num})">🔄 REFAZER</button>
       </div>
     `;
     grid.appendChild(card);
@@ -543,7 +618,7 @@ async function correctSticker(num) {
   const errOverlay = card.querySelector('[data-error]');
   if (errOverlay) errOverlay.classList.remove('show');
   if (loading) loading.classList.add('show');
-  card.querySelectorAll('.sticker-btn').forEach(b => b.disabled = true);
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
 
   try {
     const resp = await fetch(WORKER_URL + '/correctSticker', {
@@ -573,7 +648,7 @@ async function correctSticker(num) {
     if (errOverlay) errOverlay.classList.add('show');
   } finally {
     if (loading) loading.classList.remove('show');
-    card.querySelectorAll('.sticker-btn').forEach(b => b.disabled = false);
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
     state.busyStickers.delete(num);
   }
 }
@@ -605,6 +680,89 @@ async function downloadAll() {
   toast('Downloads iniciados ✓', 'success');
 }
 
+// ════════════════════════════════════════════════════════════════
+// HISTÓRICO
+// ════════════════════════════════════════════════════════════════
+async function loadHistory() {
+  const container = document.getElementById('historyContainer');
+  container.innerHTML = '<div class="history-loading">Carregando histórico...</div>';
+
+  try {
+    const resp = await fetch(WORKER_URL + '/listOrders?limit=10');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar histórico');
+
+    if (!data.orders || data.orders.length === 0) {
+      container.innerHTML = `
+        <div class="history-empty">
+          <span class="icon">📋</span>
+          <p style="font-size:14px">Nenhum pedido no histórico ainda.</p>
+          <p style="font-size:12px;margin-top:6px">Gere seu primeiro pack na aba "Novo Pedido".</p>
+        </div>`;
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'history-list';
+    data.orders.forEach(order => {
+      const statusClass = order.status === 'COMPLETED' ? 'completed'
+                       : order.status === 'ERROR'     ? 'error' : 'partial';
+      const statusLabel = order.status === 'COMPLETED' ? 'Concluído'
+                       : order.status === 'ERROR'     ? 'Erro'
+                       : order.status === 'PARTIAL'   ? 'Parcial' : order.status;
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="history-item-info">
+          <div class="history-client">${escapeHtml(order.clientName)}</div>
+          <div class="history-meta">
+            <span>👤 ${escapeHtml(order.attendantName)}</span>
+            <span>📅 ${order.createdAt}</span>
+            <span>📦 ${order.totalGenerated}/${order.totalRequested}</span>
+            <span class="badge ${statusClass}">${statusLabel}</span>
+          </div>
+        </div>
+        <button class="history-btn-view" data-orderid="${order.orderId}">Ver detalhes →</button>
+      `;
+      item.querySelector('.history-btn-view').addEventListener('click', () => openHistoryOrder(order));
+      list.appendChild(item);
+    });
+    container.innerHTML = '';
+    container.appendChild(list);
+    state.historyLoaded = true;
+
+  } catch (err) {
+    container.innerHTML = `<div class="history-empty"><span class="icon">⚠️</span><p style="font-size:13px;color:#E87A7A">${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+async function openHistoryOrder(orderSummary) {
+  try {
+    showToast('Carregando pedido...', 'info');
+    const resp = await fetch(WORKER_URL + '/getOrder?orderId=' + encodeURIComponent(orderSummary.orderId));
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar pedido');
+
+    const order = data.order;
+    state.currentOrderId  = order.orderId;
+    state.atendente       = order.attendantName;
+    state.cliente         = order.clientName;
+    state.currentTotal    = order.totalRequested || 10;
+    state.currentResults  = order.stickers || [];
+
+    renderResults();
+    goResults();
+    hideToast();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
 function truncate(s, n) { return s.length > n ? s.substring(0, n - 1) + '…' : s; }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -628,6 +786,7 @@ window.correctSticker = correctSticker;
 window.downloadOne = downloadOne;
 window.downloadAll = downloadAll;
 window.goNewOrder = goNewOrder;
+window.loadHistory = loadHistory;
 
 try {
   const saved = localStorage.getItem('lux_atendente');
