@@ -62,6 +62,10 @@
         <div class="nav-icon">🎬</div> Vídeos
         <span class="nav-badge badge-live">LIVE</span>
       </a>
+      <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
+        <div class="nav-icon">⚙</div> Admin
+        <span class="nav-badge badge-live">ADMIN</span>
+      </a>
     </nav>
 
     <div class="sidebar-spacer"></div>
@@ -153,6 +157,15 @@
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">🎬 GERADOR DE VÍDEOS</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- ADMIN -->
+    <div id="view-admin" class="tool-panel" data-role-required="admin" style="display:none">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">⚙ ADMIN — GESTÃO DE USUÁRIOS</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
