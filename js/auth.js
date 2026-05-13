@@ -1,7 +1,14 @@
-// ═══ AUTENTICAÇÃO LUX ════════════════════════════════════════
-// Login com Google via Firebase.
-// A whitelist de e-mails agora é gerenciada NO WORKER (KV LUX_USERS),
-// não mais aqui. O front confia no que o Worker responder.
+// ═══ AUTENTICAÇÃO LUX (PAI) ══════════════════════════════════
+// Login com Google via Firebase. A whitelist agora é gerenciada
+// NO WORKER (KV LUX_USERS), não mais aqui.
+//
+// Este arquivo roda na PAGE PAI (index.html). Os iframes-filhos
+// (tools/figurinhas.html, etc.) NÃO podem acessar window.__luxFetch
+// diretamente porque cada iframe tem seu próprio JS context.
+//
+// Solução: o iframe envia postMessage({type:'luxGetToken'}) pra cá,
+// e este script responde com o ID Token do Firebase. O helper
+// __luxFetch do iframe (em auth-iframe.js) cuida do resto.
 // ═══════════════════════════════════════════════════════════════
 
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -23,17 +30,12 @@ const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Guarda o usuário atual e dados vindos do Worker (role, nome)
-window.__luxUser = null;     // objeto Firebase user
+// Guarda o usuário atual (Firebase user)
+window.__luxUser = null;
 
-// ── Helper global: __luxFetch ──────────────────────────────
-// Use SEMPRE essa função no lugar de fetch() pra chamar o Worker.
-// Ela anexa o ID Token do Firebase no header Authorization.
-//
-// Uso:  const r = await window.__luxFetch(WORKER_URL + '/createOrder', {
-//         method: 'POST', body: JSON.stringify({...})
-//       });
-// ───────────────────────────────────────────────────────────
+// ── Helper global: __luxFetch (para uso no PRÓPRIO index.html) ──
+// Iframes-filhos NÃO usam essa função: eles usam o helper do
+// auth-iframe.js, que pede token via postMessage.
 window.__luxFetch = async (url, options = {}) => {
   if (!window.__luxUser) {
     throw new Error('Usuário não autenticado.');
@@ -46,6 +48,34 @@ window.__luxFetch = async (url, options = {}) => {
   }
   return fetch(url, { ...options, headers });
 };
+
+// ── Listener pra os iframes pedirem o token ───────────────────
+// Iframe manda: { type: 'luxGetToken', requestId: <n> }
+// Pai responde: { type: 'luxToken',    requestId: <n>, token: '...' }
+//             ou: { type: 'luxToken',    requestId: <n>, error: '...' }
+window.addEventListener('message', async (event) => {
+  // Aceita só mensagens do mesmo origin (segurança)
+  if (event.origin !== window.location.origin) return;
+
+  const data = event.data;
+  if (!data || data.type !== 'luxGetToken') return;
+
+  try {
+    if (!window.__luxUser) {
+      throw new Error('Usuário não autenticado.');
+    }
+    const token = await window.__luxUser.getIdToken();
+    event.source.postMessage(
+      { type: 'luxToken', requestId: data.requestId, token },
+      event.origin
+    );
+  } catch (err) {
+    event.source.postMessage(
+      { type: 'luxToken', requestId: data.requestId, error: err.message },
+      event.origin
+    );
+  }
+});
 
 // ───────────────────────────────────────────────────────────
 window.__luxSignIn = async () => {
