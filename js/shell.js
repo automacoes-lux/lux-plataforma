@@ -8,6 +8,7 @@ const TOOLS = {
   figurinhas: 'tools/figurinhas.html',
   musica:     'tools/maestro.html',
   videos:     'tools/videos.html',
+  admin:      'tools/admin.html',
 };
 
 // ── NAVEGAÇÃO ──────────────────────────────────────────────
