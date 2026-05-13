@@ -96,9 +96,9 @@
         <div class="nav-icon">🤖</div> Vídeo Premium
         <span class="nav-badge badge-warning">EM BREVE</span>
       </a>
-      <a class="nav-item soon" data-tool="logo3d" href="#">
+      <a class="nav-item" data-tool="logo3d" href="#" onclick="openLogo3D(event)">
         <div class="nav-icon">💎</div> Logo 3D
-        <span class="nav-badge badge-warning">EM BREVE</span>
+        <span class="nav-badge badge-live">LIVE</span>
       </a>
       <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">⚙</div> Admin
@@ -187,12 +187,12 @@
           </div>
         </div>
 
-        <div class="tool-card soon">
+        <div class="tool-card" onclick="openLogo3D(event)">
           <div class="tool-card-icon">💎</div>
           <div class="tool-card-name">LOGO 3D</div>
           <div class="tool-card-desc">Geração de logos em 3D com IA para apresentações, abertura de vídeos e branding.</div>
           <div class="tool-card-footer">
-            <span class="status-soon-warning">● Em breve</span>
+            <span class="status-live">● Disponível</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
@@ -238,6 +238,36 @@
 
   </main>
 </div>
+
+<script>
+// ── LOGO 3D — abre site externo em nova aba ────────────────
+function openLogo3D(event) {
+  if (event) event.preventDefault();
+  // Copia email pro clipboard (se navegador permitir)
+  const email = 'gptluxmarketing@gmail.com';
+  try {
+    navigator.clipboard.writeText(email);
+    showLogo3DToast('✓ Email copiado: ' + email);
+  } catch (e) {
+    showLogo3DToast('Use o email: ' + email);
+  }
+  // Abre em nova aba
+  window.open('https://sellecionados.com/acesso-s3d', '_blank', 'noopener');
+}
+function showLogo3DToast(msg) {
+  let toast = document.getElementById('logo3d-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'logo3d-toast';
+    toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#121212;border:1px solid #C9A84C;color:#D4B968;padding:14px 22px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity .25s';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(window.__logo3dTimer);
+  window.__logo3dTimer = setTimeout(() => toast.style.opacity = '0', 3500);
+}
+</script>
 
 <script src="js/shell.js"></script>
 </body>
