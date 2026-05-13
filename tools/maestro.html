@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Maestro (Em Breve)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+  display:flex;align-items:center;justify-content:center;padding:2rem 1rem;
+}
+
+.coming-soon{
+  max-width:540px;width:100%;text-align:center;
+  background:#121212;border:.5px solid var(--border);
+  border-radius:24px;padding:3rem 2rem;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+.coming-soon .badge{
+  display:inline-block;
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;
+  color:var(--gold);background:rgba(201,168,76,.1);
+  border:.5px solid var(--border-bright);
+  padding:5px 14px;border-radius:30px;
+  margin-bottom:1.8rem;
+}
+.coming-soon .icon-big{
+  font-size:64px;margin-bottom:1.2rem;display:block;
+  filter:drop-shadow(0 4px 12px rgba(201,168,76,.25));
+}
+.coming-soon h1{
+  font-family:'Cinzel',serif;font-size:24px;font-weight:600;
+  color:var(--gold);letter-spacing:.08em;margin-bottom:0.8rem;
+}
+.coming-soon .sub{
+  font-size:15px;color:#B0A080;line-height:1.7;
+  margin-bottom:2rem;
+}
+.coming-soon .description{
+  font-size:13px;color:var(--text-dim);line-height:1.7;
+  margin-bottom:2rem;padding:1rem;
+  background:rgba(201,168,76,.03);border:.5px solid var(--border);
+  border-radius:12px;
+}
+.coming-soon .description strong{color:var(--gold-dim);}
+
+.features-list{
+  display:flex;flex-direction:column;gap:8px;
+  margin:1.5rem 0;text-align:left;
+}
+.feature-item{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--text-dim);
+  padding:8px 12px;background:rgba(255,255,255,.02);
+  border-radius:8px;
+}
+.feature-item .check{
+  color:var(--gold);font-size:14px;font-weight:bold;flex-shrink:0;
+}
+
+.progress-bar{
+  height:4px;background:rgba(201,168,76,.1);border-radius:30px;
+  overflow:hidden;margin:1.5rem 0;
+}
+.progress-bar-fill{
+  height:100%;width:35%;
+  background:linear-gradient(90deg,var(--gold-bright) 0%,var(--gold) 100%);
+  border-radius:30px;animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+.eta{
+  font-size:11px;color:var(--gold-dim);
+  font-family:'Cinzel',serif;letter-spacing:.1em;
+}
+
+.back-link{
+  display:inline-block;margin-top:1.5rem;
+  font-size:13px;color:var(--text-dim);
+  text-decoration:none;transition:color .15s;
+}
+.back-link:hover{color:var(--gold);}
+
+@media(max-width:600px){
+  .coming-soon{padding:2rem 1.5rem}
+  .coming-soon h1{font-size:20px}
+  .coming-soon .icon-big{font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<div class="coming-soon">
+  <span class="badge">EM DESENVOLVIMENTO</span>
+  <span class="icon-big">🎵</span>
+  <h1>Lux Maestro</h1>
+  <p class="sub">Gerador de letras de música personalizadas</p>
+
+  <div class="description">
+    Estamos preparando o <strong>Lux Maestro</strong> v2 — a ferramenta de geração de
+    letras de música com IA que vai ajudar você a criar jingles, paródias e composições
+    personalizadas para seus clientes.
+  </div>
+
+  <div class="features-list">
+    <div class="feature-item"><span class="check">✓</span> Letras profissionais com IA</div>
+    <div class="feature-item"><span class="check">✓</span> Múltiplos estilos musicais</div>
+    <div class="feature-item"><span class="check">✓</span> Histórico de composições</div>
+    <div class="feature-item"><span class="check">✓</span> Export direto para download</div>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-bar-fill"></div>
+  </div>
+  <div class="eta">EM BREVE</div>
+
+  <a href="../index.html" class="back-link">← Voltar ao painel</a>
+</div>
+
+</body>
+</html>
