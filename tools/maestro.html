@@ -185,7 +185,7 @@ body{
 
 .lyrics-actions{margin-top:1.5rem;display:flex;flex-direction:column;gap:10px}
 .lyrics-actions .copy-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:480px){.lyrics-actions .copy-row{grid-template-columns:1fr}}
+/* mobile: mantém 2 colunas pra economizar espaço */
 
 .toast{
   position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
@@ -522,12 +522,35 @@ function renderLyrics(order) {
 
 function parseLyrics(text) {
   if (!text) return [];
-  const parts = text.split(/\n(?=\[)/);
-  return parts.map(block => {
+
+  // Quebra em blocos a cada linha que começa com [
+  const rawParts = text.split(/\n(?=\[)/);
+  const blocks = rawParts.map(block => {
     const m = block.match(/^\[([^\]]+)\]\s*\n?([\s\S]*)$/);
     if (!m) return { name: 'Section', body: block.trim() };
     return { name: m[1].trim(), body: m[2].trim() };
   });
+
+  // Funde [Spoken Word ...] dentro do [Outro] que vem antes
+  const merged = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    const nameLower = b.name.toLowerCase();
+    const isSpoken = nameLower.startsWith('spoken') || nameLower.includes('locuç');
+
+    if (isSpoken && merged.length > 0 &&
+        merged[merged.length - 1].name.toLowerCase() === 'outro') {
+      // Funde com o Outro anterior
+      const prev = merged[merged.length - 1];
+      const spokenContent = `[${b.name}]\n${b.body}`.trim();
+      prev.body = prev.body
+        ? `${prev.body}\n${spokenContent}`
+        : spokenContent;
+    } else {
+      merged.push(b);
+    }
+  }
+  return merged;
 }
 
 async function regenerateSection(idx) {
@@ -596,14 +619,11 @@ function copyLyricsOnly() {
     .catch(() => showToast('Erro ao copiar', true));
 }
 
-// Copia só o prompt
+// Copia só o style prompt (sem weirdness/style_influence)
 function copyPromptOnly() {
   if (!currentOrder) return;
   const r = currentOrder.result;
-  const text =
-    `${r.style_prompt || ''}\n\n` +
-    `Weirdness: ${r.weirdness ?? '-'}\n` +
-    `Style Influence: ${r.style_influence ?? '-'}`;
+  const text = r.style_prompt || '';
   navigator.clipboard.writeText(text)
     .then(() => showToast('✓ Prompt copiado!'))
     .catch(() => showToast('Erro ao copiar', true));
