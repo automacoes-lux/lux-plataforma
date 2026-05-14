@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Meus Custos — Lux</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<script type="module" src="../js/auth-iframe.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.06) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:680px;margin:0 auto;padding:2rem 1.2rem 4rem}
+
+.page-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:1.5rem;padding-bottom:1rem;
+  border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;
+}
+.page-header h1{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:18px;letter-spacing:.12em;font-weight:600;
+}
+.page-header .atendente-label{font-size:12px;color:var(--text-dim)}
+.page-header .atendente-label strong{color:var(--gold-dim);font-weight:500}
+
+/* Seletor de mês */
+.month-selector{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-bottom:1.8rem;
+}
+.month-selector button{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);width:38px;height:38px;border-radius:8px;
+  cursor:pointer;font-size:18px;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.month-selector button:hover:not(:disabled){background:rgba(201,168,76,.1)}
+.month-selector button:disabled{opacity:.3;cursor:not-allowed}
+.month-selector .month-label{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:17px;letter-spacing:.06em;min-width:180px;text-align:center;
+}
+
+/* Card de total */
+.total-card{
+  background:linear-gradient(135deg,rgba(201,168,76,.08) 0%,rgba(201,168,76,.03) 100%);
+  border:1px solid var(--border-bright);border-radius:16px;
+  padding:2rem 1.5rem;text-align:center;margin-bottom:1.5rem;
+}
+.total-card .label{
+  font-size:11px;color:var(--gold-dim);letter-spacing:.15em;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.total-card .value{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:38px;font-weight:700;letter-spacing:.02em;
+}
+.total-card .sub{
+  font-size:12px;color:var(--text-dim);margin-top:6px;
+}
+
+/* Breakdown por ferramenta */
+.breakdown{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+@media(max-width:520px){.breakdown{grid-template-columns:1fr}}
+.breakdown-card{
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  border-radius:12px;padding:1.2rem;
+}
+.breakdown-card .tool-name{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--text);font-weight:600;margin-bottom:10px;
+}
+.breakdown-card .tool-value{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:24px;font-weight:600;
+}
+.breakdown-card .tool-qtd{
+  font-size:12px;color:var(--text-dim);margin-top:4px;
+}
+
+/* Loading e vazio */
+.state-msg{
+  text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px;
+}
+.state-msg.loading::before{
+  content:'';display:inline-block;width:16px;height:16px;
+  border:2px solid var(--gold-dim);border-top-color:transparent;
+  border-radius:50%;animation:spin 1s linear infinite;
+  vertical-align:middle;margin-right:10px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.info-note{
+  font-size:11px;color:var(--text-dim);text-align:center;
+  margin-top:1.5rem;line-height:1.6;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="page-header">
+    <h1>💰 MEUS CUSTOS</h1>
+    <div class="atendente-label">Atendente: <strong id="atendenteLabel">Carregando...</strong></div>
+  </div>
+
+  <div class="month-selector">
+    <button id="btnPrev" title="Mês anterior">‹</button>
+    <span class="month-label" id="monthLabel">—</span>
+    <button id="btnNext" title="Próximo mês">›</button>
+  </div>
+
+  <div id="content">
+    <div class="state-msg loading">Carregando seus custos...</div>
+  </div>
+
+  <div class="info-note">
+    Os valores são calculados com a cotação do dólar travada no momento de cada pedido.<br/>
+    Pedidos anteriores ao sistema de custos não aparecem nos totais.
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+const FIGURINHAS_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
+const MUSIC_URL      = 'https://lux-music.plataformalux.workers.dev';
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// Mês atual sendo exibido (objeto Date no dia 1)
+let viewDate = new Date();
+viewDate.setDate(1);
+
+// Mês "máximo" = mês atual (não deixa navegar pro futuro)
+const maxDate = new Date();
+maxDate.setDate(1);
+maxDate.setHours(0,0,0,0);
+
+// ════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════
+async function initAtendente() {
+  const label = document.getElementById('atendenteLabel');
+  try {
+    let tries = 0;
+    while (!window.__luxFetch && tries < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      tries++;
+    }
+    if (!window.__luxFetch) { label.textContent = '(recarregue)'; return; }
+    const resp = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
+    const data = await resp.json();
+    if (data.ok && data.user) {
+      label.textContent = data.user.name || data.user.email || 'Atendente';
+    } else {
+      label.textContent = 'Atendente';
+    }
+  } catch (e) {
+    label.textContent = '(erro)';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+function monthKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+function monthLabel(date) {
+  return `${MESES[date.getMonth()]} ${date.getFullYear()}`;
+}
+function fmtBRL(v) {
+  return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+}
+
+// ════════════════════════════════════════════════════════════
+// CARREGA OS DADOS DO MÊS
+// ════════════════════════════════════════════════════════════
+async function loadMonth() {
+  const content = document.getElementById('content');
+  const mLabel  = document.getElementById('monthLabel');
+  mLabel.textContent = monthLabel(viewDate);
+
+  // Atualiza estado dos botões (não navega pro futuro)
+  document.getElementById('btnNext').disabled =
+    (viewDate.getFullYear() === maxDate.getFullYear() &&
+     viewDate.getMonth() === maxDate.getMonth());
+
+  content.innerHTML = '<div class="state-msg loading">Carregando seus custos...</div>';
+
+  const mk = monthKey(viewDate);
+
+  try {
+    // Busca os 2 Workers em paralelo
+    const [figResp, musResp] = await Promise.all([
+      window.__luxFetch(`${FIGURINHAS_URL}/summary?month=${mk}`),
+      window.__luxFetch(`${MUSIC_URL}/summary?month=${mk}`)
+    ]);
+    const figData = await figResp.json();
+    const musData = await musResp.json();
+
+    // Os 2 Workers compartilham o KV, então o summary geral é o mesmo.
+    // Mas o /summary filtra pelo atendente logado.
+    // O summary do atendente já tem figurinhas E musica somados (mesmo KV).
+    // Uso o do figurinhas como fonte (são idênticos).
+    const s = (figData.ok && figData.summary) ? figData.summary
+            : (musData.ok && musData.summary) ? musData.summary
+            : null;
+
+    if (!s) {
+      content.innerHTML = '<div class="state-msg">Não foi possível carregar os custos deste mês.</div>';
+      return;
+    }
+
+    const temDados = s.pedidos > 0;
+
+    content.innerHTML = `
+      <div class="total-card">
+        <div class="label">Total do mês</div>
+        <div class="value">${fmtBRL(s.totalBRL)}</div>
+        <div class="sub">${s.pedidos} pedido${s.pedidos !== 1 ? 's' : ''} no mês</div>
+      </div>
+
+      <div class="breakdown">
+        <div class="breakdown-card">
+          <div class="tool-name">🎭 Figurinhas</div>
+          <div class="tool-value">${fmtBRL(s.figurinhas.brl)}</div>
+          <div class="tool-qtd">${s.figurinhas.qtd} figurinha${s.figurinhas.qtd !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="breakdown-card">
+          <div class="tool-name">🎵 Letras de Música</div>
+          <div class="tool-value">${fmtBRL(s.musica.brl)}</div>
+          <div class="tool-qtd">${s.musica.qtd} letra${s.musica.qtd !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      ${!temDados ? '<div class="state-msg">Nenhum pedido neste mês ainda.</div>' : ''}
+    `;
+  } catch (err) {
+    content.innerHTML = `<div class="state-msg">Erro ao carregar: ${err.message}</div>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// NAVEGAÇÃO DE MÊS
+// ════════════════════════════════════════════════════════════
+document.getElementById('btnPrev').addEventListener('click', () => {
+  viewDate.setMonth(viewDate.getMonth() - 1);
+  loadMonth();
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  // Não navega pro futuro
+  if (viewDate.getFullYear() === maxDate.getFullYear() &&
+      viewDate.getMonth() === maxDate.getMonth()) return;
+  viewDate.setMonth(viewDate.getMonth() + 1);
+  loadMonth();
+});
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+(async function init() {
+  await initAtendente();
+  // espera __luxFetch
+  let tries = 0;
+  while (!window.__luxFetch && tries < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    tries++;
+  }
+  loadMonth();
+})();
+</script>
+
+</body>
+</html>
