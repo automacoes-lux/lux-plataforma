@@ -50,6 +50,12 @@ body{
 }
 .month-selector button:hover:not(:disabled){background:rgba(201,168,76,.1)}
 .month-selector button:disabled{opacity:.3;cursor:not-allowed}
+.month-selector .btn-refresh{
+  margin-left:8px;font-size:15px;
+}
+.month-selector .btn-refresh.spinning{
+  animation:spin .8s linear infinite;
+}
 .month-selector .month-label{
   font-family:'Cinzel',serif;color:var(--gold);
   font-size:17px;letter-spacing:.06em;min-width:180px;text-align:center;
@@ -123,6 +129,7 @@ body{
     <button id="btnPrev" title="Mês anterior">‹</button>
     <span class="month-label" id="monthLabel">—</span>
     <button id="btnNext" title="Próximo mês">›</button>
+    <button id="btnRefresh" title="Atualizar" class="btn-refresh">↻</button>
   </div>
 
   <div id="content">
@@ -274,18 +281,41 @@ document.getElementById('btnNext').addEventListener('click', () => {
   viewDate.setMonth(viewDate.getMonth() + 1);
   loadMonth();
 });
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spinning');
+  loadMonth().finally(() => {
+    setTimeout(() => btn.classList.remove('spinning'), 400);
+  });
+});
 
 // ════════════════════════════════════════════════════════════
-// INIT
+// INIT — espera o auth ESTAR PRONTO de verdade antes de carregar
 // ════════════════════════════════════════════════════════════
 (async function init() {
   await initAtendente();
-  // espera __luxFetch
+
+  // 1. Espera o __luxFetch existir
   let tries = 0;
-  while (!window.__luxFetch && tries < 50) {
+  while (!window.__luxFetch && tries < 60) {
     await new Promise(r => setTimeout(r, 100));
     tries++;
   }
+
+  // 2. Espera o TOKEN estar realmente disponível.
+  //    Faz uma chamada de teste; se falhar por auth, espera e tenta de novo.
+  let authReady = false;
+  for (let attempt = 0; attempt < 8 && !authReady; attempt++) {
+    try {
+      const test = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
+      const td = await test.json();
+      if (td && td.ok) { authReady = true; break; }
+    } catch (e) { /* ainda não pronto */ }
+    await new Promise(r => setTimeout(r, 350));
+  }
+
+  // 3. Agora sim carrega (mesmo que authReady tenha dado timeout,
+  //    tenta — e o usuário tem o botão ↻ como garantia)
   loadMonth();
 })();
 </script>
