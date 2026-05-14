@@ -195,6 +195,7 @@ input[type="file"]{display:none}
 .badge.completed{background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.3)}
 .badge.error{background:rgba(232,122,122,.15);color:#E87A7A;border:.5px solid rgba(232,122,122,.3)}
 .badge.partial{background:rgba(232,168,76,.15);color:#E8A84C;border:.5px solid rgba(232,168,76,.3)}
+.badge.cost{background:rgba(201,168,76,.15);color:var(--gold);border:.5px solid var(--border-bright);text-transform:none}
 .history-btn-view{padding:8px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .history-btn-view:hover{background:rgba(201,168,76,.2)}
 .history-loading{text-align:center;padding:40px 20px;color:var(--text-dim)}
@@ -623,6 +624,7 @@ async function generateStickers() {
 
     state.currentResults = produceData.results || [];
     state.currentTotal   = produceData.totalExpected || totalToGenerate;
+    state.currentCostBRL = produceData.costBRL ?? null;
 
     clearInterval(timerInterval);
     statusBar.classList.remove('show');
@@ -652,7 +654,10 @@ function renderResults() {
   document.getElementById('resultsEmpty').style.display = 'none';
   document.getElementById('resultsContent').style.display = '';
   document.getElementById('resOrderTitle').textContent = `Pack — ${state.cliente}`;
-  document.getElementById('resOrderMeta').textContent  = `Atendente: ${state.atendente} · ${state.currentTotal} figurinhas`;
+  const custoTxt = (state.currentCostBRL != null)
+    ? ` · Custo: R$ ${Number(state.currentCostBRL).toFixed(2).replace('.', ',')}`
+    : '';
+  document.getElementById('resOrderMeta').textContent  = `Atendente: ${state.atendente} · ${state.currentTotal} figurinhas${custoTxt}`;
 
   const grid = document.getElementById('stickersGrid');
   grid.innerHTML = '';
@@ -756,6 +761,9 @@ async function loadHistory() {
 
       const item = document.createElement('div');
       item.className = 'history-item';
+      const custoBadge = (order.costBRL != null)
+        ? `<span class="badge cost">R$ ${Number(order.costBRL).toFixed(2).replace('.', ',')}</span>`
+        : '';
       item.innerHTML = `
         <div class="history-item-info">
           <div class="history-client">${escapeHtml(order.clientName)}</div>
@@ -764,6 +772,7 @@ async function loadHistory() {
             <span>📅 ${escapeHtml(order.createdAt)}</span>
             <span>📦 ${order.totalGenerated}/${order.totalRequested}</span>
             <span class="badge ${statusClass}">${statusLabel}</span>
+            ${custoBadge}
           </div>
         </div>
         <button class="history-btn-view">Ver detalhes →</button>
@@ -791,6 +800,7 @@ async function openHistoryOrder(orderSummary) {
     state.cliente         = order.clientName;
     state.currentTotal    = order.totalRequested || 10;
     state.currentResults  = order.stickers || [];
+    state.currentCostBRL  = order.costBRL ?? null;
 
     renderResults();
     goResults();
