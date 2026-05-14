@@ -100,6 +100,10 @@
         <div class="nav-icon">💎</div> Logo 3D
         <span class="nav-badge badge-live">LIVE</span>
       </a>
+      <a class="nav-item" data-tool="meus-custos" href="#">
+        <div class="nav-icon">💰</div> Meus Custos
+        <span class="nav-badge badge-live">LIVE</span>
+      </a>
       <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">⚙</div> Admin
         <span class="nav-badge badge-live">ADMIN</span>
@@ -197,6 +201,16 @@
           </div>
         </div>
 
+        <div class="tool-card" onclick="loadTool('meus-custos')">
+          <div class="tool-card-icon">💰</div>
+          <div class="tool-card-name">MEUS CUSTOS</div>
+          <div class="tool-card-desc">Acompanhe seus gastos mensais com figurinhas e letras de música.</div>
+          <div class="tool-card-footer">
+            <span class="status-live">● Disponível</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -228,6 +242,14 @@
     </div>
 
     <!-- ADMIN -->
+    <div id="view-meus-custos" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">💰 MEUS CUSTOS</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
     <div id="view-admin" class="tool-panel" data-role-required="admin" style="display:none">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
