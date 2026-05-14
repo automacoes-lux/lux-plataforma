@@ -2,6 +2,10 @@
    Reusado por todas as ferramentas e pelo shell.
    Para mudar a identidade visual, edite só este arquivo.
    ═══════════════════════════════════════════════════════════ */
+
+/* Importa Inter do Google Fonts (substituta gratuita da Söhne do ChatGPT) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@400;600;700&display=swap');
+
 :root{
   /* Cores principais */
   --gold:#C9A84C;
@@ -33,6 +37,64 @@
   --radius-lg:16px;
   --shadow:0 8px 32px rgba(0,0,0,.6);
   --sidebar-w:240px;
+
+  /* ═══ TIPOGRAFIA GLOBAL — padrão Inter (estilo ChatGPT) ═══ */
+  --font-body:'Inter','DM Sans',system-ui,-apple-system,sans-serif;
+  --font-display:'Cinzel',serif;
+
+  --fs-body:17px;        /* texto comum */
+  --fs-section:14px;     /* títulos de seções (maiúsculas) */
+  --fs-input:16px;       /* campos de form */
+  --fs-button:15px;      /* botões */
+  --fs-card:16px;        /* cards de histórico */
+  --fs-small:13px;       /* hints, metadados */
+  --fs-tiny:11px;        /* labels muito pequenos */
+
+  --lh-body:1.7;         /* line-height arejado */
+}
+
+/* ═══ Sobrescrevem fonte/tamanho em TODA a plataforma ═══
+   Mantém Cinzel onde já está aplicado explicitamente. */
+html, body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+/* Inputs, botões, textareas, selects */
+input, button, textarea, select {
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  line-height: 1.5;
+}
+button {
+  font-size: var(--fs-button);
+}
+
+/* Cards de histórico (qualquer .history-item) */
+.history-item, .history-item *:not(.history-item-title):not(.history-item-date) {
+  font-size: var(--fs-card);
+}
+.history-item-date {
+  font-size: var(--fs-small);
+}
+
+/* Hints e metadados pequenos */
+.hint, .meta, .history-item-meta {
+  font-size: var(--fs-small);
+}
+
+/* Labels de seção em maiúsculas */
+.section-title, .form-section-title, .field label {
+  font-size: var(--fs-section);
+}
+
+/* Cinzel mantido onde já estava aplicado — fonte de display dourada */
+h1, h2, h3, h4, h5, h6,
+.cinzel, .lyrics-section-tag, .history-item-title,
+.tool-card-name, .lyrics-header h2,
+.page-header h1, .badge {
+  font-family: var(--font-display);
 }
 
 /* Scrollbar discreta padrão */
