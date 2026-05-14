@@ -217,6 +217,10 @@ body{
   background:rgba(201,168,76,.1);color:var(--gold-dim);
   border:.5px solid var(--border-bright);letter-spacing:.06em;
 }
+.history-item-badge.cost{
+  background:rgba(127,184,122,.12);color:#7FB87A;
+  border-color:rgba(127,184,122,.3);font-weight:600;
+}
 </style>
 </head>
 <body>
@@ -439,7 +443,8 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
       briefing,
       ritmo,
       clientName: data.result.nome_negocio || '',
-      result:     data.result
+      result:     data.result,
+      costBRL:    data.costBRL ?? null
     };
 
     status.className = 'status-box show';
@@ -488,6 +493,10 @@ function renderLyrics(order) {
     `;
   });
 
+  const custoLinha = (order.costBRL != null)
+    ? `<span><strong>Custo:</strong> R$ ${Number(order.costBRL).toFixed(2).replace('.', ',')}</span>`
+    : '';
+
   html += `
     <div class="style-box">
       <div class="style-box-label">Estilo / Style Prompt</div>
@@ -495,6 +504,7 @@ function renderLyrics(order) {
       <div class="style-box-meta">
         <span><strong>Weirdness:</strong> ${r.weirdness ?? '-'}</span>
         <span><strong>Style Influence:</strong> ${r.style_influence ?? '-'}</span>
+        ${custoLinha}
       </div>
     </div>
 
@@ -655,6 +665,9 @@ async function loadHistory() {
     }
     let html = '';
     data.orders.forEach(o => {
+      const custoBadge = (o.costBRL != null)
+        ? `<span class="history-item-badge cost">R$ ${Number(o.costBRL).toFixed(2).replace('.', ',')}</span>`
+        : '';
       html += `
         <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
           <div class="history-item-top">
@@ -667,6 +680,7 @@ async function loadHistory() {
             · ${escapeHtml(o.attendantName || '-')}
             ${o.hasImage ? '<span class="history-item-badge">📎 c/ imagem</span>' : ''}
             ${o.regenerations ? '<span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
+            ${custoBadge}
           </div>
         </div>
       `;
@@ -691,7 +705,8 @@ async function openHistoryOrder(orderId) {
       briefing:   o.briefing,
       ritmo:      o.ritmo,
       clientName: o.clientName,
-      result:     o.result
+      result:     o.result,
+      costBRL:    o.costBRL ?? null
     };
     renderLyrics(currentOrder);
     document.getElementById('tab-lyrics-btn').style.display = '';
