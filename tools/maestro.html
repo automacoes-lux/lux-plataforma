@@ -25,7 +25,18 @@ body{
 }
 .container{max-width:780px;margin:0 auto;padding:2rem 1.2rem 4rem}
 
-/* Tabs */
+.page-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:1.5rem;padding-bottom:1rem;
+  border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;
+}
+.page-header h1{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:18px;letter-spacing:.12em;font-weight:600;
+}
+.page-header .atendente-label{font-size:12px;color:var(--text-dim)}
+.page-header .atendente-label strong{color:var(--gold-dim);font-weight:500}
+
 .tabs{
   display:flex;gap:6px;border-bottom:1px solid var(--border);
   margin-bottom:1.8rem;flex-wrap:wrap;
@@ -38,17 +49,12 @@ body{
   transition:all .15s;text-transform:uppercase;
 }
 .tab-btn:hover{color:var(--text)}
-.tab-btn.active{
-  color:var(--gold);border-bottom-color:var(--gold);
-}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
 .tab-content{display:none}
 .tab-content.active{display:block;animation:fadeIn .25s}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* Form */
 .form-grid{display:grid;gap:1.2rem}
-.row-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-@media(max-width:600px){.row-2{grid-template-columns:1fr}}
 
 .field label{
   display:block;font-size:11px;font-weight:600;letter-spacing:.1em;
@@ -63,17 +69,12 @@ body{
 .field input:focus,.field textarea:focus,.field select:focus{
   outline:none;border-color:var(--gold-dim);
 }
-.field input[readonly]{
-  background:rgba(255,255,255,.03);color:var(--text-dim);cursor:not-allowed;
-}
-.field textarea{min-height:130px;resize:vertical;line-height:1.5}
+.field textarea{min-height:250px;resize:vertical;line-height:1.5}
 .field .hint{
-  display:block;font-size:11px;color:var(--text-dim);margin-top:5px;
-  line-height:1.5;
+  display:block;font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;
 }
 .field .hint strong{color:var(--gold-dim)}
 
-/* Image upload */
 .image-upload{
   border:2px dashed var(--border);border-radius:10px;
   padding:1.5rem;text-align:center;cursor:pointer;
@@ -83,9 +84,7 @@ body{
 .image-upload input{display:none}
 .image-upload-text{font-size:13px;color:var(--text-dim)}
 .image-upload-text strong{color:var(--gold-dim)}
-.image-preview{
-  margin-top:12px;display:none;position:relative;
-}
+.image-preview{margin-top:12px;display:none;position:relative}
 .image-preview img{
   max-width:100%;max-height:200px;border-radius:8px;
   border:1px solid var(--border);
@@ -98,7 +97,6 @@ body{
 }
 .image-preview.has-img{display:block}
 
-/* Button */
 .btn-primary{
   width:100%;padding:14px 24px;
   background:linear-gradient(135deg,var(--gold) 0%,var(--gold-bright) 100%);
@@ -115,16 +113,16 @@ body{
 .btn-primary:disabled{opacity:.5;cursor:wait}
 
 .btn-secondary{
-  display:inline-block;padding:8px 16px;
+  display:inline-block;padding:12px 18px;
   background:transparent;border:1px solid var(--border-bright);
-  color:var(--gold);border-radius:6px;
-  font-size:12px;font-weight:500;cursor:pointer;
-  font-family:'DM Sans',sans-serif;letter-spacing:.04em;
-  transition:all .15s;text-decoration:none;
+  color:var(--gold);border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:.08em;
+  transition:all .15s;text-decoration:none;text-transform:uppercase;
+  text-align:center;
 }
 .btn-secondary:hover{background:rgba(201,168,76,.08)}
 
-/* Status box */
 .status-box{
   margin-top:1.2rem;padding:14px 16px;border-radius:8px;
   border:1px solid var(--border);background:rgba(255,255,255,.02);
@@ -132,8 +130,7 @@ body{
 }
 .status-box.show{display:block}
 .status-box.error{
-  border-color:rgba(220,80,80,.4);background:rgba(220,80,80,.06);
-  color:#E89090;
+  border-color:rgba(220,80,80,.4);background:rgba(220,80,80,.06);color:#E89090;
 }
 .status-box.loading::before{
   content:'';display:inline-block;width:14px;height:14px;
@@ -143,18 +140,9 @@ body{
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Lyrics display */
-.lyrics-header{
-  margin-bottom:1.5rem;padding-bottom:1rem;
-  border-bottom:1px solid var(--border);
-}
-.lyrics-header h2{
-  font-family:'Cinzel',serif;color:var(--gold);
-  font-size:22px;letter-spacing:.06em;margin-bottom:8px;
-}
-.lyrics-header .meta{
-  font-size:12px;color:var(--text-dim);
-}
+.lyrics-header{margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.lyrics-header h2{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;letter-spacing:.06em;margin-bottom:8px}
+.lyrics-header .meta{font-size:12px;color:var(--text-dim)}
 .lyrics-header .meta span{color:var(--gold-dim)}
 
 .lyrics-section{
@@ -162,18 +150,9 @@ body{
   background:rgba(255,255,255,.02);border-radius:10px;
   border:1px solid var(--border);position:relative;
 }
-.lyrics-section.regenerating{
-  border-color:var(--gold-dim);
-  background:rgba(201,168,76,.04);
-}
-.lyrics-section-header{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:10px;
-}
-.lyrics-section-tag{
-  font-family:'Cinzel',serif;color:var(--gold);
-  font-size:13px;font-weight:600;letter-spacing:.1em;
-}
+.lyrics-section.regenerating{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
+.lyrics-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.lyrics-section-tag{font-family:'Cinzel',serif;color:var(--gold);font-size:13px;font-weight:600;letter-spacing:.1em}
 .btn-regen{
   background:transparent;border:1px solid var(--border-bright);
   color:var(--gold);border-radius:6px;
@@ -184,33 +163,30 @@ body{
 .btn-regen:hover:not(:disabled){background:rgba(201,168,76,.1)}
 .btn-regen:disabled{opacity:.5;cursor:wait}
 .btn-regen .spin-icon{display:inline-block;animation:spin 1s linear infinite}
-
 .lyrics-section-content{
   white-space:pre-wrap;font-family:'DM Sans',sans-serif;
   font-size:14px;line-height:1.7;color:var(--text);
 }
 
-.lyrics-actions{
-  margin-top:1.5rem;display:flex;gap:10px;flex-wrap:wrap;
-}
-.lyrics-actions button{flex:1;min-width:140px}
-
-/* Style prompt box */
 .style-box{
-  margin-top:1.5rem;padding:14px;
-  background:rgba(201,168,76,.04);border:1px solid var(--border);
-  border-radius:8px;
+  margin-top:1.5rem;padding:14px 16px;
+  background:rgba(201,168,76,.04);border:1px solid var(--border);border-radius:8px;
 }
 .style-box-label{
   font-size:11px;color:var(--gold-dim);letter-spacing:.1em;
   font-weight:600;text-transform:uppercase;margin-bottom:6px;
 }
-.style-box-content{font-size:13px;color:var(--text)}
+.style-box-content{font-size:13px;color:var(--text);line-height:1.6}
 .style-box-meta{
-  margin-top:6px;font-size:11px;color:var(--text-dim);
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;
 }
+.style-box-meta strong{color:var(--gold-dim);font-weight:500}
 
-/* Toast */
+.lyrics-actions{margin-top:1.5rem;display:flex;flex-direction:column;gap:10px}
+.lyrics-actions .copy-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.lyrics-actions .copy-row{grid-template-columns:1fr}}
+
 .toast{
   position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
   background:#121212;border:1px solid var(--gold-dim);
@@ -221,26 +197,18 @@ body{
 .toast.show{opacity:1}
 .toast.error{border-color:#C25050;color:#E89090}
 
-/* História */
-.history-empty{
-  text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px;
-}
+.history-empty{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px}
 .history-item{
   background:rgba(255,255,255,.02);border:1px solid var(--border);
   border-radius:10px;padding:14px 16px;margin-bottom:10px;
   cursor:pointer;transition:all .15s;
 }
-.history-item:hover{
-  border-color:var(--gold-dim);background:rgba(201,168,76,.04);
-}
+.history-item:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
 .history-item-top{
   display:flex;justify-content:space-between;align-items:center;
   margin-bottom:6px;flex-wrap:wrap;gap:6px;
 }
-.history-item-title{
-  font-family:'Cinzel',serif;color:var(--gold);font-size:14px;
-  font-weight:600;letter-spacing:.04em;
-}
+.history-item-title{font-family:'Cinzel',serif;color:var(--gold);font-size:14px;font-weight:600;letter-spacing:.04em}
 .history-item-date{font-size:11px;color:var(--text-dim)}
 .history-item-meta{font-size:12px;color:var(--text-dim);line-height:1.5}
 .history-item-meta strong{color:var(--gold-dim)}
@@ -255,27 +223,19 @@ body{
 
 <div class="container">
 
-  <!-- Tabs -->
+  <div class="page-header">
+    <h1>✦ LUX MUSIC</h1>
+    <div class="atendente-label">Atendente: <strong id="atendenteLabel">Carregando...</strong></div>
+  </div>
+
   <div class="tabs">
     <button class="tab-btn active" data-tab="new">✦ Novo Pedido</button>
     <button class="tab-btn" data-tab="lyrics" id="tab-lyrics-btn" style="display:none">🎵 Letra Gerada</button>
     <button class="tab-btn" data-tab="history">📜 Histórico</button>
   </div>
 
-  <!-- TAB: NOVO PEDIDO -->
   <div id="tab-new" class="tab-content active">
     <div class="form-grid">
-
-      <div class="row-2">
-        <div class="field">
-          <label>Atendente</label>
-          <input type="text" id="atendente" readonly value="Carregando..."/>
-        </div>
-        <div class="field">
-          <label>Nome do Cliente / Negócio</label>
-          <input type="text" id="clientName" placeholder="Ex: Cantinho da Festa" maxlength="80"/>
-        </div>
-      </div>
 
       <div class="field">
         <label>Briefing</label>
@@ -289,13 +249,14 @@ body{
           <input type="file" id="imageInput" accept="image/*"/>
           <div class="image-upload-text">
             <strong>Clique para enviar</strong> panfleto, cartão ou foto do estabelecimento<br/>
-            <small>A IA vai ler todas as informações da imagem (até 10MB)</small>
+            <small>A IA lê as informações da imagem automaticamente (até 10MB)</small>
           </div>
         </label>
         <div class="image-preview" id="imagePreview">
           <img id="imagePreviewImg" alt=""/>
           <button type="button" class="remove-img" id="removeImg" title="Remover">✕</button>
         </div>
+        <span class="hint">Se enviar apenas a imagem (sem briefing), a IA vai extrair as informações automaticamente.</span>
       </div>
 
       <div class="field">
@@ -310,12 +271,10 @@ body{
     </div>
   </div>
 
-  <!-- TAB: LETRA -->
   <div id="tab-lyrics" class="tab-content">
     <div id="lyricsContent"></div>
   </div>
 
-  <!-- TAB: HISTÓRICO -->
   <div id="tab-history" class="tab-content">
     <div id="historyContent">
       <div class="history-empty">Carregando histórico...</div>
@@ -327,17 +286,13 @@ body{
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-// CONFIG
-// ════════════════════════════════════════════════════════════
 const API_URL = 'https://lux-music.plataformalux.workers.dev';
+const FIGURINHAS_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 
-let currentOrder = null;     // { orderId, briefing, ritmo, clientName, result }
-let compressedImage = null;  // { base64, mime } ou null
+let currentOrder = null;
+let compressedImage = null;
+let currentAtendente = '';
 
-// ════════════════════════════════════════════════════════════
-// TABS
-// ════════════════════════════════════════════════════════════
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab;
@@ -349,9 +304,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// ════════════════════════════════════════════════════════════
-// TOAST
-// ════════════════════════════════════════════════════════════
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -360,40 +312,32 @@ function showToast(msg, isError = false) {
   window.__toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ════════════════════════════════════════════════════════════
-// AUTH — pega nome do atendente via /admin/me (Worker figurinhas)
-// ════════════════════════════════════════════════════════════
-const FIGURINHAS_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
-
 async function initAtendente() {
-  const input = document.getElementById('atendente');
+  const label = document.getElementById('atendenteLabel');
   try {
-    // espera __luxFetch ficar disponível (vem do auth-iframe.js)
     let tries = 0;
     while (!window.__luxFetch && tries < 50) {
       await new Promise(r => setTimeout(r, 100));
       tries++;
     }
     if (!window.__luxFetch) {
-      input.value = '(recarregue a página)';
+      label.textContent = '(recarregue)';
       return;
     }
     const resp = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
     const data = await resp.json();
     if (data.ok && data.user) {
-      input.value = data.user.name || data.user.email || 'Atendente';
+      currentAtendente = data.user.name || data.user.email || 'Atendente';
+      label.textContent = currentAtendente;
     } else {
-      input.value = 'Atendente';
+      label.textContent = 'Atendente';
     }
   } catch (e) {
-    input.value = '(erro)';
+    label.textContent = '(erro)';
   }
 }
 initAtendente();
 
-// ════════════════════════════════════════════════════════════
-// UPLOAD DE IMAGEM (com compressão)
-// ════════════════════════════════════════════════════════════
 const imageInput   = document.getElementById('imageInput');
 const imagePreview = document.getElementById('imagePreview');
 const imagePreviewImg = document.getElementById('imagePreviewImg');
@@ -407,7 +351,6 @@ imageInput.addEventListener('change', async (e) => {
     imageInput.value = '';
     return;
   }
-
   try {
     const { base64, mime, dataUrl } = await compressImage(file);
     compressedImage = { base64, mime };
@@ -426,7 +369,6 @@ removeImgBtn.addEventListener('click', () => {
   imagePreview.classList.remove('has-img');
 });
 
-// Comprime para max 1600px no lado maior, JPEG 0.85
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -455,17 +397,16 @@ function compressImage(file) {
   });
 }
 
-// ════════════════════════════════════════════════════════════
-// GERAR LETRA
-// ════════════════════════════════════════════════════════════
 document.getElementById('btnGerar').addEventListener('click', async () => {
-  const briefing   = document.getElementById('briefing').value.trim();
-  const ritmo      = document.getElementById('ritmo').value.trim();
-  const clientName = document.getElementById('clientName').value.trim();
-  const status     = document.getElementById('statusGerar');
+  const briefing = document.getElementById('briefing').value.trim();
+  const ritmo    = document.getElementById('ritmo').value.trim();
+  const status   = document.getElementById('statusGerar');
 
-  if (!briefing) { showToast('Preencha o briefing.', true); return; }
-  if (!ritmo)    { showToast('Preencha o ritmo.', true); return; }
+  if (!briefing && !compressedImage) {
+    showToast('Preencha o briefing ou envie uma imagem.', true);
+    return;
+  }
+  if (!ritmo) { showToast('Preencha o ritmo.', true); return; }
 
   const btn = document.getElementById('btnGerar');
   btn.disabled = true;
@@ -473,7 +414,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
   status.textContent = 'Gerando letra com IA... pode levar até 30 segundos.';
 
   try {
-    const body = { briefing, ritmo, clientName };
+    const body = { briefing, ritmo };
     if (compressedImage) {
       body.imageBase64 = compressedImage.base64;
       body.imageMime   = compressedImage.mime;
@@ -497,7 +438,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
       orderId:    data.orderId,
       briefing,
       ritmo,
-      clientName: clientName || data.result.nome_negocio,
+      clientName: data.result.nome_negocio || '',
       result:     data.result
     };
 
@@ -515,19 +456,20 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
   }
 });
 
-// ════════════════════════════════════════════════════════════
-// RENDER LYRICS — separa em seções e adiciona botão regenerar
-// ════════════════════════════════════════════════════════════
 function renderLyrics(order) {
   const c = document.getElementById('lyricsContent');
   const r = order.result;
   const sections = parseLyrics(r.lyrics);
 
+  const clienteInfo = order.clientName
+    ? `Cliente: <span>${escapeHtml(order.clientName)}</span> · `
+    : '';
+
   let html = `
     <div class="lyrics-header">
       <h2>${escapeHtml(r.musica_nome || 'Letra sem título')}</h2>
       <div class="meta">
-        Cliente: <span>${escapeHtml(order.clientName)}</span> · Ritmo: <span>${escapeHtml(order.ritmo)}</span>
+        ${clienteInfo}Ritmo: <span>${escapeHtml(order.ritmo)}</span>
       </div>
     </div>
   `;
@@ -550,32 +492,37 @@ function renderLyrics(order) {
     <div class="style-box">
       <div class="style-box-label">Estilo / Style Prompt</div>
       <div class="style-box-content">${escapeHtml(r.style_prompt || '')}</div>
-      <div class="style-box-meta">Weirdness: ${r.weirdness ?? '-'} · Style Influence: ${r.style_influence ?? '-'}</div>
+      <div class="style-box-meta">
+        <span><strong>Weirdness:</strong> ${r.weirdness ?? '-'}</span>
+        <span><strong>Style Influence:</strong> ${r.style_influence ?? '-'}</span>
+      </div>
     </div>
 
     <div class="lyrics-actions">
-      <button class="btn-primary" id="btnCopyAll">📋 Copiar Letra</button>
-      <button class="btn-secondary" id="btnNew">+ Novo Pedido</button>
+      <div class="copy-row">
+        <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
+        <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
+      </div>
+      <button class="btn-primary" id="btnNew">+ Novo Pedido</button>
     </div>
   `;
 
   c.innerHTML = html;
 
-  // Bind botões de regenerar
   c.querySelectorAll('[data-regen-idx]').forEach(b => {
     b.addEventListener('click', () => regenerateSection(parseInt(b.dataset.regenIdx)));
   });
-  document.getElementById('btnCopyAll').addEventListener('click', copyAllLyrics);
+  document.getElementById('btnCopyLyrics').addEventListener('click', copyLyricsOnly);
+  document.getElementById('btnCopyPrompt').addEventListener('click', copyPromptOnly);
   document.getElementById('btnNew').addEventListener('click', () => {
     document.querySelector('[data-tab="new"]').click();
     resetForm();
   });
 }
 
-// Quebra "[Verse]\nbla\n[Chorus]\nble\n..." em array {name, body}
 function parseLyrics(text) {
   if (!text) return [];
-  const parts = text.split(/\n(?=\[)/); // quebra a cada linha que começa com [
+  const parts = text.split(/\n(?=\[)/);
   return parts.map(block => {
     const m = block.match(/^\[([^\]]+)\]\s*\n?([\s\S]*)$/);
     if (!m) return { name: 'Section', body: block.trim() };
@@ -583,14 +530,6 @@ function parseLyrics(text) {
   });
 }
 
-// Reconstrói a letra a partir das seções
-function buildLyricsFromSections(sections) {
-  return sections.map(s => `[${s.name}]\n${s.body}`).join('\n\n');
-}
-
-// ════════════════════════════════════════════════════════════
-// REGENERAR SEÇÃO
-// ════════════════════════════════════════════════════════════
 async function regenerateSection(idx) {
   if (!currentOrder) return;
   const sections = parseLyrics(currentOrder.result.lyrics);
@@ -606,7 +545,6 @@ async function regenerateSection(idx) {
   const sectionEl = document.querySelector(`[data-section-idx="${idx}"]`);
   const btn       = sectionEl.querySelector('.btn-regen');
   const content   = sectionEl.querySelector('.lyrics-section-content');
-  const originalBody = sections[idx].body;
 
   sectionEl.classList.add('regenerating');
   btn.disabled = true;
@@ -631,9 +569,7 @@ async function regenerateSection(idx) {
       btn.innerHTML = '<span class="icon">↻</span> Regenerar';
       return;
     }
-    // Atualiza a letra completa no currentOrder
     currentOrder.result.lyrics = data.lyrics;
-    // Re-renderiza só essa seção
     const newSections = parseLyrics(data.lyrics);
     if (newSections[idx]) {
       content.textContent = newSections[idx].body;
@@ -650,31 +586,32 @@ async function regenerateSection(idx) {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// COPIAR LETRA INTEIRA
-// ════════════════════════════════════════════════════════════
-function copyAllLyrics() {
+// Copia só a letra pura
+function copyLyricsOnly() {
   if (!currentOrder) return;
-  const r = currentOrder.result;
-  const text =
-    `${r.musica_nome || ''}\n\n` +
-    `${r.lyrics}\n\n` +
-    `--- Estilo (Suno) ---\n` +
-    `${r.style_prompt || ''}\n` +
-    `Weirdness: ${r.weirdness ?? '-'}\n` +
-    `Style Influence: ${r.style_influence ?? '-'}`;
+  const sections = parseLyrics(currentOrder.result.lyrics);
+  const text = sections.map(s => `[${s.name}]\n${s.body}`).join('\n\n');
   navigator.clipboard.writeText(text)
     .then(() => showToast('✓ Letra copiada!'))
     .catch(() => showToast('Erro ao copiar', true));
 }
 
-// ════════════════════════════════════════════════════════════
-// RESET FORM
-// ════════════════════════════════════════════════════════════
+// Copia só o prompt
+function copyPromptOnly() {
+  if (!currentOrder) return;
+  const r = currentOrder.result;
+  const text =
+    `${r.style_prompt || ''}\n\n` +
+    `Weirdness: ${r.weirdness ?? '-'}\n` +
+    `Style Influence: ${r.style_influence ?? '-'}`;
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('✓ Prompt copiado!'))
+    .catch(() => showToast('Erro ao copiar', true));
+}
+
 function resetForm() {
   document.getElementById('briefing').value = '';
   document.getElementById('ritmo').value = '';
-  document.getElementById('clientName').value = '';
   compressedImage = null;
   imageInput.value = '';
   imagePreview.classList.remove('has-img');
@@ -682,9 +619,6 @@ function resetForm() {
   document.getElementById('statusGerar').textContent = '';
 }
 
-// ════════════════════════════════════════════════════════════
-// HISTÓRICO
-// ════════════════════════════════════════════════════════════
 async function loadHistory() {
   const c = document.getElementById('historyContent');
   c.innerHTML = '<div class="history-empty">Carregando...</div>';
@@ -747,9 +681,6 @@ async function openHistoryOrder(orderId) {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// UTIL
-// ════════════════════════════════════════════════════════════
 function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
