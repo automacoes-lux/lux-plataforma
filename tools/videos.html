@@ -80,6 +80,23 @@ body{
 .field textarea{resize:vertical;min-height:80px;line-height:1.5}
 .field-hint{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4}
 
+/* CAIXAS DE TEXTO MÚLTIPLAS */
+.text-box{margin-bottom:1rem}
+.text-box:last-of-type{margin-bottom:0}
+.text-box label{font-size:12px;color:var(--gold-dim);display:block;margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.text-effect-tag{font-family:'DM Sans',sans-serif;text-transform:none;font-size:10px;letter-spacing:.02em;color:var(--text-dim);background:rgba(201,168,76,.08);padding:2px 8px;border-radius:20px;border:.5px solid var(--border);font-weight:400}
+.text-box textarea{width:100%;padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none;resize:vertical;min-height:54px;line-height:1.5;transition:border-color .15s,box-shadow .15s}
+.text-box textarea:focus{border-color:var(--border-bright);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
+.text-box textarea::placeholder{color:var(--text-dim);opacity:.5}
+
+/* PALETA DE CORES */
+.color-palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.color-swatch{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;transition:transform .12s,border-color .12s,box-shadow .12s;position:relative}
+.color-swatch:hover{transform:scale(1.12)}
+.color-swatch.selected{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.25)}
+.color-swatch.selected::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#080808;text-shadow:0 0 3px rgba(255,255,255,.8)}
+
+
 .upload-area{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s}
 .upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
 .upload-area .icon{font-size:30px;display:block;margin-bottom:9px;opacity:.55}
@@ -276,15 +293,70 @@ input[type="file"]{display:none}
     </div>
 
     <div class="card">
-      <div class="card-title">Chamada de texto <span class="opt">opcional</span></div>
-      <div class="field">
-        <textarea id="inTexto" maxlength="120" placeholder="Ex: Promoção de sábado e domingo! Não perca."></textarea>
-        <div class="field-hint">O texto aparece aos 2 segundos, com as letras pulando, centralizado no vídeo. Deixe em branco para não usar.</div>
+      <div class="card-title">Chamadas de texto <span class="opt">opcional</span></div>
+      <div class="field-hint" style="margin-bottom:1rem">
+        Até 5 textos, cada um com um efeito de animação diferente. Eles aparecem
+        em sequência no vídeo (um depois do outro). Preencha só os que quiser usar —
+        os vazios são ignorados. Limite de 100 caracteres por texto.
       </div>
-      <div class="field">
-        <label>Fica na tela por (s)</label>
+
+      <div class="text-box" data-box="1">
+        <label>Texto 1 <span class="text-effect-tag">efeito: palavra por palavra</span></label>
+        <textarea class="in-text-box" maxlength="100" placeholder="Primeiro texto (opcional)"></textarea>
+      </div>
+      <div class="text-box" data-box="2">
+        <label>Texto 2 <span class="text-effect-tag">efeito: letras se revelando</span></label>
+        <textarea class="in-text-box" maxlength="100" placeholder="Segundo texto (opcional)"></textarea>
+      </div>
+      <div class="text-box" data-box="3">
+        <label>Texto 3 <span class="text-effect-tag">efeito: letras pulando</span></label>
+        <textarea class="in-text-box" maxlength="100" placeholder="Terceiro texto (opcional)"></textarea>
+      </div>
+      <div class="text-box" data-box="4">
+        <label>Texto 4 <span class="text-effect-tag">efeito: aparecer suave</span></label>
+        <textarea class="in-text-box" maxlength="100" placeholder="Quarto texto (opcional)"></textarea>
+      </div>
+      <div class="text-box" data-box="5">
+        <label>Texto 5 <span class="text-effect-tag">efeito: letras voando</span></label>
+        <textarea class="in-text-box" maxlength="100" placeholder="Quinto texto (opcional)"></textarea>
+      </div>
+
+      <div class="field" style="margin-top:1.2rem">
+        <label>Cada texto fica na tela por (s)</label>
         <input id="inTextoDur" type="number" min="1" step="1" value="8"/>
-        <div class="field-hint">Por quantos segundos o texto fica visível antes de sumir.</div>
+        <div class="field-hint" id="textTimingHint">
+          Vale para todos os textos preenchidos. Ex: 2 textos com 5s = primeiro
+          aparece 5s, depois o segundo por mais 5s.
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:1.2rem">
+        <label>Cor dos textos</label>
+        <div class="color-palette" id="colorPalette">
+          <button type="button" class="color-swatch selected" data-color="#FFFFFF"
+            style="background:#FFFFFF" title="Branco (padrão)"></button>
+          <button type="button" class="color-swatch" data-color="#86EFAC"
+            style="background:#86EFAC" title="Verde claro"></button>
+          <button type="button" class="color-swatch" data-color="#15803D"
+            style="background:#15803D" title="Verde escuro"></button>
+          <button type="button" class="color-swatch" data-color="#FCA5A5"
+            style="background:#FCA5A5" title="Vermelho claro"></button>
+          <button type="button" class="color-swatch" data-color="#B91C1C"
+            style="background:#B91C1C" title="Vermelho escuro"></button>
+          <button type="button" class="color-swatch" data-color="#F9A8D4"
+            style="background:#F9A8D4" title="Rosa claro"></button>
+          <button type="button" class="color-swatch" data-color="#BE185D"
+            style="background:#BE185D" title="Rosa escuro"></button>
+          <button type="button" class="color-swatch" data-color="#FDE68A"
+            style="background:#FDE68A" title="Amarelo claro"></button>
+          <button type="button" class="color-swatch" data-color="#CA8A04"
+            style="background:#CA8A04" title="Amarelo escuro"></button>
+          <button type="button" class="color-swatch" data-color="#93C5FD"
+            style="background:#93C5FD" title="Azul claro"></button>
+          <button type="button" class="color-swatch" data-color="#1D4ED8"
+            style="background:#1D4ED8" title="Azul escuro"></button>
+        </div>
+        <div class="field-hint">Por padrão é branco. Clique numa cor para aplicar a todos os textos.</div>
       </div>
     </div>
 
@@ -368,8 +440,9 @@ let state = {
   photos: [],                 // [{ file, base64, mime, name, thumbUrl }]
   music: null,                // { base64, mime, name, size, duration }
   logo: null,                 // { base64, mime, name, size }
+  textColor: '#FFFFFF',       // cor escolhida na paleta (padrão branco)
   currentOrderId: null,
-  currentVideo: null,         // { videoUrl, clientName, cost, ... }
+  currentVideo: null,         // { videoUrl, clientName, costBRL, costUSD, ... }
 };
 
 let timerInterval = null;
@@ -387,6 +460,15 @@ document.querySelectorAll('.tab-mini').forEach(t => {
   });
 });
 function goTab(name) { document.querySelector('.tab-mini[data-panel="' + name + '"]').click(); }
+
+// ── Paleta de cores do texto ──
+document.querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('selected'));
+    sw.classList.add('selected');
+    state.textColor = sw.dataset.color;
+  });
+});
 
 // ═══ UPLOAD DE FOTOS ════════════════════════════════════════
 document.getElementById('photosInput').addEventListener('change', handlePhotos);
@@ -593,16 +675,29 @@ async function generateVideo() {
   }
   if (!state.music) return toast('Envie a música de fundo.', 'error');
 
-  // Monta o textOverlay (opcional)
-  // O início é fixo em 2s (o Worker também força isso). Só a duração é editável.
-  let textOverlay = null;
-  const txt = document.getElementById('inTexto').value.trim();
-  if (txt) {
-    textOverlay = {
-      text: txt,
-      start: 2,
-      duration: Number(document.getElementById('inTextoDur').value) || 8
-    };
+  // Monta as caixas de texto (opcional). Coleta as 5 textareas na ordem;
+  // caixas vazias são enviadas como string vazia e o Worker as ignora.
+  // O início da 1ª caixa é fixo em 2s. Cada caixa fica `textDuration`
+  // segundos; as caixas aparecem em sequência.
+  const textBoxes = [];
+  document.querySelectorAll('.in-text-box').forEach(ta => {
+    textBoxes.push({ text: ta.value.trim().slice(0, 100) });
+  });
+  const filledCount = textBoxes.filter(b => b.text).length;
+  const textDuration = Math.max(1, Number(document.getElementById('inTextoDur').value) || 8);
+  const textColor = state.textColor || '#FFFFFF';
+
+  // Validação: o tempo total dos textos tem que caber na música.
+  // 2s de espera inicial + (nº de caixas preenchidas × duração de cada).
+  if (filledCount > 0) {
+    const totalNeeded = 2 + (filledCount * textDuration);
+    if (totalNeeded > state.music.duration) {
+      return toast(
+        'Os textos somam ' + totalNeeded + 's mas a música tem ' +
+        state.music.duration + 's. Reduza o tempo de cada texto ou use menos caixas.',
+        'error'
+      );
+    }
   }
 
   const genBtn = document.getElementById('genBtn');
@@ -622,7 +717,9 @@ async function generateVideo() {
         music: { base64: state.music.base64, mimeType: state.music.mime, name: state.music.name },
         musicDuration: state.music.duration,
         logo: state.logo ? { base64: state.logo.base64, mimeType: state.logo.mime, name: state.logo.name } : null,
-        textOverlay: textOverlay
+        textBoxes: textBoxes,
+        textColor: textColor,
+        textDuration: textDuration
       })
     });
     const orderData = await orderResp.json();
@@ -768,8 +865,13 @@ function goNewOrder() {
   state.logo = null;
   state.currentOrderId = null;
   document.getElementById('inCliente').value = '';
-  document.getElementById('inTexto').value = '';
+  document.querySelectorAll('.in-text-box').forEach(ta => ta.value = '');
   document.getElementById('inTextoDur').value = '8';
+  // Reseta a cor pro branco (padrão)
+  state.textColor = '#FFFFFF';
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('selected', sw.dataset.color === '#FFFFFF');
+  });
   renderPhotos();
   removeMusic();
   removeLogo();
