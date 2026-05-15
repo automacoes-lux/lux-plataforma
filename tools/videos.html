@@ -96,6 +96,38 @@ body{
 .color-swatch.selected{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.25)}
 .color-swatch.selected::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#080808;text-shadow:0 0 3px rgba(255,255,255,.8)}
 
+/* BOTÃO PROCESSAR TEXTO */
+.btn-process{width:100%;padding:13px;margin-top:.4rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid var(--border-bright);border-radius:var(--radius);font-size:13px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.08em;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-process:hover:not(:disabled){background:rgba(201,168,76,.2);transform:translateY(-1px)}
+.btn-process:disabled{opacity:.45;cursor:not-allowed}
+
+/* STATUS DA IA (loading / erro) */
+.ai-status{display:none;margin-top:1rem;padding:12px 16px;border-radius:var(--radius);font-size:13px;line-height:1.5}
+.ai-status.show{display:flex;align-items:center;gap:12px}
+.ai-status.loading{background:rgba(201,168,76,.06);border:.5px solid var(--border);color:var(--text-mid)}
+.ai-status.error{background:rgba(232,122,122,.08);border:.5px solid rgba(232,122,122,.35);color:#E87A7A}
+.ai-status.success{background:rgba(127,184,122,.08);border:.5px solid rgba(127,184,122,.35);color:#7FB87A}
+.ai-status .mini-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(201,168,76,.18);border-top-color:var(--gold);animation:spin 1s linear infinite;flex-shrink:0}
+
+/* CONTAINER DOS BLOCOS PRONTOS */
+.blocks-container{margin-top:1.2rem;background:rgba(201,168,76,.04);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem}
+.blocks-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:.9rem;flex-wrap:wrap}
+.blocks-title{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.blocks-title span{font-family:'DM Sans',sans-serif;text-transform:none;color:var(--text-dim);font-weight:400;font-size:11px;margin-left:4px}
+.btn-reprocess{padding:7px 12px;background:transparent;border:.5px solid var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:11px;font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s;white-space:nowrap}
+.btn-reprocess:hover{border-color:var(--text-dim);color:var(--text)}
+
+.blocks-list{display:flex;flex-direction:column;gap:8px}
+.block-item{display:flex;align-items:flex-start;gap:8px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;transition:border-color .15s}
+.block-item:focus-within{border-color:var(--border-bright)}
+.block-num{font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:.5px solid var(--border-bright);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.block-item textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.45;resize:vertical;min-height:36px;padding:2px 0}
+.block-remove{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s}
+.block-remove:hover{color:#E87A7A;background:rgba(232,122,122,.08)}
+
+.btn-add-block{width:100%;margin-top:.7rem;padding:10px;background:transparent;border:1px dashed var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;letter-spacing:.02em;transition:all .15s}
+.btn-add-block:hover{border-color:var(--text-dim);color:var(--text);border-style:solid}
+
 
 .upload-area{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s}
 .upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
@@ -293,45 +325,53 @@ input[type="file"]{display:none}
     </div>
 
     <div class="card">
-      <div class="card-title">Chamadas de texto <span class="opt">opcional</span></div>
+      <div class="card-title">Chamada de texto <span class="opt">opcional</span></div>
       <div class="field-hint" style="margin-bottom:1rem">
-        Até 5 textos, cada um com um efeito de animação diferente. Eles aparecem
-        em sequência no vídeo (um depois do outro). Preencha só os que quiser usar —
-        os vazios são ignorados. Limite de 100 caracteres por texto.
+        Cole o texto completo abaixo (até 500 caracteres). Ao clicar em
+        "Processar texto", a IA corrige a ortografia e divide o texto em
+        blocos que aparecem em sequência no vídeo.
       </div>
 
-      <div class="text-box" data-box="1">
-        <label>Texto 1 <span class="text-effect-tag">efeito: palavra por palavra</span></label>
-        <textarea class="in-text-box" maxlength="100" placeholder="Primeiro texto (opcional)"></textarea>
+      <div class="field">
+        <label>Texto completo</label>
+        <textarea id="inTextoRaw" maxlength="500" rows="5"
+          placeholder="Ex: Pizzaria do João, agora com promoção de terça! Pizza grande mais refrigerante por apenas vinte reais. Aproveite, válido até domingo."></textarea>
+        <div class="field-hint" style="display:flex;justify-content:space-between;margin-top:6px">
+          <span>A IA corrigirá acentos e pontuação automaticamente.</span>
+          <span id="charCount" style="color:var(--gold-dim);font-family:'Cinzel',serif">0 / 500</span>
+        </div>
       </div>
-      <div class="text-box" data-box="2">
-        <label>Texto 2 <span class="text-effect-tag">efeito: letras se revelando</span></label>
-        <textarea class="in-text-box" maxlength="100" placeholder="Segundo texto (opcional)"></textarea>
-      </div>
-      <div class="text-box" data-box="3">
-        <label>Texto 3 <span class="text-effect-tag">efeito: letras pulando</span></label>
-        <textarea class="in-text-box" maxlength="100" placeholder="Terceiro texto (opcional)"></textarea>
-      </div>
-      <div class="text-box" data-box="4">
-        <label>Texto 4 <span class="text-effect-tag">efeito: aparecer suave</span></label>
-        <textarea class="in-text-box" maxlength="100" placeholder="Quarto texto (opcional)"></textarea>
-      </div>
-      <div class="text-box" data-box="5">
-        <label>Texto 5 <span class="text-effect-tag">efeito: letras voando</span></label>
-        <textarea class="in-text-box" maxlength="100" placeholder="Quinto texto (opcional)"></textarea>
+
+      <button type="button" class="btn-process" id="btnProcessText" onclick="processText()">
+        ✦ &nbsp;Processar texto com IA
+      </button>
+
+      <!-- Status da IA (loading / erro) -->
+      <div class="ai-status" id="aiStatus"></div>
+
+      <!-- Blocos prontos (aparece após processar) -->
+      <div class="blocks-container" id="blocksContainer" style="display:none">
+        <div class="blocks-header">
+          <div>
+            <div class="blocks-title">Blocos prontos <span id="blocksCount">0</span></div>
+            <div class="field-hint" style="margin-top:2px">Edite, remova ou reordene se quiser.</div>
+          </div>
+          <button type="button" class="btn-reprocess" onclick="reprocessText()" title="Refazer divisão a partir do texto original">↻ Reprocessar</button>
+        </div>
+        <div class="blocks-list" id="blocksList"></div>
+        <button type="button" class="btn-add-block" onclick="addEmptyBlock()">+ Adicionar bloco vazio</button>
       </div>
 
       <div class="field" style="margin-top:1.2rem">
-        <label>Cada texto fica na tela por (s)</label>
-        <input id="inTextoDur" type="number" min="1" step="1" value="8"/>
+        <label>Cada bloco fica na tela por (s)</label>
+        <input id="inTextoDur" type="number" min="1" step="1" value="6"/>
         <div class="field-hint" id="textTimingHint">
-          Vale para todos os textos preenchidos. Ex: 2 textos com 5s = primeiro
-          aparece 5s, depois o segundo por mais 5s.
+          Vale pra todos os blocos. Ex: 3 blocos com 6s = 18s de texto no total.
         </div>
       </div>
 
       <div class="field" style="margin-top:1.2rem">
-        <label>Cor dos textos</label>
+        <label>Cor do texto</label>
         <div class="color-palette" id="colorPalette">
           <button type="button" class="color-swatch selected" data-color="#FFFFFF"
             style="background:#FFFFFF" title="Branco (padrão)"></button>
@@ -356,7 +396,7 @@ input[type="file"]{display:none}
           <button type="button" class="color-swatch" data-color="#1D4ED8"
             style="background:#1D4ED8" title="Azul escuro"></button>
         </div>
-        <div class="field-hint">Por padrão é branco. Clique numa cor para aplicar a todos os textos.</div>
+        <div class="field-hint">Por padrão é branco. Clique numa cor para aplicar a todos os blocos.</div>
       </div>
     </div>
 
@@ -441,6 +481,13 @@ let state = {
   music: null,                // { base64, mime, name, size, duration }
   logo: null,                 // { base64, mime, name, size }
   textColor: '#FFFFFF',       // cor escolhida na paleta (padrão branco)
+  // Texto processado pela IA + divisão em blocos
+  textRaw: '',                // o que o atendente colou (original)
+  textCorrected: '',          // o que a IA devolveu
+  textBlocks: [],             // array de strings (blocos editáveis)
+  textProcessed: false,       // só permite gerar se já processou
+  aiCostUSD: 0,
+  aiCostBRL: 0,
   currentOrderId: null,
   currentVideo: null,         // { videoUrl, clientName, costBRL, costUSD, ... }
 };
@@ -469,6 +516,188 @@ document.querySelectorAll('.color-swatch').forEach(sw => {
     state.textColor = sw.dataset.color;
   });
 });
+
+// ═══ PROCESSAMENTO DE TEXTO COM IA ═══════════════════════════
+// O atendente cola o texto bruto, clica em "Processar texto com IA":
+//   1. Front manda o texto pro Worker (/processText)
+//   2. Worker chama OpenAI gpt-4o-mini → corrige acentos/pontuação
+//   3. Worker divide o texto corrigido em blocos (~3 linhas cada)
+//   4. Front mostra os blocos editáveis abaixo
+// O custo da IA volta junto e fica guardado pra somar no pedido depois.
+
+// Atualiza contador de caracteres em tempo real
+document.getElementById('inTextoRaw').addEventListener('input', (e) => {
+  const len = e.target.value.length;
+  document.getElementById('charCount').textContent = len + ' / 500';
+  // Se o atendente editar o texto bruto depois de processar, invalida
+  // os blocos atuais — ele precisa processar de novo.
+  if (state.textProcessed && e.target.value.trim() !== state.textRaw) {
+    invalidateBlocks();
+  }
+});
+
+async function processText() {
+  const raw = document.getElementById('inTextoRaw').value.trim();
+  if (!raw) {
+    return setAiStatus('error', 'Cole um texto antes de processar.');
+  }
+  if (raw.length > 500) {
+    return setAiStatus('error', 'Texto muito longo (máximo 500 caracteres).');
+  }
+  if (!state.music || !state.music.duration) {
+    return setAiStatus('error', 'Envie a música antes de processar o texto (pra eu saber a duração do vídeo).');
+  }
+
+  const btn = document.getElementById('btnProcessText');
+  btn.disabled = true;
+  setAiStatus('loading', 'A IA está corrigindo e dividindo o texto...');
+
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/processText', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: raw,
+        musicDuration: state.music.duration
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao processar.');
+
+    // Salva no state
+    state.textRaw       = raw;
+    state.textCorrected = data.correctedText || raw;
+    state.textBlocks    = Array.isArray(data.blocks) ? data.blocks : [];
+    state.aiCostUSD     = Number(data.aiCostUSD) || 0;
+    state.aiCostBRL     = Number(data.aiCostBRL) || 0;
+    state.textProcessed = true;
+
+    // Se a IA mudou o texto bruto, atualiza o textarea (sem disparar o handler de input)
+    if (state.textCorrected !== raw) {
+      document.getElementById('inTextoRaw').value = state.textCorrected;
+      state.textRaw = state.textCorrected; // alinha referência
+      document.getElementById('charCount').textContent = state.textCorrected.length + ' / 500';
+    }
+
+    renderBlocks();
+    setAiStatus('success',
+      '✓ Texto processado em ' + state.textBlocks.length + ' bloco' +
+      (state.textBlocks.length === 1 ? '' : 's') + '. Revise abaixo se quiser.');
+
+  } catch (err) {
+    setAiStatus('error', err.message || 'Erro ao processar texto.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function reprocessText() {
+  // Confirma antes de descartar as edições manuais nos blocos
+  const hasEdits = state.textBlocks.length > 0;
+  if (hasEdits) {
+    if (!confirm('Reprocessar vai descartar as edições nos blocos. Continuar?')) return;
+  }
+  // Limpa os blocos atuais e processa de novo
+  state.textBlocks = [];
+  state.textProcessed = false;
+  await processText();
+}
+
+function addEmptyBlock() {
+  // Coleta os textos editados atuais antes de adicionar (pra não perder edições)
+  syncBlocksFromUI();
+  state.textBlocks.push('');
+  renderBlocks();
+  // Foca no novo bloco
+  setTimeout(() => {
+    const list = document.querySelectorAll('.block-item textarea');
+    const last = list[list.length - 1];
+    if (last) last.focus();
+  }, 30);
+}
+
+function removeBlock(i) {
+  syncBlocksFromUI();
+  state.textBlocks.splice(i, 1);
+  renderBlocks();
+}
+
+// Lê o conteúdo atual das textareas dos blocos e atualiza o state
+// (chamado antes de qualquer mudança estrutural pra preservar edições)
+function syncBlocksFromUI() {
+  const tas = document.querySelectorAll('.block-item textarea');
+  tas.forEach((ta, i) => {
+    if (state.textBlocks[i] !== undefined) {
+      state.textBlocks[i] = ta.value;
+    }
+  });
+}
+
+function renderBlocks() {
+  const container = document.getElementById('blocksContainer');
+  const list = document.getElementById('blocksList');
+  const count = document.getElementById('blocksCount');
+  if (!state.textBlocks.length) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  count.textContent = '(' + state.textBlocks.length + ')';
+  list.innerHTML = '';
+  state.textBlocks.forEach((text, i) => {
+    const item = document.createElement('div');
+    item.className = 'block-item';
+    item.innerHTML =
+      '<span class="block-num">' + (i + 1) + '</span>' +
+      '<textarea rows="1" placeholder="Bloco vazio (será ignorado)">' +
+        escapeHtml(text) + '</textarea>' +
+      '<button class="block-remove" title="Remover bloco" data-i="' + i + '">✕</button>';
+    list.appendChild(item);
+  });
+  // Liga os removes
+  list.querySelectorAll('.block-remove').forEach(btn => {
+    btn.addEventListener('click', () => removeBlock(Number(btn.dataset.i)));
+  });
+  // Auto-resize das textareas (cresce conforme o conteúdo)
+  list.querySelectorAll('textarea').forEach(ta => {
+    const autoResize = () => {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+    };
+    autoResize();
+    ta.addEventListener('input', autoResize);
+  });
+}
+
+// Marca os blocos como inválidos (quando o atendente edita o texto bruto)
+function invalidateBlocks() {
+  state.textProcessed = false;
+  state.textBlocks = [];
+  state.aiCostUSD = 0;
+  state.aiCostBRL = 0;
+  document.getElementById('blocksContainer').style.display = 'none';
+  setAiStatus('', '');
+}
+
+function setAiStatus(type, message) {
+  const el = document.getElementById('aiStatus');
+  if (!type) {
+    el.className = 'ai-status';
+    el.innerHTML = '';
+    return;
+  }
+  el.className = 'ai-status show ' + type;
+  if (type === 'loading') {
+    el.innerHTML = '<div class="mini-spinner"></div><span>' + escapeHtml(message) + '</span>';
+  } else {
+    el.innerHTML = '<span>' + escapeHtml(message) + '</span>';
+  }
+}
+
+// Expõe pra HTML inline
+window.processText   = processText;
+window.reprocessText = reprocessText;
+window.addEmptyBlock = addEmptyBlock;
+window.removeBlock   = removeBlock;
 
 // ═══ UPLOAD DE FOTOS ════════════════════════════════════════
 document.getElementById('photosInput').addEventListener('change', handlePhotos);
@@ -675,26 +904,32 @@ async function generateVideo() {
   }
   if (!state.music) return toast('Envie a música de fundo.', 'error');
 
-  // Monta as caixas de texto (opcional). Coleta as 5 textareas na ordem;
-  // caixas vazias são enviadas como string vazia e o Worker as ignora.
-  // O início da 1ª caixa é fixo em 2s. Cada caixa fica `textDuration`
-  // segundos; as caixas aparecem em sequência.
-  const textBoxes = [];
-  document.querySelectorAll('.in-text-box').forEach(ta => {
-    textBoxes.push({ text: ta.value.trim().slice(0, 100) });
-  });
-  const filledCount = textBoxes.filter(b => b.text).length;
-  const textDuration = Math.max(1, Number(document.getElementById('inTextoDur').value) || 8);
+  // Monta os blocos de texto (opcional). Vem do botão "Processar texto":
+  // o texto bruto foi corrigido pela IA e dividido em blocos. O atendente
+  // pode editar os blocos antes de gerar. Sincroniza com a UI primeiro.
+  syncBlocksFromUI();
+  // Filtra blocos vazios (que ficaram em branco depois de editar)
+  const textBlocks = state.textBlocks
+    .map(t => String(t || '').trim())
+    .filter(t => t.length > 0);
+
+  // Se o atendente colou texto mas NÃO processou, bloqueia (precisa passar pela IA)
+  const rawText = document.getElementById('inTextoRaw').value.trim();
+  if (rawText && !state.textProcessed) {
+    return toast('Clique em "Processar texto com IA" antes de gerar o vídeo.', 'error');
+  }
+
+  const textDuration = Math.max(1, Number(document.getElementById('inTextoDur').value) || 6);
   const textColor = state.textColor || '#FFFFFF';
 
-  // Validação: o tempo total dos textos tem que caber na música.
-  // 2s de espera inicial + (nº de caixas preenchidas × duração de cada).
-  if (filledCount > 0) {
-    const totalNeeded = 2 + (filledCount * textDuration);
+  // Validação: o tempo total dos blocos tem que caber na música.
+  // 2s de espera inicial + (nº de blocos × duração de cada).
+  if (textBlocks.length > 0) {
+    const totalNeeded = 2 + (textBlocks.length * textDuration);
     if (totalNeeded > state.music.duration) {
       return toast(
         'Os textos somam ' + totalNeeded + 's mas a música tem ' +
-        state.music.duration + 's. Reduza o tempo de cada texto ou use menos caixas.',
+        state.music.duration + 's. Reduza o tempo de cada bloco ou remova algum.',
         'error'
       );
     }
@@ -717,9 +952,12 @@ async function generateVideo() {
         music: { base64: state.music.base64, mimeType: state.music.mime, name: state.music.name },
         musicDuration: state.music.duration,
         logo: state.logo ? { base64: state.logo.base64, mimeType: state.logo.mime, name: state.logo.name } : null,
-        textBoxes: textBoxes,
+        textBlocks: textBlocks,
         textColor: textColor,
-        textDuration: textDuration
+        textDuration: textDuration,
+        // Custo já gasto na IA (somado depois no custo final do pedido)
+        aiCostUSD: state.aiCostUSD,
+        aiCostBRL: state.aiCostBRL
       })
     });
     const orderData = await orderResp.json();
@@ -865,8 +1103,19 @@ function goNewOrder() {
   state.logo = null;
   state.currentOrderId = null;
   document.getElementById('inCliente').value = '';
-  document.querySelectorAll('.in-text-box').forEach(ta => ta.value = '');
-  document.getElementById('inTextoDur').value = '8';
+  // Reseta o texto bruto + blocos + status da IA
+  document.getElementById('inTextoRaw').value = '';
+  document.getElementById('charCount').textContent = '0 / 500';
+  state.textRaw = '';
+  state.textCorrected = '';
+  state.textBlocks = [];
+  state.textProcessed = false;
+  state.aiCostUSD = 0;
+  state.aiCostBRL = 0;
+  document.getElementById('blocksContainer').style.display = 'none';
+  document.getElementById('blocksList').innerHTML = '';
+  setAiStatus('', '');
+  document.getElementById('inTextoDur').value = '6';
   // Reseta a cor pro branco (padrão)
   state.textColor = '#FFFFFF';
   document.querySelectorAll('.color-swatch').forEach(sw => {
