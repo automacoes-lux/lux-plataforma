@@ -330,14 +330,23 @@ input[type="file"]{display:none}
         <div class="result-title">Histórico de vídeos</div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Clique em "Ver" para abrir o vídeo</div>
       </div>
-      <button class="history-refresh" onclick="loadHistory()">🔄 Atualizar</button>
+      <div style="display:flex;gap:8px">
+        <button class="history-refresh" onclick="runDebug()" title="Diagnóstico do último pedido">🐞 Debug</button>
+        <button class="history-refresh" onclick="loadHistory()">🔄 Atualizar</button>
+      </div>
     </div>
     <div id="historyContainer">
       <div class="history-loading">Carregando histórico...</div>
     </div>
+    <!-- Caixa de resultado do debug (aparece só quando clicado) -->
+    <div id="debugBox" style="display:none;margin-top:1.2rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+      <div style="font-size:11px;color:var(--gold-dim);font-family:'Cinzel',serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">🐞 Diagnóstico — último pedido</div>
+      <textarea id="debugOutput" readonly style="width:100%;min-height:280px;background:var(--bg);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);padding:12px;font-family:monospace;font-size:11px;line-height:1.5;resize:vertical"></textarea>
+    </div>
   </div>
 
 </div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -887,6 +896,21 @@ async function loadHistory() {
   }
 }
 
+// ═══ DEBUG — diagnóstico do último pedido (TEMPORÁRIO) ══════
+async function runDebug() {
+  const box = document.getElementById('debugBox');
+  const out = document.getElementById('debugOutput');
+  box.style.display = 'block';
+  out.value = 'Consultando o servidor...';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/debug/lastError');
+    const data = await resp.json();
+    out.value = JSON.stringify(data, null, 2);
+  } catch (err) {
+    out.value = 'Erro ao consultar debug: ' + err.message;
+  }
+}
+
 // ═══ STATUS / TIMER ═════════════════════════════════════════
 function setStatus(text, sub, timer) {
   document.getElementById('statusText').textContent = text;
@@ -976,6 +1000,7 @@ window.goNewOrder = goNewOrder;
 window.loadHistory = loadHistory;
 window.checkPending = checkPending;
 window.clearPending = clearPending;
+window.runDebug = runDebug;
 </script>
 
 </body>
