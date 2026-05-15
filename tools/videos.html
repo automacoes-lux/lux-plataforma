@@ -128,6 +128,11 @@ body{
 .btn-add-block{width:100%;margin-top:.7rem;padding:10px;background:transparent;border:1px dashed var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;letter-spacing:.02em;transition:all .15s}
 .btn-add-block:hover{border-color:var(--text-dim);color:var(--text);border-style:solid}
 
+/* CÁLCULO DE TEMPO TOTAL EM TEMPO REAL */
+.timing-calc{margin-top:8px;padding:10px 12px;border-radius:var(--radius);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px}
+.timing-calc.ok{background:rgba(127,184,122,.08);border:.5px solid rgba(127,184,122,.35);color:#7FB87A}
+.timing-calc.overflow{background:rgba(232,122,122,.08);border:.5px solid rgba(232,122,122,.4);color:#E87A7A}
+
 
 .upload-area{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s}
 .upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
@@ -366,8 +371,10 @@ input[type="file"]{display:none}
         <label>Cada bloco fica na tela por (s)</label>
         <input id="inTextoDur" type="number" min="1" step="1" value="6"/>
         <div class="field-hint" id="textTimingHint">
-          Vale pra todos os blocos. Ex: 3 blocos com 6s = 18s de texto no total.
+          Vale pra todos os blocos.
         </div>
+        <!-- Cálculo em tempo real do tempo total (verde se cabe, vermelho se não) -->
+        <div class="timing-calc" id="timingCalc" style="display:none"></div>
       </div>
 
       <div class="field" style="margin-top:1.2rem">
@@ -657,15 +664,52 @@ function renderBlocks() {
   list.querySelectorAll('.block-remove').forEach(btn => {
     btn.addEventListener('click', () => removeBlock(Number(btn.dataset.i)));
   });
-  // Auto-resize das textareas (cresce conforme o conteúdo)
+  // Auto-resize das textareas (cresce conforme o conteúdo) +
+  // listener pra atualizar o cálculo de tempo quando o atendente edita
   list.querySelectorAll('textarea').forEach(ta => {
     const autoResize = () => {
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
     };
     autoResize();
-    ta.addEventListener('input', autoResize);
+    ta.addEventListener('input', () => {
+      autoResize();
+      updateTimingCalc();
+    });
   });
+  updateTimingCalc();
+}
+
+// ── Cálculo em tempo real: quanto tempo os blocos vão ocupar?
+// Fórmula (espelha o Worker):
+//   total = 2s (delay inicial) + (N blocos × duração) + ((N-1) × gap)
+// O gap de 0.15s vem do Worker (constante TEXT_BLOCK_GAP).
+function updateTimingCalc() {
+  const calc = document.getElementById('timingCalc');
+  if (!calc) return;
+
+  // Conta os blocos PREENCHIDOS atualmente na UI
+  const tas = document.querySelectorAll('.block-item textarea');
+  let n = 0;
+  tas.forEach(ta => { if (ta.value.trim()) n++; });
+
+  if (n === 0 || !state.music || !state.music.duration) {
+    calc.style.display = 'none';
+    return;
+  }
+  const dur = Math.max(1, Number(document.getElementById('inTextoDur').value) || 6);
+  const total = 2 + (n * dur) + ((n - 1) * 0.15);
+  const musicDur = state.music.duration;
+  const ok = total <= musicDur;
+
+  calc.style.display = 'flex';
+  calc.className = 'timing-calc ' + (ok ? 'ok' : 'overflow');
+  const icon = ok ? '✓' : '⚠';
+  calc.innerHTML =
+    '<span>' + icon + '</span>' +
+    '<span>' + n + ' bloco' + (n === 1 ? '' : 's') + ' × ' + dur + 's = ' +
+    total.toFixed(1) + 's de texto (música tem ' + musicDur + 's)' +
+    (ok ? '' : ' — não cabe!') + '</span>';
 }
 
 // Marca os blocos como inválidos (quando o atendente edita o texto bruto)
@@ -675,8 +719,12 @@ function invalidateBlocks() {
   state.aiCostUSD = 0;
   state.aiCostBRL = 0;
   document.getElementById('blocksContainer').style.display = 'none';
+  document.getElementById('timingCalc').style.display = 'none';
   setAiStatus('', '');
 }
+
+// Listener: quando o atendente muda a duração de cada bloco, recalcula
+document.getElementById('inTextoDur').addEventListener('input', updateTimingCalc);
 
 function setAiStatus(type, message) {
   const el = document.getElementById('aiStatus');
