@@ -110,11 +110,6 @@ input[type="file"]{display:none}
 .media-remove:hover{color:var(--text)}
 
 /* CAIXA DE TEXTO — campos de tempo */
-.text-timing{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
-@media(max-width:600px){.text-timing{grid-template-columns:1fr}}
-.text-timing .field{margin-bottom:0}
-.text-timing input{text-align:center}
-
 .btn-generate{width:100%;padding:17px;margin-top:1.6rem;background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);color:#080808;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.1em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 20px rgba(201,168,76,.15)}
 .btn-generate:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.25)}
 .btn-generate:active:not(:disabled){transform:translateY(0)}
@@ -284,17 +279,12 @@ input[type="file"]{display:none}
       <div class="card-title">Chamada de texto <span class="opt">opcional</span></div>
       <div class="field">
         <textarea id="inTexto" maxlength="120" placeholder="Ex: Promoção de sábado e domingo! Não perca."></textarea>
-        <div class="field-hint">O texto aparece com animação palavra por palavra, em letra branca com sombra. Deixe em branco para não usar.</div>
+        <div class="field-hint">O texto aparece aos 2 segundos, com as letras pulando, centralizado no vídeo. Deixe em branco para não usar.</div>
       </div>
-      <div class="text-timing">
-        <div class="field">
-          <label>Aparece aos (s)</label>
-          <input id="inTextoStart" type="number" min="0" step="1" value="2"/>
-        </div>
-        <div class="field">
-          <label>Fica na tela por (s)</label>
-          <input id="inTextoDur" type="number" min="1" step="1" value="8"/>
-        </div>
+      <div class="field">
+        <label>Fica na tela por (s)</label>
+        <input id="inTextoDur" type="number" min="1" step="1" value="8"/>
+        <div class="field-hint">Por quantos segundos o texto fica visível antes de sumir.</div>
       </div>
     </div>
 
@@ -604,12 +594,13 @@ async function generateVideo() {
   if (!state.music) return toast('Envie a música de fundo.', 'error');
 
   // Monta o textOverlay (opcional)
+  // O início é fixo em 2s (o Worker também força isso). Só a duração é editável.
   let textOverlay = null;
   const txt = document.getElementById('inTexto').value.trim();
   if (txt) {
     textOverlay = {
       text: txt,
-      start: Number(document.getElementById('inTextoStart').value) || 2,
+      start: 2,
       duration: Number(document.getElementById('inTextoDur').value) || 8
     };
   }
@@ -719,12 +710,19 @@ function onVideoReady(data) {
   state.currentVideo = {
     videoUrl: data.videoUrl,
     clientName: state.cliente || data.clientName || 'Cliente',
-    cost: data.cost,
+    costBRL: data.costBRL,
+    costUSD: data.costUSD,
     orderId: data.orderId
   };
   renderResult();
   goTab('resultado');
   toast('✓ Vídeo pronto!', 'success');
+}
+
+// Formata um valor em Real no padrão brasileiro (R$ 1,23)
+function formatBRL(value) {
+  if (value == null || isNaN(value)) return null;
+  return 'R$ ' + Number(value).toFixed(2).replace('.', ',');
 }
 
 // ═══ RESULTADO ══════════════════════════════════════════════
@@ -739,8 +737,9 @@ function renderResult() {
   const content = document.getElementById('resultContent');
   content.style.display = '';
 
-  const custoTxt = (v.cost != null)
-    ? '<span>💰 $' + Number(v.cost).toFixed(3) + '</span>'
+  const custoBRL = formatBRL(v.costBRL);
+  const custoTxt = custoBRL
+    ? '<span>💰 ' + custoBRL + '</span>'
     : '';
 
   content.innerHTML =
@@ -770,7 +769,6 @@ function goNewOrder() {
   state.currentOrderId = null;
   document.getElementById('inCliente').value = '';
   document.getElementById('inTexto').value = '';
-  document.getElementById('inTextoStart').value = '2';
   document.getElementById('inTextoDur').value = '8';
   renderPhotos();
   removeMusic();
@@ -848,8 +846,9 @@ async function loadHistory() {
       const statusLabel = o.status === 'COMPLETED' ? 'Concluído'
                         : o.status === 'ERROR'     ? 'Erro'
                         : o.status === 'RENDERING' ? 'Renderizando' : 'Criado';
-      const custoBadge = (o.cost != null)
-        ? '<span class="badge cost">$' + Number(o.cost).toFixed(3) + '</span>' : '';
+      const custoBRL = formatBRL(o.costBRL);
+      const custoBadge = custoBRL
+        ? '<span class="badge cost">' + custoBRL + '</span>' : '';
 
       const item = document.createElement('div');
       item.className = 'history-item';
@@ -858,7 +857,7 @@ async function loadHistory() {
           '<div class="history-client">' + escapeHtml(o.clientName) + '</div>' +
           '<div class="history-meta">' +
             '<span>👤 ' + escapeHtml(o.attendantName || '—') + '</span>' +
-            '<span>📅 ' + escapeHtml(o.createdAtBR || '—') + '</span>' +
+            '<span>📅 ' + escapeHtml(o.createdAt || '—') + '</span>' +
             '<span>📷 ' + (o.photoCount || 0) + '</span>' +
             (o.musicDuration ? '<span>🎵 ' + formatDuration(o.musicDuration) + '</span>' : '') +
             (o.hasText ? '<span>💬 texto</span>' : '') +
@@ -869,7 +868,8 @@ async function loadHistory() {
         (o.status === 'COMPLETED' && o.videoUrl
           ? '<button class="history-btn-view" data-url="' + escapeAttr(o.videoUrl) +
             '" data-client="' + escapeAttr(o.clientName) +
-            '" data-cost="' + (o.cost != null ? o.cost : '') +
+            '" data-costbrl="' + (o.costBRL != null ? o.costBRL : '') +
+            '" data-costusd="' + (o.costUSD != null ? o.costUSD : '') +
             '" data-att="' + escapeAttr(o.attendantName || '') + '">Ver →</button>'
           : '');
       const btn = item.querySelector('.history-btn-view');
@@ -879,7 +879,8 @@ async function loadHistory() {
           state.currentVideo = {
             videoUrl: btn.dataset.url,
             clientName: btn.dataset.client,
-            cost: btn.dataset.cost !== '' ? Number(btn.dataset.cost) : null
+            costBRL: btn.dataset.costbrl !== '' ? Number(btn.dataset.costbrl) : null,
+            costUSD: btn.dataset.costusd !== '' ? Number(btn.dataset.costusd) : null
           };
           renderResult();
           goTab('resultado');
