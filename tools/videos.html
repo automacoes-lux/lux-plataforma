@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lux — Vídeos (Em Breve)</title>
+<title>Lux — Vídeos v2</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -11,8 +11,18 @@
 
 <link rel="stylesheet" href="../css/theme.css"/>
 
+<script src="../js/auth-iframe.js"></script>
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
+}
+
 html{scroll-behavior:smooth}
 body{
   font-family:'DM Sans',sans-serif;
@@ -21,114 +31,952 @@ body{
   background-image:
     radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
     radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
-  display:flex;align-items:center;justify-content:center;padding:2rem 1rem;
 }
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem 5rem}
 
-.coming-soon{
-  max-width:540px;width:100%;text-align:center;
-  background:#121212;border:.5px solid var(--border);
-  border-radius:24px;padding:3rem 2rem;
-  box-shadow:0 8px 32px rgba(0,0,0,.3);
-}
-.coming-soon .badge{
-  display:inline-block;
-  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;
-  color:var(--gold);background:rgba(201,168,76,.1);
-  border:.5px solid var(--border-bright);
-  padding:5px 14px;border-radius:30px;
-  margin-bottom:1.8rem;
-}
-.coming-soon .icon-big{
-  font-size:64px;margin-bottom:1.2rem;display:block;
-  filter:drop-shadow(0 4px 12px rgba(201,168,76,.25));
-}
-.coming-soon h1{
-  font-family:'Cinzel',serif;font-size:24px;font-weight:600;
-  color:var(--gold);letter-spacing:.08em;margin-bottom:0.8rem;
-}
-.coming-soon .sub{
-  font-size:15px;color:#B0A080;line-height:1.7;
-  margin-bottom:2rem;
-}
-.coming-soon .description{
-  font-size:13px;color:var(--text-dim);line-height:1.7;
-  margin-bottom:2rem;padding:1rem;
-  background:rgba(201,168,76,.03);border:.5px solid var(--border);
-  border-radius:12px;
-}
-.coming-soon .description strong{color:var(--gold-dim);}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6rem}
+.page-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.14em;color:var(--gold);font-weight:600}
+.page-title small{display:inline-block;font-size:9px;padding:3px 8px;border-radius:30px;background:rgba(201,168,76,.15);color:var(--gold-dim);border:.5px solid var(--border);margin-left:6px;letter-spacing:.08em;vertical-align:middle}
 
-.features-list{
-  display:flex;flex-direction:column;gap:8px;
-  margin:1.5rem 0;text-align:left;
+/* BANNER pedido pendente */
+.pending-banner{display:none;background:rgba(232,168,76,.08);border:1px solid rgba(232,168,76,.35);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1.2rem;align-items:center;gap:14px;animation:fadeIn .3s ease}
+.pending-banner.show{display:flex}
+.pending-icon{font-size:24px;flex-shrink:0}
+.pending-text{flex:1;font-size:13px;line-height:1.5;color:var(--text-mid);min-width:0}
+.pending-text strong{color:#E8A84C;font-weight:600;display:block;margin-bottom:2px;font-size:14px}
+.pending-text small{color:var(--text-dim);font-size:12px;display:block;margin-top:2px}
+.pending-actions{display:flex;gap:8px;flex-shrink:0}
+@media(max-width:600px){
+  .pending-banner{flex-direction:column;align-items:stretch;gap:12px}
+  .pending-actions{justify-content:stretch}
+  .pending-actions button{flex:1}
 }
-.feature-item{
-  display:flex;align-items:center;gap:10px;
-  font-size:13px;color:var(--text-dim);
-  padding:8px 12px;background:rgba(255,255,255,.02);
-  border-radius:8px;
-}
-.feature-item .check{
-  color:var(--gold);font-size:14px;font-weight:bold;flex-shrink:0;
-}
+.btn-pending-check{padding:9px 14px;background:rgba(232,168,76,.18);border:1px solid rgba(232,168,76,.4);color:#E8A84C;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s}
+.btn-pending-check:hover{background:rgba(232,168,76,.28)}
+.btn-pending-clear{padding:9px 14px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;transition:all .15s}
+.btn-pending-clear:hover{border-color:var(--text-dim);color:var(--text)}
 
-.progress-bar{
-  height:4px;background:rgba(201,168,76,.1);border-radius:30px;
-  overflow:hidden;margin:1.5rem 0;
-}
-.progress-bar-fill{
-  height:100%;width:25%;
-  background:linear-gradient(90deg,var(--gold-bright) 0%,var(--gold) 100%);
-  border-radius:30px;animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.tabs-mini{display:flex;gap:4px;margin-bottom:1.2rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:5px}
+.tab-mini{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--text-dim);transition:all .2s;border:none;background:transparent;letter-spacing:.02em}
+.tab-mini.active{background:rgba(201,168,76,.1);color:var(--gold);border:.5px solid var(--border-bright);font-family:'Cinzel',serif;font-size:12px;letter-spacing:.08em}
 
-.eta{
-  font-size:11px;color:var(--gold-dim);
-  font-family:'Cinzel',serif;letter-spacing:.1em;
-}
+.panel{display:none;animation:fadeIn .3s ease both}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-.back-link{
-  display:inline-block;margin-top:1.5rem;
-  font-size:13px;color:var(--text-dim);
-  text-decoration:none;transition:color .15s;
-}
-.back-link:hover{color:var(--gold);}
+.card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem;margin-bottom:1.1rem}
+.card-title{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:#FFFFFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:1.4rem;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
+.card-title .opt{font-family:'DM Sans',sans-serif;text-transform:none;font-size:10px;color:var(--gold-dim);letter-spacing:.04em;background:rgba(201,168,76,.1);padding:2px 9px;border-radius:20px;border:.5px solid var(--border)}
+
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.1rem}
+@media(max-width:600px){.field-row{grid-template-columns:1fr}}
+.field{margin-bottom:1.1rem}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;color:var(--gold-dim);display:block;margin-bottom:6px;letter-spacing:.14em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.field input,.field textarea{width:100%;padding:12px 15px;font-size:15px;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field textarea:focus{border-color:var(--border-bright);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
+.field input::placeholder,.field textarea::placeholder{color:var(--text-dim);opacity:.5;font-size:15px}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field-hint{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4}
+
+.upload-area{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s}
+.upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
+.upload-area .icon{font-size:30px;display:block;margin-bottom:9px;opacity:.55}
+.upload-area p{font-size:15px;color:var(--text-mid)}
+.upload-area span{font-size:13px;color:var(--text-dim);margin-top:3px;display:block}
+input[type="file"]{display:none}
+
+/* GRID DE FOTOS */
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:12px}
+.photo-item{position:relative;aspect-ratio:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.photo-item img{width:100%;height:100%;object-fit:cover}
+.photo-item .photo-num{position:absolute;top:4px;left:4px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;color:#080808;background:rgba(201,168,76,.95);padding:2px 7px;border-radius:10px;letter-spacing:.04em}
+.photo-item .photo-remove{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.photo-item .photo-remove:hover{background:rgba(232,122,122,.9)}
+.photo-info-bar{font-size:12px;color:var(--text-dim);margin-top:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.photo-info-bar span strong{color:var(--gold-dim)}
+
+/* PRÉVIA DE MÚSICA / LOGO */
+.media-preview{display:none;align-items:center;gap:14px;margin-top:12px;padding:14px 16px;background:rgba(201,168,76,.05);border-radius:var(--radius);border:.5px solid var(--border)}
+.media-preview.show{display:flex}
+.media-icon{width:48px;height:48px;border-radius:12px;background:rgba(201,168,76,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden}
+.media-icon img{width:100%;height:100%;object-fit:cover}
+.media-info{flex:1;min-width:0}
+.media-info strong{display:block;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-info span{font-size:12px;color:var(--text-dim)}
+.media-info .duration{color:var(--gold-dim);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em}
+.media-remove{font-size:18px;color:var(--text-dim);cursor:pointer;background:none;border:none;padding:4px;flex-shrink:0}
+.media-remove:hover{color:var(--text)}
+
+/* CAIXA DE TEXTO — campos de tempo */
+.text-timing{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:600px){.text-timing{grid-template-columns:1fr}}
+.text-timing .field{margin-bottom:0}
+.text-timing input{text-align:center}
+
+.btn-generate{width:100%;padding:17px;margin-top:1.6rem;background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);color:#080808;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.1em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 20px rgba(201,168,76,.15)}
+.btn-generate:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.25)}
+.btn-generate:active:not(:disabled){transform:translateY(0)}
+.btn-generate:disabled{opacity:.45;cursor:not-allowed}
+
+.status-bar{display:none;align-items:center;gap:14px;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-top:1.2rem}
+.status-bar.show{display:flex}
+.spinner{width:24px;height:24px;border-radius:50%;flex-shrink:0;border:2.5px solid rgba(201,168,76,.18);border-top-color:var(--gold);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-progress{flex:1;min-width:0}
+.status-text{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.status-sub{font-size:12px;color:var(--text-dim)}
+.status-timer{font-size:11px;color:var(--gold-dim);margin-top:4px;font-family:'Cinzel',serif;letter-spacing:.08em}
+
+/* RESULTADOS */
+.result-card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;animation:fadeIn .4s ease both}
+.result-video{width:100%;display:block;background:#000;max-height:70vh}
+.result-body{padding:1.4rem 1.6rem}
+.result-title{font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:var(--gold);letter-spacing:.1em;margin-bottom:6px}
+.result-meta{font-size:12px;color:var(--text-dim);margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px}
+.result-meta span{display:inline-flex;align-items:center;gap:4px}
+.result-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn-download{flex:1;min-width:160px;padding:13px;background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);color:#080808;border:none;border-radius:var(--radius);font-size:13px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;text-decoration:none}
+.btn-download:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,.3)}
+.btn-secondary{padding:13px 18px;background:transparent;color:var(--text-dim);border:.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.06em;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{border-color:var(--text-dim);color:var(--text)}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:48px;opacity:.3;margin-bottom:14px;display:block}
+.empty-state p{font-size:14px}
+.empty-state p.sub{font-size:12px;margin-top:8px}
+
+/* HISTÓRICO */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.history-item{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;transition:all .15s;animation:fadeIn .3s ease both}
+.history-item:hover{border-color:var(--border-bright);background:var(--bg-hover)}
+.history-item-info{flex:1;min-width:0}
+.history-client{font-size:15px;color:var(--text);font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta{font-size:12px;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:10px}
+.history-meta span{display:inline-flex;align-items:center;gap:4px}
+.history-meta .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge.completed{background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.3)}
+.badge.error{background:rgba(232,122,122,.15);color:#E87A7A;border:.5px solid rgba(232,122,122,.3)}
+.badge.rendering{background:rgba(232,168,76,.15);color:#E8A84C;border:.5px solid rgba(232,168,76,.3)}
+.badge.created{background:rgba(176,160,128,.12);color:var(--text-mid);border:.5px solid var(--border)}
+.badge.cost{background:rgba(201,168,76,.15);color:var(--gold);border:.5px solid var(--border-bright);text-transform:none}
+.history-btn-view{padding:8px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.history-btn-view:hover{background:rgba(201,168,76,.2)}
+.history-loading{text-align:center;padding:40px 20px;color:var(--text-dim)}
+.history-refresh{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:7px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.history-refresh:hover{border-color:var(--text-dim);color:var(--text)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(127,184,122,.5)}
+.toast.error{border-color:rgba(232,122,122,.5)}
 
 @media(max-width:600px){
-  .coming-soon{padding:2rem 1.5rem}
-  .coming-soon h1{font-size:20px}
-  .coming-soon .icon-big{font-size:48px}
+  .container{padding:1.2rem 1rem 4rem}
+  .card{padding:1.2rem}
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .history-item{flex-direction:column;align-items:stretch}
+  .history-btn-view{width:100%}
+  .result-actions{flex-direction:column}
+  .btn-download{width:100%}
 }
 </style>
 </head>
 <body>
 
-<div class="coming-soon">
-  <span class="badge">EM DESENVOLVIMENTO</span>
-  <span class="icon-big">🎬</span>
-  <h1>Lux Vídeos</h1>
-  <p class="sub">Vídeos promocionais com IA imagem-para-vídeo</p>
+<div class="container">
 
-  <div class="description">
-    Estamos preparando a ferramenta para criar vídeos promocionais animados
-    a partir de fotos, com transições e música.
+  <div class="page-header">
+    <div class="page-title">✦ GERADOR DE VÍDEOS <small>V2 BETA</small></div>
   </div>
 
-  <div class="features-list">
-    <div class="feature-item"><span class="check">✓</span> Imagem para vídeo com IA</div>
-    <div class="feature-item"><span class="check">✓</span> Música upload + logo personalizada</div>
-    <div class="feature-item"><span class="check">✓</span> Resolução vertical 1080×1920</div>
-    <div class="feature-item"><span class="check">✓</span> Transições profissionais</div>
+  <!-- BANNER pedido pendente -->
+  <div class="pending-banner" id="pendingBanner">
+    <span class="pending-icon">⏳</span>
+    <div class="pending-text">
+      <strong>Você tem um vídeo renderizando</strong>
+      <span id="pendingClient">—</span>
+      <small>O vídeo continua sendo gerado no servidor mesmo com a aba fechada.</small>
+    </div>
+    <div class="pending-actions">
+      <button class="btn-pending-check" onclick="checkPending()">↻ Verificar agora</button>
+      <button class="btn-pending-clear" onclick="clearPending()">Dispensar</button>
+    </div>
   </div>
 
-  <div class="progress-bar">
-    <div class="progress-bar-fill"></div>
+  <div class="tabs-mini">
+    <button class="tab-mini active" data-panel="novo">Novo Pedido</button>
+    <button class="tab-mini" data-panel="resultado">Resultado</button>
+    <button class="tab-mini" data-panel="historico">Histórico</button>
   </div>
-  <div class="eta">EM BREVE</div>
 
-  <a href="../index.html" class="back-link">← Voltar ao painel</a>
+  <!-- ═══ NOVO PEDIDO ═══════════════════════════════════════════ -->
+  <div class="panel active" id="panel-novo">
+
+    <div class="card">
+      <div class="card-title">Dados do Pedido</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Atendente</label>
+          <input id="inAtendente" type="text" placeholder="Seu nome" maxlength="40"/>
+        </div>
+        <div class="field">
+          <label>Cliente</label>
+          <input id="inCliente" type="text" placeholder="Nome do cliente" maxlength="40"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fotos do vídeo</div>
+      <div class="upload-area" id="photosUpload" onclick="document.getElementById('photosInput').click()">
+        <input id="photosInput" type="file" accept="image/*" multiple/>
+        <span class="icon">📷</span>
+        <p>Clique para enviar as fotos</p>
+        <span>3 a 30 fotos · JPG ou PNG · serão otimizadas automaticamente</span>
+      </div>
+      <div class="photos-grid" id="photosGrid"></div>
+      <div class="photo-info-bar" id="photosInfo" style="display:none">
+        <span><strong id="photosCount">0</strong> fotos selecionadas</span>
+        <span id="photosSize">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Música de fundo</div>
+      <div class="upload-area" id="musicUpload" onclick="document.getElementById('musicInput').click()">
+        <input id="musicInput" type="file" accept="audio/*"/>
+        <span class="icon">🎵</span>
+        <p>Clique para enviar a música (MP3)</p>
+        <span>Entre 5s e 3min · o vídeo terá a duração da música</span>
+      </div>
+      <div class="media-preview" id="musicPreview">
+        <div class="media-icon">🎵</div>
+        <div class="media-info">
+          <strong id="musicName">musica.mp3</strong>
+          <span><span id="musicSize">—</span> · <span class="duration" id="musicDuration">—</span></span>
+        </div>
+        <button class="media-remove" onclick="removeMusic()" title="Remover">✕</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Logo <span class="opt">opcional</span></div>
+      <div class="upload-area" id="logoUpload" onclick="document.getElementById('logoInput').click()">
+        <input id="logoInput" type="file" accept="image/*"/>
+        <span class="icon">🏷️</span>
+        <p>Clique para enviar a logo</p>
+        <span>PNG com fundo transparente · aparece no canto inferior esquerdo</span>
+      </div>
+      <div class="media-preview" id="logoPreview">
+        <div class="media-icon"><img id="logoThumb" src="" alt="Logo"/></div>
+        <div class="media-info">
+          <strong id="logoName">logo.png</strong>
+          <span id="logoSize">—</span>
+        </div>
+        <button class="media-remove" onclick="removeLogo()" title="Remover">✕</button>
+      </div>
+      <div class="field-hint">A logo entra com um leve fade-in no começo e fica fixa no canto.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Chamada de texto <span class="opt">opcional</span></div>
+      <div class="field">
+        <textarea id="inTexto" maxlength="120" placeholder="Ex: Promoção de sábado e domingo! Não perca."></textarea>
+        <div class="field-hint">O texto aparece com animação palavra por palavra, em letra branca com sombra. Deixe em branco para não usar.</div>
+      </div>
+      <div class="text-timing">
+        <div class="field">
+          <label>Aparece aos (s)</label>
+          <input id="inTextoStart" type="number" min="0" step="1" value="2"/>
+        </div>
+        <div class="field">
+          <label>Fica na tela por (s)</label>
+          <input id="inTextoDur" type="number" min="1" step="1" value="8"/>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generateVideo()">
+      ✦ &nbsp;GERAR VÍDEO
+    </button>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <div class="status-progress">
+        <div class="status-text" id="statusText">Preparando...</div>
+        <div class="status-sub" id="statusSub"></div>
+        <div class="status-timer" id="statusTimer"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ RESULTADO ═════════════════════════════════════════════ -->
+  <div class="panel" id="panel-resultado">
+    <div class="empty-state" id="resultEmpty">
+      <span class="icon">✦</span>
+      <p>Nenhum vídeo gerado ainda nesta sessão.</p>
+      <p class="sub">Vá pra aba "Novo Pedido" e gere seu primeiro vídeo.</p>
+    </div>
+    <div id="resultContent" style="display:none"></div>
+  </div>
+
+  <!-- ═══ HISTÓRICO ═════════════════════════════════════════════ -->
+  <div class="panel" id="panel-historico">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="result-title">Histórico de vídeos</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Clique em "Ver" para abrir o vídeo</div>
+      </div>
+      <button class="history-refresh" onclick="loadHistory()">🔄 Atualizar</button>
+    </div>
+    <div id="historyContainer">
+      <div class="history-loading">Carregando histórico...</div>
+    </div>
+  </div>
+
 </div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ LUX VÍDEOS — JS ════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos.plataformalux.workers.dev';
+
+// Otimização de imagem
+const MAX_IMG_SIZE = 1280;
+const JPEG_QUALITY = 0.82;
+
+// Limites (espelham o Worker)
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 30;
+const MIN_MUSIC_SECONDS = 5;
+const MAX_MUSIC_SECONDS = 180;
+const LOGO_MAX_BYTES = 8 * 1024 * 1024;
+
+// Polling
+const POLL_INTERVAL_MS = 15000;          // 15s entre verificações
+const POLL_MAX_DURATION_MS = 8 * 60 * 1000; // máx 8 min de polling
+
+// localStorage key do pedido pendente
+const PENDING_KEY = 'lux_video_pending';
+
+let state = {
+  atendente: '', cliente: '',
+  isAdmin: false,
+  photos: [],                 // [{ file, base64, mime, name, thumbUrl }]
+  music: null,                // { base64, mime, name, size, duration }
+  logo: null,                 // { base64, mime, name, size }
+  currentOrderId: null,
+  currentVideo: null,         // { videoUrl, clientName, cost, ... }
+};
+
+let timerInterval = null;
+let pollIntervalId = null;
+let pollStartTime = 0;
+
+// ── Tabs ──
+document.querySelectorAll('.tab-mini').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab-mini').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.panel).classList.add('active');
+    if (t.dataset.panel === 'historico') loadHistory();
+  });
+});
+function goTab(name) { document.querySelector('.tab-mini[data-panel="' + name + '"]').click(); }
+
+// ═══ UPLOAD DE FOTOS ════════════════════════════════════════
+document.getElementById('photosInput').addEventListener('change', handlePhotos);
+
+async function handlePhotos(e) {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if (!files.length) return;
+
+  if (state.photos.length + files.length > MAX_PHOTOS) {
+    return toast('Máximo de ' + MAX_PHOTOS + ' fotos.', 'error');
+  }
+
+  showToast('Otimizando fotos...', 'info');
+  for (const file of files) {
+    if (!/^image\//.test(file.type)) continue;
+    try {
+      const blob = await compressImage(file, MAX_IMG_SIZE, JPEG_QUALITY);
+      const base64 = await blobToBase64(blob);
+      state.photos.push({
+        file: file, base64: base64, mime: 'image/jpeg',
+        name: file.name, thumbUrl: URL.createObjectURL(blob), size: blob.size
+      });
+    } catch (err) {
+      console.warn('Falha ao otimizar', file.name, err);
+    }
+  }
+  hideToast();
+  renderPhotos();
+}
+
+function renderPhotos() {
+  const grid = document.getElementById('photosGrid');
+  grid.innerHTML = '';
+  state.photos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-item';
+    div.innerHTML =
+      '<span class="photo-num">' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<button class="photo-remove" data-i="' + i + '" title="Remover">✕</button>' +
+      '<img src="' + p.thumbUrl + '" alt="Foto ' + (i + 1) + '"/>';
+    grid.appendChild(div);
+  });
+  grid.querySelectorAll('.photo-remove').forEach(btn => {
+    btn.addEventListener('click', () => removePhoto(Number(btn.dataset.i)));
+  });
+
+  const info = document.getElementById('photosInfo');
+  if (state.photos.length) {
+    info.style.display = 'flex';
+    document.getElementById('photosCount').textContent = state.photos.length;
+    const totalKB = state.photos.reduce((s, p) => s + (p.size || 0), 0) / 1024;
+    document.getElementById('photosSize').textContent =
+      totalKB > 1024 ? (totalKB / 1024).toFixed(1) + ' MB' : totalKB.toFixed(0) + ' KB';
+    document.getElementById('photosUpload').style.display =
+      state.photos.length >= MAX_PHOTOS ? 'none' : '';
+  } else {
+    info.style.display = 'none';
+    document.getElementById('photosUpload').style.display = '';
+  }
+}
+
+function removePhoto(i) {
+  const p = state.photos[i];
+  if (p && p.thumbUrl) URL.revokeObjectURL(p.thumbUrl);
+  state.photos.splice(i, 1);
+  renderPhotos();
+}
+
+// ═══ UPLOAD DE MÚSICA ═══════════════════════════════════════
+document.getElementById('musicInput').addEventListener('change', handleMusic);
+
+async function handleMusic(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!/^audio\//.test(file.type)) return toast('Selecione um arquivo de áudio.', 'error');
+
+  try {
+    showToast('Carregando música...', 'info');
+    const duration = await getAudioDuration(file);
+    if (duration < MIN_MUSIC_SECONDS) {
+      hideToast();
+      return toast('Música muito curta (mínimo ' + MIN_MUSIC_SECONDS + 's).', 'error');
+    }
+    if (duration > MAX_MUSIC_SECONDS) {
+      hideToast();
+      return toast('Música muito longa (máximo 3 minutos).', 'error');
+    }
+    const base64 = await blobToBase64(file);
+    state.music = {
+      base64: base64, mime: file.type || 'audio/mpeg',
+      name: file.name, size: file.size, duration: Math.round(duration)
+    };
+    document.getElementById('musicName').textContent = file.name;
+    document.getElementById('musicSize').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+    document.getElementById('musicDuration').textContent = formatDuration(state.music.duration);
+    document.getElementById('musicPreview').classList.add('show');
+    document.getElementById('musicUpload').style.display = 'none';
+    hideToast();
+  } catch (err) {
+    toast('Erro ao carregar música: ' + err.message, 'error');
+  }
+}
+
+function removeMusic() {
+  state.music = null;
+  document.getElementById('musicPreview').classList.remove('show');
+  document.getElementById('musicUpload').style.display = '';
+}
+
+function getAudioDuration(file) {
+  return new Promise((resolve, reject) => {
+    const audio = document.createElement('audio');
+    const url = URL.createObjectURL(file);
+    audio.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(audio.duration); };
+    audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Áudio inválido')); };
+    audio.src = url;
+  });
+}
+
+// ═══ UPLOAD DE LOGO ═════════════════════════════════════════
+document.getElementById('logoInput').addEventListener('change', handleLogo);
+
+async function handleLogo(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!/^image\//.test(file.type)) return toast('Selecione um arquivo de imagem.', 'error');
+  if (file.size > LOGO_MAX_BYTES) {
+    return toast('Logo muito pesada (máximo 8 MB).', 'error');
+  }
+  try {
+    const base64 = await blobToBase64(file);
+    state.logo = {
+      base64: base64, mime: file.type || 'image/png',
+      name: file.name, size: file.size
+    };
+    document.getElementById('logoThumb').src = URL.createObjectURL(file);
+    document.getElementById('logoName').textContent = file.name;
+    document.getElementById('logoSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
+    document.getElementById('logoPreview').classList.add('show');
+    document.getElementById('logoUpload').style.display = 'none';
+  } catch (err) {
+    toast('Erro ao carregar logo: ' + err.message, 'error');
+  }
+}
+
+function removeLogo() {
+  state.logo = null;
+  document.getElementById('logoPreview').classList.remove('show');
+  document.getElementById('logoUpload').style.display = '';
+}
+
+// ═══ HELPERS DE IMAGEM/ARQUIVO ══════════════════════════════
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        if (width >= height) { height = Math.round(height * maxSize / width); width = maxSize; }
+        else { width = Math.round(width * maxSize / height); height = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        blob => { URL.revokeObjectURL(url); blob ? resolve(blob) : reject(new Error('Falha ao gerar blob')); },
+        'image/jpeg', quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+    img.src = url;
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function formatDuration(secs) {
+  const s = Math.round(secs || 0);
+  const mm = Math.floor(s / 60);
+  const ss = s % 60;
+  return mm + ':' + String(ss).padStart(2, '0');
+}
+
+// ═══ GERAR VÍDEO ════════════════════════════════════════════
+async function generateVideo() {
+  state.atendente = document.getElementById('inAtendente').value.trim();
+  state.cliente = document.getElementById('inCliente').value.trim();
+
+  if (!state.atendente) return toast('Atendente não identificado.', 'error');
+  if (!state.cliente) return toast('Digite o nome do cliente.', 'error');
+  if (state.photos.length < MIN_PHOTOS) {
+    return toast('Envie pelo menos ' + MIN_PHOTOS + ' fotos.', 'error');
+  }
+  if (!state.music) return toast('Envie a música de fundo.', 'error');
+
+  // Monta o textOverlay (opcional)
+  let textOverlay = null;
+  const txt = document.getElementById('inTexto').value.trim();
+  if (txt) {
+    textOverlay = {
+      text: txt,
+      start: Number(document.getElementById('inTextoStart').value) || 2,
+      duration: Number(document.getElementById('inTextoDur').value) || 8
+    };
+  }
+
+  const genBtn = document.getElementById('genBtn');
+  genBtn.disabled = true;
+  const statusBar = document.getElementById('statusBar');
+  statusBar.classList.add('show');
+  setStatus('Criando pedido...', 'Enviando fotos e música pro servidor', '');
+  startTimer();
+
+  try {
+    // ── 1. createOrder ──
+    const orderResp = await window.__luxFetch(WORKER_URL + '/createOrder', {
+      method: 'POST',
+      body: JSON.stringify({
+        clientName: state.cliente,
+        photos: state.photos.map(p => ({ base64: p.base64, mimeType: p.mime, name: p.name })),
+        music: { base64: state.music.base64, mimeType: state.music.mime, name: state.music.name },
+        musicDuration: state.music.duration,
+        logo: state.logo ? { base64: state.logo.base64, mimeType: state.logo.mime, name: state.logo.name } : null,
+        textOverlay: textOverlay
+      })
+    });
+    const orderData = await orderResp.json();
+    if (!orderData.ok) throw new Error(orderData.error || 'Erro ao criar pedido');
+    state.currentOrderId = orderData.orderId;
+
+    // Salva pedido pendente (recuperação se fechar a aba)
+    savePending(orderData.orderId, state.cliente);
+
+    // ── 2. produceVideo ──
+    setStatus('Iniciando renderização...', 'O vídeo está sendo montado', '');
+    const produceResp = await window.__luxFetch(WORKER_URL + '/produceVideo', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: state.currentOrderId })
+    });
+    const produceData = await produceResp.json();
+    if (!produceData.ok) throw new Error(produceData.error || 'Erro ao iniciar renderização');
+
+    if (produceData.status === 'completed') {
+      // Caso raro: renderizou instantâneo
+      onVideoReady(produceData);
+      return;
+    }
+
+    // ── 3. polling ──
+    setStatus('Renderizando vídeo...', 'Isso leva alguns minutos. Pode aguardar aqui.', '');
+    startPolling(state.currentOrderId);
+
+  } catch (err) {
+    stopTimer();
+    stopPolling();
+    statusBar.classList.remove('show');
+    genBtn.disabled = false;
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ═══ POLLING ════════════════════════════════════════════════
+function startPolling(orderId) {
+  pollStartTime = Date.now();
+  if (pollIntervalId) clearInterval(pollIntervalId);
+
+  pollIntervalId = setInterval(async () => {
+    if (Date.now() - pollStartTime > POLL_MAX_DURATION_MS) {
+      stopPolling();
+      stopTimer();
+      document.getElementById('statusBar').classList.remove('show');
+      document.getElementById('genBtn').disabled = false;
+      showPendingBanner();
+      toast('A renderização está demorando. Use "Verificar agora" no banner pra conferir.', 'error');
+      return;
+    }
+    try {
+      const resp = await window.__luxFetch(WORKER_URL + '/checkStatus?orderId=' + encodeURIComponent(orderId));
+      const data = await resp.json();
+      if (data.status === 'completed') {
+        onVideoReady(data);
+      } else if (data.status === 'error' || data.ok === false) {
+        stopPolling();
+        stopTimer();
+        document.getElementById('statusBar').classList.remove('show');
+        document.getElementById('genBtn').disabled = false;
+        clearPending();
+        toast('Erro na renderização: ' + (data.error || 'desconhecido'), 'error');
+      }
+      // se 'rendering', continua o loop
+    } catch (err) {
+      console.warn('Erro de polling (continua tentando):', err);
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  if (pollIntervalId) clearInterval(pollIntervalId);
+  pollIntervalId = null;
+}
+
+function onVideoReady(data) {
+  stopPolling();
+  stopTimer();
+  document.getElementById('statusBar').classList.remove('show');
+  document.getElementById('genBtn').disabled = false;
+  clearPending();
+
+  state.currentVideo = {
+    videoUrl: data.videoUrl,
+    clientName: state.cliente || data.clientName || 'Cliente',
+    cost: data.cost,
+    orderId: data.orderId
+  };
+  renderResult();
+  goTab('resultado');
+  toast('✓ Vídeo pronto!', 'success');
+}
+
+// ═══ RESULTADO ══════════════════════════════════════════════
+function renderResult() {
+  const v = state.currentVideo;
+  if (!v) {
+    document.getElementById('resultEmpty').style.display = '';
+    document.getElementById('resultContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('resultEmpty').style.display = 'none';
+  const content = document.getElementById('resultContent');
+  content.style.display = '';
+
+  const custoTxt = (v.cost != null)
+    ? '<span>💰 $' + Number(v.cost).toFixed(3) + '</span>'
+    : '';
+
+  content.innerHTML =
+    '<div class="result-card">' +
+      '<video class="result-video" src="' + v.videoUrl + '" controls playsinline></video>' +
+      '<div class="result-body">' +
+        '<div class="result-title">Vídeo — ' + escapeHtml(v.clientName) + '</div>' +
+        '<div class="result-meta">' +
+          '<span>👤 ' + escapeHtml(state.atendente) + '</span>' +
+          custoTxt +
+        '</div>' +
+        '<div class="result-actions">' +
+          '<a class="btn-download" href="' + v.videoUrl + '" download="video-' +
+            escapeAttr(v.clientName) + '.mp4">⬇ Baixar vídeo</a>' +
+          '<button class="btn-secondary" onclick="goNewOrder()">+ Novo vídeo</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function goNewOrder() {
+  // Limpa o formulário pra um novo pedido
+  state.photos.forEach(p => p.thumbUrl && URL.revokeObjectURL(p.thumbUrl));
+  state.photos = [];
+  state.music = null;
+  state.logo = null;
+  state.currentOrderId = null;
+  document.getElementById('inCliente').value = '';
+  document.getElementById('inTexto').value = '';
+  document.getElementById('inTextoStart').value = '2';
+  document.getElementById('inTextoDur').value = '8';
+  renderPhotos();
+  removeMusic();
+  removeLogo();
+  goTab('novo');
+}
+
+// ═══ BANNER PEDIDO PENDENTE ═════════════════════════════════
+function savePending(orderId, clientName) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({ orderId, clientName, ts: Date.now() }));
+  } catch (e) {}
+}
+function getPending() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearPending() {
+  try { localStorage.removeItem(PENDING_KEY); } catch (e) {}
+  document.getElementById('pendingBanner').classList.remove('show');
+}
+function showPendingBanner() {
+  const p = getPending();
+  if (!p) return;
+  document.getElementById('pendingClient').textContent = 'Cliente: ' + p.clientName;
+  document.getElementById('pendingBanner').classList.add('show');
+}
+async function checkPending() {
+  const p = getPending();
+  if (!p) return clearPending();
+  showToast('Verificando vídeo...', 'info');
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/checkStatus?orderId=' + encodeURIComponent(p.orderId));
+    const data = await resp.json();
+    hideToast();
+    if (data.status === 'completed') {
+      state.cliente = p.clientName;
+      onVideoReady(data);
+    } else if (data.status === 'error' || data.ok === false) {
+      clearPending();
+      toast('A renderização falhou: ' + (data.error || 'erro desconhecido'), 'error');
+    } else {
+      toast('Vídeo ainda renderizando. Aguarde mais um pouco.', 'info');
+    }
+  } catch (err) {
+    hideToast();
+    toast('Erro ao verificar: ' + err.message, 'error');
+  }
+}
+
+// ═══ HISTÓRICO ══════════════════════════════════════════════
+async function loadHistory() {
+  const container = document.getElementById('historyContainer');
+  container.innerHTML = '<div class="history-loading">Carregando histórico...</div>';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/listOrders');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar histórico');
+
+    if (!data.orders || !data.orders.length) {
+      container.innerHTML =
+        '<div class="empty-state"><span class="icon">📂</span>' +
+        '<p>Nenhum vídeo no histórico ainda.</p></div>';
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'history-list';
+    data.orders.forEach(o => {
+      const statusClass = o.status === 'COMPLETED' ? 'completed'
+                        : o.status === 'ERROR'     ? 'error'
+                        : o.status === 'RENDERING' ? 'rendering' : 'created';
+      const statusLabel = o.status === 'COMPLETED' ? 'Concluído'
+                        : o.status === 'ERROR'     ? 'Erro'
+                        : o.status === 'RENDERING' ? 'Renderizando' : 'Criado';
+      const custoBadge = (o.cost != null)
+        ? '<span class="badge cost">$' + Number(o.cost).toFixed(3) + '</span>' : '';
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML =
+        '<div class="history-item-info">' +
+          '<div class="history-client">' + escapeHtml(o.clientName) + '</div>' +
+          '<div class="history-meta">' +
+            '<span>👤 ' + escapeHtml(o.attendantName || '—') + '</span>' +
+            '<span>📅 ' + escapeHtml(o.createdAtBR || '—') + '</span>' +
+            '<span>📷 ' + (o.photoCount || 0) + '</span>' +
+            (o.musicDuration ? '<span>🎵 ' + formatDuration(o.musicDuration) + '</span>' : '') +
+            (o.hasText ? '<span>💬 texto</span>' : '') +
+            '<span class="badge ' + statusClass + '">' + statusLabel + '</span>' +
+            custoBadge +
+          '</div>' +
+        '</div>' +
+        (o.status === 'COMPLETED' && o.videoUrl
+          ? '<button class="history-btn-view" data-url="' + escapeAttr(o.videoUrl) +
+            '" data-client="' + escapeAttr(o.clientName) +
+            '" data-cost="' + (o.cost != null ? o.cost : '') +
+            '" data-att="' + escapeAttr(o.attendantName || '') + '">Ver →</button>'
+          : '');
+      const btn = item.querySelector('.history-btn-view');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          state.atendente = btn.dataset.att || state.atendente;
+          state.currentVideo = {
+            videoUrl: btn.dataset.url,
+            clientName: btn.dataset.client,
+            cost: btn.dataset.cost !== '' ? Number(btn.dataset.cost) : null
+          };
+          renderResult();
+          goTab('resultado');
+        });
+      }
+      list.appendChild(item);
+    });
+    container.innerHTML = '';
+    container.appendChild(list);
+  } catch (err) {
+    container.innerHTML =
+      '<div class="empty-state"><span class="icon">⚠️</span>' +
+      '<p style="color:#E87A7A">' + escapeHtml(err.message) + '</p></div>';
+  }
+}
+
+// ═══ STATUS / TIMER ═════════════════════════════════════════
+function setStatus(text, sub, timer) {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusSub').textContent = sub || '';
+  document.getElementById('statusTimer').textContent = timer || '';
+}
+function startTimer() {
+  const start = Date.now();
+  stopTimer();
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - start) / 1000);
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const ss = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('statusTimer').textContent = 'Tempo: ' + mm + ':' + ss;
+  }, 1000);
+}
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+// ═══ TOAST ══════════════════════════════════════════════════
+let toastTimer = null;
+function toast(msg, type) {
+  showToast(msg, type);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 3800);
+}
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || 'info');
+}
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function escapeAttr(s) {
+  return String(s || '').replace(/"/g, '&quot;');
+}
+
+// ═══ INIT — auto-preenche atendente do KV (igual figurinhas) ═
+(async function initAtendente() {
+  const input = document.getElementById('inAtendente');
+  input.value = 'Carregando…';
+  input.disabled = true;
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/me');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro em /admin/me');
+
+    const userName = data.user.name || data.user.email;
+    state.atendente = userName;
+    state.isAdmin = (data.user.role === 'admin');
+    input.value = userName;
+
+    if (state.isAdmin) {
+      input.disabled = false;
+      input.removeAttribute('readonly');
+      input.title = 'Como admin, você pode criar pedidos em nome de outros atendentes.';
+    } else {
+      input.disabled = false;
+      input.setAttribute('readonly', 'readonly');
+      input.style.cursor = 'not-allowed';
+      input.style.opacity = '0.75';
+      input.style.background = 'rgba(255,255,255,0.02)';
+      input.title = 'Seu nome é definido pelo administrador.';
+    }
+  } catch (err) {
+    input.disabled = false;
+    input.value = '';
+    input.placeholder = 'Erro ao carregar';
+    console.error('Falha ao preencher atendente:', err);
+  }
+
+  // Checa se tem pedido pendente de render
+  if (getPending()) showPendingBanner();
+})();
+
+// Expõe funções usadas no HTML inline
+window.generateVideo = generateVideo;
+window.removeMusic = removeMusic;
+window.removeLogo = removeLogo;
+window.goNewOrder = goNewOrder;
+window.loadHistory = loadHistory;
+window.checkPending = checkPending;
+window.clearPending = clearPending;
+</script>
 
 </body>
 </html>
