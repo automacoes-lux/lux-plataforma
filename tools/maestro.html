@@ -44,14 +44,14 @@ body{
 .tab-btn{
   background:none;border:none;color:var(--text-dim);
   padding:12px 14px;font-family:'DM Sans',sans-serif;
-  font-size:13px;font-weight:500;letter-spacing:.04em;
+  font-size:14px;font-weight:500;letter-spacing:.04em;
   cursor:pointer;border-bottom:2px solid transparent;
   transition:all .15s;text-transform:uppercase;
   flex:1;white-space:nowrap;text-align:center;
 }
 @media(max-width:520px){
   .tabs{gap:2px}
-  .tab-btn{padding:11px 6px;font-size:11px;letter-spacing:.02em}
+  .tab-btn{padding:11px 6px;font-size:12px;letter-spacing:.02em}
 }
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
@@ -107,7 +107,7 @@ body{
   background:linear-gradient(135deg,var(--gold) 0%,var(--gold-bright) 100%);
   border:none;border-radius:10px;
   color:#1A1A1A;font-family:'Cinzel',serif;
-  font-size:14px;font-weight:600;letter-spacing:.15em;
+  font-size:15px;font-weight:600;letter-spacing:.15em;
   cursor:pointer;text-transform:uppercase;
   transition:transform .1s,box-shadow .15s;
 }
@@ -121,7 +121,7 @@ body{
   display:inline-block;padding:12px 18px;
   background:transparent;border:1px solid var(--border-bright);
   color:var(--gold);border-radius:8px;
-  font-size:12px;font-weight:600;cursor:pointer;
+  font-size:13px;font-weight:600;cursor:pointer;
   font-family:'DM Sans',sans-serif;letter-spacing:.08em;
   transition:all .15s;text-decoration:none;text-transform:uppercase;
   text-align:center;
@@ -146,8 +146,8 @@ body{
 @keyframes spin{to{transform:rotate(360deg)}}
 
 .lyrics-header{margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-.lyrics-header h2{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;letter-spacing:.06em;margin-bottom:8px}
-.lyrics-header .meta{font-size:12px;color:var(--text-dim)}
+.lyrics-header h2{font-family:'Cinzel',serif;color:var(--gold);font-size:19px;letter-spacing:.06em;margin-bottom:8px}
+.lyrics-header .meta{font-size:15px;color:var(--text-dim)}
 .lyrics-header .meta span{color:var(--gold-dim)}
 
 .lyrics-section{
@@ -178,17 +178,18 @@ body{
   background:rgba(201,168,76,.04);border:1px solid var(--border);border-radius:8px;
 }
 .style-box-label{
-  font-size:11px;color:var(--gold-dim);letter-spacing:.1em;
+  font-size:12px;color:var(--gold-dim);letter-spacing:.1em;
   font-weight:600;text-transform:uppercase;margin-bottom:6px;
 }
-.style-box-content{font-size:13px;color:var(--text);line-height:1.6}
+.style-box-content{font-size:16px;color:var(--text);line-height:1.6}
 .style-box-meta{
   margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
-  font-size:12px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;
+  font-size:15px;color:var(--text-dim);display:flex;gap:18px;flex-wrap:wrap;
 }
 .style-box-meta strong{color:var(--gold-dim);font-weight:500}
+.style-box-meta .num-white{color:#FFFFFF;font-weight:600}
 
-.lyrics-actions{margin-top:1.5rem;display:flex;flex-direction:column;gap:10px}
+.lyrics-actions{margin-top:1.5rem;display:flex;flex-direction:column;gap:1.5rem}
 .lyrics-actions .copy-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* mobile: mantém 2 colunas pra economizar espaço */
 
@@ -234,7 +235,7 @@ body{
   margin-bottom:1.2rem;padding:18px 18px;
   background:rgba(255,255,255,.02);border:1px solid var(--border);
   border-radius:10px;white-space:pre-wrap;
-  font-family:'DM Sans',sans-serif;font-size:14px;
+  font-family:'DM Sans',sans-serif;font-size:18px;
   line-height:1.75;color:var(--text);
 }
 .lyrics-full.regenerating{border-color:var(--gold-dim);background:rgba(201,168,76,.04);opacity:.7}
@@ -246,14 +247,14 @@ body{
 .block-btn{
   background:transparent;border:1px solid var(--border-bright);
   color:var(--gold);border-radius:8px;padding:10px 6px;
-  font-size:12px;font-weight:600;cursor:pointer;
+  font-size:13px;font-weight:600;cursor:pointer;
   font-family:'DM Sans',sans-serif;letter-spacing:.03em;
   transition:all .15s;text-transform:uppercase;
 }
 .block-btn:hover:not(:disabled){background:rgba(201,168,76,.1)}
 .block-btn:disabled{opacity:.4;cursor:wait}
 .block-btn.busy{opacity:.6;cursor:wait}
-@media(max-width:520px){.block-btn{font-size:11px;padding:10px 4px;letter-spacing:0}}
+@media(max-width:520px){.block-btn{font-size:12px;padding:10px 4px;letter-spacing:0}}
 
 /* ── Advanced Mode (instrumentos Suno) ── */
 .advanced{
@@ -267,7 +268,7 @@ body{
 }
 .advanced-head:hover{background:rgba(201,168,76,.04)}
 .advanced-head .adv-title{
-  font-size:12px;font-weight:600;letter-spacing:.1em;
+  font-size:13px;font-weight:600;letter-spacing:.1em;
   color:var(--gold-dim);text-transform:uppercase;
 }
 .advanced-head .adv-arrow{color:var(--gold-dim);transition:transform .2s;font-size:13px}
@@ -580,8 +581,8 @@ function renderLyrics(order) {
       <div class="style-box-label">Estilo / Style Prompt</div>
       <div class="style-box-content">${escapeHtml(r.style_prompt || '')}</div>
       <div class="style-box-meta">
-        <span><strong>Weirdness:</strong> ${r.weirdness ?? '-'}</span>
-        <span><strong>Style Influence:</strong> ${r.style_influence ?? '-'}</span>
+        <span><strong>Weirdness:</strong> <b class="num-white">${r.weirdness ?? '-'}</b></span>
+        <span><strong>Style Influence:</strong> <b class="num-white">${r.style_influence ?? '-'}</b></span>
       </div>
     </div>
 
