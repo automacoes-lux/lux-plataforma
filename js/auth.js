@@ -12,7 +12,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut,
+         setPersistence, browserLocalPersistence }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ── Configuração do projeto Firebase ────────────────────────
@@ -29,6 +30,14 @@ const firebaseConfig = {
 const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
+
+// Mantém a sessão salva no navegador (não desloga ao recarregar a
+// página nem ao fechar/reabrir o navegador). O Firebase renova o
+// token automaticamente; o usuário só precisa logar de novo se
+// ficar muito tempo sem abrir ou se for removido da whitelist.
+setPersistence(auth, browserLocalPersistence).catch((e) => {
+  console.warn('Falha ao definir persistência de sessão:', e.message);
+});
 
 // Guarda o usuário atual (Firebase user)
 window.__luxUser = null;
@@ -93,7 +102,46 @@ window.__luxSignOut = () => signOut(auth);
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // ─── PORTÃO DE SEGURANÇA ────────────────────────────────────
+    // ANTES de mostrar qualquer coisa da plataforma, valida no
+    // Worker se este email está autorizado (KV LUX_USERS).
+    // Usuário não autorizado é deslogado IMEDIATAMENTE e NUNCA vê
+    // o interior da plataforma.
+    let authorizedUser = null;
+    try {
+      const idToken = await user.getIdToken();
+      const resp = await fetch(
+        'https://lux-figurinhas.plataformalux.workers.dev/admin/me',
+        { headers: { 'Authorization': 'Bearer ' + idToken } }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.ok && data.user) authorizedUser = data.user;
+      }
+    } catch (e) {
+      console.warn('Falha ao validar acesso:', e.message);
+      // Em falha de rede, NÃO libera (fail-closed por segurança).
+    }
+
+    if (!authorizedUser) {
+      // Bloqueia: desloga e mostra mensagem clara na tela de login.
+      window.__luxUser = null;
+      window.__luxRole = null;
+      await signOut(auth);
+      document.getElementById('screen-login').style.display = 'flex';
+      document.getElementById('screen-app').style.display   = 'none';
+      window.__appReady = false;
+      applyRole(null);
+      showAuthError(
+        'Acesso não autorizado. O email ' + (user.email || '') +
+        ' não está liberado nesta plataforma. Fale com o administrador.'
+      );
+      return;
+    }
+
+    // ─── Autorizado: libera a plataforma ────────────────────────
     window.__luxUser = user;
+    window.__luxRole = authorizedUser.role;
     document.getElementById('screen-login').style.display = 'none';
     document.getElementById('screen-app').style.display   = 'flex';
     document.getElementById('user-name').textContent  = user.displayName || user.email;
@@ -107,24 +155,10 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById('user-initials').textContent =
         (user.displayName || user.email)[0].toUpperCase();
     }
+    applyRole(authorizedUser.role);
     if (!window.__appReady) {
       window.__appReady = true;
       if (typeof window.showDashboard === 'function') window.showDashboard();
-    }
-
-    // Busca o role do usuário no Worker (mostra/esconde menu Admin)
-    try {
-      const resp = await window.__luxFetch(
-        'https://lux-figurinhas.plataformalux.workers.dev/admin/me'
-      );
-      const data = await resp.json();
-      if (data.ok && data.user) {
-        window.__luxRole = data.user.role;
-        applyRole(data.user.role);
-      }
-    } catch (e) {
-      // se falhar, segue como atendente (role mais restrito)
-      console.warn('Falha ao obter role:', e.message);
     }
   } else {
     window.__luxUser = null;
