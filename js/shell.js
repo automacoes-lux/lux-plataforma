@@ -56,6 +56,17 @@ function loadTool(name) {
 
   view.classList.add('show');
   setNav(name);
+
+  // Preenche o nome do atendente na topbar do Lux Music
+  if (name === 'musica') {
+    const slot = document.getElementById('musicAtendente');
+    if (slot) {
+      const nm = (document.getElementById('user-name') || {}).textContent
+              || (document.getElementById('user-email') || {}).textContent || '';
+      slot.innerHTML = nm ? 'Atendente: <strong>' + nm + '</strong>' : '';
+    }
+  }
+
   document.getElementById('mainContent').scrollTo(0, 0);
 }
 
