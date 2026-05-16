@@ -25,6 +25,14 @@
   font-weight:600;
   letter-spacing:.06em;
 }
+/* Badge "NOVO" — gradient gold pra chamar atenção do lançamento */
+.badge-new{
+  background:linear-gradient(135deg,rgba(201,168,76,0.35),rgba(201,168,76,0.15));
+  color:#FFD580;
+  border:1px solid rgba(201,168,76,0.6);
+  font-weight:700;
+  letter-spacing:.08em;
+}
 /* Cards "Em Breve" desativados visualmente */
 .tool-card.soon{
   opacity:0.6;
@@ -96,9 +104,9 @@
         <div class="nav-icon">🎬</div> Vídeo Padrão
         <span class="nav-badge badge-live">LIVE</span>
       </a>
-      <a class="nav-item soon" data-tool="videos-premium" href="#">
+      <a class="nav-item" data-tool="videos-premium" href="#">
         <div class="nav-icon">🤖</div> Vídeo Premium
-        <span class="nav-badge badge-warning">EM BREVE</span>
+        <span class="nav-badge badge-new">NOVO</span>
       </a>
       <a class="nav-item" data-tool="meus-custos" href="#">
         <div class="nav-icon">💰</div> Meus Custos
@@ -191,12 +199,12 @@
           </div>
         </div>
 
-        <div class="tool-card soon">
+        <div class="tool-card" onclick="loadTool('videos-premium')">
           <div class="tool-card-icon">🤖</div>
           <div class="tool-card-name">VÍDEO PREMIUM</div>
-          <div class="tool-card-desc">Vídeos com IA imagem-para-vídeo (Wan 2.6 Flash). Animações realistas a partir de fotos estáticas.</div>
+          <div class="tool-card-desc">Vídeos cinematográficos com IA imagem-para-vídeo (Seedance v1 Pro). Cada foto vira um clipe animado profissional de 5 segundos.</div>
           <div class="tool-card-footer">
-            <span class="status-soon-warning">● Em breve</span>
+            <span class="status-live">● Disponível</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
@@ -231,7 +239,16 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- ADMIN -->
+    <!-- VÍDEO PREMIUM -->
+    <div id="view-videos-premium" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">🤖 VÍDEO PREMIUM — IA IMAGEM-PARA-VÍDEO</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- MEUS CUSTOS -->
     <div id="view-meus-custos" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
