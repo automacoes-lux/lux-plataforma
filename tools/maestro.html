@@ -39,14 +39,19 @@ body{
 
 .tabs{
   display:flex;gap:6px;border-bottom:1px solid var(--border);
-  margin-bottom:1.8rem;flex-wrap:wrap;
+  margin-bottom:1.8rem;flex-wrap:nowrap;
 }
 .tab-btn{
   background:none;border:none;color:var(--text-dim);
-  padding:12px 18px;font-family:'DM Sans',sans-serif;
+  padding:12px 14px;font-family:'DM Sans',sans-serif;
   font-size:13px;font-weight:500;letter-spacing:.04em;
   cursor:pointer;border-bottom:2px solid transparent;
   transition:all .15s;text-transform:uppercase;
+  flex:1;white-space:nowrap;text-align:center;
+}
+@media(max-width:520px){
+  .tabs{gap:2px}
+  .tab-btn{padding:11px 6px;font-size:11px;letter-spacing:.02em}
 }
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
@@ -221,6 +226,81 @@ body{
   background:rgba(127,184,122,.12);color:#7FB87A;
   border-color:rgba(127,184,122,.3);font-weight:600;
 }
+
+/* ── Caixa única com a letra completa ── */
+.lyrics-full{
+  margin-bottom:1.2rem;padding:18px 18px;
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  border-radius:10px;white-space:pre-wrap;
+  font-family:'DM Sans',sans-serif;font-size:14px;
+  line-height:1.75;color:var(--text);
+}
+.lyrics-full.regenerating{border-color:var(--gold-dim);background:rgba(201,168,76,.04);opacity:.7}
+
+/* ── Modificar letra por bloco ── */
+.modify-box{margin-bottom:1.5rem}
+.modify-hint{font-size:12px;color:var(--text-dim);margin-bottom:10px}
+.block-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.block-btn{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);border-radius:8px;padding:10px 6px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:.03em;
+  transition:all .15s;text-transform:uppercase;
+}
+.block-btn:hover:not(:disabled){background:rgba(201,168,76,.1)}
+.block-btn:disabled{opacity:.4;cursor:wait}
+.block-btn.busy{opacity:.6;cursor:wait}
+@media(max-width:520px){.block-btn{font-size:11px;padding:10px 4px;letter-spacing:0}}
+
+/* ── Advanced Mode (instrumentos Suno) ── */
+.advanced{
+  margin-top:1.5rem;border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;
+}
+.advanced-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 16px;cursor:pointer;background:rgba(255,255,255,.02);
+  user-select:none;transition:background .15s;
+}
+.advanced-head:hover{background:rgba(201,168,76,.04)}
+.advanced-head .adv-title{
+  font-size:12px;font-weight:600;letter-spacing:.1em;
+  color:var(--gold-dim);text-transform:uppercase;
+}
+.advanced-head .adv-arrow{color:var(--gold-dim);transition:transform .2s;font-size:13px}
+.advanced.open .adv-arrow{transform:rotate(180deg)}
+.advanced-body{display:none;padding:16px;border-top:1px solid var(--border)}
+.advanced.open .advanced-body{display:block;animation:fadeIn .25s}
+.adv-desc{font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:14px}
+.adv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:520px){.adv-grid{grid-template-columns:1fr}}
+.adv-field label{
+  display:block;font-size:11px;font-weight:600;letter-spacing:.08em;
+  color:var(--gold-dim);margin-bottom:5px;text-transform:uppercase;
+}
+.adv-field input{
+  width:100%;background:#0E0E0E;border:1px solid var(--border);
+  color:var(--text);padding:10px 12px;border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  transition:border-color .15s;
+}
+.adv-field input:focus{outline:none;border-color:var(--gold-dim)}
+.adv-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.adv-actions{grid-template-columns:1fr}}
+.adv-btn{
+  padding:12px 16px;border-radius:8px;font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.05em;
+  text-transform:uppercase;transition:all .15s;border:1px solid var(--border-bright);
+}
+.adv-btn.primary{
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-bright) 100%);
+  color:#1A1A1A;border:none;
+}
+.adv-btn.primary:hover:not(:disabled){box-shadow:0 4px 14px rgba(201,168,76,.25)}
+.adv-btn.ghost{background:transparent;color:var(--gold)}
+.adv-btn.ghost:hover:not(:disabled){background:rgba(201,168,76,.08)}
+.adv-btn:disabled{opacity:.5;cursor:wait}
 </style>
 </head>
 <body>
@@ -466,49 +546,77 @@ function renderLyrics(order) {
   const r = order.result;
   const sections = parseLyrics(r.lyrics);
 
-  const clienteInfo = order.clientName
-    ? `Cliente: <span>${escapeHtml(order.clientName)}</span> · `
-    : '';
+  // Nome do comércio em destaque (grande). Ritmo na linha de baixo.
+  const negocio = order.clientName || r.musica_nome || 'Letra sem título';
+
+  // Letra completa numa caixa só
+  const letraCompleta = sections.map(s => `[${s.name}]\n${s.body}`).join('\n\n');
 
   let html = `
     <div class="lyrics-header">
-      <h2>${escapeHtml(r.musica_nome || 'Letra sem título')}</h2>
-      <div class="meta">
-        ${clienteInfo}Ritmo: <span>${escapeHtml(order.ritmo)}</span>
+      <h2>${escapeHtml(negocio)}</h2>
+      <div class="meta">Ritmo: <span>${escapeHtml(order.ritmo)}</span></div>
+    </div>
+
+    <div class="lyrics-full" id="lyricsFull">${escapeHtml(letraCompleta)}</div>
+
+    <div class="modify-box">
+      <div class="modify-hint">Clique no bloco que deseja modificar — só aquela parte muda, o resto da letra é mantido.</div>
+      <div class="block-btns">
+        <button class="block-btn" data-block="Verse">Verse</button>
+        <button class="block-btn" data-block="Chorus">Chorus</button>
+        <button class="block-btn" data-block="Bridge">Bridge</button>
+        <button class="block-btn" data-block="Outro">Outro</button>
       </div>
     </div>
-  `;
 
-  sections.forEach((sec, idx) => {
-    html += `
-      <div class="lyrics-section" data-section-idx="${idx}" data-section-name="${escapeHtml(sec.name)}">
-        <div class="lyrics-section-header">
-          <span class="lyrics-section-tag">[${escapeHtml(sec.name)}]</span>
-          <button class="btn-regen" data-regen-idx="${idx}">
-            <span class="icon">↻</span> Regenerar
-          </button>
-        </div>
-        <div class="lyrics-section-content">${escapeHtml(sec.body)}</div>
-      </div>
-    `;
-  });
-
-  const custoLinha = (order.costBRL != null)
-    ? `<span><strong>Custo:</strong> R$ ${Number(order.costBRL).toFixed(2).replace('.', ',')}</span>`
-    : '';
-
-  html += `
     <div class="style-box">
       <div class="style-box-label">Estilo / Style Prompt</div>
       <div class="style-box-content">${escapeHtml(r.style_prompt || '')}</div>
       <div class="style-box-meta">
         <span><strong>Weirdness:</strong> ${r.weirdness ?? '-'}</span>
         <span><strong>Style Influence:</strong> ${r.style_influence ?? '-'}</span>
-        ${custoLinha}
       </div>
     </div>
 
-    <div class="lyrics-actions">
+    <div class="advanced" id="advancedMode">
+      <div class="advanced-head" id="advHead">
+        <span class="adv-title">⚙ Advanced Mode</span>
+        <span class="adv-arrow">▼</span>
+      </div>
+      <div class="advanced-body">
+        <div class="adv-desc">
+          Adicione instrumentos a cada bloco. A IA converte para o padrão Suno e
+          insere a instrução no início de cada bloco da letra (sem reescrever a letra).
+          Ex.: "guitarra" → instrução otimizada de guitarra no padrão Suno.
+        </div>
+        <div class="adv-grid">
+          <div class="adv-field">
+            <label>Verse</label>
+            <input type="text" id="instVerse" placeholder="Ex: guitarra metálica"/>
+          </div>
+          <div class="adv-field">
+            <label>Chorus</label>
+            <input type="text" id="instChorus" placeholder="Ex: saxofone"/>
+          </div>
+          <div class="adv-field">
+            <label>Bridge</label>
+            <input type="text" id="instBridge" placeholder="Ex: flauta"/>
+          </div>
+          <div class="adv-field">
+            <label>Outro</label>
+            <input type="text" id="instOutro" placeholder="Ex: piano suave"/>
+          </div>
+        </div>
+        <div class="adv-actions">
+          <button class="adv-btn ghost" id="btnApplyAll">Aplicar a todos (usa o Verse)</button>
+          <button class="adv-btn primary" id="btnApplyInst">Aplicar instrumentos</button>
+        </div>
+        <div class="status-box" id="advStatus" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <div class="lyrics-actions" style="margin-top:1.5rem">
       <div class="copy-row">
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
@@ -519,15 +627,31 @@ function renderLyrics(order) {
 
   c.innerHTML = html;
 
-  c.querySelectorAll('[data-regen-idx]').forEach(b => {
-    b.addEventListener('click', () => regenerateSection(parseInt(b.dataset.regenIdx)));
+  // Botões de modificar bloco
+  c.querySelectorAll('.block-btn').forEach(b => {
+    b.addEventListener('click', () => regenerateBlock(b.dataset.block, b));
   });
+
+  // Advanced mode: expandir/recolher
+  document.getElementById('advHead').addEventListener('click', () => {
+    document.getElementById('advancedMode').classList.toggle('open');
+  });
+  document.getElementById('btnApplyInst').addEventListener('click', () => applyInstruments(false));
+  document.getElementById('btnApplyAll').addEventListener('click', () => applyInstruments(true));
+
   document.getElementById('btnCopyLyrics').addEventListener('click', copyLyricsOnly);
   document.getElementById('btnCopyPrompt').addEventListener('click', copyPromptOnly);
   document.getElementById('btnNew').addEventListener('click', () => {
     document.querySelector('[data-tab="new"]').click();
     resetForm();
   });
+}
+
+// Atualiza a caixa única de letra a partir do currentOrder
+function refreshLyricsBox() {
+  const sections = parseLyrics(currentOrder.result.lyrics);
+  const box = document.getElementById('lyricsFull');
+  if (box) box.textContent = sections.map(s => `[${s.name}]\n${s.body}`).join('\n\n');
 }
 
 function parseLyrics(text) {
@@ -563,25 +687,25 @@ function parseLyrics(text) {
   return merged;
 }
 
-async function regenerateSection(idx) {
+// Regenera UM bloco pelo nome (Verse/Chorus/Bridge/Outro).
+// Reusa o endpoint /regenerateSection que já existe e funciona.
+// Se houver vários blocos com o mesmo nome, regenera o primeiro.
+async function regenerateBlock(blockName, btn) {
   if (!currentOrder) return;
   const sections = parseLyrics(currentOrder.result.lyrics);
-  if (!sections[idx]) return;
-
-  const sectionName = sections[idx].name;
-  const validNames = ['Verse', 'Chorus', 'Bridge', 'Outro'];
-  if (!validNames.includes(sectionName)) {
-    showToast('Seção "' + sectionName + '" não pode ser regenerada.', true);
+  const idx = sections.findIndex(s => s.name.toLowerCase() === blockName.toLowerCase());
+  if (idx === -1) {
+    showToast('Esta letra não tem bloco "' + blockName + '".', true);
     return;
   }
 
-  const sectionEl = document.querySelector(`[data-section-idx="${idx}"]`);
-  const btn       = sectionEl.querySelector('.btn-regen');
-  const content   = sectionEl.querySelector('.lyrics-section-content');
-
-  sectionEl.classList.add('regenerating');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="icon spin-icon">↻</span> Regenerando...';
+  const allBtns = document.querySelectorAll('.block-btn');
+  allBtns.forEach(b => b.disabled = true);
+  btn.classList.add('busy');
+  const original = btn.textContent;
+  btn.textContent = '...';
+  const box = document.getElementById('lyricsFull');
+  if (box) box.classList.add('regenerating');
 
   try {
     const resp = await window.__luxFetch(API_URL + '/regenerateSection', {
@@ -589,33 +713,89 @@ async function regenerateSection(idx) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         orderId:     currentOrder.orderId,
-        sectionName,
+        sectionName: sections[idx].name,
         lyrics:      currentOrder.result.lyrics,
         briefing:    currentOrder.briefing
       })
     });
     const data = await resp.json();
     if (!data.ok) {
-      showToast('Erro ao regenerar: ' + data.error, true);
-      sectionEl.classList.remove('regenerating');
-      btn.disabled = false;
-      btn.innerHTML = '<span class="icon">↻</span> Regenerar';
-      return;
+      showToast('Erro ao modificar: ' + data.error, true);
+    } else {
+      currentOrder.result.lyrics = data.lyrics;
+      refreshLyricsBox();
+      showToast('✓ ' + blockName + ' modificado');
     }
-    currentOrder.result.lyrics = data.lyrics;
-    const newSections = parseLyrics(data.lyrics);
-    if (newSections[idx]) {
-      content.textContent = newSections[idx].body;
-    }
-    sectionEl.classList.remove('regenerating');
-    btn.disabled = false;
-    btn.innerHTML = '<span class="icon">↻</span> Regenerar';
-    showToast('✓ Seção regenerada');
   } catch (err) {
     showToast('Erro de rede: ' + err.message, true);
-    sectionEl.classList.remove('regenerating');
-    btn.disabled = false;
-    btn.innerHTML = '<span class="icon">↻</span> Regenerar';
+  } finally {
+    allBtns.forEach(b => b.disabled = false);
+    btn.classList.remove('busy');
+    btn.textContent = original;
+    if (box) box.classList.remove('regenerating');
+  }
+}
+
+// Advanced Mode: adiciona instrumentos no padrão Suno em cada bloco.
+// Chama o Worker do Lux Music (endpoint /applyInstruments — ver spec).
+// applyAll=true: usa o instrumento do Verse pra todos os blocos.
+async function applyInstruments(applyAll) {
+  if (!currentOrder) return;
+  const status = document.getElementById('advStatus');
+  const bInst  = document.getElementById('btnApplyInst');
+  const bAll   = document.getElementById('btnApplyAll');
+
+  const verse = document.getElementById('instVerse').value.trim();
+  let instruments;
+  if (applyAll) {
+    if (!verse) {
+      showToast('Preencha o campo Verse para aplicar a todos.', true);
+      return;
+    }
+    instruments = { Verse: verse, Chorus: verse, Bridge: verse, Outro: verse };
+  } else {
+    instruments = {
+      Verse:  verse,
+      Chorus: document.getElementById('instChorus').value.trim(),
+      Bridge: document.getElementById('instBridge').value.trim(),
+      Outro:  document.getElementById('instOutro').value.trim()
+    };
+    if (!instruments.Verse && !instruments.Chorus && !instruments.Bridge && !instruments.Outro) {
+      showToast('Preencha ao menos um instrumento.', true);
+      return;
+    }
+  }
+
+  bInst.disabled = true; bAll.disabled = true;
+  status.className = 'status-box show loading';
+  status.textContent = 'Consultando a IA e aplicando instrumentos no padrão Suno...';
+
+  try {
+    const resp = await window.__luxFetch(API_URL + '/applyInstruments', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        orderId:     currentOrder.orderId,
+        lyrics:      currentOrder.result.lyrics,
+        instruments
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.className = 'status-box show error';
+      status.textContent = '✘ ' + (data.error || 'Erro ao aplicar instrumentos');
+    } else {
+      currentOrder.result.lyrics = data.lyrics;
+      refreshLyricsBox();
+      status.className = 'status-box show';
+      status.textContent = '✓ Instrumentos aplicados na letra (padrão Suno).';
+      showToast('✓ Instrumentos aplicados');
+    }
+  } catch (err) {
+    status.className = 'status-box show error';
+    status.textContent = '✘ Erro de rede: ' + err.message;
+  } finally {
+    bInst.disabled = false; bAll.disabled = false;
   }
 }
 
@@ -671,15 +851,13 @@ async function loadHistory() {
       html += `
         <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
           <div class="history-item-top">
-            <span class="history-item-title">${escapeHtml(o.musicaNome || '(sem nome)')}</span>
+            <span class="history-item-title">${escapeHtml(o.clientName || o.musicaNome || '(sem nome)')}</span>
             <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
           </div>
           <div class="history-item-meta">
-            <strong>${escapeHtml(o.clientName || '-')}</strong>
-            · ${escapeHtml(o.ritmo || '-')}
-            · ${escapeHtml(o.attendantName || '-')}
-            ${o.hasImage ? '<span class="history-item-badge">📎 c/ imagem</span>' : ''}
-            ${o.regenerations ? '<span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
+            ${escapeHtml(o.ritmo || '-')}
+            ${o.hasImage ? ' <span class="history-item-badge">📎 c/ imagem</span>' : ''}
+            ${o.regenerations ? ' <span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
             ${custoBadge}
           </div>
         </div>
