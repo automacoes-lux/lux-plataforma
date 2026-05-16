@@ -226,6 +226,8 @@ body{
   background:rgba(127,184,122,.12);color:#7FB87A;
   border-color:rgba(127,184,122,.3);font-weight:600;
 }
+.history-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.history-cost{font-size:11px;color:var(--text-dim);font-weight:500}
 
 /* ── Caixa única com a letra completa ── */
 .lyrics-full{
@@ -276,9 +278,17 @@ body{
 .adv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
 @media(max-width:520px){.adv-grid{grid-template-columns:1fr}}
 .adv-field label{
-  display:block;font-size:11px;font-weight:600;letter-spacing:.08em;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;font-weight:600;letter-spacing:.08em;
   color:var(--gold-dim);margin-bottom:5px;text-transform:uppercase;
 }
+.adv-repeat{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);border-radius:6px;padding:3px 8px;
+  font-size:10px;font-weight:600;cursor:pointer;letter-spacing:.02em;
+  font-family:'DM Sans',sans-serif;text-transform:none;transition:all .15s;
+}
+.adv-repeat:hover{background:rgba(201,168,76,.1)}
 .adv-field input{
   width:100%;background:#0E0E0E;border:1px solid var(--border);
   color:var(--text);padding:10px 12px;border-radius:8px;
@@ -306,11 +316,6 @@ body{
 <body>
 
 <div class="container">
-
-  <div class="page-header">
-    <h1>✦ LUX MUSIC</h1>
-    <div class="atendente-label">Atendente: <strong id="atendenteLabel">Carregando...</strong></div>
-  </div>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="new">✦ Novo Pedido</button>
@@ -397,7 +402,8 @@ function showToast(msg, isError = false) {
 }
 
 async function initAtendente() {
-  const label = document.getElementById('atendenteLabel');
+  const label = document.getElementById('atendenteLabel'); // pode não existir mais
+  const setLabel = (txt) => { if (label) label.textContent = txt; };
   try {
     let tries = 0;
     while (!window.__luxFetch && tries < 50) {
@@ -405,19 +411,19 @@ async function initAtendente() {
       tries++;
     }
     if (!window.__luxFetch) {
-      label.textContent = '(recarregue)';
+      setLabel('(recarregue)');
       return;
     }
     const resp = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
     const data = await resp.json();
     if (data.ok && data.user) {
       currentAtendente = data.user.name || data.user.email || 'Atendente';
-      label.textContent = currentAtendente;
+      setLabel(currentAtendente);
     } else {
-      label.textContent = 'Atendente';
+      setLabel('Atendente');
     }
   } catch (e) {
-    label.textContent = '(erro)';
+    setLabel('(erro)');
   }
 }
 initAtendente();
@@ -586,13 +592,14 @@ function renderLyrics(order) {
       </div>
       <div class="advanced-body">
         <div class="adv-desc">
-          Adicione instrumentos a cada bloco. A IA converte para o padrão Suno e
-          insere a instrução no início de cada bloco da letra (sem reescrever a letra).
-          Ex.: "guitarra" → instrução otimizada de guitarra no padrão Suno.
+          Adicione instrumentos a cada bloco. Clique em <strong>repetir</strong> para
+          preencher todos os blocos automaticamente com o mesmo instrumento.
         </div>
         <div class="adv-grid">
           <div class="adv-field">
-            <label>Verse</label>
+            <label>Verse
+              <button type="button" class="adv-repeat" id="btnRepeatVerse" title="Repetir este instrumento em todos os blocos">⟳ repetir</button>
+            </label>
             <input type="text" id="instVerse" placeholder="Ex: guitarra metálica"/>
           </div>
           <div class="adv-field">
@@ -609,7 +616,6 @@ function renderLyrics(order) {
           </div>
         </div>
         <div class="adv-actions">
-          <button class="adv-btn ghost" id="btnApplyAll">Aplicar a todos (usa o Verse)</button>
           <button class="adv-btn primary" id="btnApplyInst">Aplicar instrumentos</button>
         </div>
         <div class="status-box" id="advStatus" style="margin-top:14px"></div>
@@ -637,7 +643,14 @@ function renderLyrics(order) {
     document.getElementById('advancedMode').classList.toggle('open');
   });
   document.getElementById('btnApplyInst').addEventListener('click', () => applyInstruments(false));
-  document.getElementById('btnApplyAll').addEventListener('click', () => applyInstruments(true));
+  document.getElementById('btnRepeatVerse').addEventListener('click', () => {
+    const v = document.getElementById('instVerse').value.trim();
+    if (!v) { showToast('Preencha o campo Verse primeiro.', true); return; }
+    document.getElementById('instChorus').value = v;
+    document.getElementById('instBridge').value = v;
+    document.getElementById('instOutro').value  = v;
+    showToast('✓ Instrumento repetido em todos os blocos');
+  });
 
   document.getElementById('btnCopyLyrics').addEventListener('click', copyLyricsOnly);
   document.getElementById('btnCopyPrompt').addEventListener('click', copyPromptOnly);
@@ -737,36 +750,24 @@ async function regenerateBlock(blockName, btn) {
 }
 
 // Advanced Mode: adiciona instrumentos no padrão Suno em cada bloco.
-// Chama o Worker do Lux Music (endpoint /applyInstruments — ver spec).
-// applyAll=true: usa o instrumento do Verse pra todos os blocos.
-async function applyInstruments(applyAll) {
+// Chama o Worker do Lux Music (endpoint /applyInstruments).
+async function applyInstruments() {
   if (!currentOrder) return;
   const status = document.getElementById('advStatus');
   const bInst  = document.getElementById('btnApplyInst');
-  const bAll   = document.getElementById('btnApplyAll');
 
-  const verse = document.getElementById('instVerse').value.trim();
-  let instruments;
-  if (applyAll) {
-    if (!verse) {
-      showToast('Preencha o campo Verse para aplicar a todos.', true);
-      return;
-    }
-    instruments = { Verse: verse, Chorus: verse, Bridge: verse, Outro: verse };
-  } else {
-    instruments = {
-      Verse:  verse,
-      Chorus: document.getElementById('instChorus').value.trim(),
-      Bridge: document.getElementById('instBridge').value.trim(),
-      Outro:  document.getElementById('instOutro').value.trim()
-    };
-    if (!instruments.Verse && !instruments.Chorus && !instruments.Bridge && !instruments.Outro) {
-      showToast('Preencha ao menos um instrumento.', true);
-      return;
-    }
+  const instruments = {
+    Verse:  document.getElementById('instVerse').value.trim(),
+    Chorus: document.getElementById('instChorus').value.trim(),
+    Bridge: document.getElementById('instBridge').value.trim(),
+    Outro:  document.getElementById('instOutro').value.trim()
+  };
+  if (!instruments.Verse && !instruments.Chorus && !instruments.Bridge && !instruments.Outro) {
+    showToast('Preencha ao menos um instrumento.', true);
+    return;
   }
 
-  bInst.disabled = true; bAll.disabled = true;
+  bInst.disabled = true;
   status.className = 'status-box show loading';
   status.textContent = 'Consultando a IA e aplicando instrumentos no padrão Suno...';
 
@@ -795,7 +796,7 @@ async function applyInstruments(applyAll) {
     status.className = 'status-box show error';
     status.textContent = '✘ Erro de rede: ' + err.message;
   } finally {
-    bInst.disabled = false; bAll.disabled = false;
+    bInst.disabled = false;
   }
 }
 
@@ -845,20 +846,22 @@ async function loadHistory() {
     }
     let html = '';
     data.orders.forEach(o => {
-      const custoBadge = (o.costBRL != null)
-        ? `<span class="history-item-badge cost">R$ ${Number(o.costBRL).toFixed(2).replace('.', ',')}</span>`
+      const custoTxt = (o.costBRL != null)
+        ? `<div class="history-cost">R$ ${Number(o.costBRL).toFixed(2).replace('.', ',')}</div>`
         : '';
       html += `
         <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
           <div class="history-item-top">
             <span class="history-item-title">${escapeHtml(o.clientName || o.musicaNome || '(sem nome)')}</span>
-            <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
+            <div class="history-right">
+              <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
+              ${custoTxt}
+            </div>
           </div>
           <div class="history-item-meta">
             ${escapeHtml(o.ritmo || '-')}
             ${o.hasImage ? ' <span class="history-item-badge">📎 c/ imagem</span>' : ''}
             ${o.regenerations ? ' <span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
-            ${custoBadge}
           </div>
         </div>
       `;
