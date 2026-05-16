@@ -154,7 +154,8 @@ html,body{
 }
 .btn-back:hover{border-color:var(--gold-dim);color:var(--gold)}
 .tool-panel-title{font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:var(--gold);letter-spacing:.08em}
-.tool-panel-atendente{font-size:12px;color:var(--text-dim);margin-left:auto;white-space:nowrap;flex-shrink:0}
+.tool-panel-atendente{font-size:12px;color:var(--text-dim);white-space:nowrap;flex-shrink:0}
+.tool-panel-atendente:not(:empty){margin-left:8px}
 .tool-panel-atendente:empty{display:none}
 .tool-panel-atendente strong{color:var(--gold-dim);font-weight:500}
 .tool-iframe{flex:1;width:100%;border:none;display:block;background:var(--bg)}
