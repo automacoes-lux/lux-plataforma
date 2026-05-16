@@ -277,32 +277,51 @@
 </div>
 
 <script>
-// ── LOGO 3D — abre site externo em nova aba ────────────────
+// ── LOGO 3D — modal: copiar email → abre ferramenta ────────
+const LOGO3D_EMAIL = 'gptluxmarketing@gmail.com';
+const LOGO3D_URL   = 'https://sellecionados.com/acesso-s3d';
+
 function openLogo3D(event) {
   if (event) event.preventDefault();
-  // Copia email pro clipboard (se navegador permitir)
-  const email = 'gptluxmarketing@gmail.com';
-  try {
-    navigator.clipboard.writeText(email);
-    showLogo3DToast('✓ Email copiado: ' + email);
-  } catch (e) {
-    showLogo3DToast('Use o email: ' + email);
+  let ov = document.getElementById('logo3d-modal');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'logo3d-modal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;opacity:0;transition:opacity .2s';
+    ov.innerHTML = `
+      <div style="background:#141414;border:1px solid #C9A84C;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:'DM Sans',sans-serif">
+        <div style="font-family:'Cinzel',serif;color:#D4AF37;font-size:17px;font-weight:600;letter-spacing:.06em;margin-bottom:10px;text-align:center">💎 LOGO 3D</div>
+        <p style="color:#cfcabf;font-size:14px;line-height:1.6;text-align:center;margin:0 0 18px">
+          Copie o e-mail abaixo para acessar a ferramenta de Logo 3D. A página abre logo em seguida.
+        </p>
+        <button id="logo3d-copy" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0E0E0E;border:1px solid #5a5444;border-radius:9px;padding:13px 15px;cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .15s">
+          <span id="logo3d-email">${LOGO3D_EMAIL}</span>
+          <span id="logo3d-copyicon" style="color:#D4AF37;font-weight:600;font-size:13px;white-space:nowrap">📋 Copiar</span>
+        </button>
+        <button id="logo3d-open" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#D4AF37,#E8C766);border:none;border-radius:9px;padding:13px;cursor:pointer;color:#1A1A1A;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase">Abrir ferramenta</button>
+        <button id="logo3d-cancel" style="width:100%;margin-top:8px;background:transparent;border:none;color:#8a857a;font-size:12px;cursor:pointer;padding:8px;font-family:'DM Sans',sans-serif">Cancelar</button>
+      </div>`;
+    document.body.appendChild(ov);
+
+    const close = () => { ov.style.opacity = '0'; setTimeout(() => ov.remove(), 200); };
+    const goOpen = () => { window.open(LOGO3D_URL, '_blank', 'noopener'); close(); };
+
+    ov.querySelector('#logo3d-copy').addEventListener('click', async () => {
+      const icon = ov.querySelector('#logo3d-copyicon');
+      try {
+        await navigator.clipboard.writeText(LOGO3D_EMAIL);
+        icon.textContent = '✓ Copiado!';
+        icon.style.color = '#7FB87A';
+      } catch (e) {
+        icon.textContent = '✓ Selecione e copie';
+      }
+      setTimeout(goOpen, 1400);
+    });
+    ov.querySelector('#logo3d-open').addEventListener('click', goOpen);
+    ov.querySelector('#logo3d-cancel').addEventListener('click', close);
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
   }
-  // Abre em nova aba
-  window.open('https://sellecionados.com/acesso-s3d', '_blank', 'noopener');
-}
-function showLogo3DToast(msg) {
-  let toast = document.getElementById('logo3d-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'logo3d-toast';
-    toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#121212;border:1px solid #C9A84C;color:#D4B968;padding:14px 22px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity .25s';
-    document.body.appendChild(toast);
-  }
-  toast.textContent = msg;
-  toast.style.opacity = '1';
-  clearTimeout(window.__logo3dTimer);
-  window.__logo3dTimer = setTimeout(() => toast.style.opacity = '0', 3500);
+  requestAnimationFrame(() => { ov.style.opacity = '1'; });
 }
 </script>
 
