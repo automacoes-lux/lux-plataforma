@@ -5,11 +5,12 @@
 // ═══════════════════════════════════════════════════════════════
 
 const TOOLS = {
-  figurinhas: 'tools/figurinhas.html',
-  musica:     'tools/maestro.html',
-  videos:     'tools/videos.html',
-  'meus-custos': 'tools/meus-custos.html',
-  admin:      'tools/admin.html',
+  figurinhas:        'tools/figurinhas.html',
+  musica:            'tools/maestro.html',
+  videos:            'tools/videos.html',
+  'videos-premium':  'tools/videos-premium.html',
+  'meus-custos':     'tools/meus-custos.html',
+  admin:             'tools/admin.html',
 };
 
 // ── NAVEGAÇÃO ──────────────────────────────────────────────
