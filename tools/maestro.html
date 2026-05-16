@@ -124,7 +124,7 @@ body{
   font-size:13px;font-weight:600;cursor:pointer;
   font-family:'DM Sans',sans-serif;letter-spacing:.08em;
   transition:all .15s;text-decoration:none;text-transform:uppercase;
-  text-align:center;
+  text-align:center;white-space:nowrap;
 }
 .btn-secondary:hover{background:rgba(201,168,76,.08)}
 
@@ -271,7 +271,7 @@ body{
   font-size:13px;font-weight:600;letter-spacing:.1em;
   color:var(--gold-dim);text-transform:uppercase;
 }
-.advanced-head .adv-arrow{color:var(--gold-dim);transition:transform .2s;font-size:13px}
+.advanced-head .adv-arrow{color:var(--gold-dim);transition:transform .2s;font-size:16px}
 .advanced.open .adv-arrow{transform:rotate(180deg)}
 .advanced-body{display:none;padding:16px;border-top:1px solid var(--border)}
 .advanced.open .advanced-body{display:block;animation:fadeIn .25s}
@@ -280,14 +280,16 @@ body{
 @media(max-width:520px){.adv-grid{grid-template-columns:1fr}}
 .adv-field label{
   display:flex;align-items:center;justify-content:space-between;
-  font-size:11px;font-weight:600;letter-spacing:.08em;
+  gap:8px;flex-wrap:wrap;
+  font-size:13px;font-weight:600;letter-spacing:.08em;
   color:var(--gold-dim);margin-bottom:5px;text-transform:uppercase;
 }
 .adv-repeat{
   background:transparent;border:1px solid var(--border-bright);
   color:var(--gold);border-radius:6px;padding:3px 8px;
-  font-size:10px;font-weight:600;cursor:pointer;letter-spacing:.02em;
+  font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.02em;
   font-family:'DM Sans',sans-serif;text-transform:none;transition:all .15s;
+  white-space:nowrap;
 }
 .adv-repeat:hover{background:rgba(201,168,76,.1)}
 .adv-field input{
@@ -299,6 +301,10 @@ body{
 .adv-field input:focus{outline:none;border-color:var(--gold-dim)}
 .adv-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:520px){.adv-actions{grid-template-columns:1fr}}
+@media(max-width:520px){
+  .btn-secondary{font-size:11px;padding:11px 8px;letter-spacing:.03em}
+  .lyrics-actions .copy-row{gap:8px}
+}
 .adv-btn{
   padding:12px 16px;border-radius:8px;font-size:12px;font-weight:600;
   cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.05em;
@@ -599,7 +605,7 @@ function renderLyrics(order) {
         <div class="adv-grid">
           <div class="adv-field">
             <label>Verse
-              <button type="button" class="adv-repeat" id="btnRepeatVerse" title="Repetir este instrumento em todos os blocos">⟳ repetir</button>
+              <button type="button" class="adv-repeat" id="btnRepeatVerse" title="Repetir este instrumento em todos os blocos">⟳ repetir instrumento</button>
             </label>
             <input type="text" id="instVerse" placeholder="Ex: guitarra metálica"/>
           </div>
