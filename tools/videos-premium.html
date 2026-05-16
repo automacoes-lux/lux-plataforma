@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Vídeos Premium ✨</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:760px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+/* BADGE PREMIUM */
+.premium-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 11px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.08));
+  border:.5px solid var(--gold);color:var(--gold);
+  font-family:'Cinzel',serif;font-size:10px;font-weight:700;
+  letter-spacing:.12em;margin-left:10px;text-transform:uppercase;
+}
+
+/* BANNER pendente */
+.pending-banner{
+  display:none;background:rgba(232,168,76,.08);border:1px solid rgba(232,168,76,.35);
+  border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1.2rem;
+  align-items:center;gap:14px;animation:fadeIn .3s ease;
+}
+.pending-banner.show{display:flex}
+.pending-icon{font-size:24px;flex-shrink:0}
+.pending-text{flex:1;font-size:13px;line-height:1.5;color:var(--text-mid);min-width:0}
+.pending-text strong{color:#E8A84C;font-weight:600;display:block;margin-bottom:2px;font-size:14px}
+.pending-text small{color:var(--text-dim);font-size:12px;display:block;margin-top:2px}
+.pending-actions{display:flex;gap:8px;flex-shrink:0}
+@media(max-width:600px){
+  .pending-banner{flex-direction:column;align-items:stretch;gap:12px}
+  .pending-actions{justify-content:stretch}
+  .pending-actions button{flex:1}
+}
+.btn-pending-check{
+  padding:9px 14px;background:rgba(232,168,76,.18);border:1px solid rgba(232,168,76,.4);
+  color:#E8A84C;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s;
+}
+.btn-pending-check:hover{background:rgba(232,168,76,.28)}
+.btn-pending-clear{
+  padding:9px 14px;background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;
+  transition:all .15s;
+}
+.btn-pending-clear:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* TABS */
+.tabs{
+  display:flex;gap:4px;margin-bottom:2rem;
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:5px;
+}
+.tab{
+  flex:1;padding:12px;text-align:center;
+  font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;
+  border-radius:7px;cursor:pointer;color:var(--text-dim);
+  transition:all .2s;border:none;background:transparent;letter-spacing:.02em;
+}
+.tab.active{
+  background:rgba(201,168,76,.1);color:var(--gold);
+  border:.5px solid var(--border-bright);
+  font-family:'Cinzel',serif;font-size:14px;letter-spacing:.08em;
+}
+
+/* PANELS */
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:1.5rem 1.75rem;margin-bottom:1.4rem;
+}
+.card-title{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:14px;font-weight:600;letter-spacing:.1em;
+  margin-bottom:1.1rem;text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.card-title-count{
+  background:rgba(201,168,76,.12);color:var(--gold);
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:10px;letter-spacing:.02em;
+  text-transform:none;
+}
+
+/* FIELDS */
+.field{margin-bottom:1rem}
+.field label{
+  display:block;font-size:12px;font-weight:500;
+  color:var(--text-dim);margin-bottom:7px;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.field input,.field textarea,.field select{
+  width:100%;padding:13px 15px;font-size:15px;
+  background:var(--bg-input);color:var(--text);
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;outline:none;transition:all .18s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  border-color:var(--gold);background:#222;
+  box-shadow:0 0 0 3px rgba(201,168,76,.07);
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--text-dim);opacity:.5;font-size:15px}
+
+/* UPLOAD áreas */
+.upload-area{
+  border:1.5px dashed var(--border);border-radius:var(--radius-lg);
+  padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .18s;
+}
+.upload-area:hover{border-color:var(--border-bright);background:rgba(201,168,76,.025)}
+.upload-area .icon{font-size:30px;display:block;margin-bottom:9px;opacity:.55}
+.upload-area p{font-size:15px;color:var(--text-mid)}
+.upload-area span{font-size:13px;color:var(--text-dim);margin-top:3px;display:block}
+input[type="file"]{display:none}
+
+/* ════════════════════════════════════════════════════════════
+   PREMIUM - LISTA DE FOTOS COM PROMPTS BILÍNGUES
+   Desktop: grid 2 colunas (miniatura | prompts)
+   Mobile: 1 coluna (miniatura em cima, prompts embaixo)
+   ════════════════════════════════════════════════════════════ */
+.photos-premium-list{
+  display:flex;flex-direction:column;gap:14px;margin-top:14px;
+}
+.photo-premium-item{
+  background:var(--bg-input);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:14px;
+  display:grid;grid-template-columns:140px 1fr;gap:14px;
+  animation:fadeIn .3s ease;
+}
+.photo-premium-item.analyzing{
+  border-color:rgba(232,168,76,.35);
+  background:linear-gradient(135deg,var(--bg-input),rgba(232,168,76,.04));
+}
+.photo-premium-item.analyzed{
+  border-color:rgba(127,184,122,.25);
+}
+.photo-premium-item.error{
+  border-color:rgba(232,122,122,.4);
+}
+.photo-premium-thumb{
+  position:relative;aspect-ratio:1;
+  background:#000;border-radius:var(--radius);overflow:hidden;
+}
+.photo-premium-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-premium-num{
+  position:absolute;top:6px;left:6px;
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;
+  color:#080808;background:rgba(201,168,76,.95);
+  padding:3px 9px;border-radius:10px;letter-spacing:.04em;
+}
+.photo-premium-remove{
+  position:absolute;top:6px;right:6px;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.75);color:#fff;
+  border:none;cursor:pointer;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.photo-premium-remove:hover{background:rgba(232,122,122,.9)}
+
+/* PROMPTS BILÍNGUES */
+.photo-premium-prompts{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+}
+.prompt-status{
+  font-size:11px;font-weight:500;
+  letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.prompt-status.analyzing{color:#E8A84C}
+.prompt-status.analyzed{color:#7FB87A}
+.prompt-status.error{color:#E87A7A}
+.prompt-status .mini-spinner{
+  width:10px;height:10px;
+  border:1.5px solid rgba(232,168,76,.25);border-top-color:#E8A84C;
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+.prompt-field{
+  position:relative;
+}
+.prompt-field label{
+  font-size:10px;font-weight:600;letter-spacing:.08em;
+  color:var(--text-dim);margin-bottom:4px;display:block;
+  text-transform:uppercase;
+}
+.prompt-field .lang-tag{
+  display:inline-block;padding:1px 6px;border-radius:8px;
+  font-family:'Cinzel',serif;font-size:9px;
+  background:rgba(201,168,76,.15);color:var(--gold);
+  margin-left:6px;letter-spacing:.06em;
+}
+.prompt-field textarea{
+  width:100%;padding:10px 36px 10px 12px;
+  font-size:13px;line-height:1.45;
+  background:var(--bg-card);color:var(--text);
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;outline:none;
+  resize:vertical;min-height:62px;
+  transition:all .18s;
+}
+.prompt-field textarea:focus{
+  border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,.07);
+}
+.prompt-field textarea:disabled{
+  opacity:.5;cursor:not-allowed;
+}
+.prompt-field .clear-btn{
+  position:absolute;top:24px;right:6px;
+  width:24px;height:24px;border-radius:50%;
+  background:transparent;color:var(--text-dim);
+  border:none;cursor:pointer;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.prompt-field .clear-btn:hover{
+  background:rgba(232,122,122,.15);color:#E87A7A;
+}
+.prompt-sync-indicator{
+  font-size:10px;color:var(--text-dim);font-style:italic;
+  margin-top:-2px;display:none;
+}
+.prompt-sync-indicator.show{display:block}
+.prompt-sync-indicator.syncing{color:#E8A84C}
+
+/* Mobile: foto vira full-width */
+@media(max-width:600px){
+  .photo-premium-item{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .photo-premium-thumb{
+    max-width:200px;margin:0 auto;
+  }
+}
+
+/* INFO BAR DAS FOTOS */
+.photo-info-bar{
+  font-size:12px;color:var(--text-dim);margin-top:14px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+}
+.photo-info-bar span strong{color:var(--gold-dim)}
+
+/* PRÉVIA DE MÚSICA */
+.music-preview{
+  display:none;align-items:center;gap:14px;margin-top:12px;
+  padding:14px 16px;background:rgba(201,168,76,.05);
+  border-radius:var(--radius);border:.5px solid var(--border);
+}
+.music-icon{
+  width:48px;height:48px;border-radius:50%;background:rgba(201,168,76,.15);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.music-info{flex:1;min-width:0}
+.music-info strong{display:block;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-info span{font-size:12px;color:var(--text-dim)}
+.music-info .duration{color:var(--gold-dim);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em}
+.music-remove{
+  font-size:18px;color:var(--text-dim);cursor:pointer;
+  background:none;border:none;padding:4px;flex-shrink:0;
+}
+.music-remove:hover{color:var(--text)}
+
+/* PREVISÃO */
+.video-preview-info{
+  margin-top:1rem;padding:14px 16px;
+  background:rgba(127,184,122,.05);border:.5px solid rgba(127,184,122,.25);
+  border-radius:var(--radius);font-size:13px;color:var(--text-mid);
+  display:none;align-items:center;gap:10px;line-height:1.5;
+}
+.video-preview-info.show{display:flex}
+.video-preview-info strong{color:#7FB87A}
+
+/* TEXTO/LEGENDA */
+.text-input-wrap{position:relative}
+.text-input-wrap textarea{min-height:90px;resize:vertical}
+.text-counter{
+  position:absolute;bottom:8px;right:12px;
+  font-size:11px;color:var(--text-dim);
+  background:rgba(0,0,0,.6);padding:2px 8px;border-radius:8px;
+}
+.color-palette{
+  display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;
+}
+.color-swatch{
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:all .15s;
+  position:relative;
+}
+.color-swatch.selected{border-color:var(--gold);transform:scale(1.1)}
+.color-swatch::after{
+  content:'';position:absolute;inset:-3px;border-radius:50%;
+  border:.5px solid var(--border);pointer-events:none;
+}
+
+/* AVISO DE TEMPO PREMIUM */
+.premium-time-warning{
+  margin-top:1rem;padding:14px 16px;
+  background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.02));
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:var(--radius);font-size:13px;color:var(--text-mid);
+  display:flex;align-items:flex-start;gap:10px;line-height:1.5;
+}
+.premium-time-warning .icon{font-size:22px;flex-shrink:0;line-height:1}
+.premium-time-warning strong{color:var(--gold);display:block;margin-bottom:3px}
+
+/* GERAR */
+.btn-generate{
+  width:100%;padding:17px;margin-top:1.6rem;
+  background:linear-gradient(135deg,var(--gold-bright) 0%,var(--gold) 55%,var(--gold-dim) 100%);
+  color:#080808;border:none;border-radius:var(--radius-lg);
+  font-size:15px;font-weight:700;font-family:'Cinzel',serif;
+  letter-spacing:.1em;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:opacity .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 24px rgba(201,168,76,.22);
+}
+.btn-generate:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 30px rgba(201,168,76,.32)}
+.btn-generate:active{transform:translateY(0)}
+.btn-generate:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* STATUS */
+.status-bar{
+  display:none;align-items:center;gap:12px;
+  background:rgba(201,168,76,.06);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:14px 18px;
+  font-size:15px;color:var(--text-mid);margin-top:1rem;
+}
+.status-bar.show{display:flex}
+.spinner{
+  width:16px;height:16px;flex-shrink:0;
+  border:2px solid var(--border);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-progress{flex:1;min-width:0}
+.status-sub{font-size:13px;color:var(--text-dim);margin-top:3px}
+.status-timer{font-family:'Cinzel',serif;font-size:13px;color:var(--gold-dim);margin-top:3px}
+
+/* RESULTADOS */
+.results-empty{text-align:center;padding:4rem 1rem;color:var(--text-dim);font-size:15px}
+.results-empty .big{font-size:44px;display:block;margin-bottom:14px;opacity:.3}
+.result-session{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:1.5rem 1.75rem;margin-bottom:1.1rem;
+  animation:fadeIn .4s ease both;
+}
+.session-header{
+  display:flex;align-items:center;gap:14px;margin-bottom:1.4rem;
+  padding-bottom:1.1rem;border-bottom:.5px solid var(--border);
+}
+.session-avatar{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(201,168,76,.3),rgba(201,168,76,.05));
+  border:.5px solid var(--border-bright);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold);
+}
+.session-info{flex:1;min-width:0}
+.session-info strong{display:block;font-size:17px;color:var(--text)}
+.session-info .atendente{font-size:13px;color:var(--text-dim);margin-top:2px;display:block}
+.session-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.meta-tag{
+  font-size:11px;padding:3px 10px;border-radius:20px;
+  background:rgba(201,168,76,.08);color:var(--gold-dim);
+  border:.5px solid var(--border);font-weight:500;
+}
+.session-status{
+  text-align:right;flex-shrink:0;
+  font-family:'Cinzel',serif;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.session-status.completed{color:#7FB87A}
+.session-status.rendering{color:#E8A84C}
+.session-status.error{color:#E87A7A}
+
+.btn-download{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;margin-top:8px;
+  background:rgba(201,168,76,.07);color:var(--gold);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  font-size:14px;font-weight:500;text-decoration:none;cursor:pointer;
+  transition:all .15s;letter-spacing:.02em;font-family:'DM Sans',sans-serif;
+}
+.btn-download:hover{background:rgba(201,168,76,.16)}
+.btn-recheck{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;margin-top:8px;
+  background:rgba(232,168,76,.1);color:#E8A84C;
+  border:.5px solid rgba(232,168,76,.35);border-radius:var(--radius);
+  font-size:14px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.btn-recheck:hover{background:rgba(232,168,76,.2)}
+
+/* MODAL */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.75);
+  align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);max-width:440px;width:100%;
+  padding:28px 24px;animation:fadeIn .3s ease;
+}
+.modal-icon{font-size:42px;text-align:center;display:block;margin-bottom:12px}
+.modal-title{
+  font-family:'Cinzel',serif;font-size:16px;font-weight:600;
+  color:var(--gold);text-align:center;letter-spacing:.06em;
+  margin-bottom:10px;text-transform:uppercase;
+}
+.modal-text{font-size:14px;color:var(--text-mid);line-height:1.6;text-align:center;margin-bottom:22px}
+.modal-text strong{color:var(--text)}
+.modal-buttons{display:flex;gap:10px;flex-direction:column}
+.modal-btn{
+  width:100%;padding:13px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.modal-btn.primary{
+  background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));
+  color:#080808;border:none;
+}
+.modal-btn.primary:hover{opacity:.9}
+.modal-btn.secondary{
+  background:transparent;color:var(--text-dim);
+  border:1px solid var(--border);
+}
+.modal-btn.secondary:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- BANNER pedido pendente -->
+  <div class="pending-banner" id="pendingBanner">
+    <span class="pending-icon">⏳</span>
+    <div class="pending-text">
+      <strong>Vídeo Premium em andamento</strong>
+      <span id="pendingDetails"></span>
+      <small id="pendingAge"></small>
+    </div>
+    <div class="pending-actions">
+      <button class="btn-pending-check" onclick="checkPendingNow()">Verificar agora</button>
+      <button class="btn-pending-clear" onclick="dismissPending()">Descartar</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('gerar', this)">Criar vídeo</button>
+    <button class="tab" onclick="switchTab('resultados', this)">Histórico</button>
+  </div>
+
+  <!-- PANEL GERAR -->
+  <div class="panel active" id="panel-gerar">
+
+    <!-- CLIENTE -->
+    <div class="card">
+      <div class="card-title">
+        Informações do cliente
+        <span class="premium-badge">✨ Premium</span>
+      </div>
+      <div class="field">
+        <label>Nome do cliente</label>
+        <input type="text" id="clientName" placeholder="Ex: Pizzaria do João" maxlength="60"/>
+      </div>
+    </div>
+
+    <!-- FOTOS COM PROMPTS BILÍNGUES -->
+    <div class="card">
+      <div class="card-title">
+        Fotos do cliente
+        <span class="card-title-count" id="photoCounter">0 / 6</span>
+      </div>
+      <div class="upload-area" id="photoUploadArea" onclick="document.getElementById('photoInput').click()">
+        <input type="file" id="photoInput" multiple accept="image/jpeg,image/png,image/webp" onchange="handlePhotos(event)"/>
+        <span class="icon">📸</span>
+        <p>Clique para adicionar fotos</p>
+        <span>Mínimo <strong>3 fotos</strong> · Máximo <strong>6 fotos</strong> · Cada foto vira <strong>5 segundos de vídeo IA</strong></span>
+      </div>
+
+      <!-- LISTA DE FOTOS COM PROMPTS -->
+      <div class="photos-premium-list" id="photosPremiumList"></div>
+
+      <!-- INFO DAS FOTOS -->
+      <div class="photo-info-bar" id="photoInfoBar" style="display:none">
+        <span>Total: <strong id="photoTotalSize">0 KB</strong></span>
+        <span>Duração do vídeo: <strong id="photoTotalDuration">0s</strong></span>
+      </div>
+    </div>
+
+    <!-- MÚSICA -->
+    <div class="card">
+      <div class="card-title">Música de fundo</div>
+      <div class="upload-area" id="musicUploadArea" onclick="document.getElementById('musicInput').click()">
+        <input type="file" id="musicInput" accept="audio/mp3,audio/mpeg,audio/wav,audio/m4a,audio/x-m4a" onchange="handleMusic(event)"/>
+        <span class="icon">🎵</span>
+        <p>Clique para enviar a música</p>
+        <span>MP3, WAV ou M4A · Será cortada conforme a duração do vídeo</span>
+      </div>
+      <div class="music-preview" id="musicPreview">
+        <div class="music-icon">🎶</div>
+        <div class="music-info">
+          <strong id="musicName">—</strong>
+          <span><span id="musicSize">—</span> · Duração: <span class="duration" id="musicDuration">—</span></span>
+        </div>
+        <button class="music-remove" onclick="removeMusic()">✕</button>
+      </div>
+    </div>
+
+    <!-- TEXTO/LEGENDA (opcional) -->
+    <div class="card">
+      <div class="card-title">
+        Texto/legenda do vídeo
+        <span class="card-title-count" style="background:rgba(180,180,180,.08);color:var(--text-dim)">opcional</span>
+      </div>
+      <div class="field">
+        <label>Texto da legenda</label>
+        <div class="text-input-wrap">
+          <textarea id="legendText" placeholder="Cole aqui o texto que vai aparecer no vídeo. A IA divide automaticamente em blocos." maxlength="500"></textarea>
+          <span class="text-counter"><span id="textCount">0</span>/500</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Cor do texto</label>
+        <div class="color-palette" id="colorPalette">
+          <!-- preenchido via JS -->
+        </div>
+      </div>
+      <div class="field">
+        <label>Duração de cada bloco (segundos)</label>
+        <input type="number" id="textDuration" value="6" min="2" max="15"/>
+      </div>
+    </div>
+
+    <!-- LOGO (opcional) -->
+    <div class="card">
+      <div class="card-title">
+        Logo do cliente
+        <span class="card-title-count" style="background:rgba(180,180,180,.08);color:var(--text-dim)">opcional</span>
+      </div>
+      <div class="upload-area" id="logoUploadArea" onclick="document.getElementById('logoInput').click()">
+        <input type="file" id="logoInput" accept="image/png,image/gif,image/webp" onchange="handleLogo(event)"/>
+        <span class="icon">✨</span>
+        <p>Clique para enviar o logo</p>
+        <span><strong>PNG transparente é o ideal</strong> · ~300×300px quadrado · Aparece no canto inferior esquerdo do vídeo</span>
+      </div>
+      <div class="music-preview" id="logoPreview">
+        <div class="music-icon" style="overflow:visible;background:transparent;padding:2px">
+          <img id="logoThumb" alt="logo" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))"/>
+        </div>
+        <div class="music-info">
+          <strong id="logoName">—</strong>
+          <span><span id="logoSize">—</span> · canto inferior esquerdo</span>
+        </div>
+        <button class="music-remove" onclick="removeLogo()">✕</button>
+      </div>
+    </div>
+
+    <!-- AVISO TEMPO PREMIUM -->
+    <div class="premium-time-warning">
+      <span class="icon">⏱️</span>
+      <div>
+        <strong>O Vídeo Premium leva mais tempo</strong>
+        A IA precisa gerar cada clipe individualmente. <strong>Tempo total: 3 a 6 minutos.</strong>
+        Não feche a tela durante o processamento — você verá o progresso em tempo real.
+      </div>
+    </div>
+
+    <!-- PRÉVIA DO VÍDEO -->
+    <div class="video-preview-info" id="videoPreviewInfo">
+      <span style="font-size:18px">🎬</span>
+      <span>Previsão: <strong><span id="previewClips">—</span> clipes IA</strong> · vídeo de <strong><span id="previewDuration">—</span></strong></span>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generateVideo()" disabled>
+      ✨ &nbsp;GERAR VÍDEO PREMIUM
+    </button>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <div class="status-progress">
+        <div id="statusText">Preparando...</div>
+        <div class="status-sub" id="statusSub"></div>
+        <div class="status-timer" id="statusTimer"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PANEL RESULTADOS -->
+  <div class="panel" id="panel-resultados">
+    <div id="resultsSessions">
+      <div class="results-empty" id="resultsEmpty">
+        <span class="big">✨</span>
+        Nenhum vídeo Premium gerado ainda.<br/>
+        Os vídeos aparecem aqui após a renderização.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL erro de rede -->
+<div class="modal-overlay" id="networkErrorModal">
+  <div class="modal">
+    <span class="modal-icon">📡</span>
+    <div class="modal-title">Conexão interrompida</div>
+    <div class="modal-text">
+      Sua conexão caiu, mas <strong>o servidor pode ter continuado</strong> trabalhando.<br/><br/>
+      Aguarde 3-5 minutos e clique em <strong>Verificar agora</strong>.
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" onclick="closeModalAndRecover()">↻ Verificar agora</button>
+      <button class="modal-btn secondary" onclick="closeNetworkErrorModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     SCRIPT — auth.js já incluído pelo shell, mas se tools/ for aberta
+     direto, ainda precisamos do __luxFetch wrapper do shell.
+     ════════════════════════════════════════════════════════════ -->
+<script src="../js/auth-iframe.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LUX VÍDEOS PREMIUM — JS
+// ═══════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
+
+// Configuração de redimensionamento das fotos
+const MAX_IMAGE_DIMENSION = 1280;
+const IMAGE_QUALITY = 0.82;
+
+// Limites
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 6;
+const SECONDS_PER_CLIP = 5;
+const MIN_MUSIC_SECONDS = 5;
+const MAX_MUSIC_SECONDS = 180;
+const LOGO_MAX_BYTES = 8 * 1024 * 1024;
+const LOGO_HARD_LIMIT_BYTES = 15 * 1024 * 1024;
+const MAX_TEXT_CHARS = 500;
+
+// Cores da paleta (8 cores comuns + branco)
+const TEXT_COLORS = [
+  '#FFFFFF', '#FFD700', '#FF6B6B', '#7FB87A',
+  '#4D9DE0', '#E8A84C', '#C84B7F', '#080808'
+];
+
+// Polling do JSON2Video
+const POLL_INTERVAL_MS = 15000;
+const POLL_MAX_DURATION_MS = 10 * 60 * 1000;  // 10min (Premium é mais lento)
+
+// Estado
+let photos = [];
+// Cada foto: {
+//   id: string único,
+//   file: Blob otimizado,
+//   originalSize, optimizedSize,
+//   thumbUrl: dataURL pra preview,
+//   base64: string sem prefixo,
+//   prompt_en: string,
+//   prompt_pt: string,
+//   status: 'analyzing' | 'analyzed' | 'error',
+//   errorMsg: string
+// }
+
+let musicFile = null;
+let musicMeta = { name:'', size:0, duration:0 };
+let logoFile = null;
+let logoMeta = { name:'', size:0 };
+let currentClientName = null;
+let currentOperator = null;
+let selectedColor = '#FFFFFF';
+let videoSessions = JSON.parse(localStorage.getItem('lux_video_premium_sessions') || '[]');
+
+// Cronômetro
+let statusTimerInterval = null;
+let statusStartTime = 0;
+let pollIntervalId = null;
+let pollStartTime = 0;
+
+// Limpa sessões corrompidas
+videoSessions = videoSessions.filter(s => s.clientName && s.id);
+localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+
+// Wrapper de fetch — usa __luxFetch (cookie/token do shell) se existir,
+// senão cai pra fetch normal (uso direto fora do shell, debug)
+function api(path, opts) {
+  const url = WORKER_URL + path;
+  if (typeof window.__luxFetch === 'function') {
+    return window.__luxFetch(url, opts);
+  }
+  return fetch(url, opts);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderColorPalette();
+  renderAllSessions();
+  checkPendingOrder();
+  setupTextCounter();
+});
+
+// ═══ TABS ═══════════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'resultados') refreshSessionsFromServer();
+}
+
+// ═══ PALETA DE CORES ═══════════════════════════════════════
+function renderColorPalette() {
+  const wrap = document.getElementById('colorPalette');
+  wrap.innerHTML = '';
+  TEXT_COLORS.forEach(color => {
+    const swatch = document.createElement('button');
+    swatch.type = 'button';
+    swatch.className = 'color-swatch' + (color === selectedColor ? ' selected' : '');
+    swatch.style.background = color;
+    swatch.onclick = () => {
+      selectedColor = color;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+    };
+    wrap.appendChild(swatch);
+  });
+}
+
+// ═══ CONTADOR DE TEXTO ════════════════════════════════════
+function setupTextCounter() {
+  const ta = document.getElementById('legendText');
+  const cnt = document.getElementById('textCount');
+  ta.addEventListener('input', () => {
+    cnt.textContent = ta.value.length;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FOTOS — Upload, redimensionamento e análise automática IA
+// ═══════════════════════════════════════════════════════════════
+async function handlePhotos(e) {
+  const newFiles = Array.from(e.target.files);
+  if (!newFiles.length) return;
+  e.target.value = '';
+
+  if (photos.length + newFiles.length > MAX_PHOTOS) {
+    alert(`Máximo de ${MAX_PHOTOS} fotos. Você está tentando adicionar ${newFiles.length} (total ficaria ${photos.length + newFiles.length}).`);
+    return;
+  }
+
+  for (const file of newFiles) {
+    if (!file.type.startsWith('image/')) continue;
+    const photo = await prepareSinglePhoto(file);
+    if (!photo) continue;
+    photos.push(photo);
+    renderPhotoItem(photo);
+    updatePhotoInfo();
+    updateGenerateButton();
+    // Dispara análise IA em background
+    analyzePhotoInBackground(photo);
+  }
+}
+
+// Otimiza 1 foto e retorna o objeto pronto
+async function prepareSinglePhoto(file) {
+  try {
+    const optimized = await optimizeImage(file);
+    const base64 = await blobToBase64(optimized);
+    const thumbUrl = URL.createObjectURL(optimized);
+    return {
+      id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      file: optimized,
+      originalSize: file.size,
+      optimizedSize: optimized.size,
+      thumbUrl,
+      base64,                // string sem prefixo data:
+      mimeType: optimized.type || 'image/jpeg',
+      prompt_en: '',
+      prompt_pt: '',
+      status: 'analyzing',
+      errorMsg: ''
+    };
+  } catch (err) {
+    console.error('Erro ao processar foto:', err);
+    alert('Erro ao processar foto: ' + err.message);
+    return null;
+  }
+}
+
+// Redimensiona pra MAX_IMAGE_DIMENSION mantendo proporção
+function optimizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          if (width > height) {
+            height = Math.round(height * MAX_IMAGE_DIMENSION / width);
+            width = MAX_IMAGE_DIMENSION;
+          } else {
+            width = Math.round(width * MAX_IMAGE_DIMENSION / height);
+            height = MAX_IMAGE_DIMENSION;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) reject(new Error('Falha ao gerar blob'));
+          else resolve(blob);
+        }, 'image/jpeg', IMAGE_QUALITY);
+      };
+      img.onerror = () => reject(new Error('Imagem inválida'));
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Converte Blob → base64 puro (sem prefixo)
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const idx = result.indexOf(',');
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(new Error('Falha ao converter pra base64'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function removePhoto(photoId) {
+  photos = photos.filter(p => p.id !== photoId);
+  const el = document.getElementById('photo-item-' + photoId);
+  if (el) el.remove();
+  updatePhotoInfo();
+  updateGenerateButton();
+}
+
+function updatePhotoInfo() {
+  document.getElementById('photoCounter').textContent = photos.length + ' / ' + MAX_PHOTOS;
+  const bar = document.getElementById('photoInfoBar');
+  if (photos.length === 0) {
+    bar.style.display = 'none';
+    document.getElementById('videoPreviewInfo').classList.remove('show');
+    return;
+  }
+  bar.style.display = 'flex';
+  const totalSize = photos.reduce((s, p) => s + p.optimizedSize, 0);
+  document.getElementById('photoTotalSize').textContent = formatSize(totalSize);
+  const dur = photos.length * SECONDS_PER_CLIP;
+  document.getElementById('photoTotalDuration').textContent = dur + 's';
+
+  // Atualiza prévia
+  const prev = document.getElementById('videoPreviewInfo');
+  if (photos.length >= MIN_PHOTOS) {
+    prev.classList.add('show');
+    document.getElementById('previewClips').textContent = photos.length;
+    document.getElementById('previewDuration').textContent = dur + ' segundos';
+  } else {
+    prev.classList.remove('show');
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER DE 1 ITEM DE FOTO COM PROMPTS BILÍNGUES
+// ═══════════════════════════════════════════════════════════════
+function renderPhotoItem(photo) {
+  const list = document.getElementById('photosPremiumList');
+  const item = document.createElement('div');
+  item.className = 'photo-premium-item ' + photo.status;
+  item.id = 'photo-item-' + photo.id;
+  const num = photos.findIndex(p => p.id === photo.id) + 1;
+
+  item.innerHTML = `
+    <div class="photo-premium-thumb">
+      <img src="${photo.thumbUrl}" alt="Foto ${num}"/>
+      <span class="photo-premium-num">${String(num).padStart(2, '0')}</span>
+      <button class="photo-premium-remove" onclick="removePhoto('${photo.id}')">✕</button>
+    </div>
+    <div class="photo-premium-prompts">
+      <div class="prompt-status analyzing" id="status-${photo.id}">
+        <span class="mini-spinner"></span>
+        <span>Analisando com IA...</span>
+      </div>
+      <div class="prompt-field">
+        <label>Descrição da animação <span class="lang-tag">PT</span></label>
+        <textarea
+          id="pt-${photo.id}"
+          placeholder="Aguardando análise da IA..."
+          disabled
+          onblur="onPromptPtBlur('${photo.id}')"></textarea>
+        <button class="clear-btn" onclick="clearPrompt('${photo.id}', 'pt')" title="Limpar texto">✕</button>
+        <div class="prompt-sync-indicator" id="sync-${photo.id}"></div>
+      </div>
+      <div class="prompt-field">
+        <label>Prompt para a IA <span class="lang-tag">EN</span></label>
+        <textarea
+          id="en-${photo.id}"
+          placeholder="Aguardando análise da IA..."
+          disabled
+          onblur="onPromptEnBlur('${photo.id}')"></textarea>
+        <button class="clear-btn" onclick="clearPrompt('${photo.id}', 'en')" title="Limpar texto">✕</button>
+      </div>
+    </div>
+  `;
+  list.appendChild(item);
+}
+
+// Atualiza o estado visual de 1 foto
+function refreshPhotoItem(photoId) {
+  const photo = photos.find(p => p.id === photoId);
+  if (!photo) return;
+  const item = document.getElementById('photo-item-' + photoId);
+  if (!item) return;
+  item.classList.remove('analyzing', 'analyzed', 'error');
+  item.classList.add(photo.status);
+
+  const statusEl = document.getElementById('status-' + photoId);
+  const ptEl = document.getElementById('pt-' + photoId);
+  const enEl = document.getElementById('en-' + photoId);
+
+  if (photo.status === 'analyzing') {
+    statusEl.className = 'prompt-status analyzing';
+    statusEl.innerHTML = '<span class="mini-spinner"></span><span>Analisando com IA...</span>';
+    ptEl.disabled = true;
+    enEl.disabled = true;
+    ptEl.placeholder = 'Aguardando análise da IA...';
+    enEl.placeholder = 'Aguardando análise da IA...';
+  } else if (photo.status === 'analyzed') {
+    statusEl.className = 'prompt-status analyzed';
+    statusEl.innerHTML = '<span>✓</span><span>Pronto · edite se quiser melhorar</span>';
+    ptEl.disabled = false;
+    enEl.disabled = false;
+    ptEl.value = photo.prompt_pt;
+    enEl.value = photo.prompt_en;
+  } else if (photo.status === 'error') {
+    statusEl.className = 'prompt-status error';
+    statusEl.innerHTML = '<span>✕</span><span>Erro: ' + photo.errorMsg + '</span>';
+    ptEl.disabled = false;
+    enEl.disabled = false;
+    ptEl.value = photo.prompt_pt || '';
+    enEl.value = photo.prompt_en || '';
+    ptEl.placeholder = 'Edite manualmente em inglês embaixo';
+    enEl.placeholder = 'Digite o prompt em inglês manualmente';
+  }
+}
+
+// Limpa um campo de prompt (botão ✕)
+function clearPrompt(photoId, lang) {
+  const photo = photos.find(p => p.id === photoId);
+  if (!photo) return;
+  if (lang === 'pt') {
+    photo.prompt_pt = '';
+    document.getElementById('pt-' + photoId).value = '';
+  } else {
+    photo.prompt_en = '';
+    document.getElementById('en-' + photoId).value = '';
+  }
+  updateGenerateButton();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANÁLISE IA — chama /analyzeImage em background
+// ═══════════════════════════════════════════════════════════════
+async function analyzePhotoInBackground(photo) {
+  try {
+    const resp = await api('/analyzeImage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: photo.base64,
+        mimeType: photo.mimeType,
+        photoIndex: photos.findIndex(p => p.id === photo.id) + 1
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      photo.status = 'error';
+      photo.errorMsg = data.error || 'Erro desconhecido';
+      photo.prompt_en = 'Subtle slow zoom in, cinematic commercial style';
+      photo.prompt_pt = 'Zoom lento sutil, estilo cinematográfico comercial';
+    } else {
+      photo.status = 'analyzed';
+      photo.prompt_en = data.prompt_en || data.prompt || '';
+      photo.prompt_pt = data.prompt_pt || '';
+    }
+  } catch (err) {
+    photo.status = 'error';
+    photo.errorMsg = err.message || 'Falha de rede';
+    photo.prompt_en = 'Subtle slow zoom in, cinematic commercial style';
+    photo.prompt_pt = 'Zoom lento sutil, estilo cinematográfico comercial';
+  }
+  refreshPhotoItem(photo.id);
+  updateGenerateButton();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADUÇÃO PT↔EN — quando atendente edita um campo, sincroniza
+// o outro automaticamente ao sair do campo (onblur)
+// ═══════════════════════════════════════════════════════════════
+async function onPromptPtBlur(photoId) {
+  const photo = photos.find(p => p.id === photoId);
+  if (!photo) return;
+  const ptEl = document.getElementById('pt-' + photoId);
+  const enEl = document.getElementById('en-' + photoId);
+  const newPt = ptEl.value.trim();
+
+  // Sem mudança real
+  if (newPt === photo.prompt_pt) return;
+
+  photo.prompt_pt = newPt;
+
+  // Se atendente apagou tudo, deixa EN como está (não traduz vazio)
+  if (!newPt) return;
+
+  // Traduz PT → EN
+  const syncEl = document.getElementById('sync-' + photoId);
+  syncEl.className = 'prompt-sync-indicator show syncing';
+  syncEl.textContent = '↻ Traduzindo para inglês...';
+
+  try {
+    const resp = await api('/translatePrompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: newPt, from: 'pt', to: 'en' })
+    });
+    const data = await resp.json();
+    if (data.ok && data.translated) {
+      photo.prompt_en = data.translated;
+      enEl.value = data.translated;
+      syncEl.className = 'prompt-sync-indicator show';
+      syncEl.textContent = '✓ Inglês atualizado automaticamente';
+      setTimeout(() => syncEl.classList.remove('show'), 3000);
+    } else {
+      syncEl.textContent = '✕ Erro ao traduzir: ' + (data.error || '');
+    }
+  } catch (err) {
+    syncEl.textContent = '✕ Erro de rede ao traduzir';
+  }
+  updateGenerateButton();
+}
+
+async function onPromptEnBlur(photoId) {
+  const photo = photos.find(p => p.id === photoId);
+  if (!photo) return;
+  const enEl = document.getElementById('en-' + photoId);
+  const ptEl = document.getElementById('pt-' + photoId);
+  const newEn = enEl.value.trim();
+
+  if (newEn === photo.prompt_en) return;
+  photo.prompt_en = newEn;
+  if (!newEn) return;
+
+  // Traduz EN → PT
+  const syncEl = document.getElementById('sync-' + photoId);
+  syncEl.className = 'prompt-sync-indicator show syncing';
+  syncEl.textContent = '↻ Traduzindo para português...';
+
+  try {
+    const resp = await api('/translatePrompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: newEn, from: 'en', to: 'pt' })
+    });
+    const data = await resp.json();
+    if (data.ok && data.translated) {
+      photo.prompt_pt = data.translated;
+      ptEl.value = data.translated;
+      syncEl.className = 'prompt-sync-indicator show';
+      syncEl.textContent = '✓ Português atualizado automaticamente';
+      setTimeout(() => syncEl.classList.remove('show'), 3000);
+    } else {
+      syncEl.textContent = '✕ Erro ao traduzir: ' + (data.error || '');
+    }
+  } catch (err) {
+    syncEl.textContent = '✕ Erro de rede ao traduzir';
+  }
+  updateGenerateButton();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÚSICA
+// ═══════════════════════════════════════════════════════════════
+async function handleMusic(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  if (!file.type.startsWith('audio/') && !/\.(mp3|wav|m4a)$/i.test(file.name)) {
+    alert('Arquivo de áudio inválido. Use MP3, WAV ou M4A.');
+    return;
+  }
+  // Detecta duração via Audio element
+  const url = URL.createObjectURL(file);
+  const audio = new Audio();
+  audio.src = url;
+  await new Promise((resolve) => {
+    audio.onloadedmetadata = resolve;
+    audio.onerror = resolve;
+  });
+  const duration = Math.round(audio.duration || 0);
+  URL.revokeObjectURL(url);
+
+  if (duration < MIN_MUSIC_SECONDS) {
+    alert(`Música muito curta (${duration}s). Mínimo: ${MIN_MUSIC_SECONDS}s.`);
+    return;
+  }
+  if (duration > MAX_MUSIC_SECONDS) {
+    alert(`Música muito longa (${duration}s). Máximo: ${MAX_MUSIC_SECONDS}s.`);
+    return;
+  }
+
+  musicFile = file;
+  musicMeta = { name: file.name, size: file.size, duration };
+
+  document.getElementById('musicName').textContent = file.name;
+  document.getElementById('musicSize').textContent = formatSize(file.size);
+  document.getElementById('musicDuration').textContent = duration + 's';
+  document.getElementById('musicPreview').style.display = 'flex';
+  document.getElementById('musicUploadArea').style.display = 'none';
+  updateGenerateButton();
+}
+
+function removeMusic() {
+  musicFile = null;
+  musicMeta = { name:'', size:0, duration:0 };
+  document.getElementById('musicPreview').style.display = 'none';
+  document.getElementById('musicUploadArea').style.display = 'block';
+  updateGenerateButton();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGO
+// ═══════════════════════════════════════════════════════════════
+function handleLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+
+  if (file.size > LOGO_HARD_LIMIT_BYTES) {
+    alert(`Logo grande demais (${formatSize(file.size)}). Máximo permitido: ${formatSize(LOGO_HARD_LIMIT_BYTES)}.`);
+    return;
+  }
+  if (file.size > LOGO_MAX_BYTES) {
+    if (!confirm(`A logo tem ${formatSize(file.size)} (acima de 8MB). Pode demorar mais. Continuar?`)) return;
+  }
+
+  logoFile = file;
+  logoMeta = { name: file.name, size: file.size };
+  document.getElementById('logoName').textContent = file.name;
+  document.getElementById('logoSize').textContent = formatSize(file.size);
+  document.getElementById('logoThumb').src = URL.createObjectURL(file);
+  document.getElementById('logoPreview').style.display = 'flex';
+  document.getElementById('logoUploadArea').style.display = 'none';
+}
+
+function removeLogo() {
+  logoFile = null;
+  logoMeta = { name:'', size:0 };
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoUploadArea').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOTÃO GERAR — habilita só quando TUDO está pronto
+// ═══════════════════════════════════════════════════════════════
+function updateGenerateButton() {
+  const btn = document.getElementById('genBtn');
+  const ok =
+    document.getElementById('clientName').value.trim().length > 0 &&
+    photos.length >= MIN_PHOTOS &&
+    photos.length <= MAX_PHOTOS &&
+    photos.every(p => p.status === 'analyzed' || (p.status === 'error' && p.prompt_en && p.prompt_en.trim())) &&
+    musicFile;
+  btn.disabled = !ok;
+
+  // Texto contextual
+  if (!ok) {
+    if (!document.getElementById('clientName').value.trim()) {
+      btn.innerHTML = '✨ &nbsp;PREENCHA O NOME DO CLIENTE';
+    } else if (photos.length < MIN_PHOTOS) {
+      btn.innerHTML = `✨ &nbsp;ENVIE PELO MENOS ${MIN_PHOTOS} FOTOS`;
+    } else if (photos.some(p => p.status === 'analyzing')) {
+      const restantes = photos.filter(p => p.status === 'analyzing').length;
+      btn.innerHTML = `⏳ &nbsp;ANALISANDO ${restantes} FOTO${restantes>1?'S':''}...`;
+    } else if (!musicFile) {
+      btn.innerHTML = '✨ &nbsp;ENVIE A MÚSICA';
+    } else {
+      btn.innerHTML = '✨ &nbsp;GERAR VÍDEO PREMIUM';
+    }
+  } else {
+    btn.innerHTML = '✨ &nbsp;GERAR VÍDEO PREMIUM';
+  }
+}
+
+// Atualiza botão quando atendente digita o nome
+document.getElementById('clientName').addEventListener('input', updateGenerateButton);
+
+// ═══════════════════════════════════════════════════════════════
+// GERAR VÍDEO — fluxo completo
+// ═══════════════════════════════════════════════════════════════
+async function generateVideo() {
+  if (document.getElementById('genBtn').disabled) return;
+
+  const clientName = document.getElementById('clientName').value.trim();
+  if (!clientName) { alert('Preencha o nome do cliente.'); return; }
+
+  currentClientName = clientName;
+  document.getElementById('genBtn').disabled = true;
+  showStatus('Enviando dados pro servidor...', 'Pode levar alguns segundos pra subir as fotos');
+  startTimer();
+
+  try {
+    // 1. Processar texto (se houver) — opcional
+    let textBlocks = [];
+    let aiCostUSD = 0;
+    let aiCostBRL = 0;
+    const rawText = document.getElementById('legendText').value.trim();
+    if (rawText) {
+      updateStatus('Processando texto com IA...');
+      const txResp = await api('/processText', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: rawText,
+          musicDuration: photos.length * SECONDS_PER_CLIP   // duração do vídeo
+        })
+      });
+      const txData = await txResp.json();
+      if (!txData.ok) throw new Error(txData.error || 'Falha ao processar texto');
+      textBlocks = txData.blocks || [];
+      aiCostUSD += Number(txData.aiCostUSD) || 0;
+      aiCostBRL += Number(txData.aiCostBRL) || 0;
+    }
+
+    // Soma custos das análises de imagem (já gastas)
+    // Nota: não temos como saber os custos exatos dos analyzeImage do front,
+    // pois o Worker já contou. Mas o produceVideo soma os clipes.
+
+    // 2. Preparar payload de createOrder
+    updateStatus('Criando pedido...');
+    const photoPayloads = photos.map(p => ({
+      base64: p.base64,
+      mimeType: p.mimeType,
+      name: 'foto.jpg'
+    }));
+    const photoPrompts = photos.map(p => (p.prompt_en || '').trim() || 'Subtle slow zoom in, cinematic commercial style');
+
+    const musicBase64 = await blobToBase64(musicFile);
+    let logoData = null;
+    if (logoFile) {
+      const logoBase64 = await blobToBase64(logoFile);
+      logoData = { base64: logoBase64, name: logoFile.name, mimeType: logoFile.type };
+    }
+
+    const orderResp = await api('/createOrder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName,
+        photos:        photoPayloads,
+        photoPrompts,
+        music:         { base64: musicBase64, name: musicFile.name, mimeType: musicFile.type },
+        musicDuration: musicMeta.duration,
+        logo:          logoData,
+        textBlocks,
+        textColor:     selectedColor,
+        textDuration:  Number(document.getElementById('textDuration').value) || 6,
+        aiCostUSD,
+        aiCostBRL
+      })
+    });
+    const orderData = await orderResp.json();
+    if (!orderData.ok) throw new Error(orderData.error || 'Erro ao criar pedido');
+    const orderId = orderData.orderId;
+
+    // Salva localmente como pendente
+    savePendingOrder(orderId, clientName);
+
+    // 3. Disparar produção (Atlas Cloud + JSON2Video)
+    updateStatus('Gerando clipes IA...', 'Atlas Cloud está animando cada foto. Pode levar 2-4 minutos.');
+    const prodResp = await api('/produceVideo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId })
+    });
+    const prodData = await prodResp.json();
+    if (!prodData.ok) throw new Error(prodData.error || 'Falha ao produzir vídeo');
+
+    if (prodData.status === 'completed') {
+      finishGeneration(orderId, prodData.videoUrl, prodData);
+      return;
+    }
+
+    // 4. Polling do JSON2Video
+    updateStatus('Renderizando vídeo final...', 'JSON2Video está montando os clipes. Mais 1-2 minutos.');
+    pollStartTime = Date.now();
+    pollIntervalId = setInterval(() => pollStatus(orderId), POLL_INTERVAL_MS);
+
+  } catch (err) {
+    console.error('Erro:', err);
+    hideStatus();
+    stopTimer();
+    document.getElementById('genBtn').disabled = false;
+
+    if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+      showNetworkErrorModal();
+    } else {
+      alert('Erro ao gerar vídeo:\n\n' + err.message);
+    }
+  }
+}
+
+async function pollStatus(orderId) {
+  if (Date.now() - pollStartTime > POLL_MAX_DURATION_MS) {
+    clearInterval(pollIntervalId);
+    pollIntervalId = null;
+    updateStatus('Vídeo demorando mais que o esperado',
+      'Aguarde mais alguns minutos e clique em "Verificar agora" no banner amarelo.');
+    document.getElementById('genBtn').disabled = false;
+    stopTimer();
+    return;
+  }
+  try {
+    const resp = await api('/checkStatus?orderId=' + encodeURIComponent(orderId));
+    const data = await resp.json();
+    if (!data.ok) return;
+    if (data.status === 'completed' && data.videoUrl) {
+      clearInterval(pollIntervalId);
+      pollIntervalId = null;
+      finishGeneration(orderId, data.videoUrl, data);
+    } else if (data.status === 'failed') {
+      clearInterval(pollIntervalId);
+      pollIntervalId = null;
+      hideStatus();
+      stopTimer();
+      document.getElementById('genBtn').disabled = false;
+      alert('Falha na renderização: ' + (data.error || 'erro desconhecido'));
+    }
+  } catch (e) { /* silencia erros temporários de rede */ }
+}
+
+function finishGeneration(orderId, videoUrl, data) {
+  clearPendingOrder();
+  hideStatus();
+  stopTimer();
+
+  const session = {
+    id: orderId,
+    clientName: currentClientName,
+    operator: data.attendantName || data.attendantEmail || '—',
+    videoUrl,
+    photoCount: photos.length,
+    duration: photos.length * SECONDS_PER_CLIP,
+    costBRL: data.costBRL,
+    costUSD: data.costUSD,
+    createdAt: new Date().toISOString(),
+    status: 'completed'
+  };
+  videoSessions.unshift(session);
+  localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+
+  renderAllSessions();
+  document.querySelector('.tab:nth-child(2)').click();
+  resetForm();
+}
+
+function resetForm() {
+  photos.forEach(p => URL.revokeObjectURL(p.thumbUrl));
+  photos = [];
+  musicFile = null;
+  musicMeta = { name:'', size:0, duration:0 };
+  logoFile = null;
+  logoMeta = { name:'', size:0 };
+  document.getElementById('clientName').value = '';
+  document.getElementById('legendText').value = '';
+  document.getElementById('textCount').textContent = '0';
+  document.getElementById('photosPremiumList').innerHTML = '';
+  document.getElementById('musicPreview').style.display = 'none';
+  document.getElementById('musicUploadArea').style.display = 'block';
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoUploadArea').style.display = 'block';
+  updatePhotoInfo();
+  updateGenerateButton();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS BAR
+// ═══════════════════════════════════════════════════════════════
+function showStatus(text, sub) {
+  document.getElementById('statusBar').classList.add('show');
+  document.getElementById('statusText').textContent = text || 'Processando...';
+  document.getElementById('statusSub').textContent = sub || '';
+}
+function updateStatus(text, sub) {
+  document.getElementById('statusText').textContent = text;
+  if (sub !== undefined) document.getElementById('statusSub').textContent = sub;
+}
+function hideStatus() {
+  document.getElementById('statusBar').classList.remove('show');
+}
+function startTimer() {
+  statusStartTime = Date.now();
+  if (statusTimerInterval) clearInterval(statusTimerInterval);
+  statusTimerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - statusStartTime) / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    document.getElementById('statusTimer').textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+  }, 1000);
+}
+function stopTimer() {
+  if (statusTimerInterval) clearInterval(statusTimerInterval);
+  statusTimerInterval = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PEDIDO PENDENTE — sobrevive a reload da página
+// ═══════════════════════════════════════════════════════════════
+function savePendingOrder(orderId, clientName) {
+  localStorage.setItem('lux_premium_pending', JSON.stringify({
+    orderId, clientName, startedAt: Date.now()
+  }));
+}
+function clearPendingOrder() {
+  localStorage.removeItem('lux_premium_pending');
+  document.getElementById('pendingBanner').classList.remove('show');
+}
+function checkPendingOrder() {
+  const raw = localStorage.getItem('lux_premium_pending');
+  if (!raw) return;
+  try {
+    const p = JSON.parse(raw);
+    const ageMin = Math.round((Date.now() - p.startedAt) / 60000);
+    document.getElementById('pendingDetails').innerHTML =
+      'Pedido: <strong>' + p.clientName + '</strong> (ID: ' + p.orderId.slice(-12) + ')';
+    document.getElementById('pendingAge').textContent =
+      'Iniciado há ' + ageMin + ' min · clique pra verificar status';
+    document.getElementById('pendingBanner').classList.add('show');
+  } catch (e) { clearPendingOrder(); }
+}
+async function checkPendingNow() {
+  const raw = localStorage.getItem('lux_premium_pending');
+  if (!raw) return;
+  const p = JSON.parse(raw);
+  try {
+    const resp = await api('/checkStatus?orderId=' + encodeURIComponent(p.orderId));
+    const data = await resp.json();
+    if (data.ok && data.status === 'completed' && data.videoUrl) {
+      currentClientName = p.clientName;
+      finishGeneration(p.orderId, data.videoUrl, data);
+    } else if (data.ok && data.status === 'failed') {
+      alert('O vídeo falhou na renderização. Erro: ' + (data.error || 'desconhecido'));
+      clearPendingOrder();
+    } else {
+      alert('Vídeo ainda renderizando. Aguarde mais 1-2 minutos.');
+    }
+  } catch (err) {
+    alert('Erro ao verificar status: ' + err.message);
+  }
+}
+function dismissPending() {
+  if (confirm('Descartar este pedido? Você ainda pode encontrá-lo no Histórico mais tarde.')) {
+    clearPendingOrder();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTÓRICO
+// ═══════════════════════════════════════════════════════════════
+function renderAllSessions() {
+  const wrap = document.getElementById('resultsSessions');
+  if (!videoSessions.length) {
+    wrap.innerHTML = '<div class="results-empty"><span class="big">✨</span>Nenhum vídeo Premium gerado ainda.<br/>Os vídeos aparecem aqui após a renderização.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  videoSessions.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'result-session';
+    const initials = (s.clientName || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const dateStr = new Date(s.createdAt).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
+    const costStr = (s.costBRL != null) ? 'R$ ' + s.costBRL.toFixed(2) : '—';
+    el.innerHTML = `
+      <div class="session-header">
+        <div class="session-avatar">${initials}</div>
+        <div class="session-info">
+          <strong>${escapeHtml(s.clientName)}</strong>
+          <span class="atendente">${escapeHtml(s.operator || '—')}</span>
+          <div class="session-meta">
+            <span class="meta-tag">${s.photoCount || 0} fotos</span>
+            <span class="meta-tag">${s.duration || 0}s</span>
+            <span class="meta-tag">${dateStr}</span>
+            <span class="meta-tag">${costStr}</span>
+          </div>
+        </div>
+        <div class="session-status completed">✓ Pronto</div>
+      </div>
+      <a href="${s.videoUrl}" target="_blank" class="btn-download" download>⬇ Baixar vídeo MP4</a>
+    `;
+    wrap.appendChild(el);
+  });
+}
+
+async function refreshSessionsFromServer() {
+  try {
+    const resp = await api('/listOrders');
+    const data = await resp.json();
+    if (data.ok && Array.isArray(data.orders)) {
+      // Merge: prioriza dados do servidor
+      const local = videoSessions;
+      const fromServer = data.orders
+        .filter(o => o.status === 'COMPLETED' && o.videoUrl)
+        .map(o => ({
+          id: o.orderId,
+          clientName: o.clientName,
+          operator: o.attendantName || o.attendantEmail || '—',
+          videoUrl: o.videoUrl,
+          photoCount: o.photoCount,
+          duration: (o.photoCount || 0) * SECONDS_PER_CLIP,
+          costBRL: o.costBRL,
+          costUSD: o.costUSD,
+          createdAt: o.createdAt,
+          status: 'completed'
+        }));
+      const allIds = new Set();
+      const merged = [];
+      [...fromServer, ...local].forEach(s => {
+        if (!allIds.has(s.id)) {
+          allIds.add(s.id);
+          merged.push(s);
+        }
+      });
+      videoSessions = merged;
+      localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+      renderAllSessions();
+    }
+  } catch (e) { /* mantém o localStorage */ }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL DE ERRO DE REDE
+// ═══════════════════════════════════════════════════════════════
+function showNetworkErrorModal() {
+  document.getElementById('networkErrorModal').classList.add('show');
+}
+function closeNetworkErrorModal() {
+  document.getElementById('networkErrorModal').classList.remove('show');
+}
+function closeModalAndRecover() {
+  closeNetworkErrorModal();
+  checkPendingNow();
+}
+</script>
+</body>
+</html>
