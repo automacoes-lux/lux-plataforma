@@ -177,7 +177,7 @@ input[type="file"]{display:none}
 .toast.error{border-color:rgba(232,122,122,.5)}
 
 .tabs-mini{display:flex;gap:4px;margin-bottom:1.2rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:5px}
-.tab-mini{flex:1;padding:10px;text-align:center;font-size:14px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--text-dim);transition:all .2s;border:none;background:transparent;letter-spacing:.02em}
+.tab-mini{flex:1;padding:10px;text-align:center;font-size:14px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--text-dim);transition:all .2s;border:none;background:transparent;letter-spacing:.02em;white-space:nowrap}
 .tab-mini.active{background:rgba(201,168,76,.1);color:var(--gold);border:.5px solid var(--border-bright);font-family:'Cinzel',serif;font-size:14px;letter-spacing:.08em}
 
 .panel{display:none;animation:fadeIn .3s ease both}
@@ -188,6 +188,8 @@ input[type="file"]{display:none}
 .history-item{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;transition:all .15s;animation:fadeIn .3s ease both}
 .history-item:hover{border-color:var(--border-bright);background:var(--bg-hover)}
 .history-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.hist-line{display:flex;align-items:center;gap:8px}
+.history-meta .badge.badge-sm,.hist-line .badge.badge-sm{padding:1px 7px;font-size:9px}
 .hist-date{font-size:11px;color:var(--text-dim)}
 .hist-cost{font-size:11px;color:var(--text-dim);font-weight:500}
 .history-item-info{flex:1;min-width:0}
@@ -211,8 +213,12 @@ input[type="file"]{display:none}
   .container{padding:1.2rem 1rem 4rem}
   .card{padding:1.2rem}
   .page-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .tabs-mini{gap:2px;padding:4px}
+  .tab-mini{padding:9px 4px;font-size:12px;letter-spacing:0}
+  .tab-mini.active{font-size:12px;letter-spacing:.02em}
   .history-item{flex-direction:column;align-items:stretch}
   .history-btn-view{width:100%}
+  .history-right{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 }
 </style>
 </head>
@@ -765,11 +771,13 @@ async function loadHistory() {
           <div class="history-client">${escapeHtml(order.clientName)}</div>
           <div class="history-meta">
             <span>📦 ${order.totalGenerated}/${order.totalRequested}</span>
-            <span class="badge ${statusClass}">${statusLabel}</span>
           </div>
         </div>
         <div class="history-right">
-          <div class="hist-date">${escapeHtml(order.createdAt)}</div>
+          <div class="hist-line">
+            <span class="hist-date">${escapeHtml(order.createdAt)}</span>
+            <span class="badge ${statusClass} badge-sm">${statusLabel}</span>
+          </div>
           ${custoTxt}
           <button class="history-btn-view">Ver detalhes →</button>
         </div>
