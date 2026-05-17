@@ -114,9 +114,9 @@
         <div class="nav-icon">🤖</div> Vídeo Premium
         <span class="nav-badge badge-new">NOVO</span>
       </a>
-      <a class="nav-item" data-tool="meus-custos" href="#">
-        <div class="nav-icon">💰</div> Meus Custos
-        <span class="nav-badge badge-live">LIVE</span>
+      <a class="nav-item" data-tool="meus-custos" href="#" data-role-required="admin" style="display:none">
+        <div class="nav-icon">💰</div> Financeiro
+        <span class="nav-badge badge-live">ADMIN</span>
       </a>
       <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">⚙</div> Admin
@@ -256,11 +256,11 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- MEUS CUSTOS -->
-    <div id="view-meus-custos" class="tool-panel">
+    <!-- FINANCEIRO (admin) -->
+    <div id="view-meus-custos" class="tool-panel" data-role-required="admin" style="display:none">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">💰 MEUS CUSTOS</span>
+        <span class="tool-panel-title">💰 FINANCEIRO</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
