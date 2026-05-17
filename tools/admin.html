@@ -229,34 +229,6 @@ body{
     </div>
   </div>
 
-  <!-- ═══ SEÇÃO FINANCEIRA (Bloco E) ═══ -->
-  <div class="card">
-    <div class="card-title">Painel Financeiro</div>
-
-    <div class="fin-month-selector">
-      <button id="finPrev" title="Mês anterior">‹</button>
-      <span class="fin-month-label" id="finMonthLabel">—</span>
-      <button id="finNext" title="Próximo mês">›</button>
-    </div>
-
-    <div id="finContainer">
-      <div class="state-msg">
-        <span class="icon">⏳</span>
-        <div>Carregando dados financeiros…</div>
-      </div>
-    </div>
-
-    <div class="fin-actions">
-      <button class="btn-secondary" id="btnRecalcular" onclick="recalcular()">↻ Recalcular Totais</button>
-      <button class="btn-secondary" id="btnExportCsv" onclick="exportCsv()">📊 Exportar CSV</button>
-    </div>
-    <button class="btn-reset" id="btnResetMes" onclick="resetarMes()">🗑 Zerar todos os custos do mês</button>
-    <div class="fin-note">
-      "Recalcular" reconstrói os totais a partir de todos os pedidos — use se algum valor parecer errado.<br/>
-      "Zerar" apaga DEFINITIVAMENTE todos os pedidos e custos do mês selecionado. Use só para limpar dados de teste.
-    </div>
-  </div>
-
 </div>
 
 <!-- ═══ MODAL ADICIONAR ═══ -->
@@ -329,7 +301,6 @@ async function init() {
     }
 
     await loadUsers();
-    await loadFinanceiro();
   } catch (err) {
     renderError('Falha ao iniciar: ' + err.message);
   }
@@ -601,11 +572,11 @@ async function loadFinanceiro() {
   }
 }
 
-document.getElementById('finPrev').addEventListener('click', () => {
+document.getElementById('finPrev')?.addEventListener('click', () => {
   finViewDate.setMonth(finViewDate.getMonth() - 1);
   loadFinanceiro();
 });
-document.getElementById('finNext').addEventListener('click', () => {
+document.getElementById('finNext')?.addEventListener('click', () => {
   if (finViewDate.getFullYear() === finMaxDate.getFullYear() &&
       finViewDate.getMonth() === finMaxDate.getMonth()) return;
   finViewDate.setMonth(finViewDate.getMonth() + 1);
