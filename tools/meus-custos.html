@@ -85,7 +85,7 @@ body{
 .fin-tool-card .name{font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px}
 .fin-tool-card .val{font-family:'Cinzel',serif;color:var(--gold);font-size:19px;font-weight:600}
 .fin-tool-card .qtd{font-size:14px;color:var(--text-mid);margin-top:4px;font-weight:600}
-.fin-att-caret{color:var(--gold-dim);font-size:13px;margin-left:8px;flex-shrink:0}
+.fin-att-caret{color:var(--gold-dim);font-size:18px;margin-left:8px;flex-shrink:0}
 .fin-att-toggle{cursor:pointer}
 .fin-att-toggle:hover{background:rgba(201,168,76,.04)}
 .fin-att-expand{padding:4px 14px 12px 50px;animation:fadeIn .2s ease both}
@@ -531,7 +531,7 @@ async function loadFinanceiro() {
         <div class="fin-tool-card">
           <div class="name">${p.ic} ${p.nm}</div>
           <div class="val">${fmtBRL(b.brl)}</div>
-          <div class="qtd">${b.qtd} pedido${b.qtd !== 1 ? 's' : ''}</div>
+          <div class="qtd">${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</div>
         </div>`;
     });
     html += `</div>`;
@@ -543,11 +543,11 @@ async function loadFinanceiro() {
         let detalhe = '';
         prod.forEach(p => {
           const b = ab(p.key);
-          if (b.qtd > 0 || b.brl > 0) {
+          if ((b.req ?? b.qtd) > 0 || b.brl > 0) {
             detalhe += `
               <div class="fin-det-row">
                 <span>${p.ic} ${p.nm}</span>
-                <span>${b.qtd} pedido${b.qtd !== 1 ? 's' : ''}</span>
+                <span>${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</span>
                 <span>${fmtBRL(b.brl)}</span>
               </div>`;
           }
