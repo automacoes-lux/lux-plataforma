@@ -181,6 +181,10 @@
         <div class="dash-greeting">Bem-vindo à</div>
         <div class="dash-title">Plataforma <span>Lux</span></div>
       </div>
+      <a href="#" class="dash-alert" id="dashAtendimentoAlert" style="display:none" onclick="loadTool('atendimento');return false;">
+        <span class="dash-alert-icon">⚠️</span>
+        <span class="dash-alert-txt">Atualização no atendimento</span>
+      </a>
       <div class="dash-grid">
 
         <div class="tool-card" onclick="loadTool('musica')">
@@ -385,20 +389,28 @@ function openLogo3D(event) {
       if (!window.__luxFetch) return;
       const resp = await window.__luxFetch(FIG_URL + '/protocols');
       const data = await resp.json();
-      const dot = document.getElementById('atendimentoDot');
-      if (dot && data && data.ok && data.hasAlert) {
-        dot.style.display = 'block';
+      const has = data && data.ok && data.hasAlert;
+      const dot   = document.getElementById('atendimentoDot');
+      const banner = document.getElementById('dashAtendimentoAlert');
+      if (has) {
+        if (dot) dot.style.display = 'block';
+        if (banner) banner.style.display = 'flex';
       }
     } catch (e) { /* silencioso — alerta é melhoria, não bloqueia nada */ }
   }
 
-  // Quando o usuário clica em Atendimento, some a bolinha (ele vai ver agora)
+  // Quando o usuário entra em Atendimento, some bolinha + banner da dash
+  function clearAtendimentoAlert() {
+    const dot = document.getElementById('atendimentoDot');
+    if (dot) dot.style.display = 'none';
+    const banner = document.getElementById('dashAtendimentoAlert');
+    if (banner) banner.style.display = 'none';
+  }
+
   document.addEventListener('click', function (e) {
     const item = e.target.closest && e.target.closest('[data-tool="atendimento"]');
-    if (item) {
-      const dot = document.getElementById('atendimentoDot');
-      if (dot) dot.style.display = 'none';
-    }
+    const fromBanner = e.target.closest && e.target.closest('#dashAtendimentoAlert');
+    if (item || fromBanner) clearAtendimentoAlert();
   });
 
   // Roda quando o app já tem auth pronta (pequeno atraso pra __luxFetch existir)
