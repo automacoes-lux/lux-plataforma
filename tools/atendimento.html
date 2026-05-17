@@ -81,11 +81,23 @@ body{
 .proto-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.5rem}
 .proto-title{font-family:'Cinzel',serif;font-size:15px;color:var(--gold);font-weight:600;line-height:1.4}
 .proto-atalho{
-  display:inline-block;font-size:12px;font-weight:600;
-  background:rgba(201,168,76,.15);color:var(--gold-dim);
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:600;
+  background:rgba(201,168,76,.15);color:#FFFFFF;
   border:.5px solid var(--border);border-radius:6px;
-  padding:3px 9px;margin-top:5px;letter-spacing:.04em;
+  padding:4px 6px 4px 10px;margin-top:6px;letter-spacing:.04em;
 }
+.proto-atalho .lbl{color:#FFFFFF}
+.proto-atalho .val{color:var(--gold);font-weight:700}
+.btn-atalho{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(201,168,76,.2);color:var(--gold);
+  border:.5px solid var(--gold-dim);border-radius:4px;
+  padding:3px 8px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.btn-atalho:hover{background:rgba(201,168,76,.35)}
+.btn-atalho.done{background:var(--ok);border-color:var(--ok);color:#000}
 .proto-text{
   font-size:15px;line-height:1.65;color:var(--text);
   white-space:pre-wrap;word-break:break-word;
@@ -350,7 +362,11 @@ function renderList() {
          <button class="btn-mini danger" onclick="openDel('${p.id}')">🗑 Apagar</button>`
       : '';
     const atalho = p.atalho
-      ? `<div class="proto-atalho">Atalho: ${escapeHtml(p.atalho)}</div>` : '';
+      ? `<div class="proto-atalho">
+           <span class="lbl">Atalho:</span>
+           <span class="val">${escapeHtml(p.atalho)}</span>
+           <button class="btn-atalho" id="atalho-${p.id}" onclick="copyAtalho('${p.id}')">📋 Copiar atalho</button>
+         </div>` : '';
     return `
     <div class="proto" id="proto-${p.id}">
       <div class="proto-head">
@@ -383,6 +399,25 @@ function copyProto(id) {
     navigator.clipboard.writeText(p.texto).then(done).catch(() => fallbackCopy(p.texto, done));
   } else {
     fallbackCopy(p.texto, done);
+  }
+}
+
+function copyAtalho(id) {
+  const p = state.protocols.find(x => x.id === id);
+  if (!p || !p.atalho) return;
+  const btn = document.getElementById('atalho-' + id);
+  const valor = String(p.atalho).trim();
+
+  const done = () => {
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('done');
+    setTimeout(() => { btn.textContent = '📋 Copiar atalho'; btn.classList.remove('done'); }, 1800);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(valor).then(done).catch(() => fallbackCopy(valor, done));
+  } else {
+    fallbackCopy(valor, done);
   }
 }
 
