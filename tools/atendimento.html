@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Atendimento</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<script src="../js/auth-iframe.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
+  --danger:#E87A7A;
+  --danger-bg:rgba(220,60,60,0.1);
+  --danger-border:rgba(220,60,60,0.3);
+  --ok:#7BC47F;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:980px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;flex-wrap:wrap;gap:14px}
+.page-title{font-family:'Cinzel',serif;font-size:15px;letter-spacing:.14em;color:var(--gold);font-weight:600}
+.page-sub{font-size:13px;color:var(--text-mid);margin-top:6px;line-height:1.5}
+
+/* Aviso de atualização (atendente) */
+.update-banner{
+  display:none;align-items:center;gap:12px;
+  background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);
+  border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1.2rem;
+}
+.update-banner.show{display:flex}
+.update-banner .dot{
+  width:13px;height:13px;border-radius:50%;background:var(--gold);
+  flex-shrink:0;animation:pulse 1.3s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0.5);opacity:1}
+  50%{box-shadow:0 0 0 8px rgba(212,175,55,0);opacity:.7}
+}
+.update-banner .txt{flex:1;font-size:14px;color:var(--gold)}
+.update-banner .txt b{font-weight:600}
+
+/* Abas de segmento */
+.segs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.4rem}
+.seg-btn{
+  padding:9px 16px;background:transparent;color:var(--text-mid);
+  border:.5px solid var(--border);border-radius:30px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.seg-btn:hover{background:var(--bg-hover);color:var(--text)}
+.seg-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600}
+.seg-btn .count{font-size:11px;opacity:.7;margin-left:4px}
+
+/* Caixa de protocolo */
+.proto{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:1.2rem 1.3rem;margin-bottom:1rem;
+  scroll-margin-top:20px;
+}
+.proto-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.5rem}
+.proto-title{font-family:'Cinzel',serif;font-size:15px;color:var(--gold);font-weight:600;line-height:1.4}
+.proto-atalho{
+  display:inline-block;font-size:12px;font-weight:600;
+  background:rgba(201,168,76,.15);color:var(--gold-dim);
+  border:.5px solid var(--border);border-radius:6px;
+  padding:3px 9px;margin-top:5px;letter-spacing:.04em;
+}
+.proto-text{
+  font-size:15px;line-height:1.65;color:var(--text);
+  white-space:pre-wrap;word-break:break-word;
+  background:var(--bg-input);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;margin:.7rem 0;
+}
+.proto-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn-primary{
+  padding:10px 20px;background:var(--gold);color:#000;border:none;border-radius:var(--radius);
+  font-family:'Cinzel',serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;transition:opacity .15s;
+}
+.btn-primary:hover{opacity:.88}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+
+.btn-copy{
+  padding:9px 18px;background:transparent;color:var(--gold);
+  border:.5px solid var(--gold);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.btn-copy:hover{background:rgba(201,168,76,.12)}
+.btn-copy.done{background:var(--ok);border-color:var(--ok);color:#000}
+
+.btn-mini{
+  padding:7px 13px;background:transparent;color:var(--text-mid);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;
+}
+.btn-mini:hover{background:var(--bg-hover);color:var(--text);border-color:var(--gold)}
+.btn-mini.danger{color:var(--danger);border-color:var(--danger-border)}
+.btn-mini.danger:hover{background:var(--danger-bg);border-color:var(--danger)}
+
+.admin-bar{
+  display:none;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:1rem;
+}
+.admin-bar.show{display:flex}
+
+.state-msg{text-align:center;padding:3rem 1rem;color:var(--text-mid)}
+.state-msg .icon{font-size:34px;display:block;margin-bottom:.7rem}
+
+/* Modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  z-index:100;align-items:center;justify-content:center;padding:1.2rem;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-card);border:.5px solid var(--border-bright);
+  border-radius:var(--radius-lg);padding:1.6rem;max-width:560px;width:100%;
+  max-height:90vh;overflow-y:auto;
+}
+.modal h3{font-family:'Cinzel',serif;font-size:16px;color:var(--gold);margin-bottom:1.1rem;letter-spacing:.06em}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:13px;color:var(--text-mid);margin-bottom:6px;font-weight:500}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--bg-input);color:var(--text);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  padding:11px 13px;font-family:'DM Sans',sans-serif;font-size:15px;
+}
+.field textarea{min-height:170px;resize:vertical;line-height:1.6}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.3rem;flex-wrap:wrap}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--bg-card);border:.5px solid var(--gold);
+  color:var(--text);padding:13px 22px;border-radius:var(--radius);
+  font-size:14px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;
+  max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+
+@media(max-width:640px){
+  .container{padding:1.4rem 1rem 4rem}
+  .proto-text{font-size:15px}
+  .seg-btn{font-size:12px;padding:8px 13px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">📋 ATENDIMENTO</div>
+      <div class="page-sub">Protocolos prontos para copiar e colar no WhatsApp.</div>
+    </div>
+  </div>
+
+  <!-- Aviso de atualização (só atendente, quando admin mudou algo) -->
+  <div class="update-banner" id="updateBanner">
+    <div class="dot"></div>
+    <div class="txt"><b>Atendimento atualizado!</b> Os protocolos foram alterados. Revise e atualize suas mensagens rápidas no WhatsApp.</div>
+  </div>
+
+  <!-- Abas de segmento -->
+  <div class="segs" id="segs"></div>
+
+  <!-- Barra admin (só admin) -->
+  <div class="admin-bar" id="adminBar">
+    <button class="btn-primary" onclick="openNew()">+ Novo protocolo</button>
+  </div>
+
+  <!-- Lista de protocolos -->
+  <div id="list">
+    <div class="state-msg"><span class="icon">⏳</span><div>Carregando protocolos…</div></div>
+  </div>
+
+</div>
+
+<!-- Modal criar/editar (admin) -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3 id="modalTitle">Novo protocolo</h3>
+    <div class="field">
+      <label>Segmento</label>
+      <select id="fSeg">
+        <option value="musica">Música</option>
+        <option value="locucao">Locução</option>
+        <option value="logo3d">Logo 3D</option>
+        <option value="video">Vídeo</option>
+        <option value="figurinha">Figurinha</option>
+        <option value="objecoes">Objeções</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Título (texto de referência)</label>
+      <input type="text" id="fTitulo" placeholder="Ex: Apresentação — Bom dia" maxlength="120"/>
+    </div>
+    <div class="field">
+      <label>Número / nome do atalho</label>
+      <input type="text" id="fAtalho" placeholder="Ex: 1, 11, FIGURINHA, CNPJ…" maxlength="40"/>
+    </div>
+    <div class="field">
+      <label>Texto da mensagem (cole exatamente como vai no WhatsApp)</label>
+      <textarea id="fTexto" placeholder="Texto completo do protocolo, com emojis e quebras de linha…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-mini" onclick="closeEdit()">Cancelar</button>
+      <button class="btn-primary" id="btnSave" onclick="saveProto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal apagar (admin) -->
+<div class="modal-overlay" id="delModal">
+  <div class="modal" style="max-width:420px">
+    <h3>Apagar protocolo?</h3>
+    <p style="font-size:14px;color:var(--text-mid);line-height:1.6;margin-bottom:.5rem">
+      Você vai apagar <b id="delName" style="color:var(--text)"></b>.
+      Isso remove o protocolo para <b>todos os atendentes</b>. Não dá pra desfazer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-mini" onclick="closeDel()">Cancelar</button>
+      <button class="btn-mini danger" id="btnDel" onclick="confirmDel()">Apagar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
+
+const SEG_LABELS = {
+  musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
+  video:'Vídeo', figurinha:'Figurinha', objecoes:'Objeções'
+};
+const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','objecoes'];
+
+const state = {
+  protocols: [],
+  isAdmin: false,
+  activeSeg: 'musica',
+  version: 0,
+  editId: null,
+  delId: null
+};
+
+window.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  try {
+    const meResp = await window.__luxFetch(WORKER_URL + '/admin/me');
+    const meData = await meResp.json();
+    if (meData && meData.ok && meData.user) {
+      state.isAdmin = meData.user.role === 'admin';
+    }
+  } catch (e) { /* segue como atendente */ }
+
+  if (state.isAdmin) {
+    document.getElementById('adminBar').classList.add('show');
+  }
+
+  await loadProtocols();
+}
+
+async function loadProtocols() {
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/protocols');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar');
+
+    state.protocols = data.protocols || [];
+    state.version = data.version || 0;
+
+    // Alerta amarelo: só atendente, só se há versão não vista
+    if (data.hasAlert) {
+      document.getElementById('updateBanner').classList.add('show');
+    }
+
+    renderSegs();
+    renderList();
+
+    // Atendente: marca que viu a versão atual (alerta some na próxima vez)
+    if (!state.isAdmin) {
+      try {
+        await window.__luxFetch(WORKER_URL + '/protocols/seen', { method: 'POST' });
+      } catch (e) { /* não trava */ }
+    }
+  } catch (err) {
+    document.getElementById('list').innerHTML =
+      '<div class="state-msg"><span class="icon">⚠️</span><div>Falha ao carregar protocolos: ' +
+      escapeHtml(err.message) + '</div></div>';
+  }
+}
+
+function renderSegs() {
+  const counts = {};
+  SEG_ORDER.forEach(s => counts[s] = 0);
+  state.protocols.forEach(p => { if (counts[p.seg] != null) counts[p.seg]++; });
+
+  const html = SEG_ORDER.map(s =>
+    `<button class="seg-btn ${s === state.activeSeg ? 'active' : ''}" onclick="setSeg('${s}')">
+       ${SEG_LABELS[s]}<span class="count">${counts[s]}</span>
+     </button>`
+  ).join('');
+  document.getElementById('segs').innerHTML = html;
+}
+
+function setSeg(s) {
+  state.activeSeg = s;
+  renderSegs();
+  renderList();
+}
+
+function renderList() {
+  const items = state.protocols.filter(p => p.seg === state.activeSeg);
+  const cont = document.getElementById('list');
+
+  if (items.length === 0) {
+    cont.innerHTML = '<div class="state-msg"><span class="icon">📭</span><div>Nenhum protocolo neste segmento ainda.</div></div>';
+    return;
+  }
+
+  cont.innerHTML = items.map(p => {
+    const adminBtns = state.isAdmin
+      ? `<button class="btn-mini" onclick="openEdit('${p.id}')">✎ Editar</button>
+         <button class="btn-mini danger" onclick="openDel('${p.id}')">🗑 Apagar</button>`
+      : '';
+    const atalho = p.atalho
+      ? `<div class="proto-atalho">Atalho: ${escapeHtml(p.atalho)}</div>` : '';
+    return `
+    <div class="proto" id="proto-${p.id}">
+      <div class="proto-head">
+        <div>
+          <div class="proto-title">${escapeHtml(p.titulo)}</div>
+          ${atalho}
+        </div>
+      </div>
+      <div class="proto-text" id="text-${p.id}">${escapeHtml(p.texto)}</div>
+      <div class="proto-actions">
+        <button class="btn-copy" id="copy-${p.id}" onclick="copyProto('${p.id}')">📋 Copiar</button>
+        ${adminBtns}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyProto(id) {
+  const p = state.protocols.find(x => x.id === id);
+  if (!p) return;
+  const btn = document.getElementById('copy-' + id);
+
+  const done = () => {
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('done');
+    setTimeout(() => { btn.textContent = '📋 Copiar'; btn.classList.remove('done'); }, 1800);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(p.texto).then(done).catch(() => fallbackCopy(p.texto, done));
+  } else {
+    fallbackCopy(p.texto, done);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); }
+  catch (e) { toast('Não consegui copiar. Selecione o texto manualmente.', 'error'); }
+  document.body.removeChild(ta);
+}
+
+/* ═══ ADMIN: criar/editar ═══ */
+function openNew() {
+  state.editId = null;
+  document.getElementById('modalTitle').textContent = 'Novo protocolo';
+  document.getElementById('fSeg').value = state.activeSeg;
+  document.getElementById('fTitulo').value = '';
+  document.getElementById('fAtalho').value = '';
+  document.getElementById('fTexto').value = '';
+  document.getElementById('editModal').classList.add('show');
+}
+
+function openEdit(id) {
+  const p = state.protocols.find(x => x.id === id);
+  if (!p) return;
+  state.editId = id;
+  document.getElementById('modalTitle').textContent = 'Editar protocolo';
+  document.getElementById('fSeg').value = p.seg;
+  document.getElementById('fTitulo').value = p.titulo;
+  document.getElementById('fAtalho').value = p.atalho || '';
+  document.getElementById('fTexto').value = p.texto;
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveProto() {
+  const seg    = document.getElementById('fSeg').value;
+  const titulo = document.getElementById('fTitulo').value.trim();
+  const atalho = document.getElementById('fAtalho').value.trim();
+  const texto  = document.getElementById('fTexto').value;
+
+  if (!titulo)        return toast('Título é obrigatório.', 'error');
+  if (!texto.trim())  return toast('Texto é obrigatório.', 'error');
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  try {
+    const body = { seg, titulo, atalho, texto };
+    if (state.editId) body.id = state.editId;
+    const resp = await window.__luxFetch(WORKER_URL + '/protocols/save', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao salvar');
+
+    closeEdit();
+    toast(data.action === 'created' ? '✓ Protocolo criado!' : '✓ Protocolo atualizado!');
+    state.activeSeg = seg;
+    await loadProtocols();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+/* ═══ ADMIN: apagar ═══ */
+function openDel(id) {
+  const p = state.protocols.find(x => x.id === id);
+  if (!p) return;
+  state.delId = id;
+  document.getElementById('delName').textContent = p.titulo;
+  document.getElementById('delModal').classList.add('show');
+}
+
+function closeDel() {
+  document.getElementById('delModal').classList.remove('show');
+}
+
+async function confirmDel() {
+  if (!state.delId) return;
+  const btn = document.getElementById('btnDel');
+  btn.disabled = true; btn.textContent = 'Apagando…';
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/protocols/delete?id=' + encodeURIComponent(state.delId),
+      { method: 'DELETE' }
+    );
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao apagar');
+    closeDel();
+    toast('✓ Protocolo apagado.');
+    await loadProtocols();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Apagar';
+  }
+}
+
+/* ═══ Helpers ═══ */
+let toastTimer = null;
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'error' ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast' + (type === 'error' ? ' error' : ''); }, 3200);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
