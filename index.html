@@ -1,356 +1,1155 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lux — Plataforma</title>
+// ================================================================
+// LUX FIGURINHAS - Cloudflare Worker (v2.2)
+// ================================================================
+// Mudancas v2.2:
+//   - 3 modos: padrao, frase_personalizada, super_personalizada
+//   - Super aceita { gesto, frase } por figurinha
+//   - Historico ordenado por timestamp numerico
+//
+// Endpoints:
+//   POST /createOrder       -> cria pedido + salva foto no R2
+//   POST /produceStickers   -> gera N figurinhas (1 a 10)
+//   POST /correctSticker    -> refaz UMA figurinha especifica
+//   GET  /getSticker        -> retorna PNG via Worker (R2 privado)
+//   GET  /listOrders        -> lista pedidos recentes (default 10)
+//   GET  /getOrder          -> detalhes de UM pedido
+//   GET  /diagnose          -> healthcheck completo
+// ================================================================
 
-<link rel="icon" href="assets/favicon.ico" sizes="any"/>
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"/>
-<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png"/>
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"/>
+import { requireAuth, isPublicPath } from './auth.js';
+import { handleAdminRoutes } from './admin.js';
+import { calculateCost, updateSummary, getSummary, currentMonthKey } from './cost.js';
 
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+const IMAGE_MODEL    = 'gpt-image-1.5';
+const IMAGE_QUALITY  = 'medium';
+const IMAGE_SIZE     = '1024x1024';
+const INPUT_FIDELITY = 'high';
 
-<link rel="stylesheet" href="css/theme.css"/>
-<link rel="stylesheet" href="css/shell.css"/>
+const DELAY_BETWEEN_IMAGES_MS = 2000;
+const MAX_API_ATTEMPTS        = 3;
+const BASE_RETRY_DELAY_MS     = 3000;
 
-<style>
-/* Badge "EM BREVE" amarelo dourado (alinhado com gold da plataforma) */
-.badge-warning{
-  background:rgba(201,168,76,0.12);
-  color:#D4B968;
-  border:1px solid rgba(201,168,76,0.35);
+// ================================================================
+// BASE PROMPT - regras fixas de estilo (acessorios, contorno, etc)
+// ================================================================
+const BASE_PROMPT = `
+You are generating ONE sticker from a pack. All stickers in the pack share the EXACT same character.
+The reference photo provided is the single source of truth for this character's appearance.
+Your highest priority is to reproduce the character with PERFECT visual consistency and FAITHFUL detail to the reference photo.
+
+============================================
+CHARACTER CONSISTENCY LOCK - READ FIRST, APPLY TO EVERYTHING
+============================================
+Before drawing anything, extract and lock these attributes from the reference photo:
+
+SKIN TONE:
+- Identify the exact skin tone from the photo (light, medium, tan, dark, etc.).
+- Use that exact tone on the face, neck, hands, and all exposed skin.
+- Do NOT lighten or darken the skin tone under any circumstance.
+- Do NOT change the skin tone between stickers.
+
+HAIR:
+- Identify the exact hair color (black, brown, blonde, red, gray, etc.) and style (short, long, curly, straight, tied, etc.).
+- Reproduce that exact hair color and style in every sticker.
+- Do NOT change the hair color, shape, volume, or style between stickers.
+
+EYES:
+- Identify the eye color from the photo (brown, blue, green, hazel, dark brown, etc.) and the eye shape.
+- Reproduce the EXACT eye color in every sticker - never change brown to blue or vice-versa.
+- The eyes must always reflect the chibi kawaii style but MAINTAIN THE SAME COLOR AND GENERAL SHAPE.
+
+NOSE - MANDATORY, NEVER MISSING:
+- Always render a small but CLEARLY VISIBLE nose on the character's face.
+- The nose must be present in 100% of stickers - no exceptions, even when eyes are closed or face is tilted.
+- Acceptable nose styles: a small curved bridge line, a tiny rounded triangular shape, or two small nostril dots.
+- The nose must NEVER be flat, missing, invisible, or merged seamlessly into the skin.
+- Color: same skin tone with a slightly darker shade for depth.
+
+FACE STRUCTURE:
+- Identify the face shape and distinctive features from the photo (jaw, lips, eyebrows, etc.).
+- Keep those proportions consistent in every sticker.
+- The face must be recognizable as the same person in all stickers.
+
+LIPS / MAKEUP:
+- If the reference shows visible lip color (red lipstick, brown lipstick, pink gloss), REPRODUCE THAT EXACT COLOR.
+- If the reference shows makeup (eyeliner, eyeshadow, blush), include subtle hints of that makeup.
+- If lips are natural, render them in a natural pink tone matching the skin.
+- Do NOT invent makeup that is not in the reference photo.
+
+============================================
+ACCESSORIES - CRITICAL, NEVER OMIT
+============================================
+Carefully identify EVERY accessory visible in the reference photo, and reproduce them in EVERY sticker:
+
+- GLASSES / SUNGLASSES: If the person wears glasses or sunglasses in the reference, they MUST WEAR THEM in every sticker. Same frame shape, same lens color. NEVER remove glasses between stickers.
+- HATS / CAPS / BANDANAS: If present, include in every sticker with the same color and style.
+- EARRINGS: If visible (studs, hoops, dangling), reproduce them consistently.
+- NECKLACES / CHAINS / PENDANTS: If visible, REPRODUCE THE EXACT CHAIN visible around the neck.
+- WATCHES / BRACELETS / RINGS: If visible, include them.
+- PIERCINGS: If visible, keep them.
+- FACIAL HAIR: If present, reproduce exactly.
+- TATTOOS: If visible in the reference, include them in the same body area.
+
+ACCESSORY ANTI-OMISSION RULE:
+- If there is ANY DOUBT whether an accessory is present, default to INCLUDING IT.
+- Sunglasses removed from a "thumbs up" sticker just because the pose changed is FORBIDDEN.
+- A chain hidden under a different angle is FORBIDDEN - keep it visible.
+
+============================================
+OUTFIT - STRICT REPRODUCTION
+============================================
+- Identify every clothing item visible in the photo and reproduce it in every sticker.
+- Same colors, style, details, neckline, sleeves.
+- Do NOT swap, simplify, or alter clothing between stickers.
+
+ANTI-HALLUCINATION RULE FOR CLOTHING:
+- DO NOT invent any logos, brand names, text, words, letters, numbers, prints, patches, scribbles, or graphics on the clothing.
+- If the reference clothing is plain (solid color, no print), keep it COMPLETELY plain.
+- The chest area, sleeves, collar, and back must remain BLANK unless the reference photo clearly shows a real logo or print.
+
+THIS IS A CONSISTENCY PACK. Every sticker must look like the same person drawn by the same artist on the same day.
+============================================
+
+ART STYLE:
+- Render in 3D chibi kawaii style: rounded volumes, smooth cel-shading, clean black outlines, vivid flat colors.
+- Head-to-body ratio: approximately 1:1 (chibi proportions).
+- Large expressive eyes, small visible nose, small mouth.
+- Clean, smooth surfaces - no texture noise, no sketch marks, no rough edges.
+- Consistent line weight and shading style across all stickers.
+
+============================================
+STICKER WHITE BORDER - MANDATORY ON EVERY STICKER
+============================================
+- EVERY sticker MUST have a clean SOLID WHITE OUTLINE following the silhouette of the character AND the speech balloon.
+- The white outline acts like a "die-cut sticker border" - it surrounds both the character and the balloon as ONE single shape.
+- The outline thickness must be UNIFORM and CONSISTENT across all stickers in the pack (around 6-10 pixels thick).
+- The outline must NEVER be missing on any sticker.
+- The outline must NEVER be only on the balloon or only on the character - it MUST wrap around BOTH.
+- The outline color is pure WHITE (#FFFFFF), fully opaque.
+- The outline must be SMOOTH, not jagged or pixelated.
+
+OPACITY - NO INTERNAL TRANSPARENCY:
+- The character body, clothing, hair, eyes, teeth, mouth interior, and ALL visible features must be FULLY OPAQUE.
+- Teeth must be solid bright white #FFFFFF.
+- Eye whites must be solid white #FFFFFF.
+- Clothing must be solid opaque colors.
+- Transparency is ONLY allowed in the empty area OUTSIDE the white sticker border.
+
+FRAMING - NO CROPPING ALLOWED:
+- The character must FIT FULLY inside the image canvas.
+- Leave a margin of at least 5% on all four sides between the white outline and the canvas edge.
+- NEVER crop the top of the head, the bottom of feet, hands, fingers, or any extended limb.
+
+PROPORTIONS - NO EXTREME PERSPECTIVE:
+- Use natural chibi proportions: the head is approximately the same size as the torso.
+- Hands, fists, fingers, and feet must be PROPORTIONAL to the body.
+
+CHARACTER COMPOSITION:
+- Default: half-body composition (from waist up), centered.
+- Exception: stickers requiring full body must show full body but still respect FRAMING.
+
+BACKGROUND:
+- The area OUTSIDE the white sticker border must be 100% transparent (alpha = 0).
+- No color, gradient, shadow, glow, or fill in the background.
+
+============================================
+TEXT BALLOON - MANDATORY, NON-NEGOTIABLE
+============================================
+- ALWAYS render a speech balloon containing the sticker text.
+- Balloon interior fill: SOLID BLACK (#000000), fully opaque, 100%.
+- Never use dark grey or semi-transparent.
+- Balloon border: thick, clean, solid WHITE outline (same white as the sticker outline).
+- Balloon tail: always pointing toward the character's face or body.
+- The balloon must never overlap the character's face or main expression.
+- The balloon must never clip outside the canvas.
+
+TEXT INSIDE THE BALLOON - LETTER-BY-LETTER ACCURACY MANDATORY:
+- All text must appear INSIDE the balloon.
+- Font: bold, rounded, friendly, uppercase, sans-serif.
+- Color: solid WHITE (#FFFFFF), 100% opaque.
+- Perfectly centered horizontally and vertically.
+- Font size large enough to fill 60-70% of the balloon interior.
+
+CRITICAL - SPELLING ACCURACY:
+- Render the text EXACTLY as written in the sticker instructions below.
+- Verify each letter individually: if asked to write "BOM DIA", render B-O-M space D-I-A. Never B-O-M D-T-A.
+- Do NOT substitute letters (no I->T, no O->Q, etc.).
+- Do NOT add or omit letters.
+- Re-read the exact phrase character by character before finalizing.
+
+FINAL RENDER CHECKLIST - VERIFY BEFORE FINALIZING:
+- Skin tone, hair, eye color match reference photo exactly.
+- ALL accessories from the reference are present.
+- Outfit matches the reference photo exactly.
+- NO invented logos or text on the clothing.
+- Face is recognizable as the same person.
+- Nose is visible.
+- WHITE BORDER OUTLINE wraps around BOTH character AND balloon as ONE shape.
+- Text inside balloon matches the requested phrase LETTER BY LETTER.
+- No text outside the balloon.
+- No transparency inside the character or balloon.
+`;
+
+// ================================================================
+// PROMPTS PADRAO - 10 frases fixas
+// ================================================================
+const DEFAULT_PROMPTS = [
+  `${BASE_PROMPT}
+STICKER 01 - BOM DIA!
+Balloon text exactly: "BOM DIA!"
+Pose: Character standing, very excited and welcoming. One arm stretched forward holding a large white coffee cup with visible steam rising from it. The cup is prominent. Big smile, open and friendly energy.
+Balloon: bottom-center, tail pointing up toward the character's face.`,
+
+  `${BASE_PROMPT}
+STICKER 02 - VAMOS PRA CIMA
+Balloon text exactly: "VAMOS PRA CIMA"
+Pose: FULL body view from head to feet. Character riding on top of a stylized cartoon rocket pointing diagonally upward. One hand pointing forward energetically. Excited and motivational expression.
+COMPOSITION: Scale the character + rocket together to fit fully inside the canvas with 5% margin on all sides. Do NOT crop the head, feet, or rocket tip.
+Balloon: bottom-center, below or beside the rocket.`,
+
+  `${BASE_PROMPT}
+STICKER 03 - TMJ
+Balloon text exactly: "TMJ"
+Pose: Character standing, one arm extended forward with a closed fist as a partnership/solidarity gesture. The fist is clearly visible but PROPORTIONAL to the body. Friendly and energetic expression.
+Balloon: bottom-right, tail pointing toward the character's face.`,
+
+  `${BASE_PROMPT}
+STICKER 04 - CHEGUEI
+Balloon text exactly: "CHEGUEI"
+Pose: Character making a grand entrance - arms open wide or one hand raised high in a "ta-da" gesture. Big confident smile, very positive and eye-catching energy.
+Balloon: bottom-center, tail pointing toward the character.`,
+
+  `${BASE_PROMPT}
+STICKER 05 - RESOLVIDO
+Balloon text exactly: "RESOLVIDO"
+Pose: Character winking one eye with a confident smile, one arm extended forward giving a thumbs up. The thumbs up is visible and clear but PROPORTIONAL. Efficient and satisfied expression.
+Balloon: bottom-right, tail pointing toward the character's face.`,
+
+  `${BASE_PROMPT}
+STICKER 06 - PARTIU!
+Balloon text exactly: "PARTIU!"
+Pose: Character in motion, running energetically, body leaning forward, looking ahead with a motivated and ready-to-go expression. Dynamic movement lines optional.
+Balloon: bottom-center, tail pointing toward the character.`,
+
+  `${BASE_PROMPT}
+STICKER 07 - AGORA VAI
+Balloon text exactly: "AGORA VAI"
+Pose: Character in a victory pose, one arm raised high with a closed fist pointing upward. Happy, celebrating, confident expression.
+Balloon: bottom-center, tail pointing toward the character's face.`,
+
+  `${BASE_PROMPT}
+STICKER 08 - CADE MEU PIX?
+Balloon text exactly: "CADE MEU PIX?"
+Pose: Character with a friendly and slightly questioning expression, both hands raised to shoulder height with palms facing up, making a "where is it?" gesture. Eyebrows slightly raised.
+Balloon: bottom-center, tail pointing toward the character.`,
+
+  `${BASE_PROMPT}
+STICKER 09 - 100 COMENTARIOS!
+Balloon text exactly: "100 COMENTARIOS!"
+Pose: Character laughing extremely hard, eyes tightly closed and squeezed, with tears streaming from both eyes. One hand holding the belly while laughing, body slightly leaning forward.
+Balloon: bottom-center, tail pointing toward the character's face.`,
+
+  `${BASE_PROMPT}
+STICKER 10 - OK
+Balloon text exactly: "OK"
+Pose: Character smiling calmly, one arm extended forward with a thumbs up. The thumbs up is visible but PROPORTIONAL to the body, not exaggerated. Simple, clean, and positive energy.
+Balloon: bottom-right, tail pointing toward the character's hand or face.`
+];
+
+// ================================================================
+// BUILDERS DE PROMPT - 2 modos personalizados
+// ================================================================
+
+// "Frase Personalizada": mantem poses originais, troca so o texto
+function buildFrasePersonalizadaPrompt(index, frase) {
+  const num = String(index + 1).padStart(2, '0');
+  const fraseUpper = String(frase).trim().toUpperCase();
+  const basePrompt = DEFAULT_PROMPTS[index] || DEFAULT_PROMPTS[0];
+  return basePrompt
+    .replace(/STICKER \d{2} - [^\n]+/, `STICKER ${num} - ${fraseUpper}`)
+    .replace(/Balloon text exactly:\s*"[^"]+"/i, `Balloon text exactly: "${fraseUpper}"`);
 }
-.status-soon-warning{
-  color:#D4B968;
-  font-size:11px;
-  font-weight:600;
-  letter-spacing:.06em;
+
+// "Super Personalizada": IA cria pose nova baseada no GESTO + escreve a FRASE
+function buildSuperPersonalizadaPrompt(index, gesto, frase) {
+  const num = String(index + 1).padStart(2, '0');
+  const fraseUpper = String(frase || '').trim().toUpperCase();
+  const gestoText = String(gesto || '').trim();
+
+  const poseInstruction = gestoText
+    ? `Pose: ${gestoText}. Render this action/pose in chibi kawaii style, keeping ALL accessories from the reference photo (glasses, chains, hats, earrings, watches, etc.) visible. The pose must be expressive and clearly communicate the action described.
+Balloon: bottom-center, tail pointing toward the character's face. The balloon must NEVER cover the character's main expression or the action being performed.`
+    : `Pose: Choose a natural, expressive pose that fits the phrase "${fraseUpper}". Keep all accessories from the reference photo visible.
+Balloon: bottom-center, tail pointing toward the character's face.`;
+
+  return `${BASE_PROMPT}
+STICKER ${num} - ${fraseUpper}
+Balloon text exactly: "${fraseUpper}"
+${poseInstruction}`;
 }
-/* Badge "NOVO" — gradient gold pra chamar atenção do lançamento */
-.badge-new{
-  background:linear-gradient(135deg,rgba(201,168,76,0.35),rgba(201,168,76,0.15));
-  color:#FFD580;
-  border:1px solid rgba(201,168,76,0.6);
-  font-weight:700;
-  letter-spacing:.08em;
-}
-/* Cards "Em Breve" desativados visualmente */
-.tool-card.soon{
-  opacity:0.6;
-  cursor:not-allowed;
-  filter:saturate(0.6);
-}
-.tool-card.soon:hover{
-  transform:none;
-  border-color:var(--border);
-}
-.nav-item.soon{
-  opacity:0.55;
-  cursor:not-allowed;
-  pointer-events:none;
-}
-</style>
 
-<script type="module" src="js/auth.js"></script>
-</head>
-<body>
+// ================================================================
+// HELPERS
+// ================================================================
 
-<!-- ═══ TELA DE LOGIN ═══════════════════════════════════════ -->
-<div id="screen-login">
-  <div class="login-card">
-    <img class="login-logo" src="assets/lux-logo.png" alt="Lux"/>
-    <div class="login-sub" style="margin-top:0">Plataforma de Ferramentas</div>
-    <button class="btn-google" onclick="__luxSignIn()">
-      <svg width="18" height="18" viewBox="0 0 18 18">
-        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-        <path fill="#34A353" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-        <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
-        <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
-      </svg>
-      Entrar com Google
-    </button>
-    <div class="auth-error" id="auth-error"></div>
-    <div class="login-footer">Acesso restrito à equipe Lux</div>
-  </div>
-</div>
-
-<!-- ═══ APP ════════════════════════════════════════════════ -->
-<div id="screen-app">
-
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <img class="sidebar-logo" src="assets/lux-logo.png" alt="Lux"/>
-      <div class="sidebar-brand">LUX</div>
-      <div class="sidebar-tagline">Plataforma</div>
-    </div>
-
-    <div class="sidebar-section">Ferramentas</div>
-    <nav onclick="handleNav(event)">
-      <a class="nav-item active" data-tool="dashboard" href="#">
-        <div class="nav-icon">⊞</div> Dashboard
-      </a>
-      <a class="nav-item" data-tool="musica" href="#">
-        <div class="nav-icon">🎵</div> Letra de Música
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="figurinhas" href="#">
-        <div class="nav-icon">🎭</div> Figurinhas
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="logo3d" href="#" onclick="openLogo3D(event)">
-        <div class="nav-icon">💎</div> Logo 3D
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="videos" href="#">
-        <div class="nav-icon">🎬</div> Vídeo Padrão
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="videos-premium" href="#">
-        <div class="nav-icon">🤖</div> Vídeo Premium
-        <span class="nav-badge badge-new">NOVO</span>
-      </a>
-      <a class="nav-item" data-tool="meus-custos" href="#">
-        <div class="nav-icon">💰</div> Meus Custos
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="financeiro" href="#" data-role-required="admin" style="display:none">
-        <div class="nav-icon">📊</div> Financeiro
-        <span class="nav-badge badge-live">ADMIN</span>
-      </a>
-      <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
-        <div class="nav-icon">⚙</div> Admin
-        <span class="nav-badge badge-live">ADMIN</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-spacer"></div>
-
-    <div class="sidebar-user">
-      <div class="user-avatar-wrap">
-        <span id="user-initials">?</span>
-        <img id="user-avatar" alt=""/>
-      </div>
-      <div class="user-info">
-        <strong id="user-name">—</strong>
-        <span id="user-email">—</span>
-      </div>
-      <button class="btn-signout" onclick="__luxSignOut()" title="Sair da plataforma"
-        style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(220,60,60,0.1);border:1px solid rgba(220,60,60,0.4);border-radius:8px;color:#E87A7A;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;transition:all .15s">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        SAIR
-      </button>
-    </div>
-  </aside>
-
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-  <main class="main-content" id="mainContent">
-
-    <div class="topbar">
-      <img class="topbar-logo" src="assets/lux-logo.png" alt="Lux"/>
-      <div class="topbar-title">LUX</div>
-      <button class="btn-menu" onclick="toggleSidebar()">☰</button>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div id="view-dashboard" class="dashboard" style="display:none">
-      <div class="dash-header">
-        <div class="dash-greeting">Bem-vindo à</div>
-        <div class="dash-title">Plataforma <span>Lux</span></div>
-      </div>
-      <div class="dash-grid">
-
-        <div class="tool-card" onclick="loadTool('musica')">
-          <div class="tool-card-icon">🎵</div>
-          <div class="tool-card-name">LETRA DE MÚSICA</div>
-          <div class="tool-card-desc">Gerador de letras e jingles personalizados para campanhas e eventos.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-        <div class="tool-card" onclick="loadTool('figurinhas')">
-          <div class="tool-card-icon">🎭</div>
-          <div class="tool-card-name">FIGURINHAS</div>
-          <div class="tool-card-desc">Gere packs personalizados para WhatsApp com IA a partir de uma foto de referência.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-        <div class="tool-card" onclick="openLogo3D(event)">
-          <div class="tool-card-icon">💎</div>
-          <div class="tool-card-name">LOGO 3D</div>
-          <div class="tool-card-desc">Geração de logos em 3D com IA para apresentações, abertura de vídeos e branding.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-        <div class="tool-card" onclick="loadTool('videos')">
-          <div class="tool-card-icon">🎬</div>
-          <div class="tool-card-name">VÍDEO PADRÃO</div>
-          <div class="tool-card-desc">Slideshow renderizado com fotos do comércio + trilha sonora, pronto para Reels e Stories.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-        <div class="tool-card" onclick="loadTool('videos-premium')">
-          <div class="tool-card-icon">🤖</div>
-          <div class="tool-card-name">VÍDEO PREMIUM</div>
-          <div class="tool-card-desc">Vídeos cinematográficos com IA imagem-para-vídeo (Seedance v1 Pro). Cada foto vira um clipe animado profissional de 5 segundos.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- FIGURINHAS -->
-    <div id="view-figurinhas" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">✦ FIGURINHAS</span>
-        <span class="tool-panel-atendente" id="figurinhasAtendente"></span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- MÚSICA — MAESTRO AI -->
-    <div id="view-musica" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">✦ LUX MUSIC</span>
-        <span class="tool-panel-atendente" id="musicAtendente"></span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- VÍDEO PADRÃO -->
-    <div id="view-videos" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">🎬 GERADOR DE VÍDEO PADRÃO</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- VÍDEO PREMIUM -->
-    <div id="view-videos-premium" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">🤖 VÍDEO PREMIUM — IA IMAGEM-PARA-VÍDEO</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- MEUS CUSTOS (atendente — só os custos dele) -->
-    <div id="view-meus-custos" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">💰 MEUS CUSTOS</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- FINANCEIRO (admin — visão geral) -->
-    <div id="view-financeiro" class="tool-panel" data-role-required="admin" style="display:none">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">📊 FINANCEIRO</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <div id="view-admin" class="tool-panel" data-role-required="admin" style="display:none">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">⚙ ADMIN — GESTÃO DE USUÁRIOS</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-  </main>
-</div>
-
-<script>
-// ── LOGO 3D — modal: copiar email → abre ferramenta ────────
-const LOGO3D_EMAIL = 'gptluxmarketing@gmail.com';
-const LOGO3D_URL   = 'https://sellecionados.com/acesso-s3d';
-
-function openLogo3D(event) {
-  if (event) event.preventDefault();
-  let ov = document.getElementById('logo3d-modal');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'logo3d-modal';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;opacity:0;transition:opacity .2s';
-    ov.innerHTML = `
-      <div style="background:#141414;border:1px solid #C9A84C;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:'DM Sans',sans-serif">
-        <div style="font-family:'Cinzel',serif;color:#D4AF37;font-size:17px;font-weight:600;letter-spacing:.06em;margin-bottom:10px;text-align:center">💎 LOGO 3D</div>
-        <p style="color:#cfcabf;font-size:14px;line-height:1.6;text-align:center;margin:0 0 18px">
-          Copie o e-mail abaixo para acessar a ferramenta de Logo 3D. A página abre logo em seguida.
-        </p>
-        <button id="logo3d-copy" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0E0E0E;border:1px solid #5a5444;border-radius:9px;padding:13px 15px;cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .15s">
-          <span id="logo3d-email">${LOGO3D_EMAIL}</span>
-          <span id="logo3d-copyicon" style="color:#D4AF37;font-weight:600;font-size:13px;white-space:nowrap">📋 Copiar</span>
-        </button>
-        <button id="logo3d-open" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#D4AF37,#E8C766);border:none;border-radius:9px;padding:13px;cursor:pointer;color:#1A1A1A;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase">Abrir ferramenta</button>
-        <button id="logo3d-cancel" style="width:100%;margin-top:8px;background:transparent;border:none;color:#8a857a;font-size:12px;cursor:pointer;padding:8px;font-family:'DM Sans',sans-serif">Cancelar</button>
-      </div>`;
-    document.body.appendChild(ov);
-
-    const close = () => { ov.style.opacity = '0'; setTimeout(() => ov.remove(), 200); };
-    const goOpen = () => {
-      // Registra 1 pedido Logo 3D (custo zero) — não bloqueia a abertura
-      try {
-        if (window.__luxFetch) {
-          window.__luxFetch('https://lux-figurinhas.plataformalux.workers.dev/logEvent', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tool: 'logo3d' })
-          }).catch(() => {});
-        }
-      } catch (e) { /* nunca trava a abertura por causa do log */ }
-      window.open(LOGO3D_URL, '_blank', 'noopener');
-      close();
-    };
-
-    ov.querySelector('#logo3d-copy').addEventListener('click', async () => {
-      const icon = ov.querySelector('#logo3d-copyicon');
-      try {
-        await navigator.clipboard.writeText(LOGO3D_EMAIL);
-        icon.textContent = '✓ Copiado!';
-        icon.style.color = '#7FB87A';
-      } catch (e) {
-        icon.textContent = '✓ Selecione e copie';
-      }
-      setTimeout(goOpen, 1400);
-    });
-    ov.querySelector('#logo3d-open').addEventListener('click', goOpen);
-    ov.querySelector('#logo3d-cancel').addEventListener('click', close);
-    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+function resolvePrompts(mode, phrases) {
+  // Modo padrao: sempre 10 fixas
+  if (mode === 'padrao' || !mode) {
+    return { ok: true, prompts: DEFAULT_PROMPTS, count: 10 };
   }
-  requestAnimationFrame(() => { ov.style.opacity = '1'; });
-}
-</script>
 
-<script src="js/shell.js"></script>
-</body>
-</html>
+  // Frase Personalizada: array de strings.
+  // A POSE de cada figurinha e FIXA pelo indice (a #08 usa sempre a
+  // pose 08 do pack padrao). So o texto do balao muda. Por isso o
+  // indice ORIGINAL precisa ser preservado mesmo se houver frases
+  // vazias no meio (frase vazia = pula aquela figurinha).
+  if (mode === 'frase_personalizada' || mode === 'personalizado' /* compat antiga */) {
+    if (!Array.isArray(phrases)) {
+      return { ok: false, error: 'Frase Personalizada exige um array "phrases" de strings.' };
+    }
+    // Mantem o indice real (origIndex) antes de filtrar os vazios
+    const valid = phrases
+      .map((p, origIndex) => ({ origIndex, frase: String(p || '').trim() }))
+      .filter(item => item.frase.length > 0);
+    if (valid.length === 0) return { ok: false, error: 'Preencha pelo menos 1 frase.' };
+    if (valid.length > 10)  return { ok: false, error: 'Maximo de 10 frases.' };
+    return {
+      ok: true,
+      prompts: valid.map(item => buildFrasePersonalizadaPrompt(item.origIndex, item.frase)),
+      indices: valid.map(item => item.origIndex),
+      count: valid.length
+    };
+  }
+
+  // Super Personalizada: array de objetos { gesto, frase }.
+  // Tambem preserva o indice original para a numeracao do arquivo
+  // bater com a posicao escolhida pelo atendente.
+  if (mode === 'super_personalizada') {
+    if (!Array.isArray(phrases)) {
+      return { ok: false, error: 'Super Personalizada exige um array "phrases" de objetos { gesto, frase }.' };
+    }
+    const valid = phrases
+      .map((item, origIndex) => ({
+        origIndex,
+        gesto: String((item && item.gesto) || '').trim(),
+        frase: String((item && item.frase) || '').trim()
+      }))
+      .filter(item => item.frase.length > 0);
+    if (valid.length === 0) return { ok: false, error: 'Preencha pelo menos 1 frase.' };
+    if (valid.length > 10)  return { ok: false, error: 'Maximo de 10 figurinhas.' };
+    return {
+      ok: true,
+      prompts: valid.map(item => buildSuperPersonalizadaPrompt(item.origIndex, item.gesto, item.frase)),
+      indices: valid.map(item => item.origIndex),
+      count: valid.length
+    };
+  }
+
+  return { ok: false, error: 'Modo desconhecido: ' + mode };
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  });
+}
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function brazilianDate() {
+  const now = new Date();
+  const brasilia = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const dd = String(brasilia.getUTCDate()).padStart(2, '0');
+  const mm = String(brasilia.getUTCMonth() + 1).padStart(2, '0');
+  const yyyy = brasilia.getUTCFullYear();
+  const hh = String(brasilia.getUTCHours()).padStart(2, '0');
+  const mn = String(brasilia.getUTCMinutes()).padStart(2, '0');
+  return `${dd}-${mm}-${yyyy} ${hh}:${mn}`;
+}
+
+// ================================================================
+// CHAMADA OPENAI
+// ================================================================
+async function generateSticker(prompt, imageBytes, imageMime, apiKey) {
+  for (let attempt = 1; attempt <= MAX_API_ATTEMPTS; attempt++) {
+    try {
+      const form = new FormData();
+      form.append('model', IMAGE_MODEL);
+      form.append('prompt', prompt);
+      form.append('size', IMAGE_SIZE);
+      form.append('quality', IMAGE_QUALITY);
+      form.append('background', 'transparent');
+      form.append('output_format', 'png');
+      form.append('input_fidelity', INPUT_FIDELITY);
+      form.append('image', new Blob([imageBytes], { type: imageMime }), 'referencia.jpg');
+
+      const response = await fetch('https://api.openai.com/v1/images/edits', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: form
+      });
+
+      const raw = await response.text();
+      let parsed = null;
+      try { parsed = JSON.parse(raw); } catch (e) {}
+
+      if (response.ok) {
+        if (parsed && parsed.data && parsed.data[0] && parsed.data[0].b64_json) {
+          return { ok: true, b64: parsed.data[0].b64_json };
+        }
+        if (attempt === MAX_API_ATTEMPTS) {
+          return { ok: false, error: 'Resposta sem imagem: ' + raw.substring(0, 300) };
+        }
+      } else {
+        const msg = (parsed && parsed.error && parsed.error.message) ? parsed.error.message : raw.substring(0, 300);
+        const retryable = response.status === 429 || (response.status >= 500 && response.status < 600);
+        if (!retryable) return { ok: false, error: `HTTP ${response.status} - ${msg}` };
+      }
+    } catch (err) {
+      if (attempt === MAX_API_ATTEMPTS) return { ok: false, error: err.message };
+    }
+    await sleep(BASE_RETRY_DELAY_MS * attempt);
+  }
+  return { ok: false, error: 'Falha desconhecida.' };
+}
+
+// ================================================================
+// HANDLER PRINCIPAL
+// ================================================================
+
+// ================================================================
+// PROTOCOLOS — aba Atendimento
+// ================================================================
+// Armazenamento no KV LUX_HISTORY:
+//   protocols:list     -> JSON array de todos os protocolos
+//   protocols:version  -> timestamp (ms) da última alteração do admin
+//   protocols:seen:EMAIL -> última versão que aquele atendente "viu"
+// Na primeira chamada, se não existir lista, semeia com SEED_PROTOCOLS.
+// ================================================================
+
+const SEED_PROTOCOLS = [
+  // ═══════════════ MÚSICA ═══════════════
+  { seg:'musica', atalho:'0', titulo:'Saudação (falha no envio)',
+    texto:`Bem-vindo à Lux!\n\nCriamos músicas incríveis que fazem a sua marca grudar na mente e no coração das pessoas.\n\nESCOLHA O SEU RITMO:\n\n👉 musica.luxmarketing.com.br/portfolio\n\n• 1 música — R$67\n\n• 2 músicas — R$130\n\n• 3 músicas — R$150\n\n⚡ Entrega no mesmo dia!\n\nEm instantes, nossa equipe dará sequência ao seu atendimento.` },
+  { seg:'musica', atalho:'1', titulo:'Apresentação — Bom dia',
+    texto:`Bom dia! Me chamo *Fulano* e serei responsável pelo seu atendimento. 😊` },
+  { seg:'musica', atalho:'11', titulo:'Apresentação — Boa tarde',
+    texto:`Boa tarde! Me chamo *Fulano* e serei responsável pelo seu atendimento. 😊` },
+  { seg:'musica', atalho:'111', titulo:'Apresentação — Boa noite',
+    texto:`Boa noite! Me chamo *Fulano* e serei responsável pelo seu atendimento. 😊` },
+  { seg:'musica', atalho:'2', titulo:'Quantas músicas',
+    texto:`Serão quantas músicas, por favor?` },
+  { seg:'musica', atalho:'3', titulo:'Briefing — informações',
+    texto:`Agora preciso que preencha essas informações:\n\n1️⃣ Nome da empresa:\n\n2️⃣ O que você vende:\n\n3️⃣ Principais diferenciais:\n\n4️⃣ Ritmo musical desejado:` },
+  { seg:'musica', atalho:'(áudio sem resposta)', titulo:'Cliente não responde (áudio)',
+    texto:`Oi, Fulano, bom dia! Vou te mandar um mini questionário. Preencha, por favor, pra que eu possa produzir a sua música da melhor forma possível.` },
+  { seg:'musica', atalho:'4', titulo:'Concluir pedido — condições',
+    texto:`Perfeito! Vamos concluir o seu pedido.\n\n☑️ Você terá direito a *uma correção na letra, caso haja necessidade*, não sendo possível alterar o ritmo já escolhido. O pedido de alteração será válido por até 24 horas após o recebimento da sua música.\n\n☑️ A sua música será *entregue em arquivo MP3*, aqui mesmo pelo WhatsApp.\n\n⏳ Entrega em até 24 horas, mas na maioria dos casos, entregamos no mesmo dia.` },
+  { seg:'musica', atalho:'5', titulo:'Pagamento — 1 música (R$67)',
+    texto:`*Fico no aguardo do pagamento para colocar a sua música na fila de produção!*\n\nValor: R$67,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'musica', atalho:'55', titulo:'Pagamento — 2 músicas (R$130)',
+    texto:`*Fico no aguardo do pagamento para colocar a sua música na fila de produção!*\n\nValor: R$130,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'musica', atalho:'555', titulo:'Pagamento — 3 músicas (R$150)',
+    texto:`*Fico no aguardo do pagamento para colocar a sua música na fila de produção!*\n\nValor: R$150,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'musica', atalho:'6', titulo:'Pedir email',
+    texto:`Obrigada! Me envia o seu email, por favor.` },
+  { seg:'musica', atalho:'7', titulo:'Pagamento confirmado — R$67',
+    texto:`☑️ [Criação de Música] Pagamento confirmado!\n\nValor pago: R$67\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá sua música. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'musica', atalho:'77', titulo:'Pagamento confirmado — R$130',
+    texto:`☑️ [Criação de Música] Pagamento confirmado!\n\nValor pago: R$130\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá sua música. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'musica', atalho:'777', titulo:'Pagamento confirmado — R$150',
+    texto:`☑️ [Criação de Música] Pagamento confirmado!\n\nValor pago: R$150\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá sua música. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'musica', atalho:'ENTREGUE', titulo:'Música pronta + outros serviços',
+    texto:`*Sua música está pronta!* 😊\n\nTambém fazemos:\n\n🎬 Animação de Logo: 30\n\n🔁 Logo 3D Giratória: 47\n\n🎤 Locução Profissional: 67\n\n✨ Figurinhas WhatsApp: 30\n\n🎥 Vídeo Promocional: 67\n\n*VEJA COMO FUNCIONA:*\n\n👉 www.luxmarketing.com.br` },
+  { seg:'musica', atalho:'COMENTÁRIO', titulo:'Pedir comentário (após elogio)',
+    texto:`Que bom que gostou 😊\n\nSe puder, ficaria muito feliz se deixasse um comentário em nosso Instagram.\n\nSeu feedback é muito importante para nós! 🙌\n\n💬 *Deixe seu comentário:*\n\nhttps://www.instagram.com/reel/DPchCIUAKxb/?igsh=OHRndGtrZ3U1bHo=\n\nAgradeço o seu apoio! 😊` },
+  { seg:'musica', atalho:'INSTAGRAM', titulo:'Nosso Instagram',
+    texto:`😊 *Nosso Instagram existe desde 2023.*\n\nVeja os comentários dos nossos clientes.\n\nNosso Instagram:\n\n👉 https://www.instagram.com/reel/DPchCIUAKxb/?igsh=OHRndGtrZ3U1bHo=` },
+  { seg:'musica', atalho:'PORTFÓLIO', titulo:'Portfólio',
+    texto:`*Veja nosso portfólio:*\n\n👉 musica.luxmarketing.com.br/portfolio` },
+
+  // ═══════════════ LOCUÇÃO ═══════════════
+  { seg:'locucao', atalho:'LOCUÇÃO', titulo:'Briefing locução',
+    texto:`*Preencha as informações para concluir o seu pedido:*\n\n1.⁠ ⁠Texto da narração:\n\n2.⁠ ⁠Tom da locução:\n\nPromocional, institucional ou eventos?\n\n3.⁠ ⁠Trilha sonora:\n\nPode enviar o nome da música desejada ou deixar a cargo do locutor.\n\n4. Endereço (opcional)\n\n5. Telefone (opcional)\n\n✅ Você terá direito a uma correção caso haja necessidade.\n\n⏳ Entrega em até 24 horas, mas na maioria dos casos, entregamos no mesmo dia.` },
+  { seg:'locucao', atalho:'LOCUÇÃOPAGAMENTO', titulo:'Pagamento locução (R$67)',
+    texto:`Fico no aguardo do pagamento para colocar a sua locução na fila de produção! 🤝\n\n☑️ Você terá direito a *uma correção na locução, caso haja necessidade*. O pedido de alteração será válido por até 24 horas após o recebimento da sua locução.\n\nValor: R$67,00\n\nBanco: NuBank\n\nNome: Washington Martins\n\nChave PIX email: 👇\n\npagamentospotwm@gmail.com` },
+  { seg:'locucao', atalho:'LOCUÇÃOCONFIRMADO', titulo:'Pagamento confirmado — locução',
+    texto:`☑️ [Locução] Pagamento confirmado!\n\nValor pago: R$67\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá a sua locução. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'locucao', atalho:'LOCUÇÃOENTREGUE', titulo:'Locução entregue',
+    texto:`Pedido entregue. ✅\n\nObrigado pela preferência e confiança. 🤝` },
+
+  // ═══════════════ LOGO 3D ═══════════════
+  { seg:'logo3d', atalho:'LOGO3D', titulo:'Logo 3D — como funciona',
+    texto:`💡 Antes de fechar o pedido, entenda como funciona a entrega!\n\n✅ A logo 3D no Instagram precisa ser enviada através da plataforma oficial do Instagram (Giphy). Esse processo só poderá ser feito pelo dono da conta. Mas não se preocupe! Na entrega, eu te envio um vídeo tutorial passo a passo e estou à disposição para te ajudar caso precise.` },
+  { seg:'logo3d', atalho:'LOGO3DPAGAMENTO', titulo:'Pagamento Logo 3D (R$47)',
+    texto:`*Fico no aguardo do pagamento para colocar a sua Logo 3D na fila de produção!*\n\nValor: R$47,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'logo3d', atalho:'LOGO3DCONFIRMADO', titulo:'Pagamento confirmado — Logo 3D',
+    texto:`☑️ [Logo3D] Pagamento confirmado!\n\nValor pago: R$47\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá a sua Logo 3D. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'logo3d', atalho:'LOGO3DENTREGUE', titulo:'Logo 3D entregue',
+    texto:`Pedido entregue. ✅\n\nObrigado pela preferência e confiança. 🤝\n\nPara adicionar a sua Logo 3D na biblioteca de GIFs do Instagram, siga o passo a passo desse vídeo tutorial: 👇` },
+
+  // ═══════════════ VÍDEO ═══════════════
+  { seg:'video', atalho:'VIDEO', titulo:'Vídeo Promocional — briefing',
+    texto:`Vídeo Promocional com Logo 3D e trilha sonora da sua Música. Pronta para você postar!\n\n⚠️ Preciso que me envie a *SUA LOGO* e até *15 IMAGENS* na vertical.\n\nObs: Não contém legendas.` },
+  { seg:'video', atalho:'VIDEOPAGAMENTO', titulo:'Pagamento Vídeo (R$67)',
+    texto:`*Fico no aguardo do pagamento para colocar o seu Vídeo Promocional na fila de produção!*\n\nValor: R$67,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'video', atalho:'VIDEOCONFIRMADO', titulo:'Pagamento confirmado — Vídeo',
+    texto:`☑️ [Vídeo Promocional] Pagamento confirmado!\n\nValor pago: R$67\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá o seu Vídeo Promocional. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'video', atalho:'VÍDEOPAGAMENTO', titulo:'Pagamento confirmado — Vídeo (var.)',
+    texto:`☑️ [Vídeo Promocional] Pagamento confirmado!\n\nValor pago: R$67\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá o seu vídeo. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'video', atalho:'VÍDEOENTREGUE', titulo:'Vídeo entregue',
+    texto:`Pedido entregue. ✅\n\nObrigado pela preferência e confiança. 🤝` },
+  { seg:'video', atalho:'VÍDEOTUTORIAL', titulo:'Tutorial — música externa no Insta',
+    texto:`Para adicionar uma música externa no Instagram você terá que editar o conteúdo que será postado inserindo a sua música através de um editor gratuito como o Canva, CapCut ou qualquer outro de sua preferência.\n\nSegue o tutorial rápido e fácil. 👇\n\nhttps://youtu.be/QO29qKistTE` },
+
+  // ═══════════════ FIGURINHA ═══════════════
+  { seg:'figurinha', atalho:'FIGURINHA', titulo:'Figurinhas — apresentação',
+    texto:`KIT com 10 Figurinhas personalizadas com frases pré-definidas para o seu negócio...\n\n⚠️ Para criar as figurinhas com o seu avatar personalizado, preciso que você me envie uma foto sua.` },
+  { seg:'figurinha', atalho:'FIGURINHAPAGAMENTO', titulo:'Pagamento Figurinhas (R$30)',
+    texto:`*Fico no aguardo do pagamento para colocar a sua figurinha na fila de produção!*\n\nValor: R$30,00\n\nBanco: Sicredi\n\nEmpresa: Lux Marketing LTDA\n\nChave PIX email:` },
+  { seg:'figurinha', atalho:'FIGURINHACONFIRMADO', titulo:'Pagamento confirmado — Figurinhas',
+    texto:`☑️ [Figurinhas] Pagamento confirmado!\n\nValor pago: R$30\n\nSeu pedido já está na fila de produção 😊\n\n⏳ Prazo máximo de entrega: até 24 horas, mas na maioria dos casos a entrega é realizada no mesmo dia.\n\n⚡ Em breve você receberá o seu Kit de Figurinhas. Caso tenha alguma dúvida, estou à disposição.\n\nObrigada pela confiança 🤝` },
+  { seg:'figurinha', atalho:'FIGURINHAENTREGUE', titulo:'Figurinhas entregues',
+    texto:`Pedido entregue. ✅\n\nObrigado pela preferência e confiança. 🤝` },
+
+  // ═══════════════ OBJEÇÕES ═══════════════
+  { seg:'objecoes', atalho:'NOTAFISCAL', titulo:'Emitir nota fiscal',
+    texto:`*Para emitir sua nota fiscal, preciso de algumas informações:*\n\n1. Nome completo ou Razão Social\n\n2. CPF ou CNPJ\n\n3. CEP:\n\n_Assim que você me enviar esses dados, realizo a emissão e encaminho a nota para você._` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Tenho que pagar antes? Medo de golpe',
+    texto:`Sempre por áudio:\n\nEntão, Fulana, agora eu estou trabalhando assim porque já levei vários golpes. Antes eu entregava a música primeiro, mas a pessoa me bloqueava e não me pagava.\n\nPor isso, agora, primeiro eu faço a confirmação do pagamento, pra depois colocar na fila de produção, até porque a gente tem custos pra produzir cada música.\n\nMas, pra ficar mais confortável, posso abrir uma exceção pra você. Você faz um sinal de apenas 30 reais e o restante depois da entrega.\n\nA Lux é uma empresa registrada. A gente trabalha com banco empresarial Sicredi e, se precisar, a gente emite nota fiscal.\n\nVou te mandar o nosso CNPJ pra você conferir e também o link do nosso Instagram pra você dar uma olhadinha nos comentários dos nossos clientes.\n\n👉 Após o áudio, enviar:` },
+  { seg:'objecoes', atalho:'CNPJ', titulo:'CNPJ + Instagram',
+    texto:`Lux Marketing LTDA\n\nCNPJ: 65.096.916/0001-32\n\nInstagram: https://www.instagram.com/reel/DPchCIUAKxb/?igsh=OHRndGtrZ3U1bHo=` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Como pago sem saber se vou gostar?',
+    texto:`Então, nesse caso, a gente dá direito a uma correção na letra da música, caso haja necessidade, pra garantir a sua total satisfação.\n\nEu só não consigo mudar o ritmo, porque já seria uma outra música e envolve novos custos de produção.` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Cliente manda música famosa pra copiar',
+    texto:`Fazemos uma música única e exclusiva pra sua empresa.\n\nNossos clientes amam, dá uma olhada no nosso Instagram. 😀\n\nhttps://www.instagram.com/reel/DPchCIUAKxb/?igsh=OHRndGtrZ3U1bHo=` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Objeção: música muito longa',
+    texto:`Cliente: "Ah, mas eu não gostei porque a música ficou muito longa, é pra rádio."\n\nEntão, como você não me informou que seria pra rádio, a música foi feita no formato padrão.\n\nPara rádio, o ideal é de 30 a 40 segundos, podendo chegar até 1 minuto, de acordo com o contrato de cada rádio.\n\nMas posso abrir uma exceção pra você: faço mais uma nesse formato, mantenho o valor promocional e você paga só a diferença, porque já seria uma nova música e temos custos de produção.` },
+  { seg:'objecoes', atalho:'REMARKETING', titulo:'Remarketing de cliente',
+    texto:`Oi, boa noite!\n\nConsegue me dar um retorno rapidinho só pra eu saber se ainda tem interesse na sua música?` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Banco emite alerta de golpe',
+    texto:`Esse é apenas um aviso automático que alguns bancos exibem quando a conta empresarial é recente.\n\nAtuamos desde 2023 (você pode conferir em nosso Instagram) e, graças ao crescimento da demanda, em fevereiro deste ano nos formalizamos oficialmente como empresa. 🙌\n\nSomos CNPJ ativo nº 65.096.916/0001-32.\n\nBasta confirmar que o nome exibido é LUX MARKETING antes de concluir. Pode ficar tranquilo 🙂` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Direitos autorais da música',
+    texto:`A letra e melodia da sua música é criada de forma única e exclusiva para você.\n\nVocê pode usar livremente em todas as redes sociais e para fins comerciais, sem qualquer preocupação com direitos autorais.` },
+  { seg:'objecoes', atalho:'(áudio)', titulo:'Vocês usam IA pra fazer a música?',
+    texto:`As vozes são produzidas com apoio de inteligência artificial, integradas a outras etapas de criação e direção. Todo o material é desenvolvido para garantir um resultado final com padrão profissional.` },
+];
+
+function genProtoId() {
+  return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+async function loadProtocols(env) {
+  try {
+    const raw = await env.LUX_HISTORY.get('protocols:list');
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* cai no seed */ }
+  // Semeia na primeira vez
+  const seeded = SEED_PROTOCOLS.map(p => ({
+    id: genProtoId(),
+    seg: p.seg,
+    titulo: p.titulo,
+    atalho: p.atalho || '',
+    texto: p.texto || ''
+  }));
+  try {
+    await env.LUX_HISTORY.put('protocols:list', JSON.stringify(seeded));
+    await env.LUX_HISTORY.put('protocols:version', String(Date.now()));
+  } catch (e) { /* segue mesmo sem persistir */ }
+  return seeded;
+}
+
+async function getProtoVersion(env) {
+  try {
+    const v = await env.LUX_HISTORY.get('protocols:version');
+    return v ? Number(v) : 0;
+  } catch (e) { return 0; }
+}
+
+async function handleProtocolRoutes(request, env, path, method, authUser) {
+  const isAdmin = authUser && authUser.role === 'admin';
+  const myEmail = String((authUser && authUser.email) || '').toLowerCase().trim();
+
+  // ---- GET /protocols : lista + versão + se EU já vi a versão atual ----
+  if (path === '/protocols' && method === 'GET') {
+    const list = await loadProtocols(env);
+    const version = await getProtoVersion(env);
+    let seenVersion = 0;
+    if (myEmail) {
+      try {
+        const s = await env.LUX_HISTORY.get('protocols:seen:' + myEmail);
+        seenVersion = s ? Number(s) : 0;
+      } catch (e) { seenVersion = 0; }
+    }
+    // Admin nunca recebe alerta (é ele que altera). Atendente recebe se versão > vista.
+    const hasAlert = !isAdmin && version > seenVersion;
+    return json({ ok: true, protocols: list, version, seenVersion, hasAlert });
+  }
+
+  // ---- POST /protocols/seen : atendente marcou que viu a versão atual ----
+  if (path === '/protocols/seen' && method === 'POST') {
+    if (myEmail) {
+      const version = await getProtoVersion(env);
+      try {
+        await env.LUX_HISTORY.put('protocols:seen:' + myEmail, String(version));
+      } catch (e) { /* nao trava */ }
+    }
+    return json({ ok: true });
+  }
+
+  // ---- POST /protocols/save : cria ou edita (SÓ admin) ----
+  if (path === '/protocols/save' && method === 'POST') {
+    if (!isAdmin) return json({ ok: false, error: 'Apenas administradores podem editar protocolos.' }, 403);
+    let body;
+    try { body = await request.json(); }
+    catch (e) { return json({ ok: false, error: 'JSON inválido.' }, 400); }
+
+    const seg    = String(body.seg || '').trim().toLowerCase();
+    const titulo = String(body.titulo || '').trim();
+    const atalho = String(body.atalho || '').trim();
+    const texto  = String(body.texto || '');
+    const id     = String(body.id || '').trim();
+
+    const SEGS = ['musica','locucao','logo3d','video','figurinha','objecoes'];
+    if (!SEGS.includes(seg)) return json({ ok: false, error: 'Segmento inválido.' }, 400);
+    if (!titulo)             return json({ ok: false, error: 'Título é obrigatório.' }, 400);
+    if (!texto.trim())       return json({ ok: false, error: 'Texto é obrigatório.' }, 400);
+
+    const list = await loadProtocols(env);
+    let action;
+    if (id) {
+      const idx = list.findIndex(p => p.id === id);
+      if (idx === -1) return json({ ok: false, error: 'Protocolo não encontrado.' }, 404);
+      list[idx] = { ...list[idx], seg, titulo, atalho, texto };
+      action = 'updated';
+    } else {
+      list.push({ id: genProtoId(), seg, titulo, atalho, texto });
+      action = 'created';
+    }
+    const newVersion = Date.now();
+    try {
+      await env.LUX_HISTORY.put('protocols:list', JSON.stringify(list));
+      await env.LUX_HISTORY.put('protocols:version', String(newVersion));
+    } catch (e) {
+      return json({ ok: false, error: 'Falha ao salvar no servidor.' }, 500);
+    }
+    return json({ ok: true, action, version: newVersion });
+  }
+
+  // ---- DELETE /protocols/delete?id=... : apaga (SÓ admin) ----
+  if (path === '/protocols/delete' && method === 'DELETE') {
+    if (!isAdmin) return json({ ok: false, error: 'Apenas administradores podem apagar protocolos.' }, 403);
+    const url = new URL(request.url);
+    const id = String(url.searchParams.get('id') || '').trim();
+    if (!id) return json({ ok: false, error: 'ID é obrigatório.' }, 400);
+
+    const list = await loadProtocols(env);
+    const idx = list.findIndex(p => p.id === id);
+    if (idx === -1) return json({ ok: false, error: 'Protocolo não encontrado.' }, 404);
+    list.splice(idx, 1);
+    const newVersion = Date.now();
+    try {
+      await env.LUX_HISTORY.put('protocols:list', JSON.stringify(list));
+      await env.LUX_HISTORY.put('protocols:version', String(newVersion));
+    } catch (e) {
+      return json({ ok: false, error: 'Falha ao apagar no servidor.' }, 500);
+    }
+    return json({ ok: true, version: newVersion });
+  }
+
+  return null; // não é rota de protocolo conhecida
+}
+
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const method = request.method;
+
+    // CORS preflight
+    if (method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
+    // ============================================================
+    // AUTH MIDDLEWARE — protege todas as rotas exceto publicas
+    // ============================================================
+    let authUser = null;
+    if (!isPublicPath(path)) {
+      const authResult = await requireAuth(request, env);
+      if (!authResult.ok) return authResult.response;
+      authUser = authResult.user;
+    }
+
+    // ============================================================
+    // ROTAS ADMIN — /admin/* e /logEvent
+    // ============================================================
+    if (path.startsWith('/admin/') || path === '/logEvent' || path === '/myCosts' || path === '/myCosts-range') {
+      const adminResponse = await handleAdminRoutes(request, env, path, method, authUser);
+      if (adminResponse) return adminResponse;
+    }
+
+    // ============================================================
+    // ROTAS DE PROTOCOLOS — aba Atendimento
+    //   GET    /protocols          -> lista todos + versão atual (qualquer logado)
+    //   POST   /protocols/save     -> cria/edita (SÓ admin)
+    //   DELETE /protocols/delete   -> apaga (SÓ admin)
+    //   POST   /protocols/seen     -> atendente marcou "vi a versão atual"
+    // ============================================================
+    if (path === '/protocols' || path.startsWith('/protocols/')) {
+      const protoResp = await handleProtocolRoutes(request, env, path, method, authUser);
+      if (protoResp) return protoResp;
+    }
+
+    // ============================================================
+    // GET /diagnose
+    // ============================================================
+    if (method === 'GET' && path === '/diagnose') {
+      const report = { ok: true, timestamp: brazilianDate(), version: 'v2.2', checks: {} };
+      report.checks.openaiKeyExists = !!env.OPENAI_API_KEY;
+      report.checks.openaiKeyLength = env.OPENAI_API_KEY ? env.OPENAI_API_KEY.length : 0;
+      report.checks.openaiKeyPrefix = env.OPENAI_API_KEY ? env.OPENAI_API_KEY.substring(0, 8) + '...' : 'MISSING';
+      report.checks.kvUsersExists = !!env.LUX_USERS;
+      report.checks.kvHistoryExists = !!env.LUX_HISTORY;
+      report.checks.bucketExists = !!env.FIGURINHAS_BUCKET;
+      try {
+        const testResp = await fetch('https://api.openai.com/v1/models', {
+          headers: { 'Authorization': `Bearer ${env.OPENAI_API_KEY}` }
+        });
+        report.checks.openaiReachable = true;
+        report.checks.openaiStatus = testResp.status;
+        const body = await testResp.text();
+        report.checks[testResp.ok ? 'openaiBodyPreview' : 'openaiError'] = body.substring(0, 200);
+      } catch (err) {
+        report.checks.openaiReachable = false;
+        report.checks.openaiException = err.message;
+      }
+      return json(report);
+    }
+
+    // ============================================================
+    // GET /
+    // ============================================================
+    if (method === 'GET' && path === '/') {
+      return json({
+        ok: true,
+        status: 'Lux Figurinhas API online',
+        version: 'v2.2',
+        endpoints: [
+          'POST /createOrder', 'POST /produceStickers', 'POST /correctSticker',
+          'GET /getSticker', 'GET /listOrders', 'GET /getOrder'
+        ]
+      });
+    }
+
+    // ============================================================
+    // POST /createOrder
+    // ============================================================
+    if (method === 'POST' && path === '/createOrder') {
+      try {
+        const data = await request.json();
+        const clientName    = String(data.clientName    || '').trim();
+        const attendantName = String(data.attendantName || 'Atendente').trim();
+        const imageBase64   = String(data.imageBase64   || '').trim();
+        const imageMimeType = String(data.imageMimeType || 'image/jpeg').trim();
+
+        if (!clientName)   return json({ ok: false, error: 'clientName e obrigatorio.' }, 400);
+        if (!imageBase64)  return json({ ok: false, error: 'imageBase64 e obrigatorio.' }, 400);
+
+        const extMap = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+        const ext = extMap[imageMimeType.toLowerCase()] || 'jpg';
+
+        const orderId = `${attendantName}_${clientName}_${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        const imageBytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+        const photoKey = `orders/${orderId}/referencia.${ext}`;
+
+        await env.FIGURINHAS_BUCKET.put(photoKey, imageBytes, {
+          httpMetadata: { contentType: imageMimeType }
+        });
+
+        const orderData = {
+          orderId, clientName, attendantName, photoKey, imageMimeType,
+          attendantEmail: String((authUser && authUser.email) || '').toLowerCase().trim(),
+          tool: 'figurinhas',
+          createdAt: brazilianDate(), status: 'CREATED', stickers: []
+        };
+        await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(orderData));
+
+        return json({ ok: true, orderId, clientName, attendantName, photoKey, message: 'Pedido criado com sucesso.' });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em createOrder: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // POST /produceStickers
+    // ============================================================
+    if (method === 'POST' && path === '/produceStickers') {
+      try {
+        const data = await request.json();
+        const orderId = String(data.orderId || '').trim();
+        const mode    = String(data.mode    || 'padrao').trim().toLowerCase();
+        const phrases = data.phrases || null;
+
+        if (!orderId) return json({ ok: false, error: 'orderId e obrigatorio.' }, 400);
+
+        const promptResult = resolvePrompts(mode, phrases);
+        if (!promptResult.ok) return json({ ok: false, error: promptResult.error }, 400);
+        const PROMPTS = promptResult.prompts;
+        // indices originais (1-based) de cada prompt. Modo padrao = 1..10.
+        const PROMPT_NUMS = promptResult.indices
+          ? promptResult.indices.map(ix => ix + 1)
+          : PROMPTS.map((_, i) => i + 1);
+
+        const orderRaw = await env.LUX_HISTORY.get(`order:${orderId}`);
+        if (!orderRaw) return json({ ok: false, error: 'Pedido nao encontrado.' }, 404);
+        const order = JSON.parse(orderRaw);
+
+        if (order.status === 'PROCESSING') {
+          return json({ ok: false, error: 'Este pedido ja esta sendo processado.' }, 409);
+        }
+
+        order.status = 'PROCESSING';
+        order.mode = mode;
+        order.phrases = phrases;
+        order.totalRequested = PROMPTS.length;
+        order.startedAt = brazilianDate();
+        await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+
+        const photoObj = await env.FIGURINHAS_BUCKET.get(order.photoKey);
+        if (!photoObj) {
+          order.status = 'ERROR';
+          await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+          return json({ ok: false, error: 'Foto de referencia nao encontrada no R2.' }, 500);
+        }
+        const photoBytes = new Uint8Array(await photoObj.arrayBuffer());
+        const photoMime = order.imageMimeType || 'image/jpeg';
+
+        const results = [];
+        for (let i = 0; i < PROMPTS.length; i++) {
+          const num = PROMPT_NUMS[i];
+          const stickerKey = `orders/${orderId}/figurinha-${String(num).padStart(2, '0')}.png`;
+
+          const existing = await env.FIGURINHAS_BUCKET.head(stickerKey);
+          if (existing) {
+            results.push({ index: num, key: stickerKey, ok: true, skipped: true });
+            continue;
+          }
+
+          const aiResult = await generateSticker(PROMPTS[i], photoBytes, photoMime, env.OPENAI_API_KEY);
+
+          if (!aiResult.ok) {
+            results.push({ index: num, key: stickerKey, ok: false, error: aiResult.error });
+            await sleep(DELAY_BETWEEN_IMAGES_MS);
+            continue;
+          }
+
+          const pngBytes = Uint8Array.from(atob(aiResult.b64), c => c.charCodeAt(0));
+          await env.FIGURINHAS_BUCKET.put(stickerKey, pngBytes, {
+            httpMetadata: { contentType: 'image/png' }
+          });
+
+          results.push({ index: num, key: stickerKey, ok: true });
+          await sleep(DELAY_BETWEEN_IMAGES_MS);
+        }
+
+        const totalOk = results.filter(r => r.ok).length;
+        const hadError = results.some(r => !r.ok);
+        order.status = (totalOk === PROMPTS.length && !hadError) ? 'COMPLETED'
+                      : (totalOk > 0) ? 'PARTIAL' : 'ERROR';
+        order.stickers = results;
+        order.finishedAt = brazilianDate();
+
+        // ─── custos (Bloco D) ───
+        // Custo proporcional ao numero de figurinhas REALMENTE geradas
+        if (totalOk > 0) {
+          try {
+            const costInfo = await calculateCost('sticker', totalOk);
+            order.costUSD        = costInfo.costUSD;
+            order.costBRL        = costInfo.costBRL;
+            order.exchangeRate   = costInfo.exchangeRate;
+            order.exchangeDate   = costInfo.exchangeDate;
+            order.exchangeSource = costInfo.exchangeSource;
+            order.costQuantity   = totalOk;
+          } catch (e) {
+            // nunca trava o pedido por causa de custo
+            order.costUSD = null;
+            order.costBRL = null;
+          }
+        }
+        await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+
+        // ─── atualiza agregados mensais (Bloco E) ───
+        if (totalOk > 0 && order.costBRL != null) {
+          await updateSummary(
+            env.LUX_HISTORY, 'figurinhas',
+            order.attendantEmail || authUser.email,
+            order.costBRL, order.costUSD, totalOk
+          );
+        }
+
+        return json({
+          ok: true, orderId,
+          totalExpected: PROMPTS.length,
+          totalGenerated: totalOk,
+          results, status: order.status,
+          costBRL: order.costBRL ?? null,
+          costUSD: order.costUSD ?? null,
+          message: order.status === 'COMPLETED' ? 'Producao concluida.' : 'Producao parcial - verifique results.'
+        });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em produceStickers: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // POST /correctSticker
+    // ============================================================
+    if (method === 'POST' && path === '/correctSticker') {
+      try {
+        const data = await request.json();
+        const orderId       = String(data.orderId       || '').trim();
+        const stickerNumber = Number(data.stickerNumber || 0);
+
+        if (!orderId) return json({ ok: false, error: 'orderId e obrigatorio.' }, 400);
+
+        const orderRaw = await env.LUX_HISTORY.get(`order:${orderId}`);
+        if (!orderRaw) return json({ ok: false, error: 'Pedido nao encontrado.' }, 404);
+        const order = JSON.parse(orderRaw);
+
+        const totalRequested = order.totalRequested || 10;
+        if (!stickerNumber || stickerNumber < 1 || stickerNumber > totalRequested) {
+          return json({ ok: false, error: `stickerNumber deve ser entre 1 e ${totalRequested}.` }, 400);
+        }
+
+        if (order.status === 'PROCESSING') {
+          return json({ ok: false, error: 'Este pedido ja esta sendo processado.' }, 409);
+        }
+
+        const promptResult = resolvePrompts(order.mode || 'padrao', order.phrases || null);
+        if (!promptResult.ok) return json({ ok: false, error: promptResult.error }, 400);
+        const prompt = promptResult.prompts[stickerNumber - 1];
+
+        order.status = 'PROCESSING';
+        order.correctingSticker = stickerNumber;
+        await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+
+        const photoObj = await env.FIGURINHAS_BUCKET.get(order.photoKey);
+        if (!photoObj) {
+          order.status = 'ERROR';
+          delete order.correctingSticker;
+          await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+          return json({ ok: false, error: 'Foto de referencia nao encontrada no R2.' }, 500);
+        }
+        const photoBytes = new Uint8Array(await photoObj.arrayBuffer());
+        const photoMime = order.imageMimeType || 'image/jpeg';
+
+        const aiResult = await generateSticker(prompt, photoBytes, photoMime, env.OPENAI_API_KEY);
+
+        if (!aiResult.ok) {
+          order.status = 'PARTIAL';
+          delete order.correctingSticker;
+          await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+          return json({ ok: false, error: 'Erro na OpenAI: ' + aiResult.error }, 500);
+        }
+
+        const stickerKey = `orders/${orderId}/figurinha-${String(stickerNumber).padStart(2, '0')}.png`;
+        const pngBytes = Uint8Array.from(atob(aiResult.b64), c => c.charCodeAt(0));
+        await env.FIGURINHAS_BUCKET.put(stickerKey, pngBytes, {
+          httpMetadata: { contentType: 'image/png' }
+        });
+
+        order.status = 'COMPLETED';
+        delete order.correctingSticker;
+        order.lastCorrection = { stickerNumber, correctedAt: brazilianDate() };
+
+        // ─── custo da correcao (Bloco D) ───
+        // Cada correcao gera 1 nova imagem -> soma ao custo do pedido
+        try {
+          const corrCost = await calculateCost('sticker', 1);
+          order.costUSD = Number(((order.costUSD || 0) + corrCost.costUSD).toFixed(4));
+          // recalcula BRL com a cotacao da correcao (mais recente)
+          order.costBRL = Number(((order.costUSD) * corrCost.exchangeRate).toFixed(2));
+          order.exchangeRate   = corrCost.exchangeRate;
+          order.exchangeDate   = corrCost.exchangeDate;
+          order.exchangeSource = corrCost.exchangeSource;
+          order.corrections    = (order.corrections || 0) + 1;
+
+          // ─── agregado: correcao soma +1 figurinha ao mes ───
+          await updateSummary(
+            env.LUX_HISTORY, 'figurinhas',
+            order.attendantEmail || authUser.email,
+            corrCost.costBRL, corrCost.costUSD, 1
+          );
+        } catch (e) { /* nao trava por causa de custo */ }
+
+        await env.LUX_HISTORY.put(`order:${orderId}`, JSON.stringify(order));
+
+        return json({
+          ok: true, orderId, stickerNumber, stickerKey,
+          costBRL: order.costBRL ?? null,
+          message: `Figurinha #${stickerNumber} refeita com sucesso.`
+        });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em correctSticker: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // GET /getSticker?orderId=...&n=...
+    // ============================================================
+    if (method === 'GET' && path === '/getSticker') {
+      try {
+        const orderId = String(url.searchParams.get('orderId') || '').trim();
+        const n       = url.searchParams.get('n');
+        const file    = String(url.searchParams.get('file') || '').trim();
+
+        if (!orderId) return json({ ok: false, error: 'orderId e obrigatorio.' }, 400);
+
+        let stickerKey;
+        let contentType = 'image/png';
+
+        if (file === 'referencia') {
+          const orderRaw = await env.LUX_HISTORY.get(`order:${orderId}`);
+          if (!orderRaw) return json({ ok: false, error: 'Pedido nao encontrado.' }, 404);
+          const order = JSON.parse(orderRaw);
+          stickerKey = order.photoKey;
+          contentType = order.imageMimeType || 'image/jpeg';
+        } else {
+          const num = Number(n);
+          if (!num || num < 1 || num > 10) {
+            return json({ ok: false, error: 'n deve ser entre 1 e 10.' }, 400);
+          }
+          stickerKey = `orders/${orderId}/figurinha-${String(num).padStart(2, '0')}.png`;
+        }
+
+        const obj = await env.FIGURINHAS_BUCKET.get(stickerKey);
+        if (!obj) return json({ ok: false, error: 'Arquivo nao encontrado.' }, 404);
+
+        return new Response(obj.body, {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'private, max-age=300',
+            'Access-Control-Allow-Origin': '*',
+            'Content-Disposition': `inline; filename="${stickerKey.split('/').pop()}"`
+          }
+        });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em getSticker: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // GET /listOrders?limit=10
+    // Admin ve todos os pedidos. Atendente ve so os dele.
+    // ============================================================
+    if (method === 'GET' && path === '/listOrders') {
+      try {
+        const limit   = Math.min(Number(url.searchParams.get('limit') || 10), 50);
+        const isAdmin = authUser.role === 'admin';
+        const myEmail = String(authUser.email || '').toLowerCase().trim();
+
+        const list = await env.LUX_HISTORY.list({ prefix: 'order:', limit: 200 });
+        const orders = await Promise.all(
+          list.keys.map(async (k) => {
+            try {
+              const raw = await env.LUX_HISTORY.get(k.name);
+              if (!raw) return null;
+              const o = JSON.parse(raw);
+              // So pedidos de figurinhas (ignora os de music que compartilham o KV)
+              if (o.tool && o.tool !== 'figurinhas' && o.tool !== 'sticker') return null;
+              // Bloco F: atendente ve so os proprios pedidos.
+              // Pedidos antigos podem nao ter attendantEmail salvo —
+              // nesse caso, faz fallback comparando pelo attendantName.
+              if (!isAdmin) {
+                const ownerEmail = String(o.attendantEmail || '').toLowerCase().trim();
+                const myName     = String((authUser && authUser.name) || '').toLowerCase().trim();
+                const ownerName  = String(o.attendantName || '').toLowerCase().trim();
+                const matchEmail = ownerEmail && ownerEmail === myEmail;
+                const matchName  = !ownerEmail && myName && ownerName === myName;
+                if (!matchEmail && !matchName) return null;
+              }
+              return {
+                orderId:        o.orderId,
+                clientName:     o.clientName,
+                attendantName:  o.attendantName,
+                createdAt:      o.createdAt,
+                finishedAt:     o.finishedAt || null,
+                status:         o.status,
+                mode:           o.mode || 'padrao',
+                totalRequested: o.totalRequested || 10,
+                totalGenerated: (o.stickers || []).filter(s => s.ok).length,
+                costBRL:        o.costBRL ?? null,
+                costUSD:        o.costUSD ?? null
+              };
+            } catch (e) { return null; }
+          })
+        );
+
+        let filtered = orders.filter(o => o !== null);
+
+        // Ordena por timestamp do orderId (que termina em _NNNNNNNNNNNNN)
+        filtered.sort((a, b) => {
+          const tsA = Number(String(a.orderId).split('_').pop()) || 0;
+          const tsB = Number(String(b.orderId).split('_').pop()) || 0;
+          return tsB - tsA; // mais recente primeiro
+        });
+        filtered = filtered.slice(0, limit);
+
+        return json({ ok: true, total: filtered.length, orders: filtered, viewMode: isAdmin ? 'admin' : 'atendente' });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em listOrders: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // GET /getOrder?orderId=...
+    // ============================================================
+    if (method === 'GET' && path === '/getOrder') {
+      try {
+        const orderId = String(url.searchParams.get('orderId') || '').trim();
+        if (!orderId) return json({ ok: false, error: 'orderId e obrigatorio.' }, 400);
+
+        const raw = await env.LUX_HISTORY.get(`order:${orderId}`);
+        if (!raw) return json({ ok: false, error: 'Pedido nao encontrado.' }, 404);
+
+        const order = JSON.parse(raw);
+        return json({ ok: true, order });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em getOrder: ' + err.message }, 500);
+      }
+    }
+
+    // ============================================================
+    // GET /summary?month=2026-05 — resumo mensal do ATENDENTE logado
+    // ============================================================
+    if (method === 'GET' && path === '/summary') {
+      try {
+        const month = String(url.searchParams.get('month') || currentMonthKey()).trim();
+        const summary = await getSummary(env.LUX_HISTORY, month, authUser.email);
+        return json({ ok: true, month, summary });
+      } catch (err) {
+        return json({ ok: false, error: 'Erro em summary: ' + err.message }, 500);
+      }
+    }
+
+    // 404 padrao
+    return json({ ok: false, error: `Endpoint nao encontrado: ${method} ${path}` }, 404);
+  }
+};
