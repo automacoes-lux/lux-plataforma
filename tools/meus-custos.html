@@ -226,18 +226,17 @@ body{
 
   <div class="page-header">
     <div class="page-title">
-      💰 Financeiro
-      <small>ADMIN</small>
+      💰 Meus Custos
     </div>
   </div>
 
   <!-- ═══ SEÇÃO FINANCEIRA (Bloco E) ═══ -->
   <div class="card">
-    <div class="card-title" id="finCardTitle">Painel Financeiro do Mês</div>
+    <div class="card-title" id="finCardTitle">Meus Custos do Mês</div>
 
     <div class="fin-mode-toggle">
       <button id="finModeMes" class="fin-mode-btn active" onclick="setFinMode('mes')">📅 Por Mês</button>
-      <button id="finModePer" class="fin-mode-btn" onclick="setFinMode('periodo')">🗓 Por Período</button>
+      <button id="finModePer" class="fin-mode-btn" onclick="setFinMode('periodo')">🗓 Por Semana</button>
     </div>
 
     <div class="fin-month-selector" id="finMesSelector">
@@ -268,14 +267,6 @@ body{
       </div>
     </div>
 
-    <div class="fin-actions">
-      <button class="btn-secondary" id="btnRecalcular" onclick="recalcular()">↻ Recalcular Totais</button>
-      <button class="btn-secondary" id="btnExportCsv" onclick="exportCsv()">📊 Exportar CSV</button>
-    </div>
-    <button class="btn-reset" id="btnResetMes" onclick="resetarMes()">🗑 Zerar todos os custos do mês</button>
-    <div class="fin-note">
-      "Recalcular" reconstrói os totais a partir de todos os pedidos — use se algum valor parecer errado.
-    </div>
   </div>
 
 </div>
@@ -528,10 +519,10 @@ function setFinMode(m) {
   document.getElementById('finPeriodoSelector').style.display = (m === 'periodo') ? '' : 'none';
   const title = document.getElementById('finCardTitle');
   if (m === 'mes') {
-    title.textContent = 'Painel Financeiro do Mês';
+    title.textContent = 'Meus Custos do Mês';
     loadFinanceiro();
   } else {
-    title.textContent = 'Painel Financeiro por Período';
+    title.textContent = 'Meus Custos por Semana';
     if (!document.getElementById('finFrom').value) setSemanaAtual();
     else loadPeriodo();
   }
@@ -575,13 +566,13 @@ function renderFinData(data, periodoLabel) {
     { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' }
   ];
 
-  const tituloTotal = periodoLabel ? ('Total do Período · ' + periodoLabel) : 'Total Geral do Mês';
+  const tituloTotal = periodoLabel ? ('Período · ' + periodoLabel) : 'Total do Mês';
 
   let html = `
     <div class="fin-total">
       <div class="label">${tituloTotal}</div>
       <div class="value">${fmtBRL(g.totalBRL)}</div>
-      <div class="sub">${g.pedidos} pedido${g.pedidos !== 1 ? 's' : ''} · todas as equipes</div>
+      <div class="sub">${g.pedidos} pedido${g.pedidos !== 1 ? 's' : ''} · seus pedidos</div>
     </div>
 
     <div class="fin-tools">
@@ -630,7 +621,7 @@ function renderFinData(data, periodoLabel) {
       `;
     });
   } else {
-    html += '<div class="state-msg"><div>Nenhum pedido neste período ainda.</div></div>';
+    html += '<div class="state-msg"><div>Você ainda não tem pedidos neste período.</div></div>';
   }
 
   container.innerHTML = html;
@@ -660,7 +651,7 @@ async function loadFinanceiro() {
 
   const mk = finMonthKey(finViewDate);
   try {
-    const resp = await window.__luxFetch(WORKER_URL + '/admin/summary?month=' + mk);
+    const resp = await window.__luxFetch(WORKER_URL + '/myCosts?month=' + mk);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao carregar');
     renderFinData(data, null);
@@ -679,7 +670,7 @@ async function loadPeriodo() {
   container.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando período…</div></div>';
   try {
     const resp = await window.__luxFetch(
-      WORKER_URL + '/admin/summary-range?from=' + from + '&to=' + to);
+      WORKER_URL + '/myCosts-range?from=' + from + '&to=' + to);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao carregar período');
     const fmtD = (s) => s.split('-').reverse().join('/');
@@ -699,93 +690,6 @@ document.getElementById('finNext')?.addEventListener('click', () => {
   finViewDate.setMonth(finViewDate.getMonth() + 1);
   loadFinanceiro();
 });
-
-async function recalcular() {
-  const btn = document.getElementById('btnRecalcular');
-  btn.disabled = true;
-  btn.textContent = '↻ Recalculando…';
-  try {
-    const resp = await window.__luxFetch(WORKER_URL + '/admin/recalcular', { method: 'POST' });
-    const data = await resp.json();
-    if (!data.ok) throw new Error(data.error || 'Erro ao recalcular');
-    toast(`✓ Totais reconstruídos (${data.ordersScanned} pedidos)`, 'success');
-    await loadFinanceiro();
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '↻ Recalcular Totais';
-  }
-}
-
-async function resetarMes() {
-  const mk = finMonthKey(finViewDate);
-  const label = finMonthLabel(finViewDate);
-
-  // Confirmação 1: aviso claro
-  const c1 = confirm(
-    '⚠️ ATENÇÃO — AÇÃO IRREVERSÍVEL\n\n' +
-    'Isto vai APAGAR DEFINITIVAMENTE todos os pedidos e custos de ' + label + '.\n' +
-    'Os dados NÃO podem ser recuperados depois.\n\n' +
-    'Use apenas para limpar dados de teste antes de começar pra valer.\n\n' +
-    'Deseja continuar?'
-  );
-  if (!c1) return;
-
-  // Confirmação 2: digitar a palavra
-  const typed = prompt(
-    'Confirmação final.\n\n' +
-    'Para zerar ' + label + ', digite a palavra abaixo EXATAMENTE:\n\n' +
-    'RESETAR'
-  );
-  if (typed === null) return;
-  if (typed.trim() !== 'RESETAR') {
-    toast('Confirmação incorreta. Nada foi apagado.', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('btnResetMes');
-  btn.disabled = true;
-  btn.textContent = '🗑 Zerando…';
-  try {
-    const resp = await window.__luxFetch(WORKER_URL + '/admin/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ month: mk, confirm: 'RESETAR' })
-    });
-    const data = await resp.json();
-    if (!data.ok) throw new Error(data.error || 'Erro ao zerar');
-    toast(`✓ Mês zerado (${data.deletedOrders} pedidos apagados)`, 'success');
-    await loadFinanceiro();
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🗑 Zerar todos os custos do mês';
-  }
-}
-
-function exportCsv() {
-  if (!finCurrentData) { toast('Carregue os dados primeiro', 'error'); return; }
-  const mk = finMonthKey(finViewDate);
-  const g = finCurrentData.general;
-  const atts = finCurrentData.attendants || [];
-
-  let csv = 'Atendente;Email;Pedidos;Figurinhas (qtd);Figurinhas (R$);Musica (qtd);Musica (R$);Total (R$)\n';
-  atts.forEach(a => {
-    csv += `${a.name};${a.email};${a.pedidos};${a.figurinhas.qtd};${a.figurinhas.brl.toFixed(2)};${a.musica.qtd};${a.musica.brl.toFixed(2)};${a.totalBRL.toFixed(2)}\n`;
-  });
-  csv += `\nTOTAL GERAL;;${g.pedidos};${g.figurinhas.qtd};${g.figurinhas.brl.toFixed(2)};${g.musica.qtd};${g.musica.brl.toFixed(2)};${g.totalBRL.toFixed(2)}\n`;
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `lux-financeiro-${mk}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('✓ CSV exportado', 'success');
-}
 
 // ═══ HELPERS ═══
 function toast(msg, type='info') {
