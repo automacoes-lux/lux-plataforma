@@ -9,6 +9,7 @@ const TOOLS = {
   musica:            'tools/maestro.html',
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
+  atendimento:       'tools/atendimento.html',
   'meus-custos':     'tools/meus-custos.html',
   financeiro:        'tools/financeiro.html',
   admin:             'tools/admin.html',
