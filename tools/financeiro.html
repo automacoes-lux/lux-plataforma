@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Admin</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<script src="../js/auth-iframe.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
+  --danger:#E87A7A;
+  --danger-bg:rgba(220,60,60,0.1);
+  --danger-border:rgba(220,60,60,0.3);
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:980px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6rem;flex-wrap:wrap;gap:14px}
+.page-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.14em;color:var(--gold);font-weight:600}
+.page-title small{display:inline-block;font-size:9px;padding:3px 8px;border-radius:30px;background:rgba(201,168,76,.15);color:var(--gold-dim);border:.5px solid var(--border);margin-left:6px;letter-spacing:.08em;vertical-align:middle}
+
+.btn-primary{
+  padding:11px 22px;background:var(--gold);color:#000;border:none;border-radius:var(--radius);
+  font-family:'Cinzel',serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;transition:opacity .15s;
+}
+.btn-primary:hover{opacity:.88}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+
+.btn-secondary{
+  padding:9px 16px;background:transparent;color:var(--text);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn-secondary:hover{background:var(--bg-hover);border-color:var(--gold)}
+
+.card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.4rem;margin-bottom:1.1rem}
+
+/* ═══ Seção financeira (Bloco E) ═══ */
+.fin-month-selector{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:1.4rem}
+.fin-mode-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:1.2rem}
+.fin-mode-btn{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.fin-mode-btn.active{background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
+.fin-period-selector{margin-bottom:1.4rem}
+.fin-week-btn{width:100%;background:rgba(201,168,76,.08);border:.5px solid var(--border-bright);color:var(--gold);padding:11px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:12px;transition:all .15s}
+.fin-week-btn:hover{background:rgba(201,168,76,.16)}
+.fin-date-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fin-date-field{flex:1;min-width:120px}
+.fin-date-field label{display:block;font-size:11px;color:var(--gold-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;font-family:'Cinzel',serif;font-weight:600}
+.fin-date-field input{width:100%;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none}
+.fin-date-field input:focus{border-color:var(--border-bright)}
+.fin-apply-btn{background:linear-gradient(135deg,var(--gold),#E8C766);border:none;color:#1A1A1A;padding:11px 18px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.06em;white-space:nowrap}
+@media(max-width:540px){.fin-date-row{flex-direction:column;align-items:stretch}.fin-apply-btn{width:100%}}
+.fin-month-selector button{
+  background:transparent;border:1px solid var(--border-bright);color:var(--gold);
+  width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.fin-month-selector button:hover:not(:disabled){background:rgba(201,168,76,.1)}
+.fin-month-selector button:disabled{opacity:.3;cursor:not-allowed}
+.fin-month-label{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;letter-spacing:.06em;min-width:160px;text-align:center}
+
+.fin-total{
+  background:linear-gradient(135deg,rgba(201,168,76,.1) 0%,rgba(201,168,76,.03) 100%);
+  border:1px solid var(--border-bright);border-radius:var(--radius-lg);
+  padding:1.4rem;text-align:center;margin-bottom:1.2rem;
+}
+.fin-total .label{font-size:10px;color:var(--gold-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
+.fin-total .value{font-family:'Cinzel',serif;color:var(--gold);font-size:32px;font-weight:700}
+.fin-total .sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+.fin-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.2rem}
+@media(max-width:540px){.fin-tools{grid-template-columns:1fr}}
+.fin-tool-card{background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:1rem}
+.fin-tool-card .name{font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px}
+.fin-tool-card .val{font-family:'Cinzel',serif;color:var(--gold);font-size:19px;font-weight:600}
+.fin-tool-card .qtd{font-size:14px;color:var(--text-mid);margin-top:4px;font-weight:600}
+.fin-att-caret{color:var(--gold-dim);font-size:18px;margin-left:8px;flex-shrink:0}
+.fin-att-toggle{cursor:pointer}
+.fin-att-toggle:hover{background:rgba(201,168,76,.04)}
+.fin-att-expand{padding:4px 14px 12px 50px;animation:fadeIn .2s ease both}
+.fin-det-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;font-size:12px;color:var(--text-dim);padding:6px 0;border-bottom:.5px solid rgba(255,255,255,.04)}
+.fin-det-row span:last-child{color:var(--gold-dim);font-weight:600;min-width:64px;text-align:right}
+.fin-det-row span:nth-child(2){min-width:70px;text-align:right}
+.fin-det-empty{font-size:12px;color:var(--text-dim);padding:6px 0}
+.btn-reset{width:100%;margin-top:10px;padding:11px;background:rgba(232,122,122,.08);border:.5px solid rgba(232,122,122,.35);color:#E87A7A;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.04em;transition:all .15s}
+.btn-reset:hover:not(:disabled){background:rgba(232,122,122,.15)}
+.btn-reset:disabled{opacity:.5;cursor:wait}
+
+.fin-ranking-title{font-size:11px;color:var(--gold-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.fin-att-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:rgba(255,255,255,.02);border:.5px solid var(--border);
+  border-radius:var(--radius);margin-bottom:8px;gap:10px;
+}
+.fin-att-info{flex:1;min-width:0}
+.fin-att-name{font-size:13px;color:var(--text);font-weight:600}
+.fin-att-detail{font-size:11px;color:var(--text-dim);margin-top:2px}
+.fin-att-value{font-family:'Cinzel',serif;color:var(--gold);font-size:16px;font-weight:600;white-space:nowrap}
+.fin-att-rank{
+  width:24px;height:24px;border-radius:50%;background:rgba(201,168,76,.12);
+  color:var(--gold);font-size:11px;font-weight:700;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;
+}
+
+.fin-actions{display:flex;gap:10px;margin-top:1.2rem;flex-wrap:wrap}
+.fin-actions button{flex:1;min-width:150px}
+.fin-note{font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5}
+.card-title{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:#FFFFFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:1.4rem;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
+
+/* ── Loading / empty / error ── */
+.state-msg{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:3rem 1rem;color:var(--text-dim);text-align:center;gap:10px;font-size:14px;
+}
+.state-msg .icon{font-size:32px;opacity:.5}
+
+/* ── Tabela de usuários ── */
+.users-list{display:flex;flex-direction:column;gap:8px}
+.user-row{
+  display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;
+  padding:14px 16px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);
+  transition:border-color .15s;
+}
+.user-row:hover{border-color:var(--border-bright)}
+.user-info{min-width:0}
+.user-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.user-email{font-size:12px;color:var(--text-dim);word-break:break-all}
+.user-meta{font-size:10px;color:var(--text-muted);margin-top:4px;letter-spacing:.04em}
+
+.role-badge{
+  font-size:10px;padding:4px 10px;border-radius:30px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;white-space:nowrap;
+}
+.role-badge.admin{background:rgba(201,168,76,0.15);color:var(--gold);border:.5px solid rgba(201,168,76,0.4)}
+.role-badge.atendente{background:rgba(120,160,180,0.12);color:#8AB4CC;border:.5px solid rgba(120,160,180,0.3)}
+
+.user-actions{display:flex;gap:6px;align-items:center}
+.btn-icon{
+  width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--bg-hover);border:.5px solid var(--border);border-radius:8px;
+  color:var(--text-dim);cursor:pointer;font-size:14px;transition:all .15s;
+}
+.btn-icon:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.btn-icon.disabled{opacity:.2;cursor:not-allowed;pointer-events:none}
+
+.you-tag{font-size:10px;color:var(--text-muted);font-style:italic;padding-right:6px}
+
+@media(max-width:600px){
+  .user-row{grid-template-columns:1fr auto;gap:10px;padding:12px 14px}
+  .user-actions{grid-column:1/-1;justify-content:space-between;margin-top:6px;padding-top:10px;border-top:.5px dashed var(--border)}
+}
+
+/* ── Modal de adicionar ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;z-index:1000;padding:1rem;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);
+  padding:1.8rem;width:100%;max-width:440px;animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.14em;color:var(--gold);font-weight:600;margin-bottom:1.3rem;text-transform:uppercase}
+.field{margin-bottom:1rem}
+.field label{font-size:11px;color:var(--gold-dim);display:block;margin-bottom:6px;letter-spacing:.14em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.field input,.field select{
+  width:100%;padding:11px 14px;font-size:14px;font-family:'DM Sans',sans-serif;
+  background:var(--bg-input);color:var(--text);
+  border:.5px solid var(--border);border-radius:var(--radius);outline:none;transition:border-color .15s;
+}
+.field input:focus,.field select:focus{border-color:var(--border-bright);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
+.modal-buttons{display:flex;gap:10px;margin-top:1.4rem}
+.modal-buttons button{flex:1}
+
+/* ── Modal de confirmação delete ── */
+.confirm-text{color:var(--text-mid);font-size:14px;margin-bottom:1.2rem;line-height:1.5}
+.confirm-text strong{color:var(--text)}
+.confirm-warning{
+  padding:10px 14px;background:var(--danger-bg);border:.5px solid var(--danger-border);
+  border-radius:var(--radius);color:var(--danger);font-size:12px;margin-bottom:1.4rem;
+}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  padding:12px 20px;background:var(--bg-card);border:.5px solid var(--border-bright);
+  border-radius:var(--radius);font-size:13px;color:var(--text);
+  opacity:0;transition:all .25s;pointer-events:none;z-index:2000;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:#5EAD7E;color:#A9D9BD}
+.toast.error{border-color:var(--danger);color:#FFB0B0}
+.toast.info{border-color:var(--border-bright)}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title">
+      💰 Financeiro
+      <small>ADMIN</small>
+    </div>
+  </div>
+
+  <!-- ═══ SEÇÃO FINANCEIRA (Bloco E) ═══ -->
+  <div class="card">
+    <div class="card-title" id="finCardTitle">Painel Financeiro do Mês</div>
+
+    <div class="fin-mode-toggle">
+      <button id="finModeMes" class="fin-mode-btn active" onclick="setFinMode('mes')">📅 Por Mês</button>
+      <button id="finModePer" class="fin-mode-btn" onclick="setFinMode('periodo')">🗓 Por Semana</button>
+    </div>
+
+    <div class="fin-month-selector" id="finMesSelector">
+      <button id="finPrev" title="Mês anterior">‹</button>
+      <span class="fin-month-label" id="finMonthLabel">—</span>
+      <button id="finNext" title="Próximo mês">›</button>
+    </div>
+
+    <div class="fin-period-selector" id="finPeriodoSelector" style="display:none">
+      <button class="fin-week-btn" onclick="setSemanaAtual()">↻ Esta semana (sáb → sex)</button>
+      <div class="fin-date-row">
+        <div class="fin-date-field">
+          <label>De</label>
+          <input type="date" id="finFrom"/>
+        </div>
+        <div class="fin-date-field">
+          <label>Até</label>
+          <input type="date" id="finTo"/>
+        </div>
+        <button class="fin-apply-btn" onclick="loadPeriodo()">Ver período</button>
+      </div>
+    </div>
+
+    <div id="finContainer">
+      <div class="state-msg">
+        <span class="icon">⏳</span>
+        <div>Carregando dados financeiros…</div>
+      </div>
+    </div>
+
+    <div class="fin-actions">
+      <button class="btn-secondary" id="btnRecalcular" onclick="recalcular()">↻ Recalcular Totais</button>
+      <button class="btn-secondary" id="btnExportCsv" onclick="exportCsv()">📊 Exportar CSV</button>
+    </div>
+    <button class="btn-reset" id="btnResetMes" onclick="resetarMes()">🗑 Zerar todos os custos do mês</button>
+    <div class="fin-note">
+      "Recalcular" reconstrói os totais a partir de todos os pedidos — use se algum valor parecer errado.
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ MODAL ADICIONAR ═══ -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">Novo Usuário</div>
+    <div class="field">
+      <label>Email</label>
+      <input id="newEmail" type="email" placeholder="usuario@dominio.com" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Nome</label>
+      <input id="newName" type="text" placeholder="Nome completo" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Role (perfil)</label>
+      <select id="newRole">
+        <option value="atendente">Atendente</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn-primary" id="btnSaveUser" onclick="saveUser()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL DELETAR ═══ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">Confirmar Remoção</div>
+    <div class="confirm-text">
+      Remover <strong id="delTargetName">—</strong> (<span id="delTargetEmail">—</span>)?
+    </div>
+    <div class="confirm-warning">
+      ⚠ A pessoa perde acesso imediatamente no próximo refresh dela.
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn-primary" id="btnConfirmDelete" onclick="confirmDelete()" style="background:#E87A7A;color:#fff">Remover</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
+
+let state = {
+  currentUserEmail: null,   // email do usuário logado (vem do /admin/me)
+  users:            [],
+  deleteTarget:     null
+};
+
+window.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  try {
+    // Primeiro pega quem sou eu (pra saber o próprio email — não deixa se auto-deletar)
+    const meResp = await window.__luxFetch(WORKER_URL + '/admin/me');
+    const meData = await meResp.json();
+    if (!meData.ok) throw new Error(meData.error || 'Erro em /admin/me');
+    state.currentUserEmail = meData.user.email;
+
+    if (meData.user.role !== 'admin') {
+      renderError('Acesso restrito a administradores.');
+      return;
+    }
+
+    await loadFinanceiro();
+  } catch (err) {
+    renderError('Falha ao iniciar: ' + err.message);
+  }
+}
+
+async function loadUsers() {
+  const container = document.getElementById('usersContainer');
+  if (!container) return; // tela financeira não tem usuários
+  container.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/users');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao listar');
+    state.users = data.users || [];
+    renderUsers();
+  } catch (err) {
+    renderError('Falha ao listar usuários: ' + err.message);
+  }
+}
+
+function renderUsers() {
+  const container = document.getElementById('usersContainer');
+  if (!state.users.length) {
+    container.innerHTML = `
+      <div class="state-msg">
+        <span class="icon">👥</span>
+        <div>Nenhum usuário cadastrado ainda.</div>
+      </div>`;
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'users-list';
+  state.users.forEach(u => {
+    const isYou = (u.email === state.currentUserEmail);
+    const roleClass  = u.role === 'admin' ? 'admin' : 'atendente';
+    const roleLabel  = u.role === 'admin' ? 'Admin' : 'Atendente';
+    const createdAt  = u.createdAt ? formatDate(u.createdAt) : '—';
+
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.innerHTML = `
+      <div class="user-info">
+        <div class="user-name">${escapeHtml(u.name || u.email)}</div>
+        <div class="user-email">${escapeHtml(u.email)}</div>
+        <div class="user-meta">Cadastrado em ${createdAt}${u.createdBy ? ' por ' + escapeHtml(u.createdBy) : ''}</div>
+      </div>
+      <span class="role-badge ${roleClass}">${roleLabel}</span>
+      <div class="user-actions">
+        ${isYou
+          ? '<span class="you-tag">(você)</span>'
+          : `<button class="btn-icon" title="Remover" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || u.email)}">✕</button>`
+        }
+      </div>
+    `;
+    if (!isYou) {
+      row.querySelector('.btn-icon').addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        openDeleteModal(btn.dataset.email, btn.dataset.name);
+      });
+    }
+    list.appendChild(row);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(list);
+}
+
+function renderError(msg) {
+  const container = document.getElementById('usersContainer');
+  container.innerHTML = `
+    <div class="state-msg">
+      <span class="icon">⚠</span>
+      <div style="color:#E87A7A">${escapeHtml(msg)}</div>
+    </div>`;
+}
+
+// ═══ MODAL ADICIONAR ═══
+function openAddModal() {
+  document.getElementById('newEmail').value = '';
+  document.getElementById('newName').value  = '';
+  document.getElementById('newRole').value  = 'atendente';
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(() => document.getElementById('newEmail').focus(), 100);
+}
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('show');
+}
+async function saveUser() {
+  const email = document.getElementById('newEmail').value.trim().toLowerCase();
+  const name  = document.getElementById('newName').value.trim();
+  const role  = document.getElementById('newRole').value;
+
+  if (!email) return toast('Email é obrigatório.', 'error');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Email inválido.', 'error');
+  if (!name) return toast('Nome é obrigatório.', 'error');
+
+  const btn = document.getElementById('btnSaveUser');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ email, name, role })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao salvar');
+
+    closeAddModal();
+    toast(data.action === 'created' ? '✓ Usuário cadastrado!' : '✓ Usuário atualizado!', 'success');
+    await loadUsers();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+// ═══ MODAL DELETAR ═══
+function openDeleteModal(email, name) {
+  state.deleteTarget = email;
+  document.getElementById('delTargetName').textContent  = name;
+  document.getElementById('delTargetEmail').textContent = email;
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('show');
+  state.deleteTarget = null;
+}
+async function confirmDelete() {
+  if (!state.deleteTarget) return;
+  const btn = document.getElementById('btnConfirmDelete');
+  btn.disabled = true; btn.textContent = 'Removendo…';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/users?email=' + encodeURIComponent(state.deleteTarget), {
+      method: 'DELETE'
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao remover');
+    closeDeleteModal();
+    toast('✓ Usuário removido.', 'success');
+    await loadUsers();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Remover';
+  }
+}
+
+// ═══ SEÇÃO FINANCEIRA (Bloco E) ═══
+const MESES_FIN = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let finViewDate = new Date();
+finViewDate.setDate(1);
+const finMaxDate = new Date();
+finMaxDate.setDate(1);
+finMaxDate.setHours(0,0,0,0);
+let finCurrentData = null; // guarda o último resultado pra exportar CSV
+
+function finMonthKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function finMonthLabel(d) {
+  return `${MESES_FIN[d.getMonth()]} ${d.getFullYear()}`;
+}
+function fmtBRL(v) {
+  return 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
+}
+
+let finMode = 'mes'; // 'mes' | 'periodo'
+
+function setFinMode(m) {
+  finMode = m;
+  document.getElementById('finModeMes').classList.toggle('active', m === 'mes');
+  document.getElementById('finModePer').classList.toggle('active', m === 'periodo');
+  document.getElementById('finMesSelector').style.display     = (m === 'mes') ? '' : 'none';
+  document.getElementById('finPeriodoSelector').style.display = (m === 'periodo') ? '' : 'none';
+  const title = document.getElementById('finCardTitle');
+  if (m === 'mes') {
+    title.textContent = 'Painel Financeiro do Mês';
+    loadFinanceiro();
+  } else {
+    title.textContent = 'Painel Financeiro por Semana';
+    if (!document.getElementById('finFrom').value) setSemanaAtual();
+    else loadPeriodo();
+  }
+}
+
+// Atalho: sábado passado → sexta de ontem (fechamento de caixa no sábado)
+function setSemanaAtual() {
+  const hoje = new Date();
+  const dow = hoje.getDay(); // 0=dom,1=seg,...,6=sáb
+  // Sexta de ontem (último dia da semana fechada)
+  const to = new Date(hoje);
+  // Recua até a sexta-feira mais recente que já passou
+  // dow sáb(6)->ontem sex(-1); dom(0)->-2; seg(1)->-3; ... sex(5)->-7
+  const diasAteSexta = ((dow + 1) % 7) + 1;
+  to.setDate(hoje.getDate() - diasAteSexta);
+  // Sábado anterior = 6 dias antes dessa sexta
+  const from = new Date(to);
+  from.setDate(to.getDate() - 6);
+  document.getElementById('finFrom').value = ymd(from);
+  document.getElementById('finTo').value   = ymd(to);
+  loadPeriodo();
+}
+
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderFinData(data, periodoLabel) {
+  const container = document.getElementById('finContainer');
+  finCurrentData = data;
+  const g = data.general;
+  const atts = data.attendants || [];
+  const z = { brl: 0, usd: 0, qtd: 0, req: 0 };
+  const gb = (k) => g[k] || z;
+
+  const prod = [
+    { key: 'figurinhas',     ic: '🎭', nm: 'Figurinhas' },
+    { key: 'musica',         ic: '🎵', nm: 'Letras de Música' },
+    { key: 'logo3d',         ic: '💎', nm: 'Logo 3D' },
+    { key: 'videos',         ic: '🎬', nm: 'Vídeo Padrão' },
+    { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' }
+  ];
+
+  const tituloTotal = periodoLabel ? ('Total do Período · ' + periodoLabel) : 'Total Geral do Mês';
+
+  let html = `
+    <div class="fin-total">
+      <div class="label">${tituloTotal}</div>
+      <div class="value">${fmtBRL(g.totalBRL)}</div>
+      <div class="sub">${g.pedidos} pedido${g.pedidos !== 1 ? 's' : ''} · todas as equipes</div>
+    </div>
+
+    <div class="fin-tools">
+  `;
+  prod.forEach(p => {
+    const b = gb(p.key);
+    html += `
+      <div class="fin-tool-card">
+        <div class="name">${p.ic} ${p.nm}</div>
+        <div class="val">${fmtBRL(b.brl)}</div>
+        <div class="qtd">${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  if (atts.length > 0) {
+    html += '<div class="fin-ranking-title">Ranking por Atendente</div>';
+    atts.forEach((a, i) => {
+      const ab = (k) => a[k] || z;
+      let detalhe = '';
+      prod.forEach(p => {
+        const b = ab(p.key);
+        if ((b.req ?? b.qtd) > 0 || b.brl > 0) {
+          detalhe += `
+            <div class="fin-det-row">
+              <span>${p.ic} ${p.nm}</span>
+              <span>${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</span>
+              <span>${fmtBRL(b.brl)}</span>
+            </div>`;
+        }
+      });
+      if (!detalhe) detalhe = '<div class="fin-det-empty">Sem pedidos detalhados.</div>';
+      html += `
+        <div class="fin-att-row fin-att-toggle" data-att="${i}">
+          <div class="fin-att-rank">${i + 1}</div>
+          <div class="fin-att-info">
+            <div class="fin-att-name">${escapeHtml(a.name)}</div>
+            <div class="fin-att-detail">${a.pedidos} pedido${a.pedidos !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="fin-att-value">${fmtBRL(a.totalBRL)}</div>
+          <div class="fin-att-caret" id="caret-${i}">▾</div>
+        </div>
+        <div class="fin-att-expand" id="expand-${i}" style="display:none">
+          ${detalhe}
+        </div>
+      `;
+    });
+  } else {
+    html += '<div class="state-msg"><div>Nenhum pedido neste período ainda.</div></div>';
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.fin-att-toggle').forEach(row => {
+    row.addEventListener('click', () => {
+      const i = row.dataset.att;
+      const ex = document.getElementById('expand-' + i);
+      const cr = document.getElementById('caret-' + i);
+      const open = ex.style.display !== 'none';
+      ex.style.display = open ? 'none' : 'block';
+      cr.textContent = open ? '▾' : '▴';
+    });
+  });
+}
+
+async function loadFinanceiro() {
+  const container = document.getElementById('finContainer');
+  const label = document.getElementById('finMonthLabel');
+  label.textContent = finMonthLabel(finViewDate);
+
+  document.getElementById('finNext').disabled =
+    (finViewDate.getFullYear() === finMaxDate.getFullYear() &&
+     finViewDate.getMonth() === finMaxDate.getMonth());
+
+  container.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+
+  const mk = finMonthKey(finViewDate);
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/summary?month=' + mk);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar');
+    renderFinData(data, null);
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`;
+  }
+}
+
+async function loadPeriodo() {
+  const container = document.getElementById('finContainer');
+  const from = document.getElementById('finFrom').value;
+  const to   = document.getElementById('finTo').value;
+  if (!from || !to) { toast('Escolha as duas datas.', 'error'); return; }
+  if (from > to)    { toast('Data inicial maior que a final.', 'error'); return; }
+
+  container.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando período…</div></div>';
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/admin/summary-range?from=' + from + '&to=' + to);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar período');
+    const fmtD = (s) => s.split('-').reverse().join('/');
+    renderFinData(data, fmtD(from) + ' a ' + fmtD(to));
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`;
+  }
+}
+
+document.getElementById('finPrev')?.addEventListener('click', () => {
+  finViewDate.setMonth(finViewDate.getMonth() - 1);
+  loadFinanceiro();
+});
+document.getElementById('finNext')?.addEventListener('click', () => {
+  if (finViewDate.getFullYear() === finMaxDate.getFullYear() &&
+      finViewDate.getMonth() === finMaxDate.getMonth()) return;
+  finViewDate.setMonth(finViewDate.getMonth() + 1);
+  loadFinanceiro();
+});
+
+async function recalcular() {
+  const btn = document.getElementById('btnRecalcular');
+  btn.disabled = true;
+  btn.textContent = '↻ Recalculando…';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/recalcular', { method: 'POST' });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao recalcular');
+    toast(`✓ Totais reconstruídos (${data.ordersScanned} pedidos)`, 'success');
+    await loadFinanceiro();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ Recalcular Totais';
+  }
+}
+
+async function resetarMes() {
+  const mk = finMonthKey(finViewDate);
+  const label = finMonthLabel(finViewDate);
+
+  // Confirmação 1: aviso claro
+  const c1 = confirm(
+    '⚠️ ATENÇÃO — AÇÃO IRREVERSÍVEL\n\n' +
+    'Isto vai APAGAR DEFINITIVAMENTE todos os pedidos e custos de ' + label + '.\n' +
+    'Os dados NÃO podem ser recuperados depois.\n\n' +
+    'Use apenas para limpar dados de teste antes de começar pra valer.\n\n' +
+    'Deseja continuar?'
+  );
+  if (!c1) return;
+
+  // Confirmação 2: digitar a palavra
+  const typed = prompt(
+    'Confirmação final.\n\n' +
+    'Para zerar ' + label + ', digite a palavra abaixo EXATAMENTE:\n\n' +
+    'RESETAR'
+  );
+  if (typed === null) return;
+  if (typed.trim() !== 'RESETAR') {
+    toast('Confirmação incorreta. Nada foi apagado.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnResetMes');
+  btn.disabled = true;
+  btn.textContent = '🗑 Zerando…';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: mk, confirm: 'RESETAR' })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao zerar');
+    toast(`✓ Mês zerado (${data.deletedOrders} pedidos apagados)`, 'success');
+    await loadFinanceiro();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🗑 Zerar todos os custos do mês';
+  }
+}
+
+function exportCsv() {
+  if (!finCurrentData) { toast('Carregue os dados primeiro', 'error'); return; }
+  const mk = finMonthKey(finViewDate);
+  const g = finCurrentData.general;
+  const atts = finCurrentData.attendants || [];
+
+  let csv = 'Atendente;Email;Pedidos;Figurinhas (qtd);Figurinhas (R$);Musica (qtd);Musica (R$);Total (R$)\n';
+  atts.forEach(a => {
+    csv += `${a.name};${a.email};${a.pedidos};${a.figurinhas.qtd};${a.figurinhas.brl.toFixed(2)};${a.musica.qtd};${a.musica.brl.toFixed(2)};${a.totalBRL.toFixed(2)}\n`;
+  });
+  csv += `\nTOTAL GERAL;;${g.pedidos};${g.figurinhas.qtd};${g.figurinhas.brl.toFixed(2)};${g.musica.qtd};${g.musica.brl.toFixed(2)};${g.totalBRL.toFixed(2)}\n`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lux-financeiro-${mk}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV exportado', 'success');
+}
+
+// ═══ HELPERS ═══
+function toast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.className = 'toast show ' + type;
+  el.textContent = msg;
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+function formatDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  } catch (e) { return iso; }
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function escapeAttr(s) {
+  return String(s||'').replace(/"/g,'&quot;');
+}
+
+</script>
+</body>
+</html>
