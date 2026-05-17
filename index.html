@@ -304,7 +304,20 @@ function openLogo3D(event) {
     document.body.appendChild(ov);
 
     const close = () => { ov.style.opacity = '0'; setTimeout(() => ov.remove(), 200); };
-    const goOpen = () => { window.open(LOGO3D_URL, '_blank', 'noopener'); close(); };
+    const goOpen = () => {
+      // Registra 1 pedido Logo 3D (custo zero) — não bloqueia a abertura
+      try {
+        if (window.__luxFetch) {
+          window.__luxFetch('https://lux-figurinhas.plataformalux.workers.dev/logEvent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tool: 'logo3d' })
+          }).catch(() => {});
+        }
+      } catch (e) { /* nunca trava a abertura por causa do log */ }
+      window.open(LOGO3D_URL, '_blank', 'noopener');
+      close();
+    };
 
     ov.querySelector('#logo3d-copy').addEventListener('click', async () => {
       const icon = ov.querySelector('#logo3d-copyicon');
