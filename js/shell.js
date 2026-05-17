@@ -10,6 +10,7 @@ const TOOLS = {
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
   'meus-custos':     'tools/meus-custos.html',
+  financeiro:        'tools/financeiro.html',
   admin:             'tools/admin.html',
 };
 
