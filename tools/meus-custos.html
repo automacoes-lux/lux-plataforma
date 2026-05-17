@@ -61,6 +61,19 @@ body{
 
 /* ═══ Seção financeira (Bloco E) ═══ */
 .fin-month-selector{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:1.4rem}
+.fin-mode-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:1.2rem}
+.fin-mode-btn{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.fin-mode-btn.active{background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
+.fin-period-selector{margin-bottom:1.4rem}
+.fin-week-btn{width:100%;background:rgba(201,168,76,.08);border:.5px solid var(--border-bright);color:var(--gold);padding:11px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:12px;transition:all .15s}
+.fin-week-btn:hover{background:rgba(201,168,76,.16)}
+.fin-date-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fin-date-field{flex:1;min-width:120px}
+.fin-date-field label{display:block;font-size:11px;color:var(--gold-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;font-family:'Cinzel',serif;font-weight:600}
+.fin-date-field input{width:100%;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none}
+.fin-date-field input:focus{border-color:var(--border-bright)}
+.fin-apply-btn{background:linear-gradient(135deg,var(--gold),#E8C766);border:none;color:#1A1A1A;padding:11px 18px;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.06em;white-space:nowrap}
+@media(max-width:540px){.fin-date-row{flex-direction:column;align-items:stretch}.fin-apply-btn{width:100%}}
 .fin-month-selector button{
   background:transparent;border:1px solid var(--border-bright);color:var(--gold);
   width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px;
@@ -220,12 +233,32 @@ body{
 
   <!-- ═══ SEÇÃO FINANCEIRA (Bloco E) ═══ -->
   <div class="card">
-    <div class="card-title">Painel Financeiro do Mês</div>
+    <div class="card-title" id="finCardTitle">Painel Financeiro do Mês</div>
 
-    <div class="fin-month-selector">
+    <div class="fin-mode-toggle">
+      <button id="finModeMes" class="fin-mode-btn active" onclick="setFinMode('mes')">📅 Por Mês</button>
+      <button id="finModePer" class="fin-mode-btn" onclick="setFinMode('periodo')">🗓 Por Período</button>
+    </div>
+
+    <div class="fin-month-selector" id="finMesSelector">
       <button id="finPrev" title="Mês anterior">‹</button>
       <span class="fin-month-label" id="finMonthLabel">—</span>
       <button id="finNext" title="Próximo mês">›</button>
+    </div>
+
+    <div class="fin-period-selector" id="finPeriodoSelector" style="display:none">
+      <button class="fin-week-btn" onclick="setSemanaAtual()">↻ Esta semana (sáb → sex)</button>
+      <div class="fin-date-row">
+        <div class="fin-date-field">
+          <label>De</label>
+          <input type="date" id="finFrom"/>
+        </div>
+        <div class="fin-date-field">
+          <label>Até</label>
+          <input type="date" id="finTo"/>
+        </div>
+        <button class="fin-apply-btn" onclick="loadPeriodo()">Ver período</button>
+      </div>
     </div>
 
     <div id="finContainer">
@@ -485,6 +518,135 @@ function fmtBRL(v) {
   return 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
 }
 
+let finMode = 'mes'; // 'mes' | 'periodo'
+
+function setFinMode(m) {
+  finMode = m;
+  document.getElementById('finModeMes').classList.toggle('active', m === 'mes');
+  document.getElementById('finModePer').classList.toggle('active', m === 'periodo');
+  document.getElementById('finMesSelector').style.display     = (m === 'mes') ? '' : 'none';
+  document.getElementById('finPeriodoSelector').style.display = (m === 'periodo') ? '' : 'none';
+  const title = document.getElementById('finCardTitle');
+  if (m === 'mes') {
+    title.textContent = 'Painel Financeiro do Mês';
+    loadFinanceiro();
+  } else {
+    title.textContent = 'Painel Financeiro por Período';
+    if (!document.getElementById('finFrom').value) setSemanaAtual();
+    else loadPeriodo();
+  }
+}
+
+// Atalho: sábado passado → sexta de ontem (fechamento de caixa no sábado)
+function setSemanaAtual() {
+  const hoje = new Date();
+  const dow = hoje.getDay(); // 0=dom,1=seg,...,6=sáb
+  // Sexta de ontem (último dia da semana fechada)
+  const to = new Date(hoje);
+  // Recua até a sexta-feira mais recente que já passou
+  // dow sáb(6)->ontem sex(-1); dom(0)->-2; seg(1)->-3; ... sex(5)->-7
+  const diasAteSexta = ((dow + 1) % 7) + 1;
+  to.setDate(hoje.getDate() - diasAteSexta);
+  // Sábado anterior = 6 dias antes dessa sexta
+  const from = new Date(to);
+  from.setDate(to.getDate() - 6);
+  document.getElementById('finFrom').value = ymd(from);
+  document.getElementById('finTo').value   = ymd(to);
+  loadPeriodo();
+}
+
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderFinData(data, periodoLabel) {
+  const container = document.getElementById('finContainer');
+  finCurrentData = data;
+  const g = data.general;
+  const atts = data.attendants || [];
+  const z = { brl: 0, usd: 0, qtd: 0, req: 0 };
+  const gb = (k) => g[k] || z;
+
+  const prod = [
+    { key: 'figurinhas',     ic: '🎭', nm: 'Figurinhas' },
+    { key: 'musica',         ic: '🎵', nm: 'Letras de Música' },
+    { key: 'logo3d',         ic: '💎', nm: 'Logo 3D' },
+    { key: 'videos',         ic: '🎬', nm: 'Vídeo Padrão' },
+    { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' }
+  ];
+
+  const tituloTotal = periodoLabel ? ('Total do Período · ' + periodoLabel) : 'Total Geral do Mês';
+
+  let html = `
+    <div class="fin-total">
+      <div class="label">${tituloTotal}</div>
+      <div class="value">${fmtBRL(g.totalBRL)}</div>
+      <div class="sub">${g.pedidos} pedido${g.pedidos !== 1 ? 's' : ''} · todas as equipes</div>
+    </div>
+
+    <div class="fin-tools">
+  `;
+  prod.forEach(p => {
+    const b = gb(p.key);
+    html += `
+      <div class="fin-tool-card">
+        <div class="name">${p.ic} ${p.nm}</div>
+        <div class="val">${fmtBRL(b.brl)}</div>
+        <div class="qtd">${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  if (atts.length > 0) {
+    html += '<div class="fin-ranking-title">Ranking por Atendente</div>';
+    atts.forEach((a, i) => {
+      const ab = (k) => a[k] || z;
+      let detalhe = '';
+      prod.forEach(p => {
+        const b = ab(p.key);
+        if ((b.req ?? b.qtd) > 0 || b.brl > 0) {
+          detalhe += `
+            <div class="fin-det-row">
+              <span>${p.ic} ${p.nm}</span>
+              <span>${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</span>
+              <span>${fmtBRL(b.brl)}</span>
+            </div>`;
+        }
+      });
+      if (!detalhe) detalhe = '<div class="fin-det-empty">Sem pedidos detalhados.</div>';
+      html += `
+        <div class="fin-att-row fin-att-toggle" data-att="${i}">
+          <div class="fin-att-rank">${i + 1}</div>
+          <div class="fin-att-info">
+            <div class="fin-att-name">${escapeHtml(a.name)}</div>
+            <div class="fin-att-detail">${a.pedidos} pedido${a.pedidos !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="fin-att-value">${fmtBRL(a.totalBRL)}</div>
+          <div class="fin-att-caret" id="caret-${i}">▾</div>
+        </div>
+        <div class="fin-att-expand" id="expand-${i}" style="display:none">
+          ${detalhe}
+        </div>
+      `;
+    });
+  } else {
+    html += '<div class="state-msg"><div>Nenhum pedido neste período ainda.</div></div>';
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.fin-att-toggle').forEach(row => {
+    row.addEventListener('click', () => {
+      const i = row.dataset.att;
+      const ex = document.getElementById('expand-' + i);
+      const cr = document.getElementById('caret-' + i);
+      const open = ex.style.display !== 'none';
+      ex.style.display = open ? 'none' : 'block';
+      cr.textContent = open ? '▾' : '▴';
+    });
+  });
+}
+
 async function loadFinanceiro() {
   const container = document.getElementById('finContainer');
   const label = document.getElementById('finMonthLabel');
@@ -501,89 +663,27 @@ async function loadFinanceiro() {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/summary?month=' + mk);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao carregar');
+    renderFinData(data, null);
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`;
+  }
+}
 
-    finCurrentData = data;
-    const g = data.general;
-    const atts = data.attendants || [];
-    const z = { brl: 0, usd: 0, qtd: 0 };
-    const gb = (k) => g[k] || z;
+async function loadPeriodo() {
+  const container = document.getElementById('finContainer');
+  const from = document.getElementById('finFrom').value;
+  const to   = document.getElementById('finTo').value;
+  if (!from || !to) { toast('Escolha as duas datas.', 'error'); return; }
+  if (from > to)    { toast('Data inicial maior que a final.', 'error'); return; }
 
-    const prod = [
-      { key: 'figurinhas',     ic: '🎭', nm: 'Figurinhas' },
-      { key: 'musica',         ic: '🎵', nm: 'Letras de Música' },
-      { key: 'logo3d',         ic: '💎', nm: 'Logo 3D' },
-      { key: 'videos',         ic: '🎬', nm: 'Vídeo Padrão' },
-      { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' }
-    ];
-
-    let html = `
-      <div class="fin-total">
-        <div class="label">Total Geral do Mês</div>
-        <div class="value">${fmtBRL(g.totalBRL)}</div>
-        <div class="sub">${g.pedidos} pedido${g.pedidos !== 1 ? 's' : ''} · todas as equipes</div>
-      </div>
-
-      <div class="fin-tools">
-    `;
-    prod.forEach(p => {
-      const b = gb(p.key);
-      html += `
-        <div class="fin-tool-card">
-          <div class="name">${p.ic} ${p.nm}</div>
-          <div class="val">${fmtBRL(b.brl)}</div>
-          <div class="qtd">${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</div>
-        </div>`;
-    });
-    html += `</div>`;
-
-    if (atts.length > 0) {
-      html += '<div class="fin-ranking-title">Ranking por Atendente</div>';
-      atts.forEach((a, i) => {
-        const ab = (k) => a[k] || z;
-        let detalhe = '';
-        prod.forEach(p => {
-          const b = ab(p.key);
-          if ((b.req ?? b.qtd) > 0 || b.brl > 0) {
-            detalhe += `
-              <div class="fin-det-row">
-                <span>${p.ic} ${p.nm}</span>
-                <span>${(b.req ?? b.qtd)} pedido${(b.req ?? b.qtd) !== 1 ? 's' : ''}</span>
-                <span>${fmtBRL(b.brl)}</span>
-              </div>`;
-          }
-        });
-        if (!detalhe) detalhe = '<div class="fin-det-empty">Sem pedidos detalhados.</div>';
-        html += `
-          <div class="fin-att-row fin-att-toggle" data-att="${i}">
-            <div class="fin-att-rank">${i + 1}</div>
-            <div class="fin-att-info">
-              <div class="fin-att-name">${escapeHtml(a.name)}</div>
-              <div class="fin-att-detail">${a.pedidos} pedido${a.pedidos !== 1 ? 's' : ''}</div>
-            </div>
-            <div class="fin-att-value">${fmtBRL(a.totalBRL)}</div>
-            <div class="fin-att-caret" id="caret-${i}">▾</div>
-          </div>
-          <div class="fin-att-expand" id="expand-${i}" style="display:none">
-            ${detalhe}
-          </div>
-        `;
-      });
-    } else {
-      html += '<div class="state-msg"><div>Nenhum pedido neste mês ainda.</div></div>';
-    }
-
-    container.innerHTML = html;
-
-    container.querySelectorAll('.fin-att-toggle').forEach(row => {
-      row.addEventListener('click', () => {
-        const i = row.dataset.att;
-        const ex = document.getElementById('expand-' + i);
-        const cr = document.getElementById('caret-' + i);
-        const open = ex.style.display !== 'none';
-        ex.style.display = open ? 'none' : 'block';
-        cr.textContent = open ? '▾' : '▴';
-      });
-    });
+  container.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando período…</div></div>';
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/admin/summary-range?from=' + from + '&to=' + to);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar período');
+    const fmtD = (s) => s.split('-').reverse().join('/');
+    renderFinData(data, fmtD(from) + ' a ' + fmtD(to));
   } catch (err) {
     container.innerHTML = `<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`;
   }
