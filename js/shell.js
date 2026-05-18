@@ -9,16 +9,14 @@ const TOOLS = {
   musica:            'tools/maestro.html',
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
-  atendimento:       'tools/atendimento.html',
   'meus-custos':     'tools/meus-custos.html',
-  financeiro:        'tools/financeiro.html',
   admin:             'tools/admin.html',
 };
 
 // ── NAVEGAÇÃO ──────────────────────────────────────────────
 function handleNav(e) {
   const item = e.target.closest('.nav-item');
-  if (!item || item.classList.contains('disabled')) {
+  if (!item || item.classList.contains('disabled') || item.classList.contains('soon')) {
     e.preventDefault();
     return;
   }
@@ -40,6 +38,15 @@ function loadTool(name) {
   const url = TOOLS[name];
   if (!url) return;
 
+  // Bloqueia ferramentas "em breve" (ex: videos pro atendente).
+  // O card/nav recebe a classe .soon via applyRole quando nao-admin.
+  const navEl  = document.querySelector(`.nav-item[data-tool="${name}"]`);
+  const cardEl = document.querySelector(`.tool-card[data-card-tool="${name}"]`);
+  if ((navEl && navEl.classList.contains('soon')) ||
+      (cardEl && cardEl.classList.contains('soon'))) {
+    return;
+  }
+
   hideAll();
 
   const view = document.getElementById('view-' + name);
@@ -58,18 +65,6 @@ function loadTool(name) {
 
   view.classList.add('show');
   setNav(name);
-
-  // Preenche o nome do atendente na topbar (Lux Music e Figurinhas)
-  const atendenteSlots = { musica: 'musicAtendente', figurinhas: 'figurinhasAtendente' };
-  if (atendenteSlots[name]) {
-    const slot = document.getElementById(atendenteSlots[name]);
-    if (slot) {
-      const nm = (document.getElementById('user-name') || {}).textContent
-              || (document.getElementById('user-email') || {}).textContent || '';
-      slot.innerHTML = nm ? 'Atendente: <strong>' + nm + '</strong>' : '';
-    }
-  }
-
   document.getElementById('mainContent').scrollTo(0, 0);
 }
 
