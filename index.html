@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lux — Plataforma</title>
 
-<link rel="icon" href="assets/favicon.ico" sizes="any"/>
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"/>
-<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png"/>
-<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"/>
-
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -53,16 +47,6 @@
   opacity:0.55;
   cursor:not-allowed;
   pointer-events:none;
-}
-/* Bolinha de alerta amarela (Atendimento atualizado) */
-.nav-dot{
-  width:9px;height:9px;border-radius:50%;
-  background:#D4AF37;margin-left:auto;flex-shrink:0;
-  animation:navDotPulse 1.3s ease-in-out infinite;
-}
-@keyframes navDotPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0.55);opacity:1}
-  50%{box-shadow:0 0 0 6px rgba(212,175,55,0);opacity:.65}
 }
 </style>
 
@@ -116,25 +100,19 @@
         <div class="nav-icon">💎</div> Logo 3D
         <span class="nav-badge badge-live">LIVE</span>
       </a>
-      <a class="nav-item" data-tool="videos" href="#">
+      <a class="nav-item soon" data-tool="videos" href="#" data-soon-unless-admin>
         <div class="nav-icon">🎬</div> Vídeo Padrão
-        <span class="nav-badge badge-live">LIVE</span>
+        <span class="nav-badge badge-live badge-normal" style="display:none">LIVE</span>
+        <span class="nav-badge badge-warning badge-soon">EM BREVE</span>
       </a>
-      <a class="nav-item" data-tool="videos-premium" href="#">
+      <a class="nav-item soon" data-tool="videos-premium" href="#" data-soon-unless-admin>
         <div class="nav-icon">🤖</div> Vídeo Premium
-        <span class="nav-badge badge-new">NOVO</span>
-      </a>
-      <a class="nav-item" data-tool="atendimento" href="#">
-        <div class="nav-icon">📋</div> Atendimento
-        <span class="nav-dot" id="atendimentoDot" style="display:none"></span>
+        <span class="nav-badge badge-new badge-normal" style="display:none">NOVO</span>
+        <span class="nav-badge badge-warning badge-soon">EM BREVE</span>
       </a>
       <a class="nav-item" data-tool="meus-custos" href="#">
         <div class="nav-icon">💰</div> Meus Custos
         <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="financeiro" href="#" data-role-required="admin" style="display:none">
-        <div class="nav-icon">📊</div> Financeiro
-        <span class="nav-badge badge-live">ADMIN</span>
       </a>
       <a class="nav-item" data-tool="admin" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">⚙</div> Admin
@@ -181,10 +159,6 @@
         <div class="dash-greeting">Bem-vindo à</div>
         <div class="dash-title">Plataforma <span>Lux</span></div>
       </div>
-      <a href="#" class="dash-alert" id="dashAtendimentoAlert" style="display:none" onclick="loadTool('atendimento');return false;">
-        <span class="dash-alert-icon">⚠️</span>
-        <span class="dash-alert-txt">Atualização no atendimento</span>
-      </a>
       <div class="dash-grid">
 
         <div class="tool-card" onclick="loadTool('musica')">
@@ -217,22 +191,24 @@
           </div>
         </div>
 
-        <div class="tool-card" onclick="loadTool('videos')">
+        <div class="tool-card soon" data-card-tool="videos" data-soon-unless-admin onclick="loadTool('videos')">
           <div class="tool-card-icon">🎬</div>
           <div class="tool-card-name">VÍDEO PADRÃO</div>
           <div class="tool-card-desc">Slideshow renderizado com fotos do comércio + trilha sonora, pronto para Reels e Stories.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
+            <span class="status-live status-normal" style="display:none">● Disponível</span>
+            <span class="status-soon-warning status-soon">● Em breve</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
 
-        <div class="tool-card" onclick="loadTool('videos-premium')">
+        <div class="tool-card soon" data-card-tool="videos-premium" data-soon-unless-admin onclick="loadTool('videos-premium')">
           <div class="tool-card-icon">🤖</div>
           <div class="tool-card-name">VÍDEO PREMIUM</div>
           <div class="tool-card-desc">Vídeos cinematográficos com IA imagem-para-vídeo (Seedance v1 Pro). Cada foto vira um clipe animado profissional de 5 segundos.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
+            <span class="status-live status-normal" style="display:none">● Disponível</span>
+            <span class="status-soon-warning status-soon">● Em breve</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
@@ -244,8 +220,7 @@
     <div id="view-figurinhas" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">✦ FIGURINHAS</span>
-        <span class="tool-panel-atendente" id="figurinhasAtendente"></span>
+        <span class="tool-panel-title">✦ GERADOR DE FIGURINHAS</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
@@ -254,8 +229,7 @@
     <div id="view-musica" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">✦ LUX MUSIC</span>
-        <span class="tool-panel-atendente" id="musicAtendente"></span>
+        <span class="tool-panel-title">🎵 MAESTRO AI — LETRA DE MÚSICA</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
@@ -278,29 +252,11 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- ATENDIMENTO (todos — protocolos) -->
-    <div id="view-atendimento" class="tool-panel">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">📋 ATENDIMENTO</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- MEUS CUSTOS (atendente — só os custos dele) -->
+    <!-- MEUS CUSTOS -->
     <div id="view-meus-custos" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">💰 MEUS CUSTOS</span>
-      </div>
-      <!-- iframe injetado lazy pelo shell.js -->
-    </div>
-
-    <!-- FINANCEIRO (admin — visão geral) -->
-    <div id="view-financeiro" class="tool-panel" data-role-required="admin" style="display:none">
-      <div class="tool-panel-header">
-        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">📊 FINANCEIRO</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
@@ -317,109 +273,33 @@
 </div>
 
 <script>
-// ── LOGO 3D — modal: copiar email → abre ferramenta ────────
-const LOGO3D_EMAIL = 'gptluxmarketing@gmail.com';
-const LOGO3D_URL   = 'https://sellecionados.com/acesso-s3d';
-
+// ── LOGO 3D — abre site externo em nova aba ────────────────
 function openLogo3D(event) {
   if (event) event.preventDefault();
-  let ov = document.getElementById('logo3d-modal');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'logo3d-modal';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;opacity:0;transition:opacity .2s';
-    ov.innerHTML = `
-      <div style="background:#141414;border:1px solid #C9A84C;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:'DM Sans',sans-serif">
-        <div style="font-family:'Cinzel',serif;color:#D4AF37;font-size:17px;font-weight:600;letter-spacing:.06em;margin-bottom:10px;text-align:center">💎 LOGO 3D</div>
-        <p style="color:#cfcabf;font-size:14px;line-height:1.6;text-align:center;margin:0 0 18px">
-          Copie o e-mail abaixo para acessar a ferramenta de Logo 3D. A página abre logo em seguida.
-        </p>
-        <button id="logo3d-copy" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0E0E0E;border:1px solid #5a5444;border-radius:9px;padding:13px 15px;cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .15s">
-          <span id="logo3d-email">${LOGO3D_EMAIL}</span>
-          <span id="logo3d-copyicon" style="color:#D4AF37;font-weight:600;font-size:13px;white-space:nowrap">📋 Copiar</span>
-        </button>
-        <button id="logo3d-open" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#D4AF37,#E8C766);border:none;border-radius:9px;padding:13px;cursor:pointer;color:#1A1A1A;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase">Abrir ferramenta</button>
-        <button id="logo3d-cancel" style="width:100%;margin-top:8px;background:transparent;border:none;color:#8a857a;font-size:12px;cursor:pointer;padding:8px;font-family:'DM Sans',sans-serif">Cancelar</button>
-      </div>`;
-    document.body.appendChild(ov);
-
-    const close = () => { ov.style.opacity = '0'; setTimeout(() => ov.remove(), 200); };
-    const goOpen = () => {
-      // Registra 1 pedido Logo 3D (custo zero) — não bloqueia a abertura
-      try {
-        if (window.__luxFetch) {
-          window.__luxFetch('https://lux-figurinhas.plataformalux.workers.dev/logEvent', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tool: 'logo3d' })
-          }).catch(() => {});
-        }
-      } catch (e) { /* nunca trava a abertura por causa do log */ }
-      window.open(LOGO3D_URL, '_blank', 'noopener');
-      close();
-    };
-
-    ov.querySelector('#logo3d-copy').addEventListener('click', async () => {
-      const icon = ov.querySelector('#logo3d-copyicon');
-      try {
-        await navigator.clipboard.writeText(LOGO3D_EMAIL);
-        icon.textContent = '✓ Copiado!';
-        icon.style.color = '#7FB87A';
-      } catch (e) {
-        icon.textContent = '✓ Selecione e copie';
-      }
-      setTimeout(goOpen, 1400);
-    });
-    ov.querySelector('#logo3d-open').addEventListener('click', goOpen);
-    ov.querySelector('#logo3d-cancel').addEventListener('click', close);
-    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  // Copia email pro clipboard (se navegador permitir)
+  const email = 'gptluxmarketing@gmail.com';
+  try {
+    navigator.clipboard.writeText(email);
+    showLogo3DToast('✓ Email copiado: ' + email);
+  } catch (e) {
+    showLogo3DToast('Use o email: ' + email);
   }
-  requestAnimationFrame(() => { ov.style.opacity = '1'; });
+  // Abre em nova aba
+  window.open('https://sellecionados.com/acesso-s3d', '_blank', 'noopener');
 }
-
-// ── ALERTA ATENDIMENTO — bolinha amarela na sidebar ────────
-// Consulta /protocols ao carregar: se há versão não vista (só
-// atendente), acende a bolinha. Quando o usuário entra na aba
-// Atendimento, o iframe marca "visto" e a bolinha some.
-(function () {
-  const FIG_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
-
-  async function checkAtendimentoAlert() {
-    try {
-      if (!window.__luxFetch) return;
-      const resp = await window.__luxFetch(FIG_URL + '/protocols');
-      const data = await resp.json();
-      const has = data && data.ok && data.hasAlert;
-      const dot   = document.getElementById('atendimentoDot');
-      const banner = document.getElementById('dashAtendimentoAlert');
-      if (has) {
-        if (dot) dot.style.display = 'block';
-        if (banner) banner.style.display = 'flex';
-      }
-    } catch (e) { /* silencioso — alerta é melhoria, não bloqueia nada */ }
+function showLogo3DToast(msg) {
+  let toast = document.getElementById('logo3d-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'logo3d-toast';
+    toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#121212;border:1px solid #C9A84C;color:#D4B968;padding:14px 22px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity .25s';
+    document.body.appendChild(toast);
   }
-
-  // Quando o usuário entra em Atendimento, some bolinha + banner da dash
-  function clearAtendimentoAlert() {
-    const dot = document.getElementById('atendimentoDot');
-    if (dot) dot.style.display = 'none';
-    const banner = document.getElementById('dashAtendimentoAlert');
-    if (banner) banner.style.display = 'none';
-  }
-
-  document.addEventListener('click', function (e) {
-    const item = e.target.closest && e.target.closest('[data-tool="atendimento"]');
-    const fromBanner = e.target.closest && e.target.closest('#dashAtendimentoAlert');
-    if (item || fromBanner) clearAtendimentoAlert();
-  });
-
-  // Roda quando o app já tem auth pronta (pequeno atraso pra __luxFetch existir)
-  if (document.readyState === 'complete') {
-    setTimeout(checkAtendimentoAlert, 1500);
-  } else {
-    window.addEventListener('load', () => setTimeout(checkAtendimentoAlert, 1500));
-  }
-})();
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(window.__logo3dTimer);
+  window.__logo3dTimer = setTimeout(() => toast.style.opacity = '0', 3500);
+}
 </script>
 
 <script src="js/shell.js"></script>
