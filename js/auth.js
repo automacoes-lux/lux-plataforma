@@ -176,6 +176,25 @@ function applyRole(role) {
     const required = el.getAttribute('data-role-required');
     el.style.display = (required === role) ? '' : 'none';
   });
+
+  // Itens "em breve" só pro atendente (admin usa normal pra testar).
+  // Admin  -> badge normal (LIVE/NOVO), item clicável.
+  // Outros -> badge "EM BREVE" amarelo, item bloqueado (.soon).
+  // Estado seguro: HTML nasce bloqueado; só admin libera.
+  const isAdmin = (role === 'admin');
+  document.querySelectorAll('[data-soon-unless-admin]').forEach(el => {
+    const normalBadges = el.querySelectorAll('.badge-normal, .status-normal');
+    const soonBadges   = el.querySelectorAll('.badge-soon, .status-soon');
+    if (isAdmin) {
+      el.classList.remove('soon');
+      normalBadges.forEach(b => b.style.display = '');
+      soonBadges.forEach(b => b.style.display = 'none');
+    } else {
+      el.classList.add('soon');
+      normalBadges.forEach(b => b.style.display = 'none');
+      soonBadges.forEach(b => b.style.display = '');
+    }
+  });
 }
 
 function showAuthError(msg) {
