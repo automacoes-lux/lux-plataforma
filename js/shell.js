@@ -18,7 +18,7 @@ const TOOLS = {
 // ── NAVEGAÇÃO ──────────────────────────────────────────────
 function handleNav(e) {
   const item = e.target.closest('.nav-item');
-  if (!item || item.classList.contains('disabled')) {
+  if (!item || item.classList.contains('disabled') || item.classList.contains('soon')) {
     e.preventDefault();
     return;
   }
@@ -39,6 +39,15 @@ function showDashboard() {
 function loadTool(name) {
   const url = TOOLS[name];
   if (!url) return;
+
+  // Bloqueia ferramentas "em breve" (ex: videos pro atendente).
+  // O card/nav recebe a classe .soon via applyRole quando nao-admin.
+  const navEl  = document.querySelector(`.nav-item[data-tool="${name}"]`);
+  const cardEl = document.querySelector(`.tool-card[data-card-tool="${name}"]`);
+  if ((navEl && navEl.classList.contains('soon')) ||
+      (cardEl && cardEl.classList.contains('soon'))) {
+    return;
+  }
 
   hideAll();
 
