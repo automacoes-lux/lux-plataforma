@@ -661,9 +661,16 @@ function renderResults() {
   const grid = document.getElementById('stickersGrid');
   grid.innerHTML = '';
 
-  for (let i = 0; i < state.currentTotal; i++) {
-    const num = i + 1;
-    const result = state.currentResults.find(r => r.index === num);
+  // Itera sobre os resultados REAIS devolvidos pelo Worker (cada um tem
+  // seu .index original, ex: #02, #08). NAO assumir que a 1a figurinha
+  // e sempre a #01 - isso quebrava o modo Frase Personalizada.
+  const ordered = (state.currentResults || [])
+    .slice()
+    .sort((a, b) => (a.index || 0) - (b.index || 0));
+
+  for (let k = 0; k < ordered.length; k++) {
+    const result = ordered[k];
+    const num = result.index;
     const card = document.createElement('div');
     card.className = 'sticker-card';
     card.dataset.idx = num;
