@@ -293,6 +293,37 @@ body{
 .block-btn.busy{opacity:.6;cursor:wait}
 @media(max-width:520px){.block-btn{font-size:12px;padding:10px 4px;letter-spacing:0}}
 
+/* ── Modificar Trecho Específico ────────────────────── */
+.excerpt-divider{
+  height:1px;background:var(--border);margin:14px 0;
+}
+.excerpt-row{
+  display:flex;gap:8px;align-items:stretch;margin-top:8px;
+}
+.excerpt-row input{
+  flex:1;background:#0E0E0E;border:1px solid var(--border-bright);
+  color:var(--text);border-radius:8px;padding:10px 12px;
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  transition:border-color .15s;
+}
+.excerpt-row input:focus{outline:none;border-color:var(--gold-dim)}
+.excerpt-btn{
+  background:rgba(201,168,76,.15);border:1px solid var(--gold-dim);
+  color:var(--gold);border-radius:8px;
+  padding:0 16px;font-size:13px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s;white-space:nowrap;
+}
+.excerpt-btn:hover:not(:disabled){background:rgba(201,168,76,.25)}
+.excerpt-btn:disabled{opacity:.5;cursor:wait}
+.excerpt-status{font-size:12px;color:var(--text-dim);margin-top:8px;min-height:16px}
+.excerpt-status.success{color:#8FD68F}
+.excerpt-status.error{color:#E89090}
+@media(max-width:520px){
+  .excerpt-row{flex-direction:column}
+  .excerpt-btn{padding:10px}
+}
+
 /* ── Advanced Mode (instrumentos Suno) ── */
 .advanced{
   margin-top:1.5rem;border:1px solid var(--border);
@@ -803,6 +834,15 @@ function renderLyrics(order) {
         <button class="block-btn" data-block="Bridge">Bridge</button>
         <button class="block-btn" data-block="Outro">Outro</button>
       </div>
+
+      <div class="excerpt-divider"></div>
+
+      <div class="modify-hint">Ou cole um trecho específico abaixo (palavra, frase ou linha) — só esse trecho muda, mantendo a rima e o sentido.</div>
+      <div class="excerpt-row">
+        <input type="text" id="excerptInput" maxlength="200" placeholder="Ex: Body Club Fitness... ou: amor pra sempre"/>
+        <button class="excerpt-btn" id="btnModifyExcerpt">Modificar trecho</button>
+      </div>
+      <div class="excerpt-status" id="excerptStatus"></div>
     </div>
 
     <div class="style-box">
@@ -856,6 +896,9 @@ function renderLyrics(order) {
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
       </div>
+      <div class="copy-row" style="margin-top:8px">
+        <button class="btn-secondary" id="btnRedoOrder">🔁 Refazer Pedido</button>
+      </div>
       <button class="btn-primary" id="btnNew">+ Novo Pedido</button>
     </div>
   `;
@@ -887,6 +930,24 @@ function renderLyrics(order) {
     document.querySelector('[data-tab="new"]').click();
     resetForm();
   });
+
+  // Modificar trecho específico
+  const excerptInput = document.getElementById('excerptInput');
+  const btnModifyExcerpt = document.getElementById('btnModifyExcerpt');
+  if (btnModifyExcerpt) {
+    btnModifyExcerpt.addEventListener('click', () => modifyExcerpt());
+  }
+  if (excerptInput) {
+    excerptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); modifyExcerpt(); }
+    });
+  }
+
+  // Refazer pedido (visível quando aberto do histórico)
+  const btnRedo = document.getElementById('btnRedoOrder');
+  if (btnRedo) {
+    btnRedo.addEventListener('click', () => redoOrder());
+  }
 }
 
 // Atualiza a caixa única de letra a partir do currentOrder
@@ -977,6 +1038,102 @@ async function regenerateBlock(blockName, btn) {
     btn.textContent = original;
     if (box) box.classList.remove('regenerating');
   }
+}
+
+// Modifica um trecho específico da letra (palavra ou frase).
+// Envia trecho + letra atual + contexto pra IA, que devolve a letra
+// com APENAS a linha que contém o trecho alterada.
+async function modifyExcerpt() {
+  if (!currentOrder) return;
+  const input  = document.getElementById('excerptInput');
+  const btn    = document.getElementById('btnModifyExcerpt');
+  const status = document.getElementById('excerptStatus');
+  const trecho = (input.value || '').trim();
+
+  if (!trecho) {
+    status.className = 'excerpt-status error';
+    status.textContent = '✘ Cole o trecho que quer modificar.';
+    return;
+  }
+  if (trecho.length < 3) {
+    status.className = 'excerpt-status error';
+    status.textContent = '✘ Trecho muito curto (mínimo 3 caracteres).';
+    return;
+  }
+
+  // Verificar se o trecho existe na letra (case-insensitive)
+  const letraAtual = currentOrder.result.lyrics || '';
+  if (!letraAtual.toLowerCase().includes(trecho.toLowerCase())) {
+    status.className = 'excerpt-status error';
+    status.textContent = '✘ Esse trecho não foi encontrado na letra atual.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = 'excerpt-status';
+  status.textContent = '✨ Modificando trecho... aguarde uns segundos.';
+
+  const box = document.getElementById('lyricsFull');
+  if (box) box.classList.add('regenerating');
+
+  try {
+    const resp = await window.__luxFetch(API_URL + '/modifyExcerpt', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        orderId:    currentOrder.orderId,
+        excerpt:    trecho,
+        lyrics:     letraAtual,
+        briefing:   currentOrder.briefing || '',
+        instrucoes: currentOrder.instrucoes || ''
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.className = 'excerpt-status error';
+      status.textContent = '✘ ' + (data.error || 'Erro desconhecido');
+      return;
+    }
+    currentOrder.result.lyrics = data.lyrics;
+    refreshLyricsBox();
+    status.className = 'excerpt-status success';
+    status.textContent = '✓ Trecho modificado. ' + (data.message || '');
+    input.value = '';
+  } catch (err) {
+    status.className = 'excerpt-status error';
+    status.textContent = '✘ Erro de rede: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    if (box) box.classList.remove('regenerating');
+  }
+}
+
+// Refazer pedido: pré-enche o formulário "Novo Pedido" com os dados
+// de um pedido antigo (briefing, instruções, ritmo). NÃO gera direto —
+// atendente revisa e clica em Gerar Letra. Imagem não é recuperada (se
+// quiser usar de novo, precisa colar/upar de novo — KV não guarda binário).
+function redoOrder() {
+  if (!currentOrder) return;
+
+  // Limpa estado atual e troca pra aba Novo Pedido
+  resetForm();
+  document.querySelector('[data-tab="new"]').click();
+
+  // Pré-enche os campos
+  document.getElementById('briefing').value   = currentOrder.briefing   || '';
+  document.getElementById('instrucoes').value = currentOrder.instrucoes || '';
+  document.getElementById('ritmo').value      = currentOrder.ritmo      || '';
+
+  // Atualiza estado visual do botão ⭐ (favoritos)
+  if (typeof updateSaveButtonState === 'function') updateSaveButtonState();
+
+  // Foca o atendente no campo de briefing
+  setTimeout(() => {
+    const b = document.getElementById('briefing');
+    if (b) b.focus();
+  }, 100);
+
+  showToast('🔁 Pedido carregado. Revise e clique em Gerar Letra.');
 }
 
 // Advanced Mode: adiciona instrumentos no padrão Suno em cada bloco.
@@ -1115,6 +1272,7 @@ async function openHistoryOrder(orderId) {
     currentOrder = {
       orderId:    o.orderId,
       briefing:   o.briefing,
+      instrucoes: o.instrucoes || '',
       ritmo:      o.ritmo,
       clientName: o.clientName,
       result:     o.result,
