@@ -543,8 +543,7 @@ body{
 
       <div class="field">
         <label>Briefing</label>
-        <textarea id="briefing" placeholder="Conte sobre o cliente, produto/serviço, tom desejado, mensagem-chave, endereço, telefone, diferenciais..."></textarea>
-        <span class="hint">💡 <strong>Dica:</strong> endereços, telefones e locais entram automaticamente no Spoken Word do final da música.</span>
+        <textarea id="briefing" placeholder="Conte sobre o cliente, produtos, serviços, mensagem, endereço, telefone, diferenciais..."></textarea>
       </div>
 
       <div class="field">
@@ -562,8 +561,7 @@ body{
           <button type="button" class="mic-cancel" id="micCancelBtn">Cancelar</button>
         </div>
         <div class="mic-status" id="micStatus"></div>
-        <textarea id="instrucoes" placeholder="Como o cliente quer a letra: tom específico, palavras pra evitar, referências musicais, correções pra próxima geração..." style="min-height:90px"></textarea>
-        <span class="hint">Use este campo pra dar instruções diretas pra IA sobre o estilo. Ex: "mais romântica", "evite a palavra paixão", "use rimas simples", "tom alegre como funk anos 2000".</span>
+        <textarea id="instrucoes" placeholder="Como o cliente quer a letra: letra chiclete, refrão repetitivo, música para rádio de trinta segundos, tema específico..." style="min-height:90px"></textarea>
       </div>
 
       <div class="field">
@@ -571,15 +569,13 @@ body{
         <label class="image-upload" id="imageUploadLabel">
           <input type="file" id="imageInput" accept="image/*"/>
           <div class="image-upload-text">
-            <strong>Clique para enviar</strong> ou cole com <strong>Ctrl+V</strong><br/>
-            <small>panfleto, cartão ou foto do estabelecimento — a IA lê automaticamente (até 10MB)</small>
+            <strong>Clique para enviar</strong> ou cole com <strong>Ctrl+V</strong> qualquer imagem
           </div>
         </label>
         <div class="image-preview" id="imagePreview">
           <img id="imagePreviewImg" alt=""/>
           <button type="button" class="remove-img" id="removeImg" title="Remover">✕</button>
         </div>
-        <span class="hint">Se enviar apenas a imagem (sem briefing), a IA vai extrair as informações automaticamente.</span>
       </div>
 
       <div class="field">
