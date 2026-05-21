@@ -102,6 +102,43 @@ body{
 }
 .image-preview.has-img{display:block}
 
+/* ── Ritmos Favoritos ─────────────────────────────────── */
+.ritmo-wrapper{position:relative}
+.ritmo-input-row{display:flex;gap:6px;align-items:stretch}
+.ritmo-input-row input{flex:1}
+.ritmo-btn{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--gold);border-radius:8px;
+  padding:0 12px;font-size:16px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s;white-space:nowrap;display:flex;align-items:center;
+}
+.ritmo-btn:hover:not(:disabled){background:rgba(201,168,76,.1)}
+.ritmo-btn:disabled{opacity:.4;cursor:wait}
+.ritmo-btn.saved{color:#FFD700;border-color:#FFD700}
+.fav-dropdown{
+  position:absolute;top:calc(100% + 4px);right:0;left:0;
+  background:#161616;border:1px solid var(--gold-dim);
+  border-radius:8px;padding:6px;z-index:50;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+  max-height:240px;overflow-y:auto;display:none;
+}
+.fav-dropdown.show{display:block}
+.fav-empty{color:var(--text-dim);font-size:12px;padding:10px;text-align:center}
+.fav-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;border-radius:6px;cursor:pointer;
+  font-size:13px;color:var(--text);transition:background .12s;gap:6px;
+}
+.fav-item:hover{background:rgba(201,168,76,.08)}
+.fav-item-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-item-remove{
+  background:transparent;border:none;color:var(--text-dim);
+  cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;
+  transition:all .12s;
+}
+.fav-item-remove:hover{background:rgba(220,80,80,.15);color:#E89090}
+
 .btn-primary{
   width:100%;padding:14px 24px;
   background:linear-gradient(135deg,var(--gold) 0%,var(--gold-bright) 100%);
@@ -340,12 +377,18 @@ body{
       </div>
 
       <div class="field">
+        <label>📝 Instruções (opcional)</label>
+        <textarea id="instrucoes" placeholder="Como o cliente quer a letra: tom específico, palavras pra evitar, referências musicais, correções pra próxima geração..." style="min-height:90px"></textarea>
+        <span class="hint">Use este campo pra dar instruções diretas pra IA sobre o estilo. Ex: "mais romântica", "evite a palavra paixão", "use rimas simples", "tom alegre como funk anos 2000".</span>
+      </div>
+
+      <div class="field">
         <label>📎 Imagem de Referência (opcional)</label>
         <label class="image-upload" id="imageUploadLabel">
           <input type="file" id="imageInput" accept="image/*"/>
           <div class="image-upload-text">
-            <strong>Clique para enviar</strong> panfleto, cartão ou foto do estabelecimento<br/>
-            <small>A IA lê as informações da imagem automaticamente (até 10MB)</small>
+            <strong>Clique para enviar</strong> ou cole com <strong>Ctrl+V</strong><br/>
+            <small>panfleto, cartão ou foto do estabelecimento — a IA lê automaticamente (até 10MB)</small>
           </div>
         </label>
         <div class="image-preview" id="imagePreview">
@@ -357,7 +400,16 @@ body{
 
       <div class="field">
         <label>Ritmo / Estilo Musical</label>
-        <input type="text" id="ritmo" placeholder="Ex: Forró pé-de-serra, Sertanejo dance, Pagode romântico, Funk consciente..."/>
+        <div class="ritmo-wrapper">
+          <div class="ritmo-input-row">
+            <input type="text" id="ritmo" placeholder="Ex: Forró pé-de-serra, Sertanejo dance, Pagode romântico, Funk consciente..."/>
+            <button type="button" class="ritmo-btn" id="btnSaveFav" title="Salvar como favorito">⭐</button>
+            <button type="button" class="ritmo-btn" id="btnShowFav" title="Ver favoritos">▾</button>
+          </div>
+          <div class="fav-dropdown" id="favDropdown">
+            <div class="fav-empty">Carregando favoritos...</div>
+          </div>
+        </div>
         <span class="hint">Quanto mais específico, melhor a IA acerta o estilo.</span>
       </div>
 
@@ -466,6 +518,174 @@ removeImgBtn.addEventListener('click', () => {
   imagePreview.classList.remove('has-img');
 });
 
+// ── COLAR IMAGEM (Ctrl+V) ─────────────────────────────────────
+// Captura imagem da área de transferência quando a aba "Novo Pedido" está ativa.
+// Funciona com print de tela, foto copiada do WhatsApp Web, etc.
+// ── RITMOS FAVORITOS ──────────────────────────────────────────
+// Guardados no KV LUX_USERS via Worker (endpoints /prefs/favoriteRitmos)
+let favoriteRitmos = [];
+
+async function loadFavorites() {
+  try {
+    let tries = 0;
+    while (!window.__luxFetch && tries < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      tries++;
+    }
+    if (!window.__luxFetch) return;
+    const resp = await window.__luxFetch(API_URL + '/prefs/favoriteRitmos');
+    const data = await resp.json();
+    if (data.ok && Array.isArray(data.favorites)) {
+      favoriteRitmos = data.favorites;
+      updateSaveButtonState();
+    }
+  } catch (e) { /* silencioso, favoritos não são críticos */ }
+}
+loadFavorites();
+
+function updateSaveButtonState() {
+  const inp = document.getElementById('ritmo');
+  const btn = document.getElementById('btnSaveFav');
+  if (!inp || !btn) return;
+  const current = inp.value.trim().toLowerCase();
+  const isSaved = current && favoriteRitmos.some(r => r.toLowerCase() === current);
+  btn.classList.toggle('saved', !!isSaved);
+  btn.title = isSaved ? 'Já está nos favoritos' : 'Salvar como favorito';
+}
+
+document.getElementById('ritmo').addEventListener('input', updateSaveButtonState);
+
+document.getElementById('btnSaveFav').addEventListener('click', async () => {
+  const inp = document.getElementById('ritmo');
+  const ritmo = inp.value.trim();
+  if (!ritmo) { showToast('Digite um ritmo antes de salvar.', true); return; }
+  if (favoriteRitmos.some(r => r.toLowerCase() === ritmo.toLowerCase())) {
+    showToast('Já está nos favoritos.', true);
+    return;
+  }
+  if (favoriteRitmos.length >= 20) {
+    showToast('Limite de 20 favoritos atingido. Remova algum antes.', true);
+    return;
+  }
+  const btn = document.getElementById('btnSaveFav');
+  btn.disabled = true;
+  try {
+    const resp = await window.__luxFetch(API_URL + '/prefs/favoriteRitmos', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ action: 'add', ritmo })
+    });
+    const data = await resp.json();
+    if (!data.ok) { showToast('Erro: ' + (data.error || 'falha ao salvar'), true); return; }
+    favoriteRitmos = data.favorites || [];
+    showToast('⭐ Salvo como favorito');
+    updateSaveButtonState();
+  } catch (err) {
+    showToast('Erro de rede: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btnShowFav').addEventListener('click', () => {
+  const dd = document.getElementById('favDropdown');
+  const isOpen = dd.classList.contains('show');
+  renderFavorites();
+  dd.classList.toggle('show', !isOpen);
+});
+
+// Fecha o dropdown se clicar fora
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('favDropdown');
+  const wrap = e.target.closest('.ritmo-wrapper');
+  if (!wrap && dd) dd.classList.remove('show');
+});
+
+function renderFavorites() {
+  const dd = document.getElementById('favDropdown');
+  if (!favoriteRitmos.length) {
+    dd.innerHTML = '<div class="fav-empty">Você ainda não tem ritmos favoritos.<br/>Digite um e clique em ⭐</div>';
+    return;
+  }
+  let html = '';
+  favoriteRitmos.forEach((r, idx) => {
+    html += `
+      <div class="fav-item" data-idx="${idx}">
+        <span class="fav-item-text" title="${escapeHtml(r)}">${escapeHtml(r)}</span>
+        <button type="button" class="fav-item-remove" data-remove="${idx}" title="Remover">✕</button>
+      </div>
+    `;
+  });
+  dd.innerHTML = html;
+
+  dd.querySelectorAll('.fav-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('fav-item-remove')) return;
+      const idx = Number(el.dataset.idx);
+      document.getElementById('ritmo').value = favoriteRitmos[idx];
+      dd.classList.remove('show');
+      updateSaveButtonState();
+    });
+  });
+  dd.querySelectorAll('.fav-item-remove').forEach(b => {
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = Number(b.dataset.remove);
+      const ritmo = favoriteRitmos[idx];
+      if (!ritmo) return;
+      try {
+        const resp = await window.__luxFetch(API_URL + '/prefs/favoriteRitmos', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'remove', ritmo })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          favoriteRitmos = data.favorites || [];
+          renderFavorites();
+          updateSaveButtonState();
+          showToast('Removido dos favoritos');
+        } else {
+          showToast('Erro ao remover', true);
+        }
+      } catch (err) {
+        showToast('Erro de rede: ' + err.message, true);
+      }
+    });
+  });
+}
+
+document.addEventListener('paste', async (e) => {
+  // Só processa se a aba Novo Pedido estiver ativa
+  const tabNew = document.getElementById('tab-new');
+  if (!tabNew || !tabNew.classList.contains('active')) return;
+
+  const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+  if (!items) return;
+
+  for (const item of items) {
+    if (item.type && item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) continue;
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('Imagem maior que 10MB. Use uma menor.', true);
+        return;
+      }
+      try {
+        const { base64, mime, dataUrl } = await compressImage(file);
+        compressedImage = { base64, mime };
+        imagePreviewImg.src = dataUrl;
+        imagePreview.classList.add('has-img');
+        showToast('✓ Imagem colada');
+      } catch (err) {
+        showToast('Erro ao processar imagem colada: ' + err.message, true);
+      }
+      return;
+    }
+  }
+});
+
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -495,9 +715,10 @@ function compressImage(file) {
 }
 
 document.getElementById('btnGerar').addEventListener('click', async () => {
-  const briefing = document.getElementById('briefing').value.trim();
-  const ritmo    = document.getElementById('ritmo').value.trim();
-  const status   = document.getElementById('statusGerar');
+  const briefing  = document.getElementById('briefing').value.trim();
+  const instrucoes = document.getElementById('instrucoes').value.trim();
+  const ritmo     = document.getElementById('ritmo').value.trim();
+  const status    = document.getElementById('statusGerar');
 
   if (!briefing && !compressedImage) {
     showToast('Preencha o briefing ou envie uma imagem.', true);
@@ -511,7 +732,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
   status.textContent = 'Gerando letra com IA... pode levar até 30 segundos.';
 
   try {
-    const body = { briefing, ritmo };
+    const body = { briefing, ritmo, instrucoes };
     if (compressedImage) {
       body.imageBase64 = compressedImage.base64;
       body.imageMime   = compressedImage.mime;
@@ -534,6 +755,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
     currentOrder = {
       orderId:    data.orderId,
       briefing,
+      instrucoes,
       ritmo,
       clientName: data.result.nome_negocio || '',
       result:     data.result,
@@ -735,7 +957,8 @@ async function regenerateBlock(blockName, btn) {
         orderId:     currentOrder.orderId,
         sectionName: sections[idx].name,
         lyrics:      currentOrder.result.lyrics,
-        briefing:    currentOrder.briefing
+        briefing:    currentOrder.briefing,
+        instrucoes:  currentOrder.instrucoes || ''
       })
     });
     const data = await resp.json();
@@ -829,6 +1052,7 @@ function copyPromptOnly() {
 
 function resetForm() {
   document.getElementById('briefing').value = '';
+  document.getElementById('instrucoes').value = '';
   document.getElementById('ritmo').value = '';
   compressedImage = null;
   imageInput.value = '';
