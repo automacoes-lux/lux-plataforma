@@ -299,6 +299,7 @@ body{
 .style-restyle-hint{
   font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;
 }
+.style-restyle-hint-lg{font-size:15px;color:var(--text);font-weight:500}
 .style-restyle-row{
   display:flex;gap:8px;align-items:stretch;
 }
@@ -401,6 +402,51 @@ body{
 /* ── Modificar letra por bloco ── */
 .modify-box{margin-bottom:1.5rem}
 .modify-hint{font-size:12px;color:var(--text-dim);margin-bottom:10px}
+.modify-hint-lg{font-size:15px;color:var(--text);font-weight:500;margin-bottom:12px}
+
+/* ── Título destacado: "Utilize os recursos..." ───── */
+.modify-section-title{
+  font-family:'Cinzel',serif;
+  color:var(--gold);
+  font-size:17px;
+  letter-spacing:.05em;
+  text-align:center;
+  margin:1.5rem 0 1rem;
+  padding:14px 16px;
+  background:linear-gradient(135deg,rgba(201,168,76,.12) 0%,rgba(201,168,76,.05) 100%);
+  border-top:1px solid var(--gold-dim);
+  border-bottom:1px solid var(--gold-dim);
+  border-radius:0;
+  text-transform:uppercase;
+}
+
+/* ── Caixa "Correção detalhada" ──────────────────── */
+.correction-box{
+  background:#141414;
+  border:1px solid var(--border-bright);
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:1.25rem;
+}
+.correction-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;flex-wrap:wrap;gap:8px;
+}
+.correction-head label{
+  display:block;font-size:14px;font-weight:600;letter-spacing:.1em;
+  color:var(--gold-dim);text-transform:uppercase;margin:0;
+}
+.correction-box textarea{
+  width:100%;background:#0E0E0E;border:1px solid var(--border);
+  color:var(--text);padding:11px 13px;border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:14px;
+  resize:vertical;transition:border-color .15s;
+}
+.correction-box textarea:focus{outline:none;border-color:var(--gold-dim)}
+.correction-hint{
+  font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;
+  font-style:italic;
+}
 .block-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .block-btn{
   background:transparent;border:1px solid var(--border-bright);
@@ -514,7 +560,7 @@ body{
 <div class="container">
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="new">✦ Novo Pedido</button>
+    <button class="tab-btn active" data-tab="new">✦ Gerar Letra</button>
     <button class="tab-btn" data-tab="lyrics" id="tab-lyrics-btn" style="display:none">🎵 Letra Gerada</button>
     <button class="tab-btn" data-tab="history">📜 Histórico</button>
   </div>
@@ -879,24 +925,11 @@ document.addEventListener('paste', async (e) => {
   }
 });
 
-// ── GRAVADOR DE ÁUDIO (Instruções) ──────────────────────────
+// ── GRAVADOR DE ÁUDIO (factory function) ─────────────────────
 // Usa MediaRecorder do browser → manda webm pra Whisper API.
 // Custo: ~US$0,006/min. Limite: 2min/gravação.
+// Reutilizável: cria um gravador independente pra cada par (botão+textarea).
 const MIC_MAX_SECONDS = 120; // 2 minutos
-
-let mediaRecorder = null;
-let micChunks = [];
-let micStartTime = 0;
-let micTimer = null;
-let micStream = null;
-let micCancelled = false;
-
-const micBtn       = document.getElementById('micBtn');
-const micState     = document.getElementById('micState');
-const micTime      = document.getElementById('micTime');
-const micStopBtn   = document.getElementById('micStopBtn');
-const micCancelBtn = document.getElementById('micCancelBtn');
-const micStatus    = document.getElementById('micStatus');
 
 function formatMicTime(secs) {
   const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -904,23 +937,57 @@ function formatMicTime(secs) {
   return `${m}:${s}`;
 }
 
-function micSetStatus(text, kind) {
-  if (!micStatus) return;
-  micStatus.className = 'mic-status' + (kind ? ' ' + kind : '');
-  micStatus.textContent = text || '';
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const idx = dataUrl.indexOf(',');
+      resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
-function micCleanupStream() {
-  if (micStream) {
-    try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-    micStream = null;
+function setupMicRecorder(opts) {
+  const micBtn       = document.getElementById(opts.btnId);
+  const micState     = document.getElementById(opts.stateId);
+  const micTime      = document.getElementById(opts.timeId);
+  const micStopBtn   = document.getElementById(opts.stopBtnId);
+  const micCancelBtn = document.getElementById(opts.cancelBtnId);
+  const micStatus    = document.getElementById(opts.statusId);
+  const targetTa     = document.getElementById(opts.textareaId);
+
+  if (!micBtn || !micState || !micTime || !micStopBtn || !micCancelBtn || !micStatus || !targetTa) return;
+
+  // Evita anexar handler 2x (importante porque setupMicForCorrection roda em cada renderLyrics)
+  if (micBtn.dataset.micAttached === '1') return;
+  micBtn.dataset.micAttached = '1';
+
+  // Estado isolado deste gravador
+  let mediaRecorder = null;
+  let micChunks = [];
+  let micStartTime = 0;
+  let micTimer = null;
+  let micStream = null;
+  let micCancelled = false;
+
+  function micSetStatus(text, kind) {
+    micStatus.className = 'mic-status' + (kind ? ' ' + kind : '');
+    micStatus.textContent = text || '';
   }
-  if (micTimer) { clearInterval(micTimer); micTimer = null; }
-  mediaRecorder = null;
-  micChunks = [];
-}
 
-if (micBtn) {
+  function micCleanupStream() {
+    if (micStream) {
+      try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      micStream = null;
+    }
+    if (micTimer) { clearInterval(micTimer); micTimer = null; }
+    mediaRecorder = null;
+    micChunks = [];
+  }
+
   micBtn.addEventListener('click', async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       micSetStatus('Seu navegador não suporta gravação de áudio.', 'error');
@@ -932,7 +999,6 @@ if (micBtn) {
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      // Erro comum: usuário negou permissão
       let msg = 'Não consegui acessar o microfone.';
       if (err.name === 'NotAllowedError') msg = 'Permissão de microfone negada. Libere nas configurações do navegador.';
       else if (err.name === 'NotFoundError') msg = 'Nenhum microfone encontrado no dispositivo.';
@@ -940,7 +1006,6 @@ if (micBtn) {
       return;
     }
 
-    // Escolhe mime que o browser suporta (preferindo webm/opus)
     let mime = '';
     const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4'];
     for (const c of candidates) {
@@ -963,13 +1028,11 @@ if (micBtn) {
     });
 
     mediaRecorder.addEventListener('stop', async () => {
-      const stream = micStream;       // captura ref antes do cleanup
       const wasCancelled = micCancelled;
       const finalMime = mediaRecorder?.mimeType || mime || 'audio/webm';
       const chunks = micChunks.slice();
       micCleanupStream();
 
-      // Reseta UI
       micState.style.display = 'none';
       micBtn.style.display = '';
 
@@ -978,7 +1041,6 @@ if (micBtn) {
         return;
       }
 
-      // Envia pro Whisper
       const blob = new Blob(chunks, { type: finalMime });
       if (blob.size < 1000) {
         micSetStatus('Áudio muito curto.', 'error');
@@ -1004,15 +1066,14 @@ if (micBtn) {
           micSetStatus('Áudio sem fala identificada.', 'error');
           return;
         }
-        // Concatena no textarea (não substitui)
-        const ta = document.getElementById('instrucoes');
-        const cur = ta.value.trim();
-        ta.value = cur
+        const cur = targetTa.value.trim();
+        targetTa.value = cur
           ? cur + '\n\n' + transcript
           : transcript;
-        ta.focus();
-        // Coloca cursor no final
-        try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (_) {}
+        targetTa.focus();
+        try { targetTa.setSelectionRange(targetTa.value.length, targetTa.value.length); } catch (_) {}
+        // Dispara evento input pra atualizar a visibilidade da lixeira
+        targetTa.dispatchEvent(new Event('input', { bubbles: true }));
         micSetStatus('✓ Transcrito (' + transcript.length + ' caracteres).', 'success');
         setTimeout(() => micSetStatus(''), 4000);
       } catch (err) {
@@ -1022,7 +1083,6 @@ if (micBtn) {
       }
     });
 
-    // Inicia gravação
     mediaRecorder.start();
     micStartTime = Date.now();
     micBtn.style.display = 'none';
@@ -1033,7 +1093,6 @@ if (micBtn) {
       const secs = (Date.now() - micStartTime) / 1000;
       micTime.textContent = formatMicTime(secs);
       if (secs >= MIC_MAX_SECONDS) {
-        // Para automaticamente no limite
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           micCancelled = false;
           mediaRecorder.stop();
@@ -1041,32 +1100,39 @@ if (micBtn) {
       }
     }, 250);
   });
-}
 
-if (micStopBtn) {
   micStopBtn.addEventListener('click', () => {
     micCancelled = false;
     if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
   });
-}
 
-if (micCancelBtn) {
   micCancelBtn.addEventListener('click', () => {
     micCancelled = true;
     if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
   });
 }
 
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      const idx = dataUrl.indexOf(',');
-      resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
+// Setup do gravador das Instruções (aba "Gerar Letra")
+setupMicRecorder({
+  btnId:       'micBtn',
+  stateId:     'micState',
+  timeId:      'micTime',
+  stopBtnId:   'micStopBtn',
+  cancelBtnId: 'micCancelBtn',
+  statusId:    'micStatus',
+  textareaId:  'instrucoes'
+});
+
+// Setup do gravador da Correção detalhada (criado depois, dentro de renderLyrics)
+function setupMicForCorrection() {
+  setupMicRecorder({
+    btnId:       'micBtnCorr',
+    stateId:     'micStateCorr',
+    timeId:      'micTimeCorr',
+    stopBtnId:   'micStopBtnCorr',
+    cancelBtnId: 'micCancelBtnCorr',
+    statusId:    'micStatusCorr',
+    textareaId:  'correcaoDetalhada'
   });
 }
 
@@ -1179,8 +1245,32 @@ function renderLyrics(order) {
 
     <div class="lyrics-full" id="lyricsFull">${escapeHtml(letraCompleta)}</div>
 
+    <div class="modify-section-title">Utilize os recursos abaixo para modificar a sua letra</div>
+
+    <div class="correction-box">
+      <div class="correction-head">
+        <label for="correcaoDetalhada">📝 Correção detalhada</label>
+        <button type="button" class="mic-btn" id="micBtnCorr" title="Gravar áudio (máx 2 min)">
+          <span class="mic-icon">🎙️</span>
+          <span class="mic-text">Gravar áudio</span>
+        </button>
+      </div>
+      <div class="mic-state" id="micStateCorr" style="display:none">
+        <div class="mic-pulse"></div>
+        <span class="mic-time" id="micTimeCorr">00:00</span>
+        <button type="button" class="mic-stop" id="micStopBtnCorr">⏹ Parar</button>
+        <button type="button" class="mic-cancel" id="micCancelBtnCorr">Cancelar</button>
+      </div>
+      <div class="mic-status" id="micStatusCorr"></div>
+      <div class="textarea-wrap">
+        <button type="button" class="btn-clear-text" id="btnClearCorrecao" title="Apagar tudo">🗑️</button>
+        <textarea id="correcaoDetalhada" placeholder="Informe o que você deseja alterar na letra." style="min-height:80px"></textarea>
+      </div>
+      <div class="correction-hint">Esta correção será usada como contexto adicional quando você modificar um bloco, um trecho ou refazer o prompt.</div>
+    </div>
+
     <div class="modify-box">
-      <div class="modify-hint">Clique no bloco que deseja modificar — só aquela parte muda, o resto da letra é mantido.</div>
+      <div class="modify-hint modify-hint-lg">altere cada verso da letra com um clique</div>
       <div class="block-btns">
         <button class="block-btn" data-block="Verse">Verse</button>
         <button class="block-btn" data-block="Chorus">Chorus</button>
@@ -1190,9 +1280,9 @@ function renderLyrics(order) {
 
       <div class="excerpt-divider"></div>
 
-      <div class="modify-hint">Ou cole um trecho específico abaixo (palavra, frase ou linha) — só esse trecho muda, mantendo a rima e o sentido.</div>
+      <div class="modify-hint modify-hint-lg">altere sómente uma frase ou palavra na letra.</div>
       <div class="excerpt-row">
-        <input type="text" id="excerptInput" maxlength="200" placeholder="Ex: Body Club Fitness... ou: amor pra sempre"/>
+        <input type="text" id="excerptInput" maxlength="200" placeholder="Informe a parte que deve ser alterada"/>
         <button class="excerpt-btn" id="btnModifyExcerpt">Modificar trecho</button>
       </div>
       <div class="excerpt-status" id="excerptStatus"></div>
@@ -1206,10 +1296,10 @@ function renderLyrics(order) {
         <span><strong>Style Influence:</strong> <b class="num-white" id="styleInfluence">${r.style_influence ?? '-'}</b></span>
       </div>
       <div class="style-restyle">
-        <div class="style-restyle-hint">Quer mudar o estilo musical sem regerar a letra? Digite o novo ritmo e clique em "Refazer estilo".</div>
+        <div class="style-restyle-hint style-restyle-hint-lg">gere um novo prompt informando o ritmo e as caracteristicas desejadas</div>
         <div class="style-restyle-row">
           <input type="text" id="newRitmoInput" placeholder="Ex: Forró pé-de-serra, Pagode romântico, Sertanejo dance..." value="${escapeHtml(currentOrder.ritmo || '')}"/>
-          <button type="button" class="style-restyle-btn" id="btnRefazerEstilo">🔄 Refazer estilo</button>
+          <button type="button" class="style-restyle-btn" id="btnRefazerEstilo">🔄 Refazer prompt</button>
         </div>
         <div class="style-restyle-status" id="styleRestyleStatus"></div>
       </div>
@@ -1257,7 +1347,7 @@ function renderLyrics(order) {
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
       </div>
-      <button class="btn-primary" id="btnNew">+ Novo Pedido</button>
+      <button class="btn-primary" id="btnNew">+ Gerar Nova Letra</button>
     </div>
   `;
 
@@ -1312,6 +1402,12 @@ function renderLyrics(order) {
       if (e.key === 'Enter') { e.preventDefault(); refazerEstilo(); }
     });
   }
+
+  // Lixeira da Correção detalhada (textarea só existe agora, após renderLyrics)
+  attachClearTextButton('correcaoDetalhada', 'btnClearCorrecao');
+
+  // Gravador de áudio da Correção detalhada
+  setupMicForCorrection();
 }
 
 // Atualiza a caixa única de letra a partir do currentOrder
@@ -1354,6 +1450,18 @@ function parseLyrics(text) {
   return merged;
 }
 
+// Junta as Instruções (preenchidas antes de gerar) com a Correção detalhada
+// (preenchida depois, na tela da letra) num único bloco pra mandar pra IA.
+function getCombinedInstructions() {
+  const instInit = (currentOrder?.instrucoes || '').trim();
+  const correcaoEl = document.getElementById('correcaoDetalhada');
+  const correcao = correcaoEl ? (correcaoEl.value || '').trim() : '';
+  if (instInit && correcao) {
+    return instInit + '\n\n[CORREÇÃO ADICIONAL DO ATENDENTE]:\n' + correcao;
+  }
+  return correcao || instInit;
+}
+
 // Regenera UM bloco pelo nome (Verse/Chorus/Bridge/Outro).
 // Reusa o endpoint /regenerateSection que já existe e funciona.
 // Se houver vários blocos com o mesmo nome, regenera o primeiro.
@@ -1383,7 +1491,7 @@ async function regenerateBlock(blockName, btn) {
         sectionName: sections[idx].name,
         lyrics:      currentOrder.result.lyrics,
         briefing:    currentOrder.briefing,
-        instrucoes:  currentOrder.instrucoes || ''
+        instrucoes:  getCombinedInstructions()
       })
     });
     const data = await resp.json();
@@ -1449,7 +1557,7 @@ async function modifyExcerpt() {
         excerpt:    trecho,
         lyrics:     letraAtual,
         briefing:   currentOrder.briefing || '',
-        instrucoes: currentOrder.instrucoes || ''
+        instrucoes: getCombinedInstructions()
       })
     });
     const data = await resp.json();
@@ -1494,16 +1602,17 @@ async function refazerEstilo() {
 
   btn.disabled = true;
   status.className = 'style-restyle-status';
-  status.textContent = '✨ Gerando novo estilo... aguarde.';
+  status.textContent = '✨ Gerando novo prompt... aguarde.';
 
   try {
     const resp = await window.__luxFetch(API_URL + '/restyle', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
-        orderId:  currentOrder.orderId,
-        ritmo:    novoRitmo,
-        briefing: currentOrder.briefing || ''
+        orderId:    currentOrder.orderId,
+        ritmo:      novoRitmo,
+        briefing:   currentOrder.briefing || '',
+        instrucoes: getCombinedInstructions()
       })
     });
     const data = await resp.json();
@@ -1526,7 +1635,7 @@ async function refazerEstilo() {
     if (el3) el3.textContent = data.style_influence;
 
     status.className = 'style-restyle-status success';
-    status.textContent = '✓ Estilo atualizado.';
+    status.textContent = '✓ Prompt atualizado.';
     setTimeout(() => { status.textContent = ''; status.className = 'style-restyle-status'; }, 4000);
   } catch (err) {
     status.className = 'style-restyle-status error';
