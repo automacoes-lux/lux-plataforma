@@ -62,7 +62,7 @@ body{
 .form-grid{display:grid;gap:1.2rem}
 
 .field label{
-  display:block;font-size:11px;font-weight:600;letter-spacing:.1em;
+  display:block;font-size:14px;font-weight:600;letter-spacing:.1em;
   color:var(--gold-dim);margin-bottom:6px;text-transform:uppercase;
 }
 .field input,.field textarea,.field select{
@@ -79,6 +79,20 @@ body{
   display:block;font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;
 }
 .field .hint strong{color:var(--gold-dim)}
+
+/* ── Botão Lixeira pra limpar textarea ─────────────── */
+.textarea-wrap{position:relative}
+.btn-clear-text{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,.4);border:1px solid var(--border);
+  color:var(--text-dim);border-radius:6px;
+  padding:5px 8px;font-size:14px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s;line-height:1;z-index:2;
+  display:none;
+}
+.btn-clear-text:hover{background:rgba(220,80,80,.18);color:#E89090;border-color:#E89090}
+.btn-clear-text.visible{display:inline-block}
 
 .image-upload{
   border:2px dashed var(--border);border-radius:10px;
@@ -116,6 +130,7 @@ body{
 .ritmo-btn:hover:not(:disabled){background:rgba(201,168,76,.1)}
 .ritmo-btn:disabled{opacity:.4;cursor:wait}
 .ritmo-btn.saved{color:#FFD700;border-color:#FFD700}
+.ritmo-btn-arrow{font-size:22px;line-height:1;padding:0 14px}
 .fav-dropdown{
   position:absolute;top:calc(100% + 4px);right:0;left:0;
   background:#161616;border:1px solid var(--gold-dim);
@@ -164,74 +179,6 @@ body{
   text-align:center;white-space:nowrap;
 }
 .btn-secondary:hover{background:rgba(201,168,76,.08)}
-
-/* ── Botão Suno (destaque) ─────────────────────────── */
-.btn-suno{
-  width:100%;padding:14px 24px;
-  background:linear-gradient(135deg,#1ED760 0%,#15A04A 100%);
-  border:none;border-radius:10px;
-  color:#0E0E0E;font-family:'DM Sans',sans-serif;
-  font-size:14px;font-weight:700;letter-spacing:.08em;
-  cursor:pointer;
-  transition:transform .1s,box-shadow .15s;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.btn-suno:hover:not(:disabled){
-  transform:translateY(-1px);
-  box-shadow:0 6px 18px rgba(30,215,96,.3);
-}
-.btn-suno:disabled{opacity:.5;cursor:wait}
-
-/* ── Modal de instrução do Suno ──────────────────── */
-.suno-modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.7);
-  display:none;align-items:center;justify-content:center;
-  z-index:1000;padding:1rem;
-  animation:fadeIn .15s ease-out;
-}
-.suno-modal-backdrop.show{display:flex}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.suno-modal{
-  background:#181818;border:1px solid var(--gold-dim);
-  border-radius:12px;padding:1.8rem 1.5rem;
-  max-width:500px;width:100%;
-  box-shadow:0 10px 40px rgba(0,0,0,.5);
-}
-.suno-modal h3{
-  font-family:'Cinzel',serif;color:var(--gold);
-  font-size:16px;margin-bottom:1rem;letter-spacing:.06em;
-}
-.suno-modal-steps{
-  list-style:none;padding:0;margin:1rem 0;
-}
-.suno-modal-steps li{
-  padding:8px 0;color:var(--text);font-size:13px;line-height:1.5;
-  padding-left:28px;position:relative;
-}
-.suno-modal-steps li::before{
-  content:counter(step);counter-increment:step;
-  position:absolute;left:0;top:8px;
-  background:var(--gold);color:#1a1a1a;
-  width:20px;height:20px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;
-}
-.suno-modal-steps{counter-reset:step}
-.suno-modal-actions{
-  display:flex;gap:8px;margin-top:1.5rem;
-}
-.suno-modal-actions button{flex:1}
-.suno-modal-ok{
-  background:linear-gradient(135deg,#1ED760 0%,#15A04A 100%);
-  border:none;color:#0E0E0E;font-weight:700;
-  padding:12px;border-radius:8px;cursor:pointer;
-  font-size:13px;letter-spacing:.06em;font-family:'DM Sans',sans-serif;
-}
-.suno-modal-cancel{
-  background:transparent;border:1px solid var(--border-bright);
-  color:var(--text-dim);padding:12px;border-radius:8px;cursor:pointer;
-  font-size:13px;font-family:'DM Sans',sans-serif;
-}
 
 /* ── Gravador de áudio (Instruções) ───────────────── */
 .instr-label-row{
@@ -344,6 +291,40 @@ body{
 }
 .style-box-meta strong{color:var(--gold-dim);font-weight:500}
 .style-box-meta .num-white{color:#FFFFFF;font-weight:600}
+
+/* ── Refazer estilo musical ──────────────────────── */
+.style-restyle{
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+}
+.style-restyle-hint{
+  font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;
+}
+.style-restyle-row{
+  display:flex;gap:8px;align-items:stretch;
+}
+.style-restyle-row input{
+  flex:1;background:#0E0E0E;border:1px solid var(--border-bright);
+  color:var(--text);border-radius:8px;padding:10px 12px;
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  transition:border-color .15s;
+}
+.style-restyle-row input:focus{outline:none;border-color:var(--gold-dim)}
+.style-restyle-btn{
+  background:rgba(201,168,76,.15);border:1px solid var(--gold-dim);
+  color:var(--gold);border-radius:8px;
+  padding:0 16px;font-size:13px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s;white-space:nowrap;
+}
+.style-restyle-btn:hover:not(:disabled){background:rgba(201,168,76,.25)}
+.style-restyle-btn:disabled{opacity:.5;cursor:wait}
+.style-restyle-status{font-size:12px;color:var(--text-dim);margin-top:8px;min-height:16px}
+.style-restyle-status.success{color:#8FD68F}
+.style-restyle-status.error{color:#E89090}
+@media(max-width:520px){
+  .style-restyle-row{flex-direction:column}
+  .style-restyle-btn{padding:10px}
+}
 
 .lyrics-actions{margin-top:1.5rem;display:flex;flex-direction:column;gap:1.5rem}
 .lyrics-actions .copy-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -543,7 +524,10 @@ body{
 
       <div class="field">
         <label>Briefing</label>
-        <textarea id="briefing" placeholder="Conte sobre o cliente, produtos, serviços, mensagem, endereço, telefone, diferenciais..."></textarea>
+        <div class="textarea-wrap">
+          <button type="button" class="btn-clear-text" id="btnClearBriefing" title="Apagar tudo">🗑️</button>
+          <textarea id="briefing" placeholder="Conte sobre o cliente, produtos, serviços, mensagem, endereço, telefone, diferenciais..."></textarea>
+        </div>
       </div>
 
       <div class="field">
@@ -561,7 +545,10 @@ body{
           <button type="button" class="mic-cancel" id="micCancelBtn">Cancelar</button>
         </div>
         <div class="mic-status" id="micStatus"></div>
-        <textarea id="instrucoes" placeholder="Como o cliente quer a letra: letra chiclete, refrão repetitivo, música para rádio de trinta segundos, tema específico..." style="min-height:90px"></textarea>
+        <div class="textarea-wrap">
+          <button type="button" class="btn-clear-text" id="btnClearInstrucoes" title="Apagar tudo">🗑️</button>
+          <textarea id="instrucoes" placeholder="Como o cliente quer a letra: letra chiclete, refrão repetitivo, música para rádio de trinta segundos, tema específico..." style="min-height:90px"></textarea>
+        </div>
       </div>
 
       <div class="field">
@@ -584,7 +571,7 @@ body{
           <div class="ritmo-input-row">
             <input type="text" id="ritmo" placeholder="Ex: Forró pé-de-serra, Sertanejo dance, Pagode romântico, Funk consciente..."/>
             <button type="button" class="ritmo-btn" id="btnSaveFav" title="Salvar como favorito">⭐</button>
-            <button type="button" class="ritmo-btn" id="btnShowFav" title="Ver favoritos">▾</button>
+            <button type="button" class="ritmo-btn ritmo-btn-arrow" id="btnShowFav" title="Ver favoritos">▾</button>
           </div>
           <div class="fav-dropdown" id="favDropdown">
             <div class="fav-empty">Carregando favoritos...</div>
@@ -619,28 +606,6 @@ body{
 </div>
 
 <div class="toast" id="toast"></div>
-
-<!-- Modal de instrução do Suno -->
-<div class="suno-modal-backdrop" id="sunoModal">
-  <div class="suno-modal">
-    <h3>🎵 Tudo copiado!</h3>
-    <p style="font-size:13px;color:var(--text-dim);margin-bottom:1rem">
-      O Suno vai abrir em outra aba. Lá, siga estes passos:
-    </p>
-    <ol class="suno-modal-steps">
-      <li>Faça login (se ainda não estiver logado)</li>
-      <li>Clique em <strong>"Custom"</strong> (modo manual)</li>
-      <li>Cole a <strong>letra</strong> no campo <em>Lyrics</em></li>
-      <li>Cole o <strong>estilo</strong> no campo <em>Style</em></li>
-      <li>Ajuste <strong>Weirdness</strong> e <strong>Style Influence</strong></li>
-      <li>Clique em <strong>Create</strong> 🎶</li>
-    </ol>
-    <div class="suno-modal-actions">
-      <button class="suno-modal-cancel" id="sunoModalCancel">Cancelar</button>
-      <button class="suno-modal-ok" id="sunoModalOpen">Abrir Suno →</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const API_URL = 'https://lux-music.plataformalux.workers.dev';
@@ -695,6 +660,25 @@ async function initAtendente() {
   }
 }
 initAtendente();
+
+// ── BOTÕES LIXEIRA (limpar Briefing / Instruções) ─────────────
+function attachClearTextButton(textareaId, buttonId) {
+  const ta  = document.getElementById(textareaId);
+  const btn = document.getElementById(buttonId);
+  if (!ta || !btn) return;
+  const sync = () => btn.classList.toggle('visible', ta.value.trim().length > 0);
+  ta.addEventListener('input', sync);
+  btn.addEventListener('click', () => {
+    if (!ta.value) return;
+    if (ta.value.trim().length > 20 && !confirm('Apagar todo o conteúdo deste campo?')) return;
+    ta.value = '';
+    sync();
+    ta.focus();
+  });
+  sync(); // estado inicial
+}
+attachClearTextButton('briefing',   'btnClearBriefing');
+attachClearTextButton('instrucoes', 'btnClearInstrucoes');
 
 const imageInput   = document.getElementById('imageInput');
 const imagePreview = document.getElementById('imagePreview');
@@ -1216,10 +1200,18 @@ function renderLyrics(order) {
 
     <div class="style-box">
       <div class="style-box-label">Estilo / Style Prompt</div>
-      <div class="style-box-content">${escapeHtml(r.style_prompt || '')}</div>
+      <div class="style-box-content" id="styleBoxContent">${escapeHtml(r.style_prompt || '')}</div>
       <div class="style-box-meta">
-        <span><strong>Weirdness:</strong> <b class="num-white">${r.weirdness ?? '-'}</b></span>
-        <span><strong>Style Influence:</strong> <b class="num-white">${r.style_influence ?? '-'}</b></span>
+        <span><strong>Weirdness:</strong> <b class="num-white" id="styleWeirdness">${r.weirdness ?? '-'}</b></span>
+        <span><strong>Style Influence:</strong> <b class="num-white" id="styleInfluence">${r.style_influence ?? '-'}</b></span>
+      </div>
+      <div class="style-restyle">
+        <div class="style-restyle-hint">Quer mudar o estilo musical sem regerar a letra? Digite o novo ritmo e clique em "Refazer estilo".</div>
+        <div class="style-restyle-row">
+          <input type="text" id="newRitmoInput" placeholder="Ex: Forró pé-de-serra, Pagode romântico, Sertanejo dance..." value="${escapeHtml(currentOrder.ritmo || '')}"/>
+          <button type="button" class="style-restyle-btn" id="btnRefazerEstilo">🔄 Refazer estilo</button>
+        </div>
+        <div class="style-restyle-status" id="styleRestyleStatus"></div>
       </div>
     </div>
 
@@ -1261,13 +1253,9 @@ function renderLyrics(order) {
     </div>
 
     <div class="lyrics-actions" style="margin-top:1.5rem">
-      <button class="btn-suno" id="btnSendSuno">🎵 Enviar pro Suno</button>
-      <div class="copy-row" style="margin-top:10px">
+      <div class="copy-row">
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
-      </div>
-      <div class="copy-row" style="margin-top:8px">
-        <button class="btn-secondary" id="btnRedoOrder">🔁 Refazer Pedido</button>
       </div>
       <button class="btn-primary" id="btnNew">+ Novo Pedido</button>
     </div>
@@ -1313,16 +1301,16 @@ function renderLyrics(order) {
     });
   }
 
-  // Refazer pedido (visível quando aberto do histórico)
-  const btnRedo = document.getElementById('btnRedoOrder');
-  if (btnRedo) {
-    btnRedo.addEventListener('click', () => redoOrder());
+  // Refazer estilo musical (sem mexer na letra)
+  const btnRefazerEstilo = document.getElementById('btnRefazerEstilo');
+  const newRitmoInput = document.getElementById('newRitmoInput');
+  if (btnRefazerEstilo) {
+    btnRefazerEstilo.addEventListener('click', () => refazerEstilo());
   }
-
-  // Enviar pro Suno
-  const btnSuno = document.getElementById('btnSendSuno');
-  if (btnSuno) {
-    btnSuno.addEventListener('click', () => sendToSuno());
+  if (newRitmoInput) {
+    newRitmoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); refazerEstilo(); }
+    });
   }
 }
 
@@ -1484,6 +1472,70 @@ async function modifyExcerpt() {
   }
 }
 
+// Refazer estilo musical (style_prompt + weirdness + style_influence)
+// sem mexer na letra. Atendente quer mudar de Funk pra Forró sem regerar.
+async function refazerEstilo() {
+  if (!currentOrder) return;
+  const input  = document.getElementById('newRitmoInput');
+  const btn    = document.getElementById('btnRefazerEstilo');
+  const status = document.getElementById('styleRestyleStatus');
+  const novoRitmo = (input.value || '').trim();
+
+  if (!novoRitmo) {
+    status.className = 'style-restyle-status error';
+    status.textContent = '✘ Digite o novo ritmo/estilo.';
+    return;
+  }
+  if (novoRitmo.length < 3) {
+    status.className = 'style-restyle-status error';
+    status.textContent = '✘ Ritmo muito curto.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = 'style-restyle-status';
+  status.textContent = '✨ Gerando novo estilo... aguarde.';
+
+  try {
+    const resp = await window.__luxFetch(API_URL + '/restyle', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        orderId:  currentOrder.orderId,
+        ritmo:    novoRitmo,
+        briefing: currentOrder.briefing || ''
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.className = 'style-restyle-status error';
+      status.textContent = '✘ ' + (data.error || 'Erro desconhecido');
+      return;
+    }
+    // Atualiza UI sem regerar a tela toda
+    currentOrder.result.style_prompt    = data.style_prompt;
+    currentOrder.result.weirdness       = data.weirdness;
+    currentOrder.result.style_influence = data.style_influence;
+    currentOrder.ritmo                  = novoRitmo;
+
+    const el1 = document.getElementById('styleBoxContent');
+    const el2 = document.getElementById('styleWeirdness');
+    const el3 = document.getElementById('styleInfluence');
+    if (el1) el1.textContent = data.style_prompt;
+    if (el2) el2.textContent = data.weirdness;
+    if (el3) el3.textContent = data.style_influence;
+
+    status.className = 'style-restyle-status success';
+    status.textContent = '✓ Estilo atualizado.';
+    setTimeout(() => { status.textContent = ''; status.className = 'style-restyle-status'; }, 4000);
+  } catch (err) {
+    status.className = 'style-restyle-status error';
+    status.textContent = '✘ Erro de rede: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // Refazer pedido: pré-enche o formulário "Novo Pedido" com os dados
 // de um pedido antigo (briefing, instruções, ritmo). NÃO gera direto —
 // atendente revisa e clica em Gerar Letra. Imagem não é recuperada (se
@@ -1511,67 +1563,6 @@ function redoOrder() {
 
   showToast('🔁 Pedido carregado. Revise e clique em Gerar Letra.');
 }
-
-// Envia tudo formatado pro clipboard e abre o Suno em nova aba.
-// Como o Suno não tem API pública de URL pra pré-preenchimento,
-// formatamos em blocos separados pra atendente colar campo por campo.
-async function sendToSuno() {
-  if (!currentOrder || !currentOrder.result) {
-    showToast('Nenhuma letra carregada.', true);
-    return;
-  }
-  const r = currentOrder.result;
-  const lyrics  = (r.lyrics || '').trim();
-  const style   = (r.style_prompt || '').trim();
-  const weird   = (r.weirdness ?? '');
-  const infl    = (r.style_influence ?? '');
-
-  const content = [
-    '=== LYRICS ===',
-    lyrics,
-    '',
-    '=== STYLE ===',
-    style,
-    '',
-    '=== WEIRDNESS ===',
-    String(weird),
-    '',
-    '=== STYLE INFLUENCE ===',
-    String(infl)
-  ].join('\n');
-
-  try {
-    await navigator.clipboard.writeText(content);
-  } catch (e) {
-    // Fallback pra browsers que não suportam clipboard API
-    const ta = document.createElement('textarea');
-    ta.value = content;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); } catch (_) {}
-    document.body.removeChild(ta);
-  }
-
-  // Abre o modal de instrução (cliente clica "Abrir Suno" pra abrir nova aba)
-  const modal = document.getElementById('sunoModal');
-  modal.classList.add('show');
-}
-
-// Handlers do modal (registra uma vez ao carregar)
-document.addEventListener('DOMContentLoaded', () => {
-  const modal     = document.getElementById('sunoModal');
-  const btnCancel = document.getElementById('sunoModalCancel');
-  const btnOpen   = document.getElementById('sunoModalOpen');
-  if (btnCancel) btnCancel.addEventListener('click', () => modal.classList.remove('show'));
-  if (btnOpen) btnOpen.addEventListener('click', () => {
-    modal.classList.remove('show');
-    window.open('https://suno.com/create', '_blank', 'noopener');
-  });
-  // Fecha clicando no fundo escuro (fora do card)
-  if (modal) modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.classList.remove('show');
-  });
-});
 
 // Advanced Mode: adiciona instrumentos no padrão Suno em cada bloco.
 // Chama o Worker do Lux Music (endpoint /applyInstruments).
