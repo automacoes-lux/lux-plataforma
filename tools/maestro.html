@@ -165,6 +165,125 @@ body{
 }
 .btn-secondary:hover{background:rgba(201,168,76,.08)}
 
+/* ── Botão Suno (destaque) ─────────────────────────── */
+.btn-suno{
+  width:100%;padding:14px 24px;
+  background:linear-gradient(135deg,#1ED760 0%,#15A04A 100%);
+  border:none;border-radius:10px;
+  color:#0E0E0E;font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:.08em;
+  cursor:pointer;
+  transition:transform .1s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-suno:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(30,215,96,.3);
+}
+.btn-suno:disabled{opacity:.5;cursor:wait}
+
+/* ── Modal de instrução do Suno ──────────────────── */
+.suno-modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;
+  z-index:1000;padding:1rem;
+  animation:fadeIn .15s ease-out;
+}
+.suno-modal-backdrop.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.suno-modal{
+  background:#181818;border:1px solid var(--gold-dim);
+  border-radius:12px;padding:1.8rem 1.5rem;
+  max-width:500px;width:100%;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+}
+.suno-modal h3{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:16px;margin-bottom:1rem;letter-spacing:.06em;
+}
+.suno-modal-steps{
+  list-style:none;padding:0;margin:1rem 0;
+}
+.suno-modal-steps li{
+  padding:8px 0;color:var(--text);font-size:13px;line-height:1.5;
+  padding-left:28px;position:relative;
+}
+.suno-modal-steps li::before{
+  content:counter(step);counter-increment:step;
+  position:absolute;left:0;top:8px;
+  background:var(--gold);color:#1a1a1a;
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;
+}
+.suno-modal-steps{counter-reset:step}
+.suno-modal-actions{
+  display:flex;gap:8px;margin-top:1.5rem;
+}
+.suno-modal-actions button{flex:1}
+.suno-modal-ok{
+  background:linear-gradient(135deg,#1ED760 0%,#15A04A 100%);
+  border:none;color:#0E0E0E;font-weight:700;
+  padding:12px;border-radius:8px;cursor:pointer;
+  font-size:13px;letter-spacing:.06em;font-family:'DM Sans',sans-serif;
+}
+.suno-modal-cancel{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--text-dim);padding:12px;border-radius:8px;cursor:pointer;
+  font-size:13px;font-family:'DM Sans',sans-serif;
+}
+
+/* ── Gravador de áudio (Instruções) ───────────────── */
+.instr-label-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;flex-wrap:wrap;gap:8px;
+}
+.instr-label-row label{margin-bottom:0}
+.mic-btn{
+  background:rgba(201,168,76,.12);border:1px solid var(--gold-dim);
+  color:var(--gold);border-radius:8px;
+  padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;
+}
+.mic-btn:hover:not(:disabled){background:rgba(201,168,76,.22)}
+.mic-btn:disabled{opacity:.5;cursor:not-allowed}
+.mic-icon{font-size:14px}
+
+.mic-state{
+  background:#1a1a1a;border:1px solid #DC5050;
+  border-radius:8px;padding:10px 12px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.mic-pulse{
+  width:10px;height:10px;background:#DC5050;border-radius:50%;
+  animation:micPulse 1s ease-in-out infinite;
+}
+@keyframes micPulse{
+  0%,100%{opacity:.4;transform:scale(.9)}
+  50%{opacity:1;transform:scale(1.1)}
+}
+.mic-time{
+  color:#E89090;font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
+  flex:1;
+}
+.mic-stop{
+  background:#DC5050;border:none;color:white;
+  padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.mic-stop:hover{background:#C04040}
+.mic-cancel{
+  background:transparent;border:1px solid var(--border-bright);
+  color:var(--text-dim);padding:6px 12px;border-radius:6px;
+  font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.mic-status{font-size:12px;color:var(--text-dim);margin-bottom:8px;min-height:0}
+.mic-status.transcribing{color:var(--gold);min-height:18px}
+.mic-status.success{color:#8FD68F;min-height:18px}
+.mic-status.error{color:#E89090;min-height:18px}
+
 .status-box{
   margin-top:1.2rem;padding:14px 16px;border-radius:8px;
   border:1px solid var(--border);background:rgba(255,255,255,.02);
@@ -241,6 +360,27 @@ body{
 .toast.error{border-color:#C25050;color:#E89090}
 
 .history-empty{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px}
+
+/* ── Histórico: filtros ─────────────────────────────── */
+.history-filters{
+  display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;
+}
+.history-filters input{
+  flex:1;min-width:200px;background:#0E0E0E;border:1px solid var(--border-bright);
+  color:var(--text);border-radius:8px;padding:10px 12px;
+  font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .15s;
+}
+.history-filters input:focus{outline:none;border-color:var(--gold-dim)}
+.history-scope{display:flex;gap:0;border:1px solid var(--border-bright);border-radius:8px;overflow:hidden}
+.scope-btn{
+  background:transparent;border:none;color:var(--text-dim);
+  padding:9px 14px;font-size:12px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+  letter-spacing:.04em;
+}
+.scope-btn:hover{background:rgba(201,168,76,.08)}
+.scope-btn.active{background:rgba(201,168,76,.18);color:var(--gold)}
+.history-result-info{font-size:12px;color:var(--text-dim);margin-bottom:10px}
 .history-item{
   background:rgba(255,255,255,.02);border:1px solid var(--border);
   border-radius:10px;padding:14px 16px;margin-bottom:10px;
@@ -408,7 +548,20 @@ body{
       </div>
 
       <div class="field">
-        <label>📝 Instruções (opcional)</label>
+        <div class="instr-label-row">
+          <label>📝 Instruções (opcional)</label>
+          <button type="button" class="mic-btn" id="micBtn" title="Gravar áudio (máx 2 min)">
+            <span class="mic-icon">🎙️</span>
+            <span class="mic-text">Gravar áudio</span>
+          </button>
+        </div>
+        <div class="mic-state" id="micState" style="display:none">
+          <div class="mic-pulse"></div>
+          <span class="mic-time" id="micTime">00:00</span>
+          <button type="button" class="mic-stop" id="micStopBtn">⏹ Parar</button>
+          <button type="button" class="mic-cancel" id="micCancelBtn">Cancelar</button>
+        </div>
+        <div class="mic-status" id="micStatus"></div>
         <textarea id="instrucoes" placeholder="Como o cliente quer a letra: tom específico, palavras pra evitar, referências musicais, correções pra próxima geração..." style="min-height:90px"></textarea>
         <span class="hint">Use este campo pra dar instruções diretas pra IA sobre o estilo. Ex: "mais romântica", "evite a palavra paixão", "use rimas simples", "tom alegre como funk anos 2000".</span>
       </div>
@@ -455,6 +608,13 @@ body{
   </div>
 
   <div id="tab-history" class="tab-content">
+    <div class="history-filters">
+      <input type="text" id="historySearch" placeholder="🔍 Buscar por nome do cliente, ritmo..." autocomplete="off"/>
+      <div class="history-scope" id="historyScopeBox" style="display:none">
+        <button class="scope-btn active" data-scope="mine">Só meus</button>
+        <button class="scope-btn" data-scope="all">Todos</button>
+      </div>
+    </div>
     <div id="historyContent">
       <div class="history-empty">Carregando histórico...</div>
     </div>
@@ -463,6 +623,28 @@ body{
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Modal de instrução do Suno -->
+<div class="suno-modal-backdrop" id="sunoModal">
+  <div class="suno-modal">
+    <h3>🎵 Tudo copiado!</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:1rem">
+      O Suno vai abrir em outra aba. Lá, siga estes passos:
+    </p>
+    <ol class="suno-modal-steps">
+      <li>Faça login (se ainda não estiver logado)</li>
+      <li>Clique em <strong>"Custom"</strong> (modo manual)</li>
+      <li>Cole a <strong>letra</strong> no campo <em>Lyrics</em></li>
+      <li>Cole o <strong>estilo</strong> no campo <em>Style</em></li>
+      <li>Ajuste <strong>Weirdness</strong> e <strong>Style Influence</strong></li>
+      <li>Clique em <strong>Create</strong> 🎶</li>
+    </ol>
+    <div class="suno-modal-actions">
+      <button class="suno-modal-cancel" id="sunoModalCancel">Cancelar</button>
+      <button class="suno-modal-ok" id="sunoModalOpen">Abrir Suno →</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const API_URL = 'https://lux-music.plataformalux.workers.dev';
@@ -717,6 +899,197 @@ document.addEventListener('paste', async (e) => {
   }
 });
 
+// ── GRAVADOR DE ÁUDIO (Instruções) ──────────────────────────
+// Usa MediaRecorder do browser → manda webm pra Whisper API.
+// Custo: ~US$0,006/min. Limite: 2min/gravação.
+const MIC_MAX_SECONDS = 120; // 2 minutos
+
+let mediaRecorder = null;
+let micChunks = [];
+let micStartTime = 0;
+let micTimer = null;
+let micStream = null;
+let micCancelled = false;
+
+const micBtn       = document.getElementById('micBtn');
+const micState     = document.getElementById('micState');
+const micTime      = document.getElementById('micTime');
+const micStopBtn   = document.getElementById('micStopBtn');
+const micCancelBtn = document.getElementById('micCancelBtn');
+const micStatus    = document.getElementById('micStatus');
+
+function formatMicTime(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = Math.floor(secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function micSetStatus(text, kind) {
+  if (!micStatus) return;
+  micStatus.className = 'mic-status' + (kind ? ' ' + kind : '');
+  micStatus.textContent = text || '';
+}
+
+function micCleanupStream() {
+  if (micStream) {
+    try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    micStream = null;
+  }
+  if (micTimer) { clearInterval(micTimer); micTimer = null; }
+  mediaRecorder = null;
+  micChunks = [];
+}
+
+if (micBtn) {
+  micBtn.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      micSetStatus('Seu navegador não suporta gravação de áudio.', 'error');
+      return;
+    }
+    micCancelled = false;
+    micSetStatus('');
+
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      // Erro comum: usuário negou permissão
+      let msg = 'Não consegui acessar o microfone.';
+      if (err.name === 'NotAllowedError') msg = 'Permissão de microfone negada. Libere nas configurações do navegador.';
+      else if (err.name === 'NotFoundError') msg = 'Nenhum microfone encontrado no dispositivo.';
+      micSetStatus(msg, 'error');
+      return;
+    }
+
+    // Escolhe mime que o browser suporta (preferindo webm/opus)
+    let mime = '';
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4'];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) { mime = c; break; }
+    }
+
+    try {
+      mediaRecorder = mime
+        ? new MediaRecorder(micStream, { mimeType: mime })
+        : new MediaRecorder(micStream);
+    } catch (err) {
+      micSetStatus('Erro ao iniciar gravação: ' + err.message, 'error');
+      micCleanupStream();
+      return;
+    }
+
+    micChunks = [];
+    mediaRecorder.addEventListener('dataavailable', (e) => {
+      if (e.data && e.data.size > 0) micChunks.push(e.data);
+    });
+
+    mediaRecorder.addEventListener('stop', async () => {
+      const stream = micStream;       // captura ref antes do cleanup
+      const wasCancelled = micCancelled;
+      const finalMime = mediaRecorder?.mimeType || mime || 'audio/webm';
+      const chunks = micChunks.slice();
+      micCleanupStream();
+
+      // Reseta UI
+      micState.style.display = 'none';
+      micBtn.style.display = '';
+
+      if (wasCancelled || !chunks.length) {
+        micSetStatus('');
+        return;
+      }
+
+      // Envia pro Whisper
+      const blob = new Blob(chunks, { type: finalMime });
+      if (blob.size < 1000) {
+        micSetStatus('Áudio muito curto.', 'error');
+        return;
+      }
+      micSetStatus('✨ Transcrevendo áudio...', 'transcribing');
+      micBtn.disabled = true;
+
+      try {
+        const audioBase64 = await blobToBase64(blob);
+        const resp = await window.__luxFetch(API_URL + '/transcribeAudio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioBase64, mime: finalMime })
+        });
+        const data = await resp.json();
+        if (!data.ok) {
+          micSetStatus('Erro: ' + (data.error || 'falha na transcrição'), 'error');
+          return;
+        }
+        const transcript = (data.text || '').trim();
+        if (!transcript) {
+          micSetStatus('Áudio sem fala identificada.', 'error');
+          return;
+        }
+        // Concatena no textarea (não substitui)
+        const ta = document.getElementById('instrucoes');
+        const cur = ta.value.trim();
+        ta.value = cur
+          ? cur + '\n\n' + transcript
+          : transcript;
+        ta.focus();
+        // Coloca cursor no final
+        try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (_) {}
+        micSetStatus('✓ Transcrito (' + transcript.length + ' caracteres).', 'success');
+        setTimeout(() => micSetStatus(''), 4000);
+      } catch (err) {
+        micSetStatus('Erro de rede: ' + err.message, 'error');
+      } finally {
+        micBtn.disabled = false;
+      }
+    });
+
+    // Inicia gravação
+    mediaRecorder.start();
+    micStartTime = Date.now();
+    micBtn.style.display = 'none';
+    micState.style.display = 'flex';
+    micTime.textContent = '00:00';
+
+    micTimer = setInterval(() => {
+      const secs = (Date.now() - micStartTime) / 1000;
+      micTime.textContent = formatMicTime(secs);
+      if (secs >= MIC_MAX_SECONDS) {
+        // Para automaticamente no limite
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          micCancelled = false;
+          mediaRecorder.stop();
+        }
+      }
+    }, 250);
+  });
+}
+
+if (micStopBtn) {
+  micStopBtn.addEventListener('click', () => {
+    micCancelled = false;
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  });
+}
+
+if (micCancelBtn) {
+  micCancelBtn.addEventListener('click', () => {
+    micCancelled = true;
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const idx = dataUrl.indexOf(',');
+      resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -892,7 +1265,8 @@ function renderLyrics(order) {
     </div>
 
     <div class="lyrics-actions" style="margin-top:1.5rem">
-      <div class="copy-row">
+      <button class="btn-suno" id="btnSendSuno">🎵 Enviar pro Suno</button>
+      <div class="copy-row" style="margin-top:10px">
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
       </div>
@@ -947,6 +1321,12 @@ function renderLyrics(order) {
   const btnRedo = document.getElementById('btnRedoOrder');
   if (btnRedo) {
     btnRedo.addEventListener('click', () => redoOrder());
+  }
+
+  // Enviar pro Suno
+  const btnSuno = document.getElementById('btnSendSuno');
+  if (btnSuno) {
+    btnSuno.addEventListener('click', () => sendToSuno());
   }
 }
 
@@ -1136,6 +1516,67 @@ function redoOrder() {
   showToast('🔁 Pedido carregado. Revise e clique em Gerar Letra.');
 }
 
+// Envia tudo formatado pro clipboard e abre o Suno em nova aba.
+// Como o Suno não tem API pública de URL pra pré-preenchimento,
+// formatamos em blocos separados pra atendente colar campo por campo.
+async function sendToSuno() {
+  if (!currentOrder || !currentOrder.result) {
+    showToast('Nenhuma letra carregada.', true);
+    return;
+  }
+  const r = currentOrder.result;
+  const lyrics  = (r.lyrics || '').trim();
+  const style   = (r.style_prompt || '').trim();
+  const weird   = (r.weirdness ?? '');
+  const infl    = (r.style_influence ?? '');
+
+  const content = [
+    '=== LYRICS ===',
+    lyrics,
+    '',
+    '=== STYLE ===',
+    style,
+    '',
+    '=== WEIRDNESS ===',
+    String(weird),
+    '',
+    '=== STYLE INFLUENCE ===',
+    String(infl)
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(content);
+  } catch (e) {
+    // Fallback pra browsers que não suportam clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = content;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
+  // Abre o modal de instrução (cliente clica "Abrir Suno" pra abrir nova aba)
+  const modal = document.getElementById('sunoModal');
+  modal.classList.add('show');
+}
+
+// Handlers do modal (registra uma vez ao carregar)
+document.addEventListener('DOMContentLoaded', () => {
+  const modal     = document.getElementById('sunoModal');
+  const btnCancel = document.getElementById('sunoModalCancel');
+  const btnOpen   = document.getElementById('sunoModalOpen');
+  if (btnCancel) btnCancel.addEventListener('click', () => modal.classList.remove('show'));
+  if (btnOpen) btnOpen.addEventListener('click', () => {
+    modal.classList.remove('show');
+    window.open('https://suno.com/create', '_blank', 'noopener');
+  });
+  // Fecha clicando no fundo escuro (fora do card)
+  if (modal) modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('show');
+  });
+});
+
 // Advanced Mode: adiciona instrumentos no padrão Suno em cada bloco.
 // Chama o Worker do Lux Music (endpoint /applyInstruments).
 async function applyInstruments() {
@@ -1218,50 +1659,127 @@ function resetForm() {
   document.getElementById('statusGerar').textContent = '';
 }
 
+// Cache local dos pedidos (pra filtrar no front sem chamar API)
+let _historyCache = [];
+let _historyScope = 'mine'; // 'mine' ou 'all'
+let _isAdmin = false;
+let _myEmail = '';
+
 async function loadHistory() {
   const c = document.getElementById('historyContent');
   c.innerHTML = '<div class="history-empty">Carregando...</div>';
   try {
-    const resp = await window.__luxFetch(API_URL + '/listOrders?limit=30');
+    // limit=200 pra busca ter resultados ricos
+    const resp = await window.__luxFetch(API_URL + '/listOrders?limit=200');
     const data = await resp.json();
     if (!data.ok) {
       c.innerHTML = '<div class="history-empty">Erro: ' + escapeHtml(data.error || '') + '</div>';
       return;
     }
-    if (!data.orders || !data.orders.length) {
-      c.innerHTML = '<div class="history-empty">Nenhum pedido ainda. Gere sua primeira letra!</div>';
-      return;
-    }
-    let html = '';
-    data.orders.forEach(o => {
-      const custoTxt = (o.costBRL != null)
-        ? `<div class="history-cost">R$ ${Number(o.costBRL).toFixed(2).replace('.', ',')}</div>`
-        : '';
-      html += `
-        <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
-          <div class="history-item-top">
-            <span class="history-item-title">${escapeHtml(o.clientName || o.musicaNome || '(sem nome)')}</span>
-            <div class="history-right">
-              <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
-              ${custoTxt}
-            </div>
-          </div>
-          <div class="history-item-meta">
-            ${escapeHtml(o.ritmo || '-')}
-            ${o.hasImage ? ' <span class="history-item-badge">📎 c/ imagem</span>' : ''}
-            ${o.regenerations ? ' <span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
-          </div>
-        </div>
-      `;
-    });
-    c.innerHTML = html;
-    c.querySelectorAll('.history-item').forEach(el => {
-      el.addEventListener('click', () => openHistoryOrder(el.dataset.orderId));
-    });
+    _historyCache = Array.isArray(data.orders) ? data.orders : [];
+
+    // Detecta se é admin (pelo Worker, na primeira carga)
+    try {
+      const meResp = await window.__luxFetch(FIGURINHAS_URL + '/admin/me');
+      const meData = await meResp.json();
+      if (meData.ok && meData.user) {
+        _isAdmin = (meData.user.role === 'admin');
+        _myEmail = (meData.user.email || '').toLowerCase();
+      }
+    } catch (e) { /* ignora — usuário normal */ }
+
+    // Mostra toggle "Só meus / Todos" só pra admin
+    const scopeBox = document.getElementById('historyScopeBox');
+    if (scopeBox) scopeBox.style.display = _isAdmin ? 'flex' : 'none';
+
+    renderHistoryList();
   } catch (err) {
     c.innerHTML = '<div class="history-empty">Erro de rede: ' + escapeHtml(err.message) + '</div>';
   }
 }
+
+function renderHistoryList() {
+  const c = document.getElementById('historyContent');
+  const search = (document.getElementById('historySearch')?.value || '').toLowerCase().trim();
+
+  // 1) Filtra por escopo (só meus / todos)
+  let list = _historyCache;
+  if (_isAdmin && _historyScope === 'mine' && _myEmail) {
+    list = list.filter(o => (o.attendantEmail || '').toLowerCase() === _myEmail);
+  }
+  // (Atendente normal: Worker já filtra no /listOrders, vê só os seus)
+
+  // 2) Filtra por busca (case-insensitive em nome do cliente, ritmo, atendente)
+  if (search) {
+    list = list.filter(o => {
+      const hay = [
+        o.clientName, o.musicaNome, o.ritmo,
+        o.attendantName, o.briefing
+      ].map(x => (x || '').toLowerCase()).join(' | ');
+      return hay.includes(search);
+    });
+  }
+
+  if (!list.length) {
+    if (!_historyCache.length) {
+      c.innerHTML = '<div class="history-empty">Nenhum pedido ainda. Gere sua primeira letra!</div>';
+    } else {
+      c.innerHTML = '<div class="history-empty">Nenhum resultado pra "' + escapeHtml(search) + '"</div>';
+    }
+    return;
+  }
+
+  const infoTxt = search || (_isAdmin && _historyScope === 'all')
+    ? `<div class="history-result-info">Mostrando ${list.length} de ${_historyCache.length} pedido(s)</div>`
+    : '';
+
+  let html = infoTxt;
+  list.forEach(o => {
+    const custoTxt = (o.costBRL != null)
+      ? `<div class="history-cost">R$ ${Number(o.costBRL).toFixed(2).replace('.', ',')}</div>`
+      : '';
+    const atendBadge = (_isAdmin && _historyScope === 'all' && o.attendantName)
+      ? ` <span class="history-item-badge">👤 ${escapeHtml(o.attendantName)}</span>`
+      : '';
+    html += `
+      <div class="history-item" data-order-id="${escapeHtml(o.orderId)}">
+        <div class="history-item-top">
+          <span class="history-item-title">${escapeHtml(o.clientName || o.musicaNome || '(sem nome)')}</span>
+          <div class="history-right">
+            <span class="history-item-date">${escapeHtml(o.createdAt || '')}</span>
+            ${custoTxt}
+          </div>
+        </div>
+        <div class="history-item-meta">
+          ${escapeHtml(o.ritmo || '-')}
+          ${o.hasImage ? ' <span class="history-item-badge">📎 c/ imagem</span>' : ''}
+          ${o.regenerations ? ' <span class="history-item-badge">↻ ' + o.regenerations + 'x</span>' : ''}
+          ${atendBadge}
+        </div>
+      </div>
+    `;
+  });
+  c.innerHTML = html;
+  c.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', () => openHistoryOrder(el.dataset.orderId));
+  });
+}
+
+// Handlers da busca e do toggle (registra uma vez ao carregar)
+document.addEventListener('DOMContentLoaded', () => {
+  const search = document.getElementById('historySearch');
+  if (search) {
+    search.addEventListener('input', () => renderHistoryList());
+  }
+  document.querySelectorAll('.scope-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _historyScope = btn.dataset.scope;
+      renderHistoryList();
+    });
+  });
+});
 
 async function openHistoryOrder(orderId) {
   try {
