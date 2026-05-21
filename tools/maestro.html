@@ -169,6 +169,30 @@ body{
 }
 .btn-primary:disabled{opacity:.5;cursor:wait}
 
+/* ── Botão Refazer Letra (regera no mesmo orderId) ─── */
+.btn-refazer-letra{
+  width:100%;padding:13px 24px;margin-bottom:8px;
+  background:rgba(201,168,76,.15);
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+  color:var(--gold);font-family:'Cinzel',serif;
+  font-size:14px;font-weight:600;letter-spacing:.12em;
+  cursor:pointer;text-transform:uppercase;
+  transition:all .15s;
+}
+.btn-refazer-letra:hover:not(:disabled){
+  background:rgba(201,168,76,.25);
+  border-color:var(--gold);
+}
+.btn-refazer-letra:disabled{opacity:.5;cursor:wait}
+.refazer-status{
+  font-size:12px;color:var(--text-dim);text-align:center;
+  margin-bottom:10px;min-height:16px;
+}
+.refazer-status.loading{color:var(--gold)}
+.refazer-status.success{color:#7FB87A}
+.refazer-status.error{color:#E87A7A}
+
 .btn-secondary{
   display:inline-block;padding:12px 18px;
   background:transparent;border:1px solid var(--border-bright);
@@ -1209,6 +1233,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
       ritmo,
       clientName: data.result.nome_negocio || '',
       result:     data.result,
+      hasImage:   !!compressedImage,
       costBRL:    data.costBRL ?? null
     };
 
@@ -1269,7 +1294,7 @@ function renderLyrics(order) {
     </div>
 
     <div class="modify-box">
-      <div class="modify-hint modify-hint-lg">ALTERE CADA VERSO DA LETRA COM UM CLIQUE</div>
+      <div class="modify-hint modify-hint-lg">Altere cada verso da letra com apenas um clique</div>
       <div class="block-btns">
         <button class="block-btn" data-block="Verse">Verse</button>
         <button class="block-btn" data-block="Chorus">Chorus</button>
@@ -1279,7 +1304,7 @@ function renderLyrics(order) {
 
       <div class="excerpt-divider"></div>
 
-      <div class="modify-hint modify-hint-lg">ALTERE SÓMENTE UMA FRASE OU PALAVRA NA LETRA.</div>
+      <div class="modify-hint modify-hint-lg">Altere somente uma frase ou palavra na letra</div>
       <div class="excerpt-row">
         <input type="text" id="excerptInput" maxlength="200" placeholder="Informe a parte que deve ser alterada"/>
         <button class="excerpt-btn" id="btnModifyExcerpt">Modificar trecho</button>
@@ -1295,7 +1320,7 @@ function renderLyrics(order) {
         <span><strong>Style Influence:</strong> <b class="num-white" id="styleInfluence">${r.style_influence ?? '-'}</b></span>
       </div>
       <div class="style-restyle">
-        <div class="style-restyle-hint style-restyle-hint-lg">GERE UM NOVO PROMPT INFORMANDO O RITMO E AS CARACTERISTICAS DESEJADAS</div>
+        <div class="style-restyle-hint style-restyle-hint-lg">Gere um novo prompt informando o ritmo e as características desejadas</div>
         <div class="style-restyle-row">
           <input type="text" id="newRitmoInput" placeholder="Ex: Forró pé-de-serra, Pagode romântico, Sertanejo dance..." value="${escapeHtml(currentOrder.ritmo || '')}"/>
           <button type="button" class="style-restyle-btn" id="btnRefazerEstilo">🔄 Refazer prompt</button>
@@ -1346,6 +1371,8 @@ function renderLyrics(order) {
         <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
       </div>
+      <button class="btn-refazer-letra" id="btnRefazerLetra">🔄 Refazer Letra</button>
+      <div class="refazer-status" id="refazerStatus"></div>
       <button class="btn-primary" id="btnNew">+ Gerar Nova Letra</button>
     </div>
   `;
@@ -1377,6 +1404,12 @@ function renderLyrics(order) {
     document.querySelector('[data-tab="new"]').click();
     resetForm();
   });
+
+  // Refazer Letra (regera no mesmo orderId)
+  const btnRefazerLetra = document.getElementById('btnRefazerLetra');
+  if (btnRefazerLetra) {
+    btnRefazerLetra.addEventListener('click', () => refazerLetra());
+  }
 
   // Modificar trecho específico
   const excerptInput = document.getElementById('excerptInput');
@@ -1644,6 +1677,84 @@ async function refazerEstilo() {
   }
 }
 
+// Refazer Letra: regera a letra INTEIRA do pedido atual mantendo o mesmo orderId.
+// Usa briefing + instruções originais (do pedido) + correção detalhada (do textarea).
+// Se a Correção detalhada estiver vazia, regera com os mesmos dados (variação aleatória).
+// Se o pedido tinha imagem, mostra aviso antes (a imagem original NÃO está salva).
+async function refazerLetra() {
+  if (!currentOrder) return;
+
+  const btn    = document.getElementById('btnRefazerLetra');
+  const status = document.getElementById('refazerStatus');
+
+  // Aviso se o pedido original tinha imagem (a imagem não foi salva no KV)
+  if (currentOrder.hasImage) {
+    const ok = confirm(
+      'O pedido original usou uma imagem (panfleto/cartão) como referência.\n\n' +
+      'A imagem NÃO está salva — ao refazer, a IA usará apenas o briefing.\n\n' +
+      'Continuar mesmo assim?'
+    );
+    if (!ok) return;
+  }
+
+  // Pega a correção detalhada atual
+  const correcaoEl = document.getElementById('correcaoDetalhada');
+  const correcao   = correcaoEl ? (correcaoEl.value || '').trim() : '';
+
+  // Pega o ritmo atual (pode ter sido alterado pelo "Refazer prompt")
+  const ritmoAtual = String(currentOrder.ritmo || '').trim();
+
+  btn.disabled = true;
+  status.className = 'refazer-status loading';
+  status.textContent = '✨ Refazendo a letra... pode levar até 30 segundos.';
+
+  const box = document.getElementById('lyricsFull');
+  if (box) box.classList.add('regenerating');
+
+  try {
+    const resp = await window.__luxFetch(API_URL + '/regenerateOrder', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        orderId:  currentOrder.orderId,
+        correcao: correcao,
+        ritmo:    ritmoAtual
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.className = 'refazer-status error';
+      status.textContent = '✘ ' + (data.error || 'Erro desconhecido');
+      return;
+    }
+
+    // Atualiza o currentOrder com a nova letra
+    currentOrder.result = data.result;
+    currentOrder.regenerations = data.regenerations;
+    currentOrder.lastRegenAt = data.lastRegenAt;
+    if (data.costBRL != null) currentOrder.costBRL = data.costBRL;
+    if (data.costUSD != null) currentOrder.costUSD = data.costUSD;
+
+    // Re-renderiza a aba inteira (letra + style box + tudo)
+    renderLyrics(currentOrder);
+
+    // Limpa o campo de correção (já foi usada)
+    const newCorrEl = document.getElementById('correcaoDetalhada');
+    if (newCorrEl) {
+      newCorrEl.value = '';
+      newCorrEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    showToast('🔄 Letra refeita com sucesso!');
+  } catch (err) {
+    status.className = 'refazer-status error';
+    status.textContent = '✘ Erro de rede: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    if (box) box.classList.remove('regenerating');
+  }
+}
+
 // Refazer pedido: pré-enche o formulário "Novo Pedido" com os dados
 // de um pedido antigo (briefing, instruções, ritmo). NÃO gera direto —
 // atendente revisa e clica em Gerar Letra. Imagem não é recuperada (se
@@ -1889,6 +2000,7 @@ async function openHistoryOrder(orderId) {
       ritmo:      o.ritmo,
       clientName: o.clientName,
       result:     o.result,
+      hasImage:   !!o.hasImage,
       costBRL:    o.costBRL ?? null
     };
     renderLyrics(currentOrder);
