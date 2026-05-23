@@ -422,11 +422,12 @@ function setStep(stepId, state, detail) {
   const el = $('step-' + stepId);
   if (!el) return;
   el.classList.remove('active', 'done', 'error');
-  el.classList.add(state);
+  if (state) el.classList.add(state);
   const icon = el.querySelector('.step-icon');
   if (state === 'active') icon.textContent = '⏳';
   if (state === 'done')   icon.textContent = '✓';
   if (state === 'error')  icon.textContent = '✗';
+  if (!state) icon.textContent = '⏳';
   if (detail !== undefined) {
     $('step-' + stepId + '-detail').textContent = detail || '';
   }
