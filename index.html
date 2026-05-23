@@ -116,6 +116,10 @@
         <div class="nav-icon">💎</div> Logo 3D
         <span class="nav-badge badge-live">LIVE</span>
       </a>
+      <a class="nav-item" data-tool="cover" href="#">
+        <div class="nav-icon">🎤</div> Cover
+        <span class="nav-badge badge-new">NOVO</span>
+      </a>
       <a class="nav-item soon" data-tool="videos" href="#" data-soon-unless-admin>
         <div class="nav-icon">🎬</div> Vídeo Padrão
         <span class="nav-badge badge-live badge-normal" style="display:none">LIVE</span>
@@ -219,6 +223,16 @@
           </div>
         </div>
 
+        <div class="tool-card" onclick="loadTool('cover')">
+          <div class="tool-card-icon">🎤</div>
+          <div class="tool-card-name">COVER</div>
+          <div class="tool-card-desc">Remova o vocal e ajuste o tom de qualquer música. Entrega o instrumental pronto pra subir no Suno.</div>
+          <div class="tool-card-footer">
+            <span class="status-live">● Disponível</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
         <div class="tool-card soon" data-card-tool="videos" data-soon-unless-admin onclick="loadTool('videos')">
           <div class="tool-card-icon">🎬</div>
           <div class="tool-card-name">VÍDEO PADRÃO</div>
@@ -260,6 +274,15 @@
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">✦ LUX MUSIC</span>
         <span class="tool-panel-atendente" id="musicAtendente"></span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- COVER -->
+    <div id="view-cover" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">🎤 LUX COVER</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
