@@ -7,6 +7,7 @@
 const TOOLS = {
   figurinhas:        'tools/figurinhas.html',
   musica:            'tools/maestro.html',
+  cover:             'tools/cover.html',
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
   atendimento:       'tools/atendimento.html',
