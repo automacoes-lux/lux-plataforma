@@ -52,8 +52,20 @@
     const token = await requestTokenFromParent();
     const headers = new Headers(options.headers || {});
     headers.set('Authorization', 'Bearer ' + token);
+    // Só força Content-Type: application/json se:
+    //   1. tem body
+    //   2. ninguém setou Content-Type ainda
+    //   3. body NÃO é FormData/Blob/URLSearchParams (esses o browser define sozinho)
     if (options.body && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
+      const body = options.body;
+      const isFormData       = (typeof FormData !== 'undefined') && (body instanceof FormData);
+      const isBlob           = (typeof Blob !== 'undefined') && (body instanceof Blob);
+      const isURLParams      = (typeof URLSearchParams !== 'undefined') && (body instanceof URLSearchParams);
+      const isArrayBuffer    = body instanceof ArrayBuffer;
+      const browserAutoSets  = isFormData || isBlob || isURLParams || isArrayBuffer;
+      if (!browserAutoSets) {
+        headers.set('Content-Type', 'application/json');
+      }
     }
     return fetch(url, { ...options, headers });
   };
