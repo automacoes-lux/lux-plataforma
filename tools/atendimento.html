@@ -133,7 +133,8 @@ body{
 .btn-mini.danger:hover{background:var(--danger-bg);border-color:var(--danger)}
 
 .admin-bar{
-  display:none;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:1rem;
+  display:none;align-items:center;justify-content:flex-end;
+  gap:8px;margin-bottom:1rem;flex-wrap:wrap;
 }
 .admin-bar.show{display:flex}
 
@@ -435,6 +436,60 @@ body{
   cursor: wait;
 }
 
+/* ════════════════════════════════════════════════════════════
+   SETAS DE REORDENAÇÃO DE PROTOCOLOS (admin only)
+   ════════════════════════════════════════════════════════════ */
+.proto-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.proto-reorder-btn {
+  background: var(--bg-input);
+  border: 1px solid rgba(201,168,76,.3);
+  color: var(--gold);
+  width: 28px;
+  height: 24px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background .15s;
+}
+.proto-reorder-btn:hover:not(:disabled) {
+  background: rgba(201,168,76,.15);
+}
+.proto-reorder-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+  border-color: rgba(201,168,76,.15);
+  color: #666;
+}
+.proto-reorder-btn:active:not(:disabled) {
+  transform: scale(.92);
+}
+
+/* Wrapper do protocolo precisa ser flex pra alinhar setas + conteúdo */
+.proto-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.proto-row .proto-body {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .proto-reorder-btn { width: 26px; height: 22px; font-size: 11px; }
+}
+
 </style>
 </head>
 <body>
@@ -456,8 +511,19 @@ body{
   <!-- Abas de segmento -->
   <div class="segs" id="segs"></div>
 
+  <!-- Barra admin (só admin) — agora alinhada à DIREITA, acima do tutorial -->
+  <div class="admin-bar" id="adminBar">
+    <button class="btn-primary" onclick="openNew()">+ Novo protocolo</button>
+    <button class="btn-alerta" onclick="openAlertaModal()">
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span>📢</span>
+        <span>Disparar alerta</span>
+      </span>
+    </button>
+  </div>
+
   <!-- ════════════════════════════════════════════════════════
-       CAIXA TUTORIAL (por aba)
+       CAIXA TUTORIAL (por aba) — fixa no topo, abaixo dos botões
        ════════════════════════════════════════════════════════ -->
   <div class="tutorial-card" id="tutorialCard">
     <div class="tutorial-head">
@@ -505,17 +571,6 @@ body{
       <button class="tutorial-btn-edit" onclick="toggleTutorialEdit()">Fechar edição</button>
       <button class="tutorial-btn-save" id="btnSalvarObs" onclick="salvarObservacao()">Salvar observação</button>
     </div>
-  </div>
-
-  <!-- Barra admin (só admin) -->
-  <div class="admin-bar" id="adminBar">
-    <button class="btn-primary" onclick="openNew()">+ Novo protocolo</button>
-    <button class="btn-alerta" onclick="openAlertaModal()">
-      <span style="display:inline-flex;align-items:center;gap:6px">
-        <span>📢</span>
-        <span>Disparar alerta</span>
-      </span>
-    </button>
   </div>
 
   <!-- Lista de protocolos -->
@@ -706,7 +761,7 @@ function renderList() {
     return;
   }
 
-  cont.innerHTML = items.map(p => {
+  cont.innerHTML = items.map((p, idx) => {
     const adminBtns = state.isAdmin
       ? `<button class="btn-mini" onclick="openEdit('${p.id}')">✎ Editar</button>
          <button class="btn-mini danger" onclick="openDel('${p.id}')">🗑 Apagar</button>`
@@ -717,20 +772,43 @@ function renderList() {
            <span class="val">${escapeHtml(p.atalho)}</span>
            <button class="btn-atalho" id="atalho-${p.id}" onclick="copyAtalho('${p.id}')">📋 Copiar atalho</button>
          </div>` : '';
-    return `
-    <div class="proto" id="proto-${p.id}">
-      <div class="proto-head">
-        <div>
-          <div class="proto-title">${escapeHtml(p.titulo)}</div>
-          ${atalho}
+
+    // Setas de reordenação (só admin)
+    const isFirst = idx === 0;
+    const isLast  = idx === items.length - 1;
+    const reorderBtns = state.isAdmin ? `
+      <div class="proto-reorder">
+        <button class="proto-reorder-btn" ${isFirst ? 'disabled title="Já está no topo"' : `onclick="moverProtocolo('${p.id}', 'up')" title="Subir"`}>↑</button>
+        <button class="proto-reorder-btn" ${isLast  ? 'disabled title="Já está no final"' : `onclick="moverProtocolo('${p.id}', 'down')" title="Descer"`}>↓</button>
+      </div>
+    ` : '';
+
+    const innerProto = `
+      <div class="proto" id="proto-${p.id}">
+        <div class="proto-head">
+          <div>
+            <div class="proto-title">${escapeHtml(p.titulo)}</div>
+            ${atalho}
+          </div>
+        </div>
+        <div class="proto-text" id="text-${p.id}">${escapeHtml(p.texto)}</div>
+        <div class="proto-actions">
+          <button class="btn-copy" id="copy-${p.id}" onclick="copyProto('${p.id}')">📋 Copiar</button>
+          ${adminBtns}
         </div>
       </div>
-      <div class="proto-text" id="text-${p.id}">${escapeHtml(p.texto)}</div>
-      <div class="proto-actions">
-        <button class="btn-copy" id="copy-${p.id}" onclick="copyProto('${p.id}')">📋 Copiar</button>
-        ${adminBtns}
-      </div>
-    </div>`;
+    `;
+
+    // Se admin, envolve em proto-row com setas. Atendente vê só o proto.
+    if (state.isAdmin) {
+      return `
+        <div class="proto-row">
+          ${reorderBtns}
+          <div class="proto-body">${innerProto}</div>
+        </div>
+      `;
+    }
+    return innerProto;
   }).join('');
 }
 
@@ -874,6 +952,77 @@ async function confirmDel() {
     toast('Erro: ' + err.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Apagar';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// REORDENAR PROTOCOLOS (admin only)
+// ════════════════════════════════════════════════════════════
+let reordenando = false;
+
+async function moverProtocolo(id, direcao) {
+  if (!state.isAdmin || reordenando) return;
+
+  // Pega só os protocolos do segmento atual, na ordem em que estão
+  const seg = state.activeSeg;
+  const items = state.protocols.filter(p => p.seg === seg);
+  const idx = items.findIndex(p => p.id === id);
+  if (idx === -1) return;
+
+  // Calcula novo índice
+  let novoIdx;
+  if (direcao === 'up')   novoIdx = idx - 1;
+  else if (direcao === 'down') novoIdx = idx + 1;
+  else return;
+
+  if (novoIdx < 0 || novoIdx >= items.length) return;
+
+  // Swap na lista local (preview imediato)
+  const tmp = items[idx];
+  items[idx]    = items[novoIdx];
+  items[novoIdx] = tmp;
+
+  // IDs na nova ordem
+  const orderedIds = items.map(p => p.id);
+
+  reordenando = true;
+
+  // Atualiza state local IMEDIATAMENTE (atualização otimista)
+  // Reconstroi state.protocols colocando os do segmento na nova ordem
+  const outros = state.protocols.filter(p => p.seg !== seg);
+  // Insere os do segmento na posição original do primeiro protocolo dele
+  const lista = [];
+  let inserido = false;
+  for (const p of state.protocols) {
+    if (p.seg === seg) {
+      if (!inserido) {
+        lista.push(...items);
+        inserido = true;
+      }
+    } else {
+      lista.push(p);
+    }
+  }
+  if (!inserido) lista.push(...items);
+  state.protocols = lista;
+  renderList();
+
+  // Salva no servidor
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/protocols/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seg, orderedIds })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao reordenar');
+    state.version = data.version || state.version;
+  } catch (err) {
+    toast('Erro ao salvar ordem: ' + err.message, 'error');
+    // Se falhou, recarrega lista do servidor pra desfazer
+    await loadProtocols();
+  } finally {
+    reordenando = false;
   }
 }
 
