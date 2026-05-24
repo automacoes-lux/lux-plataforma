@@ -52,8 +52,18 @@ window.__luxFetch = async (url, options = {}) => {
   const idToken = await window.__luxUser.getIdToken();
   const headers = new Headers(options.headers || {});
   headers.set('Authorization', 'Bearer ' + idToken);
+  // Só força Content-Type: application/json se o body NÃO for um tipo
+  // que o navegador define sozinho (FormData, Blob, etc.)
   if (options.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
+    const body = options.body;
+    const isFormData      = (typeof FormData !== 'undefined') && (body instanceof FormData);
+    const isBlob          = (typeof Blob !== 'undefined') && (body instanceof Blob);
+    const isURLParams     = (typeof URLSearchParams !== 'undefined') && (body instanceof URLSearchParams);
+    const isArrayBuffer   = body instanceof ArrayBuffer;
+    const browserAutoSets = isFormData || isBlob || isURLParams || isArrayBuffer;
+    if (!browserAutoSets) {
+      headers.set('Content-Type', 'application/json');
+    }
   }
   return fetch(url, { ...options, headers });
 };
