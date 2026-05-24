@@ -1195,7 +1195,7 @@ function renderTutorial() {
         <label class="tutorial-upload" for="inputVideoPrincipal">
           <span class="ic">⬆</span>
           <span class="lbl">Clique ou arraste o vídeo principal</span>
-          <span class="hint">MP4, WebM até 200MB</span>
+          <span class="hint">MP4, WebM até 95MB</span>
           <input type="file" id="inputVideoPrincipal" accept="video/*"
                  onchange="onUploadFile(this.files[0],'video-principal')">
         </label>
@@ -1328,10 +1328,11 @@ async function onUploadFile(file, tipo) {
     return;
   }
 
-  // Validações básicas
-  const MAX = 200 * 1024 * 1024;
+  // Limite REAL: 95MB (Cloudflare Workers Pro plan: 100MB com overhead do multipart)
+  const MAX = 95 * 1024 * 1024;
   if (file.size > MAX) {
-    toast('Arquivo muito grande (max 200MB)', 'err');
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    toast(`Arquivo ${sizeMB}MB excede o limite de 95MB. Comprima o vídeo antes.`, 'err');
     return;
   }
 
