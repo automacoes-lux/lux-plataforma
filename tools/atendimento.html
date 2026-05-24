@@ -376,6 +376,65 @@ body{
   .tutorial-file .meta{display:none}
 }
 
+/* ════════════════════════════════════════════════════════════
+   BOTÃO DISPARAR ALERTA + MODAL (admin)
+   ════════════════════════════════════════════════════════════ */
+.btn-alerta {
+  background: rgba(232,168,76,.12);
+  border: 1px solid rgba(232,168,76,.5);
+  color: #E8A84C;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s;
+}
+.btn-alerta:hover {
+  background: rgba(232,168,76,.22);
+}
+
+.textarea-alerta {
+  width: 100%;
+  min-height: 140px;
+  background: var(--bg-input);
+  border: 1px solid rgba(201,168,76,.2);
+  color: var(--text);
+  font-size: 14px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  resize: vertical;
+  line-height: 1.6;
+}
+.textarea-alerta:focus {
+  outline: none;
+  border-color: #E8A84C;
+}
+
+.btn-disparar {
+  background: linear-gradient(135deg, #E8A84C, #F4C46B);
+  border: none;
+  color: #000;
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: filter .15s;
+}
+.btn-disparar:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-disparar:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
 </style>
 </head>
 <body>
@@ -451,6 +510,12 @@ body{
   <!-- Barra admin (só admin) -->
   <div class="admin-bar" id="adminBar">
     <button class="btn-primary" onclick="openNew()">+ Novo protocolo</button>
+    <button class="btn-alerta" onclick="openAlertaModal()">
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span>📢</span>
+        <span>Disparar alerta</span>
+      </span>
+    </button>
   </div>
 
   <!-- Lista de protocolos -->
@@ -509,6 +574,34 @@ body{
   </div>
 </div>
 
+<!-- Modal: disparar alerta (admin) -->
+<div class="modal-overlay" id="alertaModal">
+  <div class="modal" style="max-width:520px">
+    <h3 style="display:flex;align-items:center;gap:8px;color:#E8A84C">
+      <span>📢</span>
+      <span>Disparar alerta para equipe</span>
+    </h3>
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:1rem">
+      O texto abaixo aparecerá em um pop-up bloqueante para todos os atendentes
+      (na próxima checagem, em até 60 segundos).
+    </p>
+
+    <label for="alertaTexto" class="label" style="display:block;font-size:11px;color:var(--text-mid);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Mensagem</label>
+    <textarea id="alertaTexto" class="textarea-alerta"
+              placeholder="Ex: Atualizações de hoje:&#10;• Alterado protocolo música&#10;• Adicionado tutorial em vídeo"
+              maxlength="2000"></textarea>
+    <div style="font-size:11px;color:#666;margin-top:6px;display:flex;justify-content:space-between">
+      <span>Quebras de linha são preservadas no pop-up.</span>
+      <span id="alertaContador">0 / 2000</span>
+    </div>
+
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn-mini" onclick="closeAlertaModal()">Cancelar</button>
+      <button class="btn-disparar" id="btnDisparar" onclick="confirmarDisparoAlerta()">Disparar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -530,6 +623,12 @@ const state = {
 };
 
 window.addEventListener('DOMContentLoaded', init);
+
+// Listener pro contador de caracteres do textarea de alerta
+window.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('alertaTexto');
+  if (ta) ta.addEventListener('input', atualizarContadorAlerta);
+});
 
 async function init() {
   try {
@@ -792,6 +891,76 @@ function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ════════════════════════════════════════════════════════════
+// DISPARAR ALERTA (admin only)
+// ════════════════════════════════════════════════════════════
+function openAlertaModal() {
+  if (!state.isAdmin) return;
+  const modal = document.getElementById('alertaModal');
+  const textarea = document.getElementById('alertaTexto');
+  textarea.value = '';
+  atualizarContadorAlerta();
+  modal.classList.add('show');
+  setTimeout(() => textarea.focus(), 100);
+}
+
+function closeAlertaModal() {
+  document.getElementById('alertaModal').classList.remove('show');
+}
+
+function atualizarContadorAlerta() {
+  const textarea = document.getElementById('alertaTexto');
+  const contador = document.getElementById('alertaContador');
+  if (textarea && contador) {
+    contador.textContent = textarea.value.length + ' / 2000';
+  }
+}
+
+async function confirmarDisparoAlerta() {
+  if (!state.isAdmin) return;
+  const textarea = document.getElementById('alertaTexto');
+  const mensagem = textarea.value.trim();
+
+  if (!mensagem) {
+    toast('Digite uma mensagem antes de disparar', 'error');
+    textarea.focus();
+    return;
+  }
+
+  if (!confirm('Disparar este alerta para TODOS os atendentes?\n\nEles verão o pop-up bloqueante e só conseguirão fechar clicando em "Entendi".')) {
+    return;
+  }
+
+  const btn = document.getElementById('btnDisparar');
+  btn.disabled = true;
+  btn.textContent = 'Disparando...';
+
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/alertas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensagem })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao disparar');
+
+    closeAlertaModal();
+    toast('Alerta disparado! Atendentes verão em até 60s ✓', 'ok');
+
+    // Avisa o shell pra fazer fetch imediato (admin não vê o popup, mas outros sim)
+    try {
+      if (window.parent && window.parent.luxAlertasRefresh) {
+        window.parent.luxAlertasRefresh();
+      }
+    } catch (e) { /* iframe sandboxed ou algo do tipo */ }
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Disparar';
+  }
 }
 
 // ════════════════════════════════════════════════════════════
