@@ -178,6 +178,204 @@ body{
   .proto-text{font-size:15px}
   .seg-btn{font-size:12px;padding:8px 13px}
 }
+/* ════════════════════════════════════════════════════════════
+   CAIXA TUTORIAL (por aba)
+   ════════════════════════════════════════════════════════════ */
+.tutorial-card{
+  background:var(--bg-card);
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:var(--radius-lg);
+  padding:1.25rem;
+  margin-bottom:1.5rem;
+  display:none;
+}
+.tutorial-card.show{display:block}
+
+.tutorial-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;border-bottom:1px solid rgba(201,168,76,.15);
+  margin-bottom:14px;
+}
+.tutorial-head .title{
+  display:flex;align-items:center;gap:8px;
+  color:var(--gold);font-size:12px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  font-family:'Cinzel',serif;
+}
+.tutorial-head .title .icon{font-size:18px}
+
+.tutorial-btn-edit{
+  background:rgba(201,168,76,.12);
+  border:1px solid rgba(201,168,76,.4);
+  color:var(--gold);
+  padding:6px 12px;
+  border-radius:var(--radius-md);
+  font-size:12px;font-weight:500;
+  cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+  font-family:'DM Sans',sans-serif;
+}
+.tutorial-btn-edit:hover{background:rgba(201,168,76,.2)}
+.tutorial-btn-edit.editing{
+  background:rgba(232,122,122,.12);
+  border-color:rgba(232,122,122,.4);
+  color:var(--danger);
+}
+
+/* Player de vídeo principal */
+.tutorial-video{
+  width:100%;aspect-ratio:16/9;
+  background:#000;
+  border-radius:var(--radius-md);
+  border:1px solid rgba(201,168,76,.2);
+  margin-bottom:14px;
+}
+.tutorial-video-empty{
+  width:100%;aspect-ratio:16/9;
+  background:#000;
+  border:1px dashed rgba(201,168,76,.3);
+  border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:6px;
+  color:var(--text-mid);font-size:13px;
+  margin-bottom:14px;
+}
+.tutorial-video-empty .ic{font-size:32px;color:rgba(201,168,76,.4)}
+
+/* Upload zone */
+.tutorial-upload{
+  width:100%;aspect-ratio:16/9;
+  background:#000;
+  border:2px dashed rgba(201,168,76,.4);
+  border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:8px;
+  cursor:pointer;
+  margin-bottom:14px;
+  transition:all .15s;
+}
+.tutorial-upload:hover{
+  border-color:var(--gold);
+  background:rgba(201,168,76,.04);
+}
+.tutorial-upload .ic{font-size:32px;color:rgba(201,168,76,.5)}
+.tutorial-upload .lbl{font-size:13px;color:var(--text-mid)}
+.tutorial-upload .hint{font-size:11px;color:#555}
+.tutorial-upload input{display:none}
+
+/* Bloco observação */
+.tutorial-obs-label{
+  font-size:11px;color:var(--text-mid);
+  font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:6px;
+}
+.tutorial-obs-view{
+  font-size:13px;color:var(--text);
+  line-height:1.6;margin-bottom:18px;
+  white-space:pre-wrap;word-break:break-word;
+}
+.tutorial-obs-view.empty{color:#555;font-style:italic}
+.tutorial-obs-edit{
+  width:100%;min-height:80px;
+  background:var(--bg-input);
+  border:1px solid rgba(201,168,76,.2);
+  color:var(--text);font-size:13px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  font-family:'DM Sans',sans-serif;
+  resize:vertical;
+  margin-bottom:14px;
+}
+.tutorial-obs-edit:focus{outline:none;border-color:var(--gold)}
+
+/* Listas de arquivos */
+.tutorial-section{margin-bottom:14px}
+.tutorial-section-label{
+  font-size:11px;color:var(--text-mid);
+  font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tutorial-file-list{display:flex;flex-direction:column;gap:6px}
+.tutorial-file{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--bg-input);
+  border:1px solid rgba(201,168,76,.12);
+  border-radius:var(--radius-md);
+  font-size:13px;color:var(--text);
+}
+.tutorial-file .left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.tutorial-file .left .ic{font-size:16px;color:var(--gold);flex-shrink:0}
+.tutorial-file .left .name{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tutorial-file .meta{font-size:11px;color:var(--text-mid);margin-left:8px;flex-shrink:0}
+.tutorial-file .actions{display:flex;gap:6px;flex-shrink:0;margin-left:8px}
+.tutorial-file-btn{
+  background:transparent;border:1px solid rgba(201,168,76,.25);
+  color:var(--gold);padding:4px 8px;
+  border-radius:6px;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;gap:4px;
+  font-family:'DM Sans',sans-serif;
+}
+.tutorial-file-btn:hover{background:rgba(201,168,76,.08)}
+.tutorial-file-btn.danger{
+  border-color:rgba(232,122,122,.3);color:var(--danger);
+}
+.tutorial-file-btn.danger:hover{background:rgba(232,122,122,.08)}
+
+.tutorial-empty-list{
+  font-size:12px;color:#555;font-style:italic;padding:6px 0;
+}
+
+/* Botões de adicionar (admin) */
+.tutorial-add-btn{
+  background:transparent;
+  border:1px dashed rgba(201,168,76,.4);
+  color:var(--gold);
+  padding:7px 13px;
+  border-radius:var(--radius-md);
+  font-size:12px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'DM Sans',sans-serif;
+}
+.tutorial-add-btn:hover{background:rgba(201,168,76,.08);border-style:solid}
+
+/* Footer admin (botões salvar/cancelar) */
+.tutorial-edit-actions{
+  display:flex;gap:8px;justify-content:flex-end;
+  padding-top:14px;border-top:1px solid rgba(201,168,76,.12);
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+.tutorial-btn-save{
+  background:linear-gradient(135deg,#C9A84C,#E2BA5F);
+  border:none;color:#000;
+  padding:8px 18px;border-radius:var(--radius-md);
+  font-size:12px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.tutorial-btn-save:hover{filter:brightness(1.1)}
+.tutorial-btn-save:disabled{opacity:.5;cursor:wait;filter:none}
+
+/* Upload progress */
+.tutorial-upload-progress{
+  display:none;
+  padding:10px 12px;background:var(--bg-input);
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:var(--radius-md);
+  margin-bottom:10px;font-size:12px;color:var(--gold);
+}
+.tutorial-upload-progress.show{display:block}
+
+/* Mobile */
+@media (max-width:560px){
+  .tutorial-card{padding:1rem}
+  .tutorial-head .title{font-size:11px}
+  .tutorial-file .meta{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -198,6 +396,57 @@ body{
 
   <!-- Abas de segmento -->
   <div class="segs" id="segs"></div>
+
+  <!-- ════════════════════════════════════════════════════════
+       CAIXA TUTORIAL (por aba)
+       ════════════════════════════════════════════════════════ -->
+  <div class="tutorial-card" id="tutorialCard">
+    <div class="tutorial-head">
+      <div class="title">
+        <span class="icon">🎓</span>
+        <span id="tutorialTitle">Tutorial</span>
+      </div>
+      <button class="tutorial-btn-edit" id="tutorialBtnEdit" onclick="toggleTutorialEdit()">
+        <span id="tutorialBtnEditLabel">✎ Editar</span>
+      </button>
+    </div>
+
+    <!-- Upload progress (aparece durante upload) -->
+    <div class="tutorial-upload-progress" id="tutorialProgress"></div>
+
+    <!-- ═══ Vídeo principal ═══ -->
+    <div id="tutorialVideoArea"><!-- player ou empty/upload --></div>
+
+    <!-- ═══ Observação ═══ -->
+    <div class="tutorial-obs-label">Observações</div>
+    <div id="tutorialObsArea"><!-- texto ou textarea --></div>
+
+    <!-- ═══ Vídeos extras ═══ -->
+    <div class="tutorial-section">
+      <div class="tutorial-section-label">
+        <span>Vídeos extras</span>
+        <button class="tutorial-add-btn admin-only" id="btnAddVideoExtra" onclick="document.getElementById('inputVideoExtra').click()" style="display:none">+ Vídeo</button>
+      </div>
+      <div class="tutorial-file-list" id="tutorialVideosExtras"></div>
+      <input type="file" id="inputVideoExtra" accept="video/*" style="display:none" onchange="onUploadFile(this.files[0],'video-extra')">
+    </div>
+
+    <!-- ═══ Arquivos ═══ -->
+    <div class="tutorial-section">
+      <div class="tutorial-section-label">
+        <span>Arquivos disponíveis</span>
+        <button class="tutorial-add-btn admin-only" id="btnAddArquivo" onclick="document.getElementById('inputArquivo').click()" style="display:none">+ Arquivo</button>
+      </div>
+      <div class="tutorial-file-list" id="tutorialArquivos"></div>
+      <input type="file" id="inputArquivo" style="display:none" onchange="onUploadFile(this.files[0],'arquivo')">
+    </div>
+
+    <!-- Botões de ação no modo edição -->
+    <div class="tutorial-edit-actions" id="tutorialEditActions" style="display:none">
+      <button class="tutorial-btn-edit" onclick="toggleTutorialEdit()">Fechar edição</button>
+      <button class="tutorial-btn-save" id="btnSalvarObs" onclick="salvarObservacao()">Salvar observação</button>
+    </div>
+  </div>
 
   <!-- Barra admin (só admin) -->
   <div class="admin-bar" id="adminBar">
@@ -296,6 +545,7 @@ async function init() {
   }
 
   await loadProtocols();
+  loadTutorial(state.activeSeg);  // carrega tutorial inicial
 }
 
 async function loadProtocols() {
@@ -345,6 +595,7 @@ function setSeg(s) {
   state.activeSeg = s;
   renderSegs();
   renderList();
+  loadTutorial(s);  // carrega tutorial da nova aba
 }
 
 function renderList() {
@@ -541,6 +792,277 @@ function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ════════════════════════════════════════════════════════════
+// CAIXA TUTORIAL (por aba)
+// ════════════════════════════════════════════════════════════
+const TUTORIAL_SEG_LABELS = {
+  musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
+  video:'Vídeo', figurinha:'Figurinha', cover:'Cover', objecoes:'Objeções'
+};
+
+const tutorialState = {
+  currentAba: null,
+  data: null,
+  isEditing: false,
+  uploading: false
+};
+
+async function loadTutorial(aba) {
+  tutorialState.currentAba = aba;
+  tutorialState.isEditing = false;
+  document.getElementById('tutorialTitle').textContent =
+    'Tutorial — ' + (TUTORIAL_SEG_LABELS[aba] || aba);
+
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/tutoriais/' + aba);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao carregar tutorial');
+    tutorialState.data = data.tutorial;
+  } catch (err) {
+    // Se der erro, mostra estrutura vazia
+    tutorialState.data = {
+      aba,
+      observacao: '',
+      videoPrincipal: null,
+      videosExtras: [],
+      arquivos: [],
+      atualizadoEm: 0
+    };
+  }
+
+  renderTutorial();
+  document.getElementById('tutorialCard').classList.add('show');
+}
+
+function renderTutorial() {
+  const t = tutorialState.data;
+  if (!t) return;
+  const editing = tutorialState.isEditing && state.isAdmin;
+
+  // Botão Editar (só admin)
+  const btnEdit = document.getElementById('tutorialBtnEdit');
+  btnEdit.style.display = state.isAdmin ? 'flex' : 'none';
+  document.getElementById('tutorialBtnEditLabel').textContent =
+    editing ? '✕ Cancelar' : '✎ Editar';
+  btnEdit.classList.toggle('editing', editing);
+
+  // Botões + (admin only) — só aparecem no modo edição
+  document.getElementById('btnAddVideoExtra').style.display = editing ? 'inline-flex' : 'none';
+  document.getElementById('btnAddArquivo').style.display    = editing ? 'inline-flex' : 'none';
+  document.getElementById('tutorialEditActions').style.display = editing ? 'flex' : 'none';
+
+  // Vídeo principal
+  const va = document.getElementById('tutorialVideoArea');
+  if (editing) {
+    // Admin em modo edição: zona de upload
+    if (t.videoPrincipal) {
+      va.innerHTML = `
+        <video class="tutorial-video" controls preload="metadata"
+               src="${WORKER_URL}/tutoriais/${t.aba}/file/${t.videoPrincipal.fileId}"></video>
+        <div style="display:flex;gap:8px;margin-top:-6px;margin-bottom:14px;justify-content:flex-end">
+          <button class="tutorial-file-btn" onclick="document.getElementById('inputVideoPrincipal').click()">
+            ↻ Substituir vídeo
+          </button>
+          <button class="tutorial-file-btn danger" onclick="removerArquivo('${t.videoPrincipal.fileId}')">
+            🗑 Remover
+          </button>
+        </div>
+        <input type="file" id="inputVideoPrincipal" accept="video/*" style="display:none"
+               onchange="onUploadFile(this.files[0],'video-principal')">
+      `;
+    } else {
+      va.innerHTML = `
+        <label class="tutorial-upload" for="inputVideoPrincipal">
+          <span class="ic">⬆</span>
+          <span class="lbl">Clique ou arraste o vídeo principal</span>
+          <span class="hint">MP4, WebM até 200MB</span>
+          <input type="file" id="inputVideoPrincipal" accept="video/*"
+                 onchange="onUploadFile(this.files[0],'video-principal')">
+        </label>
+      `;
+    }
+  } else {
+    // Modo visualização
+    if (t.videoPrincipal) {
+      va.innerHTML = `
+        <video class="tutorial-video" controls preload="metadata"
+               src="${WORKER_URL}/tutoriais/${t.aba}/file/${t.videoPrincipal.fileId}"></video>
+      `;
+    } else {
+      va.innerHTML = `
+        <div class="tutorial-video-empty">
+          <span class="ic">🎬</span>
+          <span>Nenhum vídeo tutorial ainda</span>
+        </div>
+      `;
+    }
+  }
+
+  // Observação
+  const oa = document.getElementById('tutorialObsArea');
+  if (editing) {
+    oa.innerHTML = `
+      <textarea class="tutorial-obs-edit" id="tutorialObsTextarea"
+                placeholder="Observações sobre esta aba (ex: dicas, lembrar de ...)">${escapeHtml(t.observacao || '')}</textarea>
+    `;
+  } else {
+    if (t.observacao && t.observacao.trim()) {
+      oa.innerHTML = '<div class="tutorial-obs-view">' + escapeHtml(t.observacao) + '</div>';
+    } else {
+      oa.innerHTML = '<div class="tutorial-obs-view empty">Sem observações no momento.</div>';
+    }
+  }
+
+  // Vídeos extras
+  renderFileList(document.getElementById('tutorialVideosExtras'), t.videosExtras || [], editing, '🎞');
+
+  // Arquivos
+  renderFileList(document.getElementById('tutorialArquivos'), t.arquivos || [], editing, '📎');
+}
+
+function renderFileList(container, files, editing, defaultIcon) {
+  if (!files || files.length === 0) {
+    container.innerHTML = '<div class="tutorial-empty-list">Nenhum item ainda.</div>';
+    return;
+  }
+  const aba = tutorialState.currentAba;
+  container.innerHTML = files.map(f => {
+    const ic = iconForMime(f.mimeType) || defaultIcon;
+    const size = formatBytes(f.size || 0);
+    const url = WORKER_URL + '/tutoriais/' + aba + '/file/' + f.fileId;
+    const actions = editing
+      ? `<button class="tutorial-file-btn danger" onclick="removerArquivo('${f.fileId}')">🗑</button>`
+      : `<a class="tutorial-file-btn" href="${url}" download="${escapeHtml(f.name)}" target="_blank">⬇ Baixar</a>`;
+    return `
+      <div class="tutorial-file">
+        <div class="left">
+          <span class="ic">${ic}</span>
+          <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+        </div>
+        <span class="meta">${size}</span>
+        <div class="actions">${actions}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function iconForMime(mime) {
+  if (!mime) return '📄';
+  if (mime.startsWith('video/')) return '🎞';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (mime.startsWith('image/')) return '🖼';
+  if (mime === 'application/pdf') return '📕';
+  if (mime.includes('word'))      return '📝';
+  if (mime.includes('sheet') || mime.includes('excel')) return '📊';
+  if (mime.startsWith('text/'))   return '📄';
+  return '📎';
+}
+
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function toggleTutorialEdit() {
+  if (!state.isAdmin) return;
+  tutorialState.isEditing = !tutorialState.isEditing;
+  renderTutorial();
+}
+
+async function salvarObservacao() {
+  if (!state.isAdmin || !tutorialState.data) return;
+  const textarea = document.getElementById('tutorialObsTextarea');
+  if (!textarea) return;
+  const observacao = textarea.value;
+  const btnSalvar = document.getElementById('btnSalvarObs');
+  const originalLabel = btnSalvar.textContent;
+  btnSalvar.disabled = true;
+  btnSalvar.textContent = 'Salvando...';
+
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/tutoriais/' + tutorialState.currentAba,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observacao })
+      }
+    );
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao salvar');
+    tutorialState.data = data.tutorial;
+    toast('Observação salva ✓', 'ok');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'err');
+  } finally {
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = originalLabel;
+  }
+}
+
+async function onUploadFile(file, tipo) {
+  if (!file || !state.isAdmin) return;
+  if (tutorialState.uploading) {
+    toast('Aguarde o upload anterior terminar', 'err');
+    return;
+  }
+
+  // Validações básicas
+  const MAX = 200 * 1024 * 1024;
+  if (file.size > MAX) {
+    toast('Arquivo muito grande (max 200MB)', 'err');
+    return;
+  }
+
+  tutorialState.uploading = true;
+  const progressEl = document.getElementById('tutorialProgress');
+  progressEl.classList.add('show');
+  progressEl.textContent = `⏳ Enviando ${file.name} (${formatBytes(file.size)})...`;
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('tipo', tipo);
+
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/tutoriais/' + tutorialState.currentAba + '/upload',
+      { method: 'POST', body: form }
+    );
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha no upload');
+
+    tutorialState.data = data.tutorial;
+    renderTutorial();
+    toast('Upload concluído ✓', 'ok');
+  } catch (err) {
+    toast('Erro no upload: ' + err.message, 'err');
+  } finally {
+    tutorialState.uploading = false;
+    progressEl.classList.remove('show');
+    progressEl.textContent = '';
+  }
+}
+
+async function removerArquivo(fileId) {
+  if (!state.isAdmin) return;
+  if (!confirm('Remover este arquivo?')) return;
+
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/tutoriais/' + tutorialState.currentAba + '/file/' + fileId,
+      { method: 'DELETE' }
+    );
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao remover');
+    tutorialState.data = data.tutorial;
+    renderTutorial();
+    toast('Arquivo removido', 'ok');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'err');
+  }
 }
 </script>
 </body>
