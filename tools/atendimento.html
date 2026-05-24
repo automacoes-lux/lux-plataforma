@@ -243,6 +243,29 @@ body{
 }
 .tutorial-video-empty .ic{font-size:32px;color:rgba(201,168,76,.4)}
 
+/* Estado: vídeo pronto pra carregar (clique pra assistir) */
+.tutorial-video-loading{
+  width:100%;aspect-ratio:16/9;
+  background:#000;
+  border-radius:var(--radius-md);
+  border:1px solid rgba(201,168,76,.25);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:8px;
+  color:var(--text-mid);font-size:13px;
+  margin-bottom:14px;padding:12px;
+}
+.tutorial-video-loading .ic{
+  font-size:32px;color:var(--gold);
+  background:rgba(201,168,76,.15);
+  width:60px;height:60px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:4px;
+}
+.tutorial-video-loading.progress{
+  background:#0A0A0A;
+  border-color:var(--gold);
+}
+
 /* Upload zone */
 .tutorial-upload{
   width:100%;aspect-ratio:16/9;
@@ -1174,12 +1197,17 @@ function renderTutorial() {
   // Vídeo principal
   const va = document.getElementById('tutorialVideoArea');
   if (editing) {
-    // Admin em modo edição: zona de upload
+    // Admin em modo edição: zona de upload OU player + ações
     if (t.videoPrincipal) {
       va.innerHTML = `
-        <video class="tutorial-video" controls preload="metadata"
-               src="${WORKER_URL}/tutoriais/${t.aba}/file/${t.videoPrincipal.fileId}"></video>
-        <div style="display:flex;gap:8px;margin-top:-6px;margin-bottom:14px;justify-content:flex-end">
+        <div class="tutorial-video-loading" id="videoPrincipalContainer">
+          <span class="ic">▶</span>
+          <span>Vídeo carregado · clique pra reproduzir</span>
+          <button class="tutorial-file-btn" style="margin-top:8px" onclick="carregarVideo('${t.videoPrincipal.fileId}', 'videoPrincipalContainer', this)">
+            ▶ Carregar player
+          </button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:14px;justify-content:flex-end">
           <button class="tutorial-file-btn" onclick="document.getElementById('inputVideoPrincipal').click()">
             ↻ Substituir vídeo
           </button>
@@ -1205,8 +1233,13 @@ function renderTutorial() {
     // Modo visualização
     if (t.videoPrincipal) {
       va.innerHTML = `
-        <video class="tutorial-video" controls preload="metadata"
-               src="${WORKER_URL}/tutoriais/${t.aba}/file/${t.videoPrincipal.fileId}"></video>
+        <div class="tutorial-video-loading" id="videoPrincipalContainer">
+          <span class="ic">▶</span>
+          <span>Tutorial em vídeo</span>
+          <button class="tutorial-file-btn" style="margin-top:8px" onclick="carregarVideo('${t.videoPrincipal.fileId}', 'videoPrincipalContainer', this)">
+            ▶ Assistir
+          </button>
+        </div>
       `;
     } else {
       va.innerHTML = `
@@ -1234,27 +1267,36 @@ function renderTutorial() {
   }
 
   // Vídeos extras
-  renderFileList(document.getElementById('tutorialVideosExtras'), t.videosExtras || [], editing, '🎞');
+  renderFileList(document.getElementById('tutorialVideosExtras'), t.videosExtras || [], editing, '🎞', 'video');
 
   // Arquivos
-  renderFileList(document.getElementById('tutorialArquivos'), t.arquivos || [], editing, '📎');
+  renderFileList(document.getElementById('tutorialArquivos'), t.arquivos || [], editing, '📎', 'arquivo');
 }
 
-function renderFileList(container, files, editing, defaultIcon) {
+function renderFileList(container, files, editing, defaultIcon, kind) {
   if (!files || files.length === 0) {
     container.innerHTML = '<div class="tutorial-empty-list">Nenhum item ainda.</div>';
     return;
   }
   const aba = tutorialState.currentAba;
-  container.innerHTML = files.map(f => {
+  container.innerHTML = files.map((f, idx) => {
     const ic = iconForMime(f.mimeType) || defaultIcon;
     const size = formatBytes(f.size || 0);
-    const url = WORKER_URL + '/tutoriais/' + aba + '/file/' + f.fileId;
-    const actions = editing
-      ? `<button class="tutorial-file-btn danger" onclick="removerArquivo('${f.fileId}')">🗑</button>`
-      : `<a class="tutorial-file-btn" href="${url}" download="${escapeHtml(f.name)}" target="_blank">⬇ Baixar</a>`;
+
+    // Vídeo extra abre num player inline (busca via fetch autenticado)
+    // Arquivo normal faz download
+    let actions;
+    if (editing) {
+      actions = `<button class="tutorial-file-btn danger" onclick="removerArquivo('${f.fileId}')">🗑</button>`;
+    } else if (kind === 'video') {
+      const slot = 'videoExtra-' + f.fileId;
+      actions = `<button class="tutorial-file-btn" onclick="abrirVideoExtra('${f.fileId}', this)">▶ Assistir</button>`;
+    } else {
+      actions = `<button class="tutorial-file-btn" onclick="baixarArquivo('${f.fileId}', this)">⬇ Baixar</button>`;
+    }
+
     return `
-      <div class="tutorial-file">
+      <div class="tutorial-file" id="file-row-${f.fileId}">
         <div class="left">
           <span class="ic">${ic}</span>
           <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
@@ -1264,6 +1306,178 @@ function renderFileList(container, files, editing, defaultIcon) {
       </div>
     `;
   }).join('');
+}
+
+// Abre vídeo extra: insere player ABAIXO da linha do arquivo
+async function abrirVideoExtra(fileId, btn) {
+  const linha = document.getElementById('file-row-' + fileId);
+  if (!linha) return;
+
+  // Se já tem player aberto pra esse fileId, alterna (fecha)
+  const playerExistente = document.getElementById('player-' + fileId);
+  if (playerExistente) {
+    playerExistente.remove();
+    if (btn) btn.innerHTML = '▶ Assistir';
+    return;
+  }
+
+  // Cria container de loading abaixo da linha
+  const container = document.createElement('div');
+  container.id = 'player-' + fileId;
+  container.style.marginTop = '6px';
+  container.style.marginBottom = '10px';
+  container.innerHTML = `
+    <div class="tutorial-video-loading progress" id="player-loading-${fileId}">
+      <div style="font-size:32px;color:var(--gold)">⏳</div>
+      <div style="color:var(--gold);font-size:13px">Baixando vídeo...</div>
+    </div>
+  `;
+  linha.after(container);
+  if (btn) btn.innerHTML = '✕ Fechar';
+
+  try {
+    // Reusa cache se já baixou
+    let blobUrl = videoBlobCache[fileId];
+    if (!blobUrl) {
+      const resp = await window.__luxFetch(
+        WORKER_URL + '/tutoriais/' + tutorialState.currentAba + '/file/' + fileId
+      );
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error('HTTP ' + resp.status + ': ' + txt.slice(0, 80));
+      }
+      const blob = await resp.blob();
+      blobUrl = URL.createObjectURL(blob);
+      videoBlobCache[fileId] = blobUrl;
+    }
+
+    container.innerHTML = `
+      <video class="tutorial-video" controls autoplay
+             src="${blobUrl}" style="margin-bottom:0"></video>
+    `;
+  } catch (err) {
+    container.innerHTML = `
+      <div class="tutorial-video-loading">
+        <div style="font-size:32px;color:var(--danger)">⚠️</div>
+        <div style="color:var(--danger);font-size:13px">Erro ao carregar</div>
+        <div style="font-size:11px;color:var(--text-mid);margin-top:4px">${escapeHtml(err.message)}</div>
+      </div>
+    `;
+    if (btn) btn.innerHTML = '▶ Tentar de novo';
+  }
+}
+
+// Carrega o vídeo via fetch autenticado e cria player com Blob URL
+// (necessário porque <video src=...> não envia o token Firebase no header)
+const videoBlobCache = {}; // fileId → blobUrl pra reusar entre clicks
+
+async function carregarVideo(fileId, containerId, btn) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Se já temos blob URL desse vídeo em cache, usa direto
+  if (videoBlobCache[fileId]) {
+    container.outerHTML = `
+      <video class="tutorial-video" controls autoplay
+             src="${videoBlobCache[fileId]}"></video>
+    `;
+    return;
+  }
+
+  // Acha info do arquivo (nome, mime)
+  const t = tutorialState.data;
+  const allVideos = [];
+  if (t.videoPrincipal) allVideos.push(t.videoPrincipal);
+  allVideos.push(...(t.videosExtras || []));
+  const fileMeta = allVideos.find(f => f.fileId === fileId);
+
+  // Mostra estado de loading
+  const sizeStr = fileMeta ? formatBytes(fileMeta.size || 0) : '';
+  container.classList.add('progress');
+  container.innerHTML = `
+    <div style="font-size:32px;color:var(--gold)">⏳</div>
+    <div style="color:var(--gold);font-size:13px">Baixando vídeo ${sizeStr}...</div>
+    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">Aguarde, pode levar alguns segundos.</div>
+  `;
+
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/tutoriais/' + tutorialState.currentAba + '/file/' + fileId
+    );
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + txt.slice(0, 80));
+    }
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    videoBlobCache[fileId] = blobUrl;
+
+    // Substitui o container pelo player de vídeo
+    container.outerHTML = `
+      <video class="tutorial-video" controls autoplay
+             src="${blobUrl}"></video>
+    `;
+  } catch (err) {
+    container.classList.remove('progress');
+    container.innerHTML = `
+      <div style="font-size:32px;color:var(--danger)">⚠️</div>
+      <div style="color:var(--danger);font-size:13px">Erro ao carregar vídeo</div>
+      <div style="font-size:11px;color:var(--text-mid);margin-top:4px">${escapeHtml(err.message)}</div>
+      <button class="tutorial-file-btn" style="margin-top:10px" onclick="carregarVideo('${fileId}', '${containerId}', this)">
+        Tentar novamente
+      </button>
+    `;
+  }
+}
+
+// Download autenticado: pega o arquivo via fetch com token Firebase
+// e força download usando Blob + URL temporária (funciona em mobile)
+async function baixarArquivo(fileId, btn) {
+  if (!tutorialState.data) return;
+
+  // Acha o arquivo nos metadados pra saber nome e mime
+  const t = tutorialState.data;
+  const allFiles = [];
+  if (t.videoPrincipal) allFiles.push(t.videoPrincipal);
+  allFiles.push(...(t.videosExtras || []));
+  allFiles.push(...(t.arquivos || []));
+  const file = allFiles.find(f => f.fileId === fileId);
+  if (!file) {
+    toast('Arquivo não encontrado', 'error');
+    return;
+  }
+
+  const labelOriginal = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Baixando...'; }
+
+  try {
+    const resp = await window.__luxFetch(
+      WORKER_URL + '/tutoriais/' + tutorialState.currentAba + '/file/' + fileId
+    );
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error('Servidor: ' + (txt.slice(0, 100) || resp.status));
+    }
+    const blob = await resp.blob();
+
+    // Cria URL temporária e dispara download
+    const tmpUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = tmpUrl;
+    a.download = file.name || ('arquivo-' + fileId);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Libera memória depois de 30s
+    setTimeout(() => URL.revokeObjectURL(tmpUrl), 30000);
+
+    toast('Download iniciado', 'ok');
+  } catch (err) {
+    toast('Erro ao baixar: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = labelOriginal; }
+  }
 }
 
 function iconForMime(mime) {
