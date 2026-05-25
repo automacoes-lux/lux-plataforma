@@ -271,12 +271,134 @@
     cursor: pointer;
   }
   .recovery-banner .resume-btn:hover { background: rgba(127,184,122,.28); }
+  .recovery-banner .cancel-btn {
+    background: rgba(232,122,122,.12);
+    border: 1px solid rgba(232,122,122,.5);
+    color: #E87A7A;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    min-width: 28px;
+  }
+  .recovery-banner .cancel-btn:hover { background: rgba(232,122,122,.22); }
+  .recovery-banner .cancel-btn:disabled { opacity: .5; cursor: wait; }
 
   @media (max-width: 520px) {
     .header h1 { font-size: 20px; }
     .card { padding: 14px; }
     .upload-zone { padding: 20px 12px; }
   }
+  /* ═══════════════════════════════════════════════════════
+     TABS + HISTÓRICO (padrão Lux Music)
+     ═══════════════════════════════════════════════════════ */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.8rem;
+    flex-wrap: nowrap;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+    text-transform: uppercase;
+    flex: 1;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn .25s; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 520px) {
+    .tabs { gap: 2px; }
+    .tab-btn { padding: 11px 6px; font-size: 12px; letter-spacing: .02em; }
+  }
+
+  .history-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .history-item {
+    background: rgba(255,255,255,.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: all .15s;
+  }
+  .history-item:hover {
+    border-color: var(--gold-dim);
+    background: rgba(201,168,76,.04);
+  }
+  .history-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .history-item-title {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    word-break: break-word;
+  }
+  .history-item-date {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .history-item-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .history-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .history-cost {
+    font-size: 12px;
+    color: #7FB87A;
+    font-weight: 600;
+  }
+  .history-totals {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 12px 16px;
+    background: rgba(201,168,76,.06);
+    border: 1px solid var(--gold-dim);
+    border-radius: 10px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .history-totals strong { color: var(--gold); font-weight: 600; }
+
 </style>
 </head>
 <body>
@@ -285,8 +407,19 @@
   <div class="header">
     <div class="icon-wrap">🎤</div>
     <h1>COVER</h1>
-    <div class="sub">Remova o vocal e baixe o instrumental pronto</div>
+    <div class="sub">Ferramenta mágica para criação de cover</div>
   </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="cover">🎤 Cover</button>
+    <button class="tab-btn" data-tab="history">📜 Histórico</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ABA COVER (telas upload/progress/result)
+       ═══════════════════════════════════════════════════════ -->
+  <div id="tab-cover" class="tab-content active">
 
   <!-- Recovery banner (aparece se tem task em andamento) -->
   <div class="recovery-banner" id="recoveryBanner">
@@ -320,7 +453,7 @@
         </div>
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
-          <span class="value">-2 semitons</span>
+          <span class="value">-6 semitons</span>
         </div>
         <div class="option-row">
           <span class="label">📥 Formato final</span>
@@ -339,7 +472,7 @@
 
       <div class="progress-step" id="step-upload">
         <div class="step-icon">⏳</div>
-        <div class="step-text">1. Enviando para StemSplit</div>
+        <div class="step-text">1. Fazendo a mágica acontecer</div>
         <div class="step-detail" id="step-upload-detail"></div>
       </div>
 
@@ -357,7 +490,7 @@
 
       <div class="progress-step" id="step-pitch">
         <div class="step-icon">⏳</div>
-        <div class="step-text">4. Aplicando pitch -2</div>
+        <div class="step-text">4. Aplicando efeito</div>
         <div class="step-detail" id="step-pitch-detail"></div>
       </div>
 
@@ -386,6 +519,18 @@
 
   <!-- ─── Erros ─── -->
   <div class="alert alert-error" id="errorBox" style="display:none"></div>
+
+  </div><!-- /tab-cover -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       ABA HISTÓRICO
+       ═══════════════════════════════════════════════════════ -->
+  <div id="tab-history" class="tab-content">
+    <div id="historyContent">
+      <div class="history-empty">Carregando histórico...</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -395,7 +540,7 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-const PITCH_SEMITONES = -2;
+const PITCH_SEMITONES = -6;
 const POLL_INTERVAL_MS = 5000;   // 5s entre polls do StemSplit
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
 
@@ -525,7 +670,7 @@ async function startProcessing(file) {
 
     currentTaskId = data.taskId;
     setStep('upload', 'done', 'Enviado');
-    setProgress(15, 'Aguardando StemSplit processar...');
+    setProgress(15, 'Fazendo a mágica acontecer...');
 
     // 2. Polling
     await pollTask(data.taskId);
@@ -577,7 +722,7 @@ async function pollTask(taskId) {
     // Ainda processando
     const ssProgress = Math.max(0, Math.min(100, data.progress || 0));
     const overallPct = 15 + (ssProgress * 0.35); // 15-50% durante StemSplit
-    setProgress(overallPct, `StemSplit: ${data.state} (${ssProgress}%)`);
+    setProgress(overallPct, `Fazendo a mágica acontecer... (${ssProgress}%)`);
 
     attempts++;
     await sleep(POLL_INTERVAL_MS);
@@ -615,7 +760,7 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 2. Pitch shift via OfflineAudioContext + playbackRate
   setStep('pitch', 'active', '');
-  setProgress(80, 'Aplicando pitch -2...');
+  setProgress(80, 'Aplicando efeito...');
 
   let pitchedBuffer;
   try {
@@ -643,7 +788,7 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 5. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover_-2.wav';
+    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
 }
 
 // ============================================================
@@ -722,7 +867,7 @@ $('btnDownload').addEventListener('click', () => {
   if (!processedBlob) return;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(processedBlob);
-  a.download = $('btnDownload').dataset.filename || 'cover_-2.wav';
+  a.download = $('btnDownload').dataset.filename || 'cover.wav';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
@@ -769,7 +914,10 @@ async function checkRecovery() {
           <div style="color:var(--text)">${escapeHtml(task.filename)}</div>
           <div style="color:var(--text-dim);font-size:11px">há ${ago} min</div>
         </div>
-        <button class="resume-btn" data-task="${task.taskId}">Retomar</button>
+        <div style="display:flex;gap:6px">
+          <button class="resume-btn" data-task="${task.taskId}">Retomar</button>
+          <button class="cancel-btn" data-task="${task.taskId}" title="Cancelar este pedido">✕</button>
+        </div>
       `;
       list.appendChild(div);
     }
@@ -777,6 +925,9 @@ async function checkRecovery() {
 
     list.querySelectorAll('.resume-btn').forEach(btn => {
       btn.addEventListener('click', () => resumeTask(btn.dataset.task));
+    });
+    list.querySelectorAll('.cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => cancelTask(btn.dataset.task, btn));
     });
   } catch (e) {
     // sem recovery, segue normal
@@ -805,6 +956,121 @@ async function resumeTask(taskId) {
   }
 }
 
+async function cancelTask(taskId, btn) {
+  if (!confirm('Cancelar este pedido? Não dá pra desfazer.')) return;
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/task/' + taskId, {
+      method: 'DELETE'
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) throw new Error(data.error || 'Falha');
+    // Remove o item da lista
+    if (btn) {
+      const item = btn.closest('.task-item');
+      if (item) item.remove();
+    }
+    // Se a lista ficou vazia, esconde o banner
+    const list = $('recoveryList');
+    if (list && list.children.length === 0) {
+      $('recoveryBanner').classList.remove('visible');
+    }
+  } catch (err) {
+    alert('Erro ao cancelar: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✕'; }
+  }
+}
+
+// ============================================================
+// TABS + HISTÓRICO
+// ============================================================
+function setupTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById('tab-' + tab);
+      if (target) target.classList.add('active');
+      if (tab === 'history') loadHistory();
+    });
+  });
+}
+
+function fmtDateBR(ms) {
+  if (!ms) return '-';
+  const d = new Date(ms);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+}
+
+function fmtDuration(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
+}
+
+function fmtBrl(v) {
+  return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+}
+
+async function loadHistory() {
+  const c = $('historyContent');
+  c.innerHTML = '<div class="history-empty">Carregando histórico...</div>';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/history');
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+      c.innerHTML = '<div class="history-empty">Erro: ' + escapeHtml(data.error || 'falha') + '</div>';
+      return;
+    }
+    if (!data.items || !data.items.length) {
+      c.innerHTML = '<div class="history-empty">Nenhum cover gerado ainda.<br/>Volte para a aba Cover e crie o primeiro!</div>';
+      return;
+    }
+
+    // Totais
+    const totals = data.totals || {};
+    let html = `
+      <div class="history-totals">
+        <div><strong>${totals.count || 0}</strong> covers · <strong>${fmtDuration((totals.seconds || 0))}</strong> processados</div>
+        <div>Total: <strong>${fmtBrl(totals.brl)}</strong></div>
+      </div>
+    `;
+
+    // Lista
+    data.items.forEach(item => {
+      const dur = fmtDuration(item.durationSeconds);
+      const filename = item.filename || '(sem nome)';
+      html += `
+        <div class="history-item">
+          <div class="history-item-top">
+            <div style="flex:1;min-width:0">
+              <div class="history-item-title">${escapeHtml(filename)}</div>
+              <div class="history-item-meta">
+                ⏱ ${dur} · 📅 ${fmtDateBR(item.completedAt)}
+              </div>
+            </div>
+            <div class="history-right">
+              <div class="history-cost">${fmtBrl(item.brl)}</div>
+              <div class="history-item-date">cotação $${item.cotacao?.toFixed(2) || '-'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    c.innerHTML = html;
+  } catch (err) {
+    c.innerHTML = '<div class="history-empty">Erro de rede: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
 // ============================================================
 // Boot
 // ============================================================
@@ -819,6 +1085,7 @@ async function boot() {
     showError('Falha ao carregar autenticação. Recarregue a página.');
     return;
   }
+  setupTabs();
   checkRecovery();
 }
 
