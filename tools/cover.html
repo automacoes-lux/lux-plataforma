@@ -316,7 +316,7 @@
       <div class="options">
         <div class="option-row">
           <span class="label">🎤 Remover vocal</span>
-          <span class="value">SIM (LALAL.AI)</span>
+          <span class="value">SIM (StemSplit)</span>
         </div>
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
@@ -339,7 +339,7 @@
 
       <div class="progress-step" id="step-upload">
         <div class="step-icon">⏳</div>
-        <div class="step-text">1. Enviando para LALAL.AI</div>
+        <div class="step-text">1. Enviando para StemSplit</div>
         <div class="step-detail" id="step-upload-detail"></div>
       </div>
 
@@ -396,7 +396,7 @@
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
 const PITCH_SEMITONES = -2;
-const POLL_INTERVAL_MS = 5000;   // 5s entre polls do LALAL
+const POLL_INTERVAL_MS = 5000;   // 5s entre polls do StemSplit
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
 
 // ============================================================
@@ -509,7 +509,7 @@ async function startProcessing(file) {
   setProgress(5, 'Enviando arquivo...');
 
   try {
-    // 1. Upload pro Worker (que repassa pro LALAL)
+    // 1. Upload pro Worker (que repassa pro StemSplit)
     const form = new FormData();
     form.append('file', file);
 
@@ -525,7 +525,7 @@ async function startProcessing(file) {
 
     currentTaskId = data.taskId;
     setStep('upload', 'done', 'Enviado');
-    setProgress(15, 'Aguardando LALAL processar...');
+    setProgress(15, 'Aguardando StemSplit processar...');
 
     // 2. Polling
     await pollTask(data.taskId);
@@ -565,24 +565,25 @@ async function pollTask(taskId) {
     if (data.state === 'success' && data.instrumentalUrl) {
       setStep('process', 'done', 'Vocal removido');
       setProgress(50, 'Baixando instrumental...');
-      await downloadAndProcess(data.instrumentalUrl, data.filename || 'cover');
+      // Passa taskId (não a URL direta) — Worker faz proxy pra evitar CORS
+      await downloadAndProcess(taskId, data.filename || 'cover');
       return;
     }
 
     if (data.state === 'error') {
-      throw new Error('LALAL retornou erro: ' + (data.error || 'desconhecido'));
+      throw new Error('StemSplit retornou erro: ' + (data.error || 'desconhecido'));
     }
 
     // Ainda processando
-    const lalalProgress = Math.max(0, Math.min(100, data.progress || 0));
-    const overallPct = 15 + (lalalProgress * 0.35); // 15-50% durante LALAL
-    setProgress(overallPct, `LALAL: ${data.state} (${lalalProgress}%)`);
+    const ssProgress = Math.max(0, Math.min(100, data.progress || 0));
+    const overallPct = 15 + (ssProgress * 0.35); // 15-50% durante StemSplit
+    setProgress(overallPct, `StemSplit: ${data.state} (${ssProgress}%)`);
 
     attempts++;
     await sleep(POLL_INTERVAL_MS);
   }
 
-  throw new Error('Timeout: LALAL demorou mais de 30 minutos');
+  throw new Error('Timeout: StemSplit demorou mais de 30 minutos');
 }
 
 function sleep(ms) {
@@ -592,13 +593,13 @@ function sleep(ms) {
 // ============================================================
 // Download do instrumental + pitch shift
 // ============================================================
-async function downloadAndProcess(instrumentalUrl, baseName) {
+async function downloadAndProcess(taskId, baseName) {
   setStep('download', 'active', '');
 
-  // 1. Baixa o instrumental do LALAL (URL pública, sem auth)
+  // 1. Baixa o instrumental via Worker (proxy server-side resolve CORS do R2 StemSplit)
   let audioBuffer;
   try {
-    const audioResp = await fetch(instrumentalUrl);
+    const audioResp = await window.__luxFetch(WORKER_URL + '/download/' + taskId);
     if (!audioResp.ok) throw new Error('Download retornou ' + audioResp.status);
     const arrayBuf = await audioResp.arrayBuffer();
     setStep('download', 'done', fmtBytes(arrayBuf.byteLength));
