@@ -400,6 +400,23 @@
   }
   .history-totals strong { color: var(--gold); font-weight: 600; }
 
+  /* Seletor de tuning */
+  .tuning-row .tuning-select {
+    background: var(--bg-input);
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    max-width: 220px;
+  }
+  .tuning-row .tuning-select:focus {
+    outline: 1px solid var(--gold);
+    outline-offset: 1px;
+  }
+
 </style>
 </head>
 <body>
@@ -455,6 +472,15 @@
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
           <span class="value">-6 semitons</span>
+        </div>
+        <div class="option-row tuning-row">
+          <span class="label">🧪 Qualidade do efeito</span>
+          <select id="windowSelect" class="tuning-select">
+            <option value="0.1">Padrão (0.1) — Atual com chiado</option>
+            <option value="0.15" selected>Suave (0.15) — Recomendado</option>
+            <option value="0.2">Smooth (0.2) — Menos chiado</option>
+            <option value="0.3">Máximo (0.3) — Quase sem chiado</option>
+          </select>
         </div>
         <div class="option-row">
           <span class="label">📥 Formato final</span>
@@ -789,7 +815,7 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 5. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
+    String(baseName).replace(/\.[^.]+$/, '') + '_cover_w' + WINDOW_SIZE_TEST + '.wav';
 }
 
 // ============================================================
@@ -799,33 +825,34 @@ async function downloadAndProcess(taskId, baseName) {
 // Pitch shift mantendo velocidade original
 // Usa Tone.js PitchShift via Tone.Offline()
 // ════════════════════════════════════════════════════════════
+// VARIÁVEL DE TUNING — testa valores diferentes
+// Valores típicos: 0.1 (default Tone.js), 0.15, 0.2, 0.3
+// Valores maiores = menos chiado, mais atraso (eco no início)
+let WINDOW_SIZE_TEST = 0.15; // pode ser mudado pelo seletor na UI
+
 async function applyPitchShift(buffer, semitones) {
   // Aguarda Tone.js carregar (defer-safe)
   if (typeof Tone === 'undefined') {
     throw new Error('Tone.js não carregou. Verifica conexão.');
   }
 
-  // Tone.Offline renderiza áudio sem tocar (rápido)
-  // A duração do buffer offline = duração original (não muda)
   const durationSeconds = buffer.duration;
 
+  console.log('[pitch] semitones=', semitones, 'windowSize=', WINDOW_SIZE_TEST);
+
   const rendered = await Tone.Offline(async () => {
-    // Cria PitchShift com o intervalo em semitons
-    // windowSize 0.1 = melhor pra mudanças grandes (-6 é grande)
     const pitchShift = new Tone.PitchShift({
       pitch: semitones,
-      windowSize: 0.1,
+      windowSize: WINDOW_SIZE_TEST,
       delayTime: 0,
       feedback: 0,
       wet: 1
     }).toDestination();
 
-    // Cria player com o buffer original
     const player = new Tone.Player(buffer).connect(pitchShift);
     player.start(0);
   }, durationSeconds, buffer.numberOfChannels);
 
-  // Tone.Offline retorna um Tone.ToneAudioBuffer — pegamos o AudioBuffer dentro
   return rendered.get ? rendered.get() : rendered;
 }
 
@@ -1101,6 +1128,14 @@ async function boot() {
     return;
   }
   setupTabs();
+  // Listener pro seletor de tuning de qualidade
+  const wsSel = $('windowSelect');
+  if (wsSel) {
+    wsSel.addEventListener('change', (e) => {
+      WINDOW_SIZE_TEST = parseFloat(e.target.value);
+      console.log('[tuning] windowSize =', WINDOW_SIZE_TEST);
+    });
+  }
   checkRecovery();
 }
 
