@@ -407,13 +407,13 @@
 <div class="container">
   <div class="header">
     <div class="icon-wrap">🎤</div>
-    <h1>COVER 🧪</h1>
-    <div class="sub">🧪 MODO TESTE — mantém velocidade original (algoritmo Tone.js)</div>
+    <h1>COVER</h1>
+    <div class="sub">Ferramenta mágica para criação de cover</div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="cover">🧪 Cover Teste</button>
+    <button class="tab-btn active" data-tab="cover">🎤 Cover</button>
     <button class="tab-btn" data-tab="history">📜 Histórico</button>
   </div>
 
@@ -454,7 +454,7 @@
         </div>
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
-          <span class="value">-6 semitons (mantém velocidade)</span>
+          <span class="value">-6 semitons</span>
         </div>
         <div class="option-row">
           <span class="label">📥 Formato final</span>
@@ -761,7 +761,7 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 2. Pitch shift via OfflineAudioContext + playbackRate
   setStep('pitch', 'active', '');
-  setProgress(80, 'Aplicando efeito (pode demorar 15-30s)...');
+  setProgress(80, 'Aplicando efeito...');
 
   let pitchedBuffer;
   try {
@@ -789,16 +789,15 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 5. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover_TESTE.wav';
+    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
 }
 
 // ============================================================
 // Pitch shift (varispeed via playbackRate em OfflineAudioContext)
 // ============================================================
 // ════════════════════════════════════════════════════════════
-// VERSÃO TESTE: Pitch shift MANTENDO velocidade original
+// Pitch shift mantendo velocidade original
 // Usa Tone.js PitchShift via Tone.Offline()
-// (vs. cover.html que usa playbackRate — muda velocidade junto)
 // ════════════════════════════════════════════════════════════
 async function applyPitchShift(buffer, semitones) {
   // Aguarda Tone.js carregar (defer-safe)
@@ -883,7 +882,7 @@ $('btnDownload').addEventListener('click', () => {
   if (!processedBlob) return;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(processedBlob);
-  a.download = $('btnDownload').dataset.filename || 'cover_TESTE.wav';
+  a.download = $('btnDownload').dataset.filename || 'cover.wav';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
