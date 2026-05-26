@@ -734,11 +734,11 @@ async function pollTask(taskId) {
       continue;
     }
 
-    if (data.state === 'success' && data.instrumentalUrl) {
+    if (data.state === 'success' && data.ready) {
       setStep('process', 'done', 'Vocal removido');
-      setProgress(50, 'Baixando instrumental...');
-      // Passa taskId (não a URL direta) — Worker faz proxy pra evitar CORS
-      await downloadAndProcess(taskId, data.filename || 'cover');
+      setProgress(50, 'Baixando stems...');
+      // Browser baixa stems via Worker (CORS) e mixa
+      await downloadAndProcess(taskId, data.filename || 'cover', data.instrumentalStems || []);
       return;
     }
 
@@ -763,59 +763,139 @@ function sleep(ms) {
 }
 
 // ============================================================
-// Download do instrumental + pitch shift
+// Download dos stems + mixagem + pitch shift
 // ============================================================
-async function downloadAndProcess(taskId, baseName) {
+async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   setStep('download', 'active', '');
 
-  // 1. Baixa o instrumental via Worker (proxy server-side resolve CORS do storage PoYo)
-  let audioBuffer;
-  try {
-    const audioResp = await window.__luxFetch(WORKER_URL + '/download/' + taskId);
-    if (!audioResp.ok) throw new Error('Download retornou ' + audioResp.status);
-    const arrayBuf = await audioResp.arrayBuffer();
-    setStep('download', 'done', fmtBytes(arrayBuf.byteLength));
-    setProgress(65, 'Decodificando áudio...');
+  if (!instrumentalStems || instrumentalStems.length === 0) {
+    setStep('download', 'error', 'Nenhum stem instrumental disponível');
+    throw new Error('PoYo não retornou stems instrumentais');
+  }
 
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    audioBuffer = await ctx.decodeAudioData(arrayBuf.slice(0));
-    ctx.close();
+  // 1. Baixa todos os stems via Worker (proxy server-side resolve CORS)
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const decodedBuffers = [];
+
+  try {
+    for (let i = 0; i < instrumentalStems.length; i++) {
+      const stemName = instrumentalStems[i];
+      const pct = 50 + ((i + 1) / instrumentalStems.length) * 12; // 50% -> 62%
+      setProgress(pct, `Baixando stem ${i + 1}/${instrumentalStems.length}: ${stemName}...`);
+      setStep('download', 'active', `${i + 1}/${instrumentalStems.length} ${stemName}`);
+
+      const resp = await window.__luxFetch(WORKER_URL + '/download/' + taskId + '/' + stemName);
+      if (!resp.ok) throw new Error(`Download de '${stemName}' retornou ${resp.status}`);
+      const buf = await resp.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(buf.slice(0));
+      decodedBuffers.push({ name: stemName, buffer: decoded });
+    }
+    setStep('download', 'done', `${instrumentalStems.length} stems`);
   } catch (err) {
+    ctx.close();
     setStep('download', 'error', err.message);
     throw err;
   }
 
-  // 2. Pitch shift via OfflineAudioContext + playbackRate
+  // 2. Mixa todos os stems em um único AudioBuffer
+  setProgress(67, 'Mixando instrumental...');
+  let mixedBuffer;
+  try {
+    mixedBuffer = mixAudioBuffers(decodedBuffers.map(b => b.buffer));
+  } catch (err) {
+    ctx.close();
+    throw new Error('Falha ao mixar stems: ' + err.message);
+  }
+  ctx.close();
+
+  // 3. Pitch shift via Tone.js PitchShift
   setStep('pitch', 'active', '');
   setProgress(80, 'Aplicando efeito...');
 
   let pitchedBuffer;
   try {
-    pitchedBuffer = await applyPitchShift(audioBuffer, PITCH_SEMITONES);
+    pitchedBuffer = await applyPitchShift(mixedBuffer, PITCH_SEMITONES);
     setStep('pitch', 'done', 'Pitch aplicado');
   } catch (err) {
     setStep('pitch', 'error', err.message);
     throw err;
   }
 
-  // 3. Encode WAV
+  // 4. Encode WAV
   setProgress(95, 'Finalizando WAV...');
   processedBlob = audioBufferToWav(pitchedBuffer);
 
-  // 4. Mostra player + botão download
+  // 5. Mostra player + botão download
   const url = URL.createObjectURL(processedBlob);
   $('audioPreview').src = url;
 
   setProgress(100, 'Pronto!');
   setTimeout(() => {
     showScreen('result');
-    // Limpa task no estado
     currentTaskId = null;
   }, 600);
 
-  // 5. Pre-seta nome do download
+  // 6. Pre-seta nome do download
   $('btnDownload').dataset.filename =
     String(baseName).replace(/\.[^.]+$/, '') + '_cover_w' + WINDOW_SIZE_TEST + '.wav';
+}
+
+// ============================================================
+// Mixa N AudioBuffers somando seus samples
+// ============================================================
+function mixAudioBuffers(buffers) {
+  if (!buffers || buffers.length === 0) {
+    throw new Error('Nenhum buffer para mixar');
+  }
+  if (buffers.length === 1) return buffers[0];
+
+  // Pega especificacoes do primeiro buffer como referencia
+  const sampleRate = buffers[0].sampleRate;
+  const numChannels = Math.max(...buffers.map(b => b.numberOfChannels));
+  const length = Math.max(...buffers.map(b => b.length));
+
+  // Cria buffer de saida
+  const outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    numChannels, length, sampleRate
+  );
+  const out = outCtx.createBuffer(numChannels, length, sampleRate);
+
+  // Soma cada canal de cada buffer no buffer de saida
+  for (let c = 0; c < numChannels; c++) {
+    const outCh = out.getChannelData(c);
+    for (const buf of buffers) {
+      // Se buffer for mono, usa canal 0 pra todos os canais
+      const srcCh = buf.numberOfChannels > c
+        ? buf.getChannelData(c)
+        : buf.getChannelData(0);
+      const len = Math.min(srcCh.length, outCh.length);
+      for (let i = 0; i < len; i++) {
+        outCh[i] += srcCh[i];
+      }
+    }
+  }
+
+  // Normalizacao: encontra o pico e divide se passar de 1.0
+  // (somar 3-5 stems pode estourar)
+  let peak = 0;
+  for (let c = 0; c < numChannels; c++) {
+    const ch = out.getChannelData(c);
+    for (let i = 0; i < ch.length; i++) {
+      const abs = Math.abs(ch[i]);
+      if (abs > peak) peak = abs;
+    }
+  }
+  if (peak > 0.98) {
+    const gain = 0.98 / peak;
+    for (let c = 0; c < numChannels; c++) {
+      const ch = out.getChannelData(c);
+      for (let i = 0; i < ch.length; i++) {
+        ch[i] *= gain;
+      }
+    }
+  }
+
+  return out;
 }
 
 // ============================================================
