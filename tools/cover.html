@@ -417,6 +417,50 @@
     outline-offset: 1px;
   }
 
+  /* Slider de pitch */
+  .pitch-row .pitch-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+  }
+  .pitch-row .pitch-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: linear-gradient(90deg, var(--gold-dim) 0%, var(--gold) 100%);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    max-width: 140px;
+  }
+  .pitch-row .pitch-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    border: 2px solid var(--bg2);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .pitch-row .pitch-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    border: 2px solid var(--bg2);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .pitch-row .pitch-slider-wrap .value {
+    min-width: 80px;
+    text-align: right;
+    font-size: 12px;
+  }
+
 </style>
 </head>
 <body>
@@ -469,9 +513,13 @@
           <span class="label">🎤 Remover vocal</span>
           <span class="value">SIM (PoYo.ai)</span>
         </div>
-        <div class="option-row">
+        <div class="option-row pitch-row">
           <span class="label">🎵 Pitch shift</span>
-          <span class="value">-6 semitons</span>
+          <div class="pitch-slider-wrap">
+            <input type="range" id="pitchSlider" class="pitch-slider"
+                   min="1" max="8" step="1" value="6">
+            <span class="value" id="pitchValue">-6 semitons</span>
+          </div>
         </div>
         <div class="option-row tuning-row">
           <span class="label">🧪 Qualidade do efeito</span>
@@ -567,7 +615,7 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-const PITCH_SEMITONES = -6;
+let PITCH_SEMITONES = -6; // mudado pelo slider na UI
 const POLL_INTERVAL_MS = 5000;   // 5s entre polls do PoYo
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
 
@@ -837,7 +885,9 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
 
   // 6. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover_w' + WINDOW_SIZE_TEST + '.wav';
+    String(baseName).replace(/\.[^.]+$/, '')
+    + '_cover_p' + PITCH_SEMITONES
+    + '_w' + WINDOW_SIZE_TEST + '.wav';
 }
 
 // ============================================================
@@ -1215,6 +1265,17 @@ async function boot() {
       WINDOW_SIZE_TEST = parseFloat(e.target.value);
       console.log('[tuning] windowSize =', WINDOW_SIZE_TEST);
     });
+  }
+  // Listener pro slider de pitch (1 a 8 -> -1 a -8 semitons)
+  const pitchSlider = $('pitchSlider');
+  const pitchValue = $('pitchValue');
+  if (pitchSlider && pitchValue) {
+    const updatePitch = () => {
+      PITCH_SEMITONES = -Math.abs(parseInt(pitchSlider.value, 10) || 6);
+      pitchValue.textContent = PITCH_SEMITONES + ' semitons';
+    };
+    pitchSlider.addEventListener('input', updatePitch);
+    updatePitch(); // garante valor inicial sincronizado
   }
   checkRecovery();
 }
