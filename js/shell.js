@@ -59,6 +59,14 @@ function loadTool(name) {
     return;
   }
 
+  // EXCEÇÃO COVER: o Cover precisa de SharedArrayBuffer (Demucs WASM),
+  // que só funciona em documento top-level (não dentro de iframe).
+  // Por isso abre em nova aba em vez de carregar no iframe.
+  if (name === 'cover') {
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
+
   hideAll();
 
   const view = document.getElementById('view-' + name);
