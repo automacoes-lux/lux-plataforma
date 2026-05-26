@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cover — Plataforma Lux</title>
 <script src="../js/auth-iframe.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -406,13 +407,13 @@
 <div class="container">
   <div class="header">
     <div class="icon-wrap">🎤</div>
-    <h1>COVER</h1>
-    <div class="sub">Ferramenta mágica para criação de cover</div>
+    <h1>COVER 🧪</h1>
+    <div class="sub">🧪 MODO TESTE — mantém velocidade original (algoritmo Tone.js)</div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="cover">🎤 Cover</button>
+    <button class="tab-btn active" data-tab="cover">🧪 Cover Teste</button>
     <button class="tab-btn" data-tab="history">📜 Histórico</button>
   </div>
 
@@ -453,7 +454,7 @@
         </div>
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
-          <span class="value">-6 semitons</span>
+          <span class="value">-6 semitons (mantém velocidade)</span>
         </div>
         <div class="option-row">
           <span class="label">📥 Formato final</span>
@@ -760,7 +761,7 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 2. Pitch shift via OfflineAudioContext + playbackRate
   setStep('pitch', 'active', '');
-  setProgress(80, 'Aplicando efeito...');
+  setProgress(80, 'Aplicando efeito (pode demorar 15-30s)...');
 
   let pitchedBuffer;
   try {
@@ -788,30 +789,45 @@ async function downloadAndProcess(taskId, baseName) {
 
   // 5. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
+    String(baseName).replace(/\.[^.]+$/, '') + '_cover_TESTE.wav';
 }
 
 // ============================================================
 // Pitch shift (varispeed via playbackRate em OfflineAudioContext)
 // ============================================================
+// ════════════════════════════════════════════════════════════
+// VERSÃO TESTE: Pitch shift MANTENDO velocidade original
+// Usa Tone.js PitchShift via Tone.Offline()
+// (vs. cover.html que usa playbackRate — muda velocidade junto)
+// ════════════════════════════════════════════════════════════
 async function applyPitchShift(buffer, semitones) {
-  const rate = Math.pow(2, semitones / 12);
-  // Duracao final = duracao_original / rate (mais devagar quando rate<1)
-  const newLength = Math.ceil(buffer.length / rate);
+  // Aguarda Tone.js carregar (defer-safe)
+  if (typeof Tone === 'undefined') {
+    throw new Error('Tone.js não carregou. Verifica conexão.');
+  }
 
-  const offline = new OfflineAudioContext(
-    buffer.numberOfChannels,
-    newLength,
-    buffer.sampleRate
-  );
+  // Tone.Offline renderiza áudio sem tocar (rápido)
+  // A duração do buffer offline = duração original (não muda)
+  const durationSeconds = buffer.duration;
 
-  const source = offline.createBufferSource();
-  source.buffer = buffer;
-  source.playbackRate.value = rate;
-  source.connect(offline.destination);
-  source.start(0);
+  const rendered = await Tone.Offline(async () => {
+    // Cria PitchShift com o intervalo em semitons
+    // windowSize 0.1 = melhor pra mudanças grandes (-6 é grande)
+    const pitchShift = new Tone.PitchShift({
+      pitch: semitones,
+      windowSize: 0.1,
+      delayTime: 0,
+      feedback: 0,
+      wet: 1
+    }).toDestination();
 
-  return await offline.startRendering();
+    // Cria player com o buffer original
+    const player = new Tone.Player(buffer).connect(pitchShift);
+    player.start(0);
+  }, durationSeconds, buffer.numberOfChannels);
+
+  // Tone.Offline retorna um Tone.ToneAudioBuffer — pegamos o AudioBuffer dentro
+  return rendered.get ? rendered.get() : rendered;
 }
 
 // ============================================================
@@ -867,7 +883,7 @@ $('btnDownload').addEventListener('click', () => {
   if (!processedBlob) return;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(processedBlob);
-  a.download = $('btnDownload').dataset.filename || 'cover.wav';
+  a.download = $('btnDownload').dataset.filename || 'cover_TESTE.wav';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
