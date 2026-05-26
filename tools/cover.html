@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cover — Plataforma Lux</title>
+
+<!-- COI service worker: ativa SharedArrayBuffer no GitHub Pages. -->
+<!-- Tem que estar logo no <head>, antes de qualquer outro script. -->
+<script src="coi-serviceworker.js"></script>
+
 <script src="../js/auth-iframe.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -38,10 +43,7 @@
     background: radial-gradient(ellipse at top, rgba(201,168,76,.04) 0%, var(--bg) 60%);
     padding: 20px 14px 60px;
   }
-  .container {
-    max-width: 680px;
-    margin: 0 auto;
-  }
+  .container { max-width: 680px; margin: 0 auto; }
 
   /* ─── Header ─── */
   .header {
@@ -50,10 +52,7 @@
     padding-bottom: 18px;
     border-bottom: 1px solid var(--border);
   }
-  .header .icon-wrap {
-    font-size: 36px;
-    margin-bottom: 6px;
-  }
+  .header .icon-wrap { font-size: 36px; margin-bottom: 6px; }
   .header h1 {
     font-family: 'Cinzel', Georgia, serif;
     color: var(--gold);
@@ -61,10 +60,7 @@
     letter-spacing: .1em;
     margin-bottom: 4px;
   }
-  .header .sub {
-    color: var(--text-dim);
-    font-size: 12px;
-  }
+  .header .sub { color: var(--text-dim); font-size: 12px; }
 
   /* ─── Cards ─── */
   .card {
@@ -120,7 +116,7 @@
   .file-info .row .label { color: var(--text-dim); }
   .file-info .row .value { color: var(--text); font-weight: 500; }
 
-  /* ─── Opções (visuais, fixas) ─── */
+  /* ─── Opções ─── */
   .options { display: flex; flex-direction: column; gap: 10px; }
   .option-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -167,9 +163,7 @@
   .btn-secondary:hover { background: rgba(201,168,76,.08); }
 
   /* ─── Progresso ─── */
-  .progress-section {
-    display: none;
-  }
+  .progress-section { display: none; }
   .progress-section.visible { display: block; }
   .progress-step {
     display: flex; align-items: center; gap: 12px;
@@ -211,10 +205,7 @@
   .result-section { display: none; }
   .result-section.visible { display: block; }
 
-  .audio-preview {
-    width: 100%;
-    margin: 10px 0;
-  }
+  .audio-preview { width: 100%; margin: 10px 0; }
 
   /* ─── Alertas ─── */
   .alert {
@@ -240,59 +231,27 @@
     color: var(--text);
   }
 
-  /* ─── Recovery banner ─── */
-  .recovery-banner {
-    background: linear-gradient(135deg, rgba(127,184,122,.1), rgba(127,184,122,.04));
-    border: 1px solid rgba(127,184,122,.3);
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
+  /* ─── Loading inicial (modelo) ─── */
+  .first-load {
     display: none;
+    background: rgba(232,168,76,.08);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
     font-size: 12px;
   }
-  .recovery-banner.visible { display: block; }
-  .recovery-banner .title {
-    color: var(--green);
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .recovery-banner .task-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 0;
-    border-top: 1px solid rgba(127,184,122,.15);
-  }
-  .recovery-banner .task-item:first-of-type { border-top: none; }
-  .recovery-banner .resume-btn {
-    background: rgba(127,184,122,.18);
-    border: 1px solid var(--green);
-    color: var(--green);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 11px;
-    cursor: pointer;
-  }
-  .recovery-banner .resume-btn:hover { background: rgba(127,184,122,.28); }
-  .recovery-banner .cancel-btn {
-    background: rgba(232,122,122,.12);
-    border: 1px solid rgba(232,122,122,.5);
-    color: #E87A7A;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 11px;
-    cursor: pointer;
-    min-width: 28px;
-  }
-  .recovery-banner .cancel-btn:hover { background: rgba(232,122,122,.22); }
-  .recovery-banner .cancel-btn:disabled { opacity: .5; cursor: wait; }
+  .first-load.visible { display: block; }
+  .first-load .title { color: var(--amber); font-weight: 600; margin-bottom: 6px; }
+  .first-load .progress-bar { margin-top: 8px; }
 
   @media (max-width: 520px) {
     .header h1 { font-size: 20px; }
     .card { padding: 14px; }
     .upload-zone { padding: 20px 12px; }
   }
-  /* ═══════════════════════════════════════════════════════
-     TABS + HISTÓRICO (padrão Lux Music)
-     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Tabs + histórico ─── */
   .tabs {
     display: flex;
     gap: 6px;
@@ -399,24 +358,6 @@
     gap: 8px;
   }
   .history-totals strong { color: var(--gold); font-weight: 600; }
-
-  /* Seletor de tuning */
-  .tuning-row .tuning-select {
-    background: var(--bg-input);
-    color: var(--gold);
-    border: 1px solid var(--gold-dim);
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    max-width: 220px;
-  }
-  .tuning-row .tuning-select:focus {
-    outline: 1px solid var(--gold);
-    outline-offset: 1px;
-  }
-
 </style>
 </head>
 <body>
@@ -435,14 +376,25 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════
-       ABA COVER (telas upload/progress/result)
+       ABA COVER
        ═══════════════════════════════════════════════════════ -->
   <div id="tab-cover" class="tab-content active">
 
-  <!-- Recovery banner (aparece se tem task em andamento) -->
-  <div class="recovery-banner" id="recoveryBanner">
-    <div class="title">⏳ Você tem cover(s) processando</div>
-    <div id="recoveryList"></div>
+  <!-- Aviso de incompatibilidade (browser sem SharedArrayBuffer) -->
+  <div class="alert alert-error" id="incompatBanner" style="display:none">
+    ⚠️ Seu navegador não suporta os recursos necessários (SharedArrayBuffer / WebAssembly).
+    Use Chrome, Edge ou Firefox atualizados. iOS Safari precisa ser versão 16.4+.
+  </div>
+
+  <!-- Primeira vez: baixando modelo -->
+  <div class="first-load" id="firstLoadBanner">
+    <div class="title">⚙️ Primeira vez: preparando ferramenta</div>
+    <div style="color:var(--text-dim)">
+      Carregando modelo de IA (~200MB) e mecanismo de processamento.
+      Aguarde — só acontece nesta vez no seu aparelho.
+    </div>
+    <div class="progress-bar"><div class="fill" id="firstLoadFill"></div></div>
+    <div class="progress-detail" id="firstLoadDetail">Iniciando...</div>
   </div>
 
   <!-- ─── Tela 1: Upload ─── -->
@@ -452,7 +404,7 @@
       <label class="upload-zone" id="uploadZone">
         <div class="icon">🎵</div>
         <div class="text">Clique ou <strong>arraste o arquivo</strong> aqui</div>
-        <div class="hint">MP3, WAV, M4A, OGG &middot; até 50MB</div>
+        <div class="hint">MP3, WAV, M4A, OGG &middot; até 50MB &middot; ideal: até 5min</div>
         <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.ogg">
       </label>
 
@@ -467,26 +419,27 @@
       <div class="options">
         <div class="option-row">
           <span class="label">🎤 Remover vocal</span>
-          <span class="value">SIM (StemSplit)</span>
+          <span class="value">SIM (IA local)</span>
         </div>
         <div class="option-row">
           <span class="label">🎵 Pitch shift</span>
           <span class="value">-6 semitons</span>
         </div>
-        <div class="option-row tuning-row">
-          <span class="label">🧪 Qualidade do efeito</span>
-          <select id="windowSelect" class="tuning-select">
-            <option value="0.1">Padrão (0.1) — Atual com chiado</option>
-            <option value="0.15" selected>Suave (0.15) — Recomendado</option>
-            <option value="0.2">Smooth (0.2) — Menos chiado</option>
-            <option value="0.3">Máximo (0.3) — Quase sem chiado</option>
-          </select>
-        </div>
         <div class="option-row">
           <span class="label">📥 Formato final</span>
           <span class="value">WAV</span>
         </div>
+        <div class="option-row">
+          <span class="label">💰 Custo</span>
+          <span class="value" style="color:var(--green)">R$ 0,00</span>
+        </div>
       </div>
+    </div>
+
+    <div class="alert alert-warn" id="mobileWarn" style="display:none">
+      📱 Você está em um celular. O processamento pode demorar
+      <strong>5 a 15 minutos por música</strong>. Para velocidade máxima, use um computador.
+      <strong>Não feche esta aba</strong> durante o processo.
     </div>
 
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
@@ -495,39 +448,38 @@
   <!-- ─── Tela 2: Progresso ─── -->
   <div id="progressScreen" class="progress-section">
     <div class="card">
-      <h2>⏳ Processando</h2>
+      <h2>⏳ Processando localmente</h2>
 
-      <div class="progress-step" id="step-upload">
+      <div class="progress-step" id="step-decode">
         <div class="step-icon">⏳</div>
-        <div class="step-text">1. Fazendo a mágica acontecer</div>
-        <div class="step-detail" id="step-upload-detail"></div>
+        <div class="step-text">1. Lendo arquivo de áudio</div>
+        <div class="step-detail" id="step-decode-detail"></div>
       </div>
 
-      <div class="progress-step" id="step-process">
+      <div class="progress-step" id="step-separate">
         <div class="step-icon">⏳</div>
-        <div class="step-text">2. Removendo vocal</div>
-        <div class="step-detail" id="step-process-detail"></div>
-      </div>
-
-      <div class="progress-step" id="step-download">
-        <div class="step-icon">⏳</div>
-        <div class="step-text">3. Baixando instrumental</div>
-        <div class="step-detail" id="step-download-detail"></div>
+        <div class="step-text">2. Removendo vocal (IA)</div>
+        <div class="step-detail" id="step-separate-detail"></div>
       </div>
 
       <div class="progress-step" id="step-pitch">
         <div class="step-icon">⏳</div>
-        <div class="step-text">4. Aplicando efeito</div>
+        <div class="step-text">3. Aplicando pitch shift</div>
         <div class="step-detail" id="step-pitch-detail"></div>
       </div>
 
-      <div class="progress-bar">
-        <div class="fill" id="progressFill"></div>
+      <div class="progress-step" id="step-encode">
+        <div class="step-icon">⏳</div>
+        <div class="step-text">4. Finalizando WAV</div>
+        <div class="step-detail" id="step-encode-detail"></div>
       </div>
+
+      <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
       <div class="progress-detail" id="progressDetail">Aguardando...</div>
 
-      <div class="alert alert-info" style="margin-top:14px">
-        💡 <strong>Pode fechar a aba</strong> — quando voltar, o cover continuará processando e estará pronto.
+      <div class="alert alert-warn" style="margin-top:14px">
+        ⚠️ <strong>Não feche esta aba.</strong> O processamento acontece neste navegador
+        e será perdido se você sair. Pode levar de 2 a 15 minutos.
       </div>
     </div>
 
@@ -560,6 +512,16 @@
 
 </div>
 
+<!-- ════════════════════════════════════════════════════════════
+     LIBS EXTERNAS
+     ──────────────────────────────────────────────────────────
+     - onnxruntime-web: motor que roda o modelo Demucs (ONNX)
+     - soundtouchjs: pitch shift mantendo velocidade (LGPL, OK comercial)
+     Ambas vêm de CDN público com CORS aberto.
+     ════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/soundtouchjs@0.1.30/dist/soundtouch.min.js"></script>
+
 <script>
 'use strict';
 
@@ -567,17 +529,26 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
+const MODEL_URL  = 'https://pub-8b1d9b94d728493b8ee61b5ca1787a57.r2.dev/htdemucs.onnx';
 const PITCH_SEMITONES = -6;
-const POLL_INTERVAL_MS = 5000;   // 5s entre polls do StemSplit
-const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
+
+// Demucs htdemucs: trabalha com chunks de 7.8s @ 44.1kHz (343980 samples)
+const DEMUCS_SAMPLERATE = 44100;
+const DEMUCS_SEGMENT_SECONDS = 7.8;
+const DEMUCS_SEGMENT_SAMPLES = Math.round(DEMUCS_SAMPLERATE * DEMUCS_SEGMENT_SECONDS);
+const DEMUCS_OVERLAP = 0.25; // 25% overlap entre chunks (recomendado pelo paper)
+
+// Cache do modelo ONNX
+const MODEL_CACHE_NAME = 'lux-cover-models-v1';
 
 // ============================================================
 // Estado global
 // ============================================================
 let originalFile = null;
-let currentTaskId = null;
-let pollAbortController = null;
 let processedBlob = null;
+let processedDurationSeconds = 0;
+let ortSession = null;       // sessão ONNX do Demucs (carregada 1x)
+let cancelFlag = false;
 
 // ============================================================
 // UI helpers
@@ -610,11 +581,16 @@ function setProgress(pct, text) {
   if (text !== undefined) $('progressDetail').textContent = text;
 }
 
+function setFirstLoadProgress(pct, text) {
+  $('firstLoadFill').style.width = pct + '%';
+  if (text !== undefined) $('firstLoadDetail').textContent = text;
+}
+
 function showError(msg) {
   const box = $('errorBox');
   box.textContent = '❌ ' + msg;
   box.style.display = 'block';
-  setTimeout(() => box.style.display = 'none', 8000);
+  setTimeout(() => box.style.display = 'none', 10000);
 }
 
 function fmtBytes(n) {
@@ -623,11 +599,22 @@ function fmtBytes(n) {
   return (n / 1024 / 1024).toFixed(2) + ' MB';
 }
 
-function fmtTime(s) {
-  if (!s) return '-';
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return m + ':' + String(sec).padStart(2, '0');
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// ============================================================
+// Verificação de compatibilidade do browser
+// ============================================================
+function checkBrowserCompat() {
+  const issues = [];
+  if (typeof SharedArrayBuffer === 'undefined') issues.push('SharedArrayBuffer ausente');
+  if (typeof WebAssembly === 'undefined') issues.push('WebAssembly ausente');
+  if (!window.crossOriginIsolated) issues.push('Não cross-origin isolated (SW falhou)');
+  if (typeof OfflineAudioContext === 'undefined' && typeof webkitOfflineAudioContext === 'undefined') {
+    issues.push('OfflineAudioContext ausente');
+  }
+  return issues;
 }
 
 // ============================================================
@@ -669,191 +656,315 @@ function handleFile(file) {
 $('btnProcess').addEventListener('click', async () => {
   if (!originalFile) return;
   $('btnProcess').disabled = true;
+  cancelFlag = false;
   await startProcessing(originalFile);
 });
 
+$('btnCancel').addEventListener('click', () => {
+  cancelFlag = true;
+  showScreen('upload');
+  $('btnProcess').disabled = false;
+});
+
+// ============================================================
+// PIPELINE PRINCIPAL
+// ============================================================
 async function startProcessing(file) {
   showScreen('progress');
-  setStep('upload', 'active', '');
-  setStep('process', '', '');
-  setStep('download', '', '');
+  setStep('decode', 'active', '');
+  setStep('separate', '', '');
   setStep('pitch', '', '');
-  setProgress(5, 'Enviando arquivo...');
+  setStep('encode', '', '');
+  setProgress(2, 'Lendo arquivo...');
 
-  try {
-    // 1. Upload pro Worker (que repassa pro StemSplit)
-    const form = new FormData();
-    form.append('file', file);
-
-    const resp = await window.__luxFetch(WORKER_URL + '/process', {
-      method: 'POST',
-      body: form
-    });
-
-    const data = await resp.json();
-    if (!resp.ok || !data.ok) {
-      throw new Error(data.error || 'Falha ao enviar arquivo');
-    }
-
-    currentTaskId = data.taskId;
-    setStep('upload', 'done', 'Enviado');
-    setProgress(15, 'Fazendo a mágica acontecer...');
-
-    // 2. Polling
-    await pollTask(data.taskId);
-
-  } catch (err) {
-    setStep('upload', 'error', err.message);
-    setProgress(0, 'Erro');
-    showError(err.message);
-  }
-}
-
-// ============================================================
-// Polling do task
-// ============================================================
-async function pollTask(taskId) {
-  setStep('process', 'active', '');
-  pollAbortController = new AbortController();
-  let attempts = 0;
-
-  while (attempts < POLL_MAX_ATTEMPTS) {
-    if (pollAbortController.signal.aborted) return;
-
-    let data;
-    try {
-      const resp = await window.__luxFetch(WORKER_URL + '/check/' + taskId);
-      data = await resp.json();
-      if (!resp.ok || !data.ok) {
-        throw new Error(data.error || 'Falha no polling');
-      }
-    } catch (err) {
-      // Erro transitorio — tenta de novo
-      attempts++;
-      await sleep(POLL_INTERVAL_MS);
-      continue;
-    }
-
-    if (data.state === 'success' && data.instrumentalUrl) {
-      setStep('process', 'done', 'Vocal removido');
-      setProgress(50, 'Baixando instrumental...');
-      // Passa taskId (não a URL direta) — Worker faz proxy pra evitar CORS
-      await downloadAndProcess(taskId, data.filename || 'cover');
-      return;
-    }
-
-    if (data.state === 'error') {
-      throw new Error('StemSplit retornou erro: ' + (data.error || 'desconhecido'));
-    }
-
-    // Ainda processando
-    const ssProgress = Math.max(0, Math.min(100, data.progress || 0));
-    const overallPct = 15 + (ssProgress * 0.35); // 15-50% durante StemSplit
-    setProgress(overallPct, `Fazendo a mágica acontecer... (${ssProgress}%)`);
-
-    attempts++;
-    await sleep(POLL_INTERVAL_MS);
-  }
-
-  throw new Error('Timeout: StemSplit demorou mais de 30 minutos');
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// ============================================================
-// Download do instrumental + pitch shift
-// ============================================================
-async function downloadAndProcess(taskId, baseName) {
-  setStep('download', 'active', '');
-
-  // 1. Baixa o instrumental via Worker (proxy server-side resolve CORS do R2 StemSplit)
   let audioBuffer;
   try {
-    const audioResp = await window.__luxFetch(WORKER_URL + '/download/' + taskId);
-    if (!audioResp.ok) throw new Error('Download retornou ' + audioResp.status);
-    const arrayBuf = await audioResp.arrayBuffer();
-    setStep('download', 'done', fmtBytes(arrayBuf.byteLength));
-    setProgress(65, 'Decodificando áudio...');
-
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    audioBuffer = await ctx.decodeAudioData(arrayBuf.slice(0));
+    // 1. DECODE
+    const arrayBuf = await file.arrayBuffer();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: DEMUCS_SAMPLERATE });
+    audioBuffer = await ctx.decodeAudioData(arrayBuf);
     ctx.close();
+
+    if (audioBuffer.sampleRate !== DEMUCS_SAMPLERATE) {
+      throw new Error('Sample rate inesperado: ' + audioBuffer.sampleRate);
+    }
+    processedDurationSeconds = audioBuffer.duration;
+    setStep('decode', 'done', `${audioBuffer.duration.toFixed(1)}s · ${audioBuffer.numberOfChannels}ch`);
+    setProgress(8, 'Áudio carregado');
+
+    if (cancelFlag) return;
+
+    // 2. SEPARAR VOCAL (Demucs)
+    setStep('separate', 'active', '');
+    const instrumental = await runDemucs(audioBuffer);
+    if (cancelFlag) return;
+    setStep('separate', 'done', 'Vocal removido');
+    setProgress(75, 'Aplicando pitch...');
+
+    // 3. PITCH SHIFT
+    setStep('pitch', 'active', '');
+    const pitched = await applyPitchShift(instrumental, PITCH_SEMITONES);
+    if (cancelFlag) return;
+    setStep('pitch', 'done', `${PITCH_SEMITONES} semitons`);
+    setProgress(92, 'Finalizando WAV...');
+
+    // 4. ENCODE WAV
+    setStep('encode', 'active', '');
+    processedBlob = audioBufferToWav(pitched);
+    setStep('encode', 'done', fmtBytes(processedBlob.size));
+    setProgress(100, 'Pronto!');
+
+    // Player + nome do download
+    const url = URL.createObjectURL(processedBlob);
+    $('audioPreview').src = url;
+    $('btnDownload').dataset.filename =
+      String(file.name).replace(/\.[^.]+$/, '') + '_cover.wav';
+
+    // Registra no histórico (não bloqueante)
+    recordHistory(file.name, processedDurationSeconds);
+
+    setTimeout(() => showScreen('result'), 600);
+
   } catch (err) {
-    setStep('download', 'error', err.message);
-    throw err;
+    console.error('[cover] erro:', err);
+    setProgress(0, 'Erro');
+    showError(err.message || 'Erro inesperado');
+    setTimeout(() => {
+      showScreen('upload');
+      $('btnProcess').disabled = false;
+    }, 2000);
   }
-
-  // 2. Pitch shift via OfflineAudioContext + playbackRate
-  setStep('pitch', 'active', '');
-  setProgress(80, 'Aplicando efeito...');
-
-  let pitchedBuffer;
-  try {
-    pitchedBuffer = await applyPitchShift(audioBuffer, PITCH_SEMITONES);
-    setStep('pitch', 'done', 'Pitch aplicado');
-  } catch (err) {
-    setStep('pitch', 'error', err.message);
-    throw err;
-  }
-
-  // 3. Encode WAV
-  setProgress(95, 'Finalizando WAV...');
-  processedBlob = audioBufferToWav(pitchedBuffer);
-
-  // 4. Mostra player + botão download
-  const url = URL.createObjectURL(processedBlob);
-  $('audioPreview').src = url;
-
-  setProgress(100, 'Pronto!');
-  setTimeout(() => {
-    showScreen('result');
-    // Limpa task no estado
-    currentTaskId = null;
-  }, 600);
-
-  // 5. Pre-seta nome do download
-  $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover_w' + WINDOW_SIZE_TEST + '.wav';
 }
 
 // ============================================================
-// Pitch shift (varispeed via playbackRate em OfflineAudioContext)
+// DEMUCS: separação de stems via ONNX Runtime Web
 // ============================================================
-// ════════════════════════════════════════════════════════════
-// Pitch shift mantendo velocidade original
-// Usa Tone.js PitchShift via Tone.Offline()
-// ════════════════════════════════════════════════════════════
-// VARIÁVEL DE TUNING — testa valores diferentes
-// Valores típicos: 0.1 (default Tone.js), 0.15, 0.2, 0.3
-// Valores maiores = menos chiado, mais atraso (eco no início)
-let WINDOW_SIZE_TEST = 0.15; // pode ser mudado pelo seletor na UI
-
-async function applyPitchShift(buffer, semitones) {
-  // Aguarda Tone.js carregar (defer-safe)
-  if (typeof Tone === 'undefined') {
-    throw new Error('Tone.js não carregou. Verifica conexão.');
+// Estratégia:
+// - Garante AudioBuffer estéreo a 44.1kHz
+// - Particiona em chunks de 7.8s com overlap de 25%
+// - Roda Demucs em cada chunk (4 stems: drums, bass, other, vocals)
+// - Mantém só os 3 stems instrumentais (drums + bass + other)
+// - Aplica crossfade entre chunks pra evitar clicks
+// - Reconstrói AudioBuffer final
+// ============================================================
+async function runDemucs(audioBuffer) {
+  if (!ortSession) {
+    throw new Error('Modelo não carregado. Recarregue a página.');
   }
 
-  const durationSeconds = buffer.duration;
+  // Garante 2 canais (Demucs espera estéreo)
+  let left, right;
+  if (audioBuffer.numberOfChannels === 1) {
+    left = audioBuffer.getChannelData(0);
+    right = left;
+  } else {
+    left = audioBuffer.getChannelData(0);
+    right = audioBuffer.getChannelData(1);
+  }
 
-  console.log('[pitch] semitones=', semitones, 'windowSize=', WINDOW_SIZE_TEST);
+  const totalSamples = left.length;
+  const segmentSamples = DEMUCS_SEGMENT_SAMPLES;
+  const overlapSamples = Math.round(segmentSamples * DEMUCS_OVERLAP);
+  const stepSamples = segmentSamples - overlapSamples;
+  const numChunks = Math.max(1, Math.ceil(totalSamples / stepSamples));
 
-  const rendered = await Tone.Offline(async () => {
-    const pitchShift = new Tone.PitchShift({
-      pitch: semitones,
-      windowSize: WINDOW_SIZE_TEST,
-      delayTime: 0,
-      feedback: 0,
-      wet: 1
-    }).toDestination();
+  // Buffer de saída (mesmo tamanho que a entrada) — sum dos 3 stems instrumentais
+  const outL = new Float32Array(totalSamples);
+  const outR = new Float32Array(totalSamples);
+  const weights = new Float32Array(totalSamples); // pra normalizar nas zonas de overlap
 
-    const player = new Tone.Player(buffer).connect(pitchShift);
-    player.start(0);
-  }, durationSeconds, buffer.numberOfChannels);
+  // Janela triangular pra crossfade nos overlaps
+  const window = new Float32Array(segmentSamples);
+  for (let i = 0; i < segmentSamples; i++) {
+    // Janela triangular: peso 1.0 no meio, 0.0 nas pontas
+    window[i] = Math.min(i, segmentSamples - 1 - i) / (segmentSamples / 2);
+    if (window[i] < 0.02) window[i] = 0.02;
+  }
 
-  return rendered.get ? rendered.get() : rendered;
+  for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+    if (cancelFlag) return null;
+
+    const start = chunkIdx * stepSamples;
+    const end = Math.min(start + segmentSamples, totalSamples);
+    const chunkLen = end - start;
+
+    // Monta input do Demucs: tensor [1, 2, segmentSamples] em float32
+    // Se o chunk for menor que segmentSamples, padda com zeros
+    const inputData = new Float32Array(2 * segmentSamples);
+    for (let i = 0; i < chunkLen; i++) {
+      inputData[i] = left[start + i];
+      inputData[segmentSamples + i] = right[start + i];
+    }
+
+    const inputTensor = new ort.Tensor('float32', inputData, [1, 2, segmentSamples]);
+
+    // Roda o modelo: saída [1, 4, 2, segmentSamples] (4 stems × 2 canais)
+    let outputs;
+    try {
+      outputs = await ortSession.run({ mix: inputTensor });
+    } catch (err) {
+      // Tenta detectar o nome correto da entrada se "mix" não for
+      const inputName = ortSession.inputNames && ortSession.inputNames[0];
+      if (inputName && inputName !== 'mix') {
+        const retry = {};
+        retry[inputName] = inputTensor;
+        outputs = await ortSession.run(retry);
+      } else {
+        throw err;
+      }
+    }
+
+    // Pega o tensor de saída (primeira saída)
+    const outName = Object.keys(outputs)[0];
+    const stemsData = outputs[outName].data; // Float32Array length = 4 * 2 * segmentSamples
+
+    // Ordem dos stems no htdemucs: drums (0), bass (1), other (2), vocals (3)
+    // Soma drums + bass + other (índices 0, 1, 2). Pula vocals (índice 3).
+    const channelStride = segmentSamples;
+    const stemStride = 2 * segmentSamples;
+
+    for (let i = 0; i < chunkLen; i++) {
+      // Soma dos 3 stems instrumentais (esquerda)
+      const drumsL  = stemsData[0 * stemStride + 0 * channelStride + i];
+      const bassL   = stemsData[1 * stemStride + 0 * channelStride + i];
+      const otherL  = stemsData[2 * stemStride + 0 * channelStride + i];
+      const instrL  = drumsL + bassL + otherL;
+
+      const drumsR  = stemsData[0 * stemStride + 1 * channelStride + i];
+      const bassR   = stemsData[1 * stemStride + 1 * channelStride + i];
+      const otherR  = stemsData[2 * stemStride + 1 * channelStride + i];
+      const instrR  = drumsR + bassR + otherR;
+
+      const w = window[i];
+      outL[start + i]     += instrL * w;
+      outR[start + i]     += instrR * w;
+      weights[start + i]  += w;
+    }
+
+    // Atualiza progresso (entre 10% e 70% durante a separação)
+    const pct = 10 + ((chunkIdx + 1) / numChunks) * 60;
+    setProgress(pct, `Removendo vocal... (${chunkIdx + 1}/${numChunks})`);
+    setStep('separate', 'active', `chunk ${chunkIdx + 1}/${numChunks}`);
+
+    // Dá uma respirada pro browser renderizar e não travar a aba
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  // Normaliza pela soma dos pesos (overlaps)
+  for (let i = 0; i < totalSamples; i++) {
+    const w = weights[i] || 1;
+    outL[i] /= w;
+    outR[i] /= w;
+  }
+
+  // Reconstrói AudioBuffer
+  const outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    2, totalSamples, DEMUCS_SAMPLERATE
+  );
+  const outBuf = outCtx.createBuffer(2, totalSamples, DEMUCS_SAMPLERATE);
+  outBuf.getChannelData(0).set(outL);
+  outBuf.getChannelData(1).set(outR);
+  return outBuf;
+}
+
+// ============================================================
+// PITCH SHIFT via SoundTouchJS (LGPL, comercial OK)
+// ============================================================
+// Usa a classe SoundTouch direta. Processa samples em memória,
+// SEM ScriptProcessorNode, SEM AudioWorklet, SEM OfflineAudioContext.
+// Compatível com iOS Safari porque é tudo loop síncrono em JS puro.
+// ============================================================
+async function applyPitchShift(audioBuffer, semitones) {
+  if (typeof soundtouch === 'undefined') {
+    throw new Error('SoundTouchJS não carregou. Verifique conexão.');
+  }
+
+  const ST = soundtouch;
+  const SR = audioBuffer.sampleRate;
+  const numCh = audioBuffer.numberOfChannels;
+  const numFrames = audioBuffer.length;
+
+  // Instancia SoundTouch — opera em stream interleaved
+  const st = new ST.SoundTouch(SR);
+  st.pitchSemitones = semitones;
+  st.tempo = 1.0;  // mantém velocidade
+  st.rate = 1.0;
+
+  // Monta input interleaved (LRLRLR...)
+  const inputInterleaved = new Float32Array(numFrames * 2);
+  const ch0 = audioBuffer.getChannelData(0);
+  const ch1 = numCh > 1 ? audioBuffer.getChannelData(1) : ch0;
+  for (let i = 0; i < numFrames; i++) {
+    inputInterleaved[i * 2]     = ch0[i];
+    inputInterleaved[i * 2 + 1] = ch1[i];
+  }
+
+  // Alimenta em pedaços
+  const CHUNK = 4096;
+  const outputChunks = [];
+  let totalOut = 0;
+  let inputCursor = 0;
+
+  const receiver = new Float32Array(CHUNK * 2);
+
+  while (inputCursor < numFrames || st.outputBuffer.frameCount > 0) {
+    if (cancelFlag) return null;
+
+    // Coloca samples no input
+    if (inputCursor < numFrames) {
+      const remaining = numFrames - inputCursor;
+      const toFeed = Math.min(CHUNK, remaining);
+      const piece = inputInterleaved.subarray(inputCursor * 2, (inputCursor + toFeed) * 2);
+      st.inputBuffer.putSamples(piece, 0, toFeed);
+      inputCursor += toFeed;
+      st.process();
+    } else {
+      // Acabou input — força flush
+      st.flush();
+    }
+
+    // Recebe samples processados
+    while (st.outputBuffer.frameCount > 0) {
+      const want = Math.min(CHUNK, st.outputBuffer.frameCount);
+      const got = st.outputBuffer.receiveSamples(receiver, want);
+      if (got > 0) {
+        // Copia só o que veio
+        const slice = receiver.slice(0, got * 2);
+        outputChunks.push(slice);
+        totalOut += got;
+      } else {
+        break;
+      }
+    }
+
+    if (inputCursor >= numFrames && st.outputBuffer.frameCount === 0) break;
+
+    // Progress: pitch é 75% → 92% do total
+    const pct = 75 + (inputCursor / numFrames) * 17;
+    setProgress(pct, 'Aplicando pitch...');
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  // Concatena tudo num único Float32Array
+  const finalInterleaved = new Float32Array(totalOut * 2);
+  let offset = 0;
+  for (const chunk of outputChunks) {
+    finalInterleaved.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  // Desinterleava pra montar AudioBuffer
+  const outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    2, totalOut, SR
+  );
+  const outBuf = outCtx.createBuffer(2, totalOut, SR);
+  const outL = outBuf.getChannelData(0);
+  const outR = outBuf.getChannelData(1);
+  for (let i = 0; i < totalOut; i++) {
+    outL[i] = finalInterleaved[i * 2];
+    outR[i] = finalInterleaved[i * 2 + 1];
+  }
+  return outBuf;
 }
 
 // ============================================================
@@ -917,62 +1028,26 @@ $('btnDownload').addEventListener('click', () => {
 $('btnNew').addEventListener('click', () => {
   originalFile = null;
   processedBlob = null;
-  currentTaskId = null;
+  processedDurationSeconds = 0;
   $('fileInfo').classList.remove('visible');
   $('fileInput').value = '';
   $('btnProcess').disabled = true;
   showScreen('upload');
-  checkRecovery();
-});
-
-$('btnCancel').addEventListener('click', () => {
-  if (pollAbortController) pollAbortController.abort();
-  currentTaskId = null;
-  showScreen('upload');
 });
 
 // ============================================================
-// Recovery: ao abrir página, checa tasks pendentes
+// HISTÓRICO: registra no Worker depois do sucesso
 // ============================================================
-async function checkRecovery() {
-  $('recoveryBanner').classList.remove('visible');
-  $('recoveryList').innerHTML = '';
-
+async function recordHistory(filename, durationSeconds) {
   try {
-    const resp = await window.__luxFetch(WORKER_URL + '/recover');
-    const data = await resp.json();
-    if (!resp.ok || !data.ok || !data.tasks?.length) return;
-
-    const banner = $('recoveryBanner');
-    const list = $('recoveryList');
-    list.innerHTML = '';
-    for (const task of data.tasks) {
-      const div = document.createElement('div');
-      div.className = 'task-item';
-      const when = new Date(task.startedAt);
-      const ago = Math.round((Date.now() - task.startedAt) / 60000);
-      div.innerHTML = `
-        <div>
-          <div style="color:var(--text)">${escapeHtml(task.filename)}</div>
-          <div style="color:var(--text-dim);font-size:11px">há ${ago} min</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="resume-btn" data-task="${task.taskId}">Retomar</button>
-          <button class="cancel-btn" data-task="${task.taskId}" title="Cancelar este pedido">✕</button>
-        </div>
-      `;
-      list.appendChild(div);
-    }
-    banner.classList.add('visible');
-
-    list.querySelectorAll('.resume-btn').forEach(btn => {
-      btn.addEventListener('click', () => resumeTask(btn.dataset.task));
+    await window.__luxFetch(WORKER_URL + '/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, durationSeconds })
     });
-    list.querySelectorAll('.cancel-btn').forEach(btn => {
-      btn.addEventListener('click', () => cancelTask(btn.dataset.task, btn));
-    });
-  } catch (e) {
-    // sem recovery, segue normal
+  } catch (err) {
+    // Não bloqueia — só loga
+    console.warn('[history] falha ao registrar:', err.message);
   }
 }
 
@@ -982,45 +1057,6 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-async function resumeTask(taskId) {
-  $('recoveryBanner').classList.remove('visible');
-  currentTaskId = taskId;
-  showScreen('progress');
-  setStep('upload', 'done', 'Recuperado');
-  setStep('process', 'active', '');
-  setProgress(15, 'Recuperando task...');
-  try {
-    await pollTask(taskId);
-  } catch (err) {
-    showError(err.message);
-  }
-}
-
-async function cancelTask(taskId, btn) {
-  if (!confirm('Cancelar este pedido? Não dá pra desfazer.')) return;
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-  try {
-    const resp = await window.__luxFetch(WORKER_URL + '/task/' + taskId, {
-      method: 'DELETE'
-    });
-    const data = await resp.json();
-    if (!resp.ok || !data.ok) throw new Error(data.error || 'Falha');
-    // Remove o item da lista
-    if (btn) {
-      const item = btn.closest('.task-item');
-      if (item) item.remove();
-    }
-    // Se a lista ficou vazia, esconde o banner
-    const list = $('recoveryList');
-    if (list && list.children.length === 0) {
-      $('recoveryBanner').classList.remove('visible');
-    }
-  } catch (err) {
-    alert('Erro ao cancelar: ' + err.message);
-    if (btn) { btn.disabled = false; btn.textContent = '✕'; }
-  }
 }
 
 // ============================================================
@@ -1058,10 +1094,6 @@ function fmtDuration(seconds) {
   return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-function fmtBrl(v) {
-  return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
-}
-
 async function loadHistory() {
   const c = $('historyContent');
   c.innerHTML = '<div class="history-empty">Carregando histórico...</div>';
@@ -1077,16 +1109,14 @@ async function loadHistory() {
       return;
     }
 
-    // Totais
     const totals = data.totals || {};
     let html = `
       <div class="history-totals">
         <div><strong>${totals.count || 0}</strong> covers · <strong>${fmtDuration((totals.seconds || 0))}</strong> processados</div>
-        <div>Total: <strong>${fmtBrl(totals.brl)}</strong></div>
+        <div>Custo total: <strong>R$ 0,00</strong> 🎉</div>
       </div>
     `;
 
-    // Lista
     data.items.forEach(item => {
       const dur = fmtDuration(item.durationSeconds);
       const filename = item.filename || '(sem nome)';
@@ -1100,8 +1130,8 @@ async function loadHistory() {
               </div>
             </div>
             <div class="history-right">
-              <div class="history-cost">${fmtBrl(item.brl)}</div>
-              <div class="history-item-date">cotação $${item.cotacao?.toFixed(2) || '-'}</div>
+              <div class="history-cost">R$ 0,00</div>
+              <div class="history-item-date">processado localmente</div>
             </div>
           </div>
         </div>
@@ -1114,29 +1144,128 @@ async function loadHistory() {
 }
 
 // ============================================================
-// Boot
+// BOOT: carrega modelo ONNX (com cache) e libs
 // ============================================================
+async function fetchModelWithCache(url) {
+  // Tenta pegar do Cache API primeiro (segunda visita em diante)
+  let cache;
+  try {
+    cache = await caches.open(MODEL_CACHE_NAME);
+    const cached = await cache.match(url);
+    if (cached) {
+      setFirstLoadProgress(80, 'Modelo do cache (rápido!)');
+      const buf = await cached.arrayBuffer();
+      return buf;
+    }
+  } catch (e) {
+    console.warn('[cache] indisponível:', e.message);
+  }
+
+  // Primeira vez: baixa com progress
+  setFirstLoadProgress(5, 'Baixando modelo de IA...');
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Falha ao baixar modelo: HTTP ' + resp.status);
+  const total = parseInt(resp.headers.get('Content-Length') || '0', 10);
+
+  const reader = resp.body.getReader();
+  const chunks = [];
+  let received = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (total > 0) {
+      const pct = 5 + (received / total) * 70;
+      setFirstLoadProgress(pct, `Baixando modelo... ${fmtBytes(received)} / ${fmtBytes(total)}`);
+    } else {
+      setFirstLoadProgress(40, `Baixando modelo... ${fmtBytes(received)}`);
+    }
+  }
+
+  const buf = new ArrayBuffer(received);
+  const view = new Uint8Array(buf);
+  let pos = 0;
+  for (const c of chunks) {
+    view.set(c, pos);
+    pos += c.length;
+  }
+
+  // Salva no cache (não bloqueia se falhar)
+  try {
+    if (cache) {
+      await cache.put(url, new Response(buf.slice(0), {
+        headers: { 'Content-Type': 'application/octet-stream', 'Content-Length': String(received) }
+      }));
+    }
+  } catch (e) {
+    console.warn('[cache] put falhou:', e.message);
+  }
+
+  return buf;
+}
+
 async function boot() {
-  // Aguarda __luxFetch ficar disponível (definido pelo auth-iframe.js)
+  // Aguarda __luxFetch (auth-iframe.js)
   let tries = 0;
   while (!window.__luxFetch && tries < 50) {
-    await sleep(100);
+    await new Promise(r => setTimeout(r, 100));
     tries++;
   }
   if (!window.__luxFetch) {
     showError('Falha ao carregar autenticação. Recarregue a página.');
     return;
   }
+
   setupTabs();
-  // Listener pro seletor de tuning de qualidade
-  const wsSel = $('windowSelect');
-  if (wsSel) {
-    wsSel.addEventListener('change', (e) => {
-      WINDOW_SIZE_TEST = parseFloat(e.target.value);
-      console.log('[tuning] windowSize =', WINDOW_SIZE_TEST);
-    });
+
+  // Mostra aviso mobile
+  if (isMobile()) $('mobileWarn').style.display = 'block';
+
+  // Checa compat
+  const issues = checkBrowserCompat();
+  if (issues.length) {
+    console.error('[compat]', issues);
+    $('incompatBanner').style.display = 'block';
+    $('incompatBanner').textContent =
+      '⚠️ Seu navegador não suporta os recursos necessários: ' + issues.join(', ') +
+      '. Use Chrome, Edge ou Firefox atualizados.';
+    return;
   }
-  checkRecovery();
+
+  // Carrega libs
+  if (typeof ort === 'undefined') {
+    showError('ONNX Runtime não carregou (sem internet ou CDN bloqueado).');
+    return;
+  }
+  if (typeof soundtouch === 'undefined') {
+    showError('SoundTouchJS não carregou (sem internet ou CDN bloqueado).');
+    return;
+  }
+
+  // Configura ONNX runtime
+  ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+  ort.env.wasm.simd = true;
+
+  // Carrega modelo (com cache)
+  $('firstLoadBanner').classList.add('visible');
+  try {
+    const modelBuf = await fetchModelWithCache(MODEL_URL);
+    setFirstLoadProgress(85, 'Inicializando IA...');
+
+    ortSession = await ort.InferenceSession.create(modelBuf, {
+      executionProviders: ['wasm'],
+      graphOptimizationLevel: 'all',
+      executionMode: 'sequential'
+    });
+
+    setFirstLoadProgress(100, 'Pronto!');
+    setTimeout(() => $('firstLoadBanner').classList.remove('visible'), 500);
+  } catch (err) {
+    console.error('[boot] erro carregando modelo:', err);
+    $('firstLoadBanner').classList.remove('visible');
+    showError('Falha ao carregar modelo de IA: ' + err.message);
+  }
 }
 
 boot();
