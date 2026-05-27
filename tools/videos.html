@@ -1368,7 +1368,7 @@ function renderResult() {
       '</div>' +
     '</div>';
 
-  // Liga o botão de baixar via blob (necessário pra forçar download de URL cross-origin)
+  // Liga o botão de baixar via Worker proxy (resolve CORS do R2 público)
   const btnDl = document.getElementById('btnDownloadVideo');
   if (btnDl) {
     btnDl.addEventListener('click', async () => {
@@ -1376,8 +1376,24 @@ function renderResult() {
       const originalText = btnDl.textContent;
       btnDl.textContent = '⏳ Baixando...';
       try {
-        const resp = await fetch(v.videoUrl);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        // Usa o Worker como proxy — ele lê o vídeo do R2 binding e devolve
+        // com CORS habilitado (URL pública do R2 não tem CORS).
+        const orderId = state.currentOrderId || v.orderId;
+        if (!orderId) throw new Error('OrderId não encontrado');
+
+        const resp = await window.__luxFetch(
+          WORKER_URL + '/downloadVideo?orderId=' + encodeURIComponent(orderId)
+        );
+        if (!resp.ok) {
+          // Tenta ler erro como JSON
+          let errMsg = 'HTTP ' + resp.status;
+          try {
+            const errJson = await resp.json();
+            errMsg = errJson.error || errMsg;
+          } catch (e) {}
+          throw new Error(errMsg);
+        }
+
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1532,6 +1548,7 @@ async function loadHistory() {
               ${cost ? '<div class="lux-history-cost">' + cost + '</div>' : ''}
               ${isDone
                 ? '<button class="lux-history-view" data-url="' + escapeAttr(o.videoUrl) +
+                  '" data-orderid="' + escapeAttr(o.orderId || '') +
                   '" data-client="' + escapeAttr(o.clientName) +
                   '" data-costbrl="' + (o.costBRL != null ? o.costBRL : '') +
                   '" data-costusd="' + (o.costUSD != null ? o.costUSD : '') +
@@ -1549,7 +1566,9 @@ async function loadHistory() {
     container.querySelectorAll('.lux-history-view').forEach(btn => {
       btn.addEventListener('click', () => {
         state.atendente = btn.dataset.att || state.atendente;
+        state.currentOrderId = btn.dataset.orderid || null;
         state.currentVideo = {
+          orderId: btn.dataset.orderid,
           videoUrl: btn.dataset.url,
           clientName: btn.dataset.client,
           costBRL: btn.dataset.costbrl !== '' ? Number(btn.dataset.costbrl) : null,
