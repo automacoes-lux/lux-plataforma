@@ -1362,12 +1362,41 @@ function renderResult() {
           custoTxt +
         '</div>' +
         '<div class="result-actions">' +
-          '<a class="btn-download" href="' + v.videoUrl + '" download="video-' +
-            escapeAttr(v.clientName) + '.mp4">⬇ Baixar vídeo</a>' +
+          '<button class="btn-download" id="btnDownloadVideo">⬇ Baixar vídeo</button>' +
           '<button class="btn-secondary" onclick="goNewOrder()">+ Novo vídeo</button>' +
         '</div>' +
       '</div>' +
     '</div>';
+
+  // Liga o botão de baixar via blob (necessário pra forçar download de URL cross-origin)
+  const btnDl = document.getElementById('btnDownloadVideo');
+  if (btnDl) {
+    btnDl.addEventListener('click', async () => {
+      btnDl.disabled = true;
+      const originalText = btnDl.textContent;
+      btnDl.textContent = '⏳ Baixando...';
+      try {
+        const resp = await fetch(v.videoUrl);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'video-' + String(v.clientName || 'lux').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        btnDl.textContent = '✓ Baixado!';
+        setTimeout(() => { btnDl.textContent = originalText; btnDl.disabled = false; }, 1500);
+      } catch (err) {
+        console.error('[download] erro:', err);
+        btnDl.textContent = originalText;
+        btnDl.disabled = false;
+        toast('Erro ao baixar: ' + err.message + '. Tente novamente.', 'error');
+      }
+    });
+  }
 }
 
 function goNewOrder() {
