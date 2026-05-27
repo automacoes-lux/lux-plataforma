@@ -120,6 +120,10 @@
         <div class="nav-icon">🎤</div> Cover
         <span class="nav-badge badge-live">LIVE</span>
       </a>
+      <a class="nav-item" data-tool="corte" href="#">
+        <div class="nav-icon">✂️</div> Corte
+        <span class="nav-badge badge-live">LIVE</span>
+      </a>
       <a class="nav-item soon" data-tool="videos" href="#" data-soon-unless-admin>
         <div class="nav-icon">🎬</div> Vídeo Padrão
         <span class="nav-badge badge-live badge-normal" style="display:none">LIVE</span>
@@ -233,6 +237,16 @@
           </div>
         </div>
 
+        <div class="tool-card" data-card-tool="corte" onclick="loadTool('corte')">
+          <div class="tool-card-icon">✂️</div>
+          <div class="tool-card-name">CORTE</div>
+          <div class="tool-card-desc">Corte trechos da música com fade-in e fade-out suaves. Perfeito pra ajustar instrumentais antes de entregar pro cliente.</div>
+          <div class="tool-card-footer">
+            <span class="status-live">● Disponível</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
         <div class="tool-card soon" data-card-tool="videos" data-soon-unless-admin onclick="loadTool('videos')">
           <div class="tool-card-icon">🎬</div>
           <div class="tool-card-name">VÍDEO PADRÃO</div>
@@ -283,6 +297,15 @@
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">🎤 LUX COVER</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- CORTE -->
+    <div id="view-corte" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">✂️ LUX CORTE</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
