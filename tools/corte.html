@@ -406,8 +406,10 @@
   <div class="alert alert-error hidden" id="errorBox"></div>
 </div>
 
-<!-- Lib LameJS pra encoding MP3 (MIT, ~80KB) -->
-<script src="https://cdn.jsdelivr.net/npm/@breezystack/lamejs@1.2.7/lame.all.js"></script>
+<!-- Lib LameJS pra encoding MP3 (MIT, ~80KB).
+     Usamos a build UMD do cdnjs (Cloudflare) que expõe `window.lamejs`
+     direto via <script> sem precisar de import. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 
 <script>
 'use strict';
@@ -904,17 +906,36 @@ async function boot() {
   }
 
   // Aguarda lamejs carregar (vem do CDN externo, pode demorar ate 5s).
-  // So mostra erro se realmente nao carregar mesmo depois de esperar.
+  // Se nao carregar do CDN primario, tenta um fallback automatico.
   let lameTries = 0;
   while (typeof lamejs === 'undefined' && lameTries < 50) {
     await new Promise(r => setTimeout(r, 100));
     lameTries++;
   }
+
   if (typeof lamejs === 'undefined') {
-    showError('Encoder MP3 não carregou (CDN bloqueado). Recarregue a página.');
+    console.warn('[corte] lamejs CDN primario falhou, tentando fallback...');
+    // Fallback: carrega lamejs do unpkg
+    const ok = await loadScript('https://unpkg.com/lamejs@1.2.1/lame.min.js');
+    if (!ok || typeof lamejs === 'undefined') {
+      showError('Encoder MP3 não carregou (CDN bloqueado). Recarregue a página.');
+    } else {
+      console.log('[corte] lamejs carregado via fallback unpkg');
+    }
   } else {
     console.log('[corte] lamejs carregado em', (lameTries * 100), 'ms');
   }
+}
+
+// Helper pra carregar script dinamicamente com Promise
+function loadScript(url) {
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = url;
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
 }
 
 boot();
