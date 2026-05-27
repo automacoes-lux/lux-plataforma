@@ -125,6 +125,41 @@ body{
 .block-remove{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s}
 .block-remove:hover{color:#E87A7A;background:rgba(232,122,122,.08)}
 
+/* ── Lista pareada (foto + texto) ── */
+.pair-row{display:flex;flex-direction:column;gap:8px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;transition:border-color .15s,opacity .15s,transform .15s}
+.pair-row:focus-within{border-color:var(--border-bright)}
+.pair-row.dragging{opacity:.5;border-color:var(--gold)}
+.pair-row.drop-target{border-color:var(--gold);background:rgba(201,168,76,.06)}
+
+/* Coluna foto */
+.pair-photo-col{display:flex;align-items:center;gap:8px}
+.pair-thumb-wrap{position:relative;width:72px;height:72px;flex-shrink:0;border-radius:8px;overflow:hidden;background:var(--bg-input);border:1px solid var(--border)}
+.pair-thumb-wrap.empty{background:transparent;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center}
+.pair-thumb{width:100%;height:100%;object-fit:cover;display:block}
+.pair-thumb-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;line-height:1}
+.pair-thumb-empty{font-size:10px;color:var(--text-dim);text-align:center;padding:4px;font-style:italic}
+
+/* Coluna texto */
+.pair-text-col{flex:1;min-width:0}
+.pair-text-row{display:flex;align-items:flex-start;gap:8px}
+.pair-textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.45;resize:vertical;min-height:36px;padding:2px 0}
+.pair-text-empty{flex:1;display:flex;align-items:center;min-height:36px}
+.btn-add-text-here{background:transparent;border:1px dashed var(--border);color:var(--text-dim);padding:6px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.btn-add-text-here:hover{border-color:var(--gold-dim);color:var(--text);border-style:solid}
+
+/* Handles de drag */
+.pair-handle{cursor:grab;color:var(--gold-dim);font-weight:700;letter-spacing:-2px;padding:6px 4px;font-size:14px;user-select:none;line-height:1;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;touch-action:none}
+.pair-handle:hover:not(.disabled){color:var(--gold);background:rgba(201,168,76,.08)}
+.pair-handle:active:not(.disabled){cursor:grabbing}
+.pair-handle.disabled{cursor:not-allowed;opacity:.3;pointer-events:none}
+
+/* Em telas maiores: foto e texto lado a lado */
+@media (min-width:520px){
+  .pair-row{flex-direction:row;align-items:flex-start;gap:14px}
+  .pair-photo-col{flex-shrink:0}
+  .pair-text-col{padding-top:4px}
+}
+
 .btn-add-block{width:100%;margin-top:.7rem;padding:10px;background:transparent;border:1px dashed var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;letter-spacing:.02em;transition:all .15s}
 .btn-add-block:hover{border-color:var(--text-dim);color:var(--text);border-style:solid}
 
@@ -359,9 +394,8 @@ input[type="file"]{display:none}
         <div class="blocks-header">
           <div>
             <div class="blocks-title">Blocos prontos <span id="blocksCount">0</span></div>
-            <div class="field-hint" style="margin-top:2px">Edite, remova ou reordene se quiser.</div>
+            <div class="field-hint" style="margin-top:2px">Arraste pra reordenar. Cada linha = uma foto + um texto. Use o handle ⋮⋮ da foto pra mover a foto, ou o handle ⋮⋮ do texto pra mover só o texto.</div>
           </div>
-          <button type="button" class="btn-reprocess" onclick="reprocessText()" title="Refazer divisão a partir do texto original">↻ Reprocessar</button>
         </div>
         <div class="blocks-list" id="blocksList"></div>
         <button type="button" class="btn-add-block" onclick="addEmptyBlock()">+ Adicionar bloco vazio</button>
@@ -369,7 +403,7 @@ input[type="file"]{display:none}
 
       <div class="field" style="margin-top:1.2rem">
         <label>Cada bloco fica na tela por (s)</label>
-        <input id="inTextoDur" type="number" min="1" step="1" value="6"/>
+        <input id="inTextoDur" type="number" min="1" step="1" value="4"/>
         <div class="field-hint" id="textTimingHint">
           Vale pra todos os blocos.
         </div>
@@ -380,28 +414,20 @@ input[type="file"]{display:none}
       <div class="field" style="margin-top:1.2rem">
         <label>Cor do texto</label>
         <div class="color-palette" id="colorPalette">
-          <button type="button" class="color-swatch selected" data-color="#FFFFFF"
-            style="background:#FFFFFF" title="Branco (padrão)"></button>
-          <button type="button" class="color-swatch" data-color="#86EFAC"
-            style="background:#86EFAC" title="Verde claro"></button>
-          <button type="button" class="color-swatch" data-color="#15803D"
-            style="background:#15803D" title="Verde escuro"></button>
-          <button type="button" class="color-swatch" data-color="#FCA5A5"
-            style="background:#FCA5A5" title="Vermelho claro"></button>
-          <button type="button" class="color-swatch" data-color="#B91C1C"
-            style="background:#B91C1C" title="Vermelho escuro"></button>
-          <button type="button" class="color-swatch" data-color="#F9A8D4"
-            style="background:#F9A8D4" title="Rosa claro"></button>
-          <button type="button" class="color-swatch" data-color="#BE185D"
-            style="background:#BE185D" title="Rosa escuro"></button>
-          <button type="button" class="color-swatch" data-color="#FDE68A"
-            style="background:#FDE68A" title="Amarelo claro"></button>
-          <button type="button" class="color-swatch" data-color="#CA8A04"
-            style="background:#CA8A04" title="Amarelo escuro"></button>
-          <button type="button" class="color-swatch" data-color="#93C5FD"
-            style="background:#93C5FD" title="Azul claro"></button>
-          <button type="button" class="color-swatch" data-color="#1D4ED8"
-            style="background:#1D4ED8" title="Azul escuro"></button>
+          <button type="button" class="color-swatch selected" data-color="#ffffff"
+            style="background:#ffffff" title="Branco (padrão)"></button>
+          <button type="button" class="color-swatch" data-color="#fffa00"
+            style="background:#fffa00" title="Amarelo"></button>
+          <button type="button" class="color-swatch" data-color="#ff7500"
+            style="background:#ff7500" title="Laranja"></button>
+          <button type="button" class="color-swatch" data-color="#00ff18"
+            style="background:#00ff18" title="Verde"></button>
+          <button type="button" class="color-swatch" data-color="#ff0000"
+            style="background:#ff0000" title="Vermelho"></button>
+          <button type="button" class="color-swatch" data-color="#0090ff"
+            style="background:#0090ff" title="Azul"></button>
+          <button type="button" class="color-swatch" data-color="#ff3eaa"
+            style="background:#ff3eaa" title="Rosa"></button>
         </div>
         <div class="field-hint">Por padrão é branco. Clique numa cor para aplicar a todos os blocos.</div>
       </div>
@@ -487,7 +513,7 @@ let state = {
   photos: [],                 // [{ file, base64, mime, name, thumbUrl }]
   music: null,                // { base64, mime, name, size, duration }
   logo: null,                 // { base64, mime, name, size }
-  textColor: '#FFFFFF',       // cor escolhida na paleta (padrão branco)
+  textColor: '#ffffff',       // cor escolhida na paleta (padrão branco)
   // Texto processado pela IA + divisão em blocos
   textRaw: '',                // o que o atendente colou (original)
   textCorrected: '',          // o que a IA devolveu
@@ -597,17 +623,7 @@ async function processText() {
   }
 }
 
-async function reprocessText() {
-  // Confirma antes de descartar as edições manuais nos blocos
-  const hasEdits = state.textBlocks.length > 0;
-  if (hasEdits) {
-    if (!confirm('Reprocessar vai descartar as edições nos blocos. Continuar?')) return;
-  }
-  // Limpa os blocos atuais e processa de novo
-  state.textBlocks = [];
-  state.textProcessed = false;
-  await processText();
-}
+// (função reprocessText removida — botão também foi removido da UI)
 
 function addEmptyBlock() {
   // Coleta os textos editados atuais antes de adicionar (pra não perder edições)
@@ -616,7 +632,7 @@ function addEmptyBlock() {
   renderBlocks();
   // Foca no novo bloco
   setTimeout(() => {
-    const list = document.querySelectorAll('.block-item textarea');
+    const list = document.querySelectorAll('.pair-textarea');
     const last = list[list.length - 1];
     if (last) last.focus();
   }, 30);
@@ -631,42 +647,244 @@ function removeBlock(i) {
 // Lê o conteúdo atual das textareas dos blocos e atualiza o state
 // (chamado antes de qualquer mudança estrutural pra preservar edições)
 function syncBlocksFromUI() {
-  const tas = document.querySelectorAll('.block-item textarea');
-  tas.forEach((ta, i) => {
-    if (state.textBlocks[i] !== undefined) {
-      state.textBlocks[i] = ta.value;
+  // Lê textos da nova UI pareada (.pair-textarea), respeitando a ordem visual atual.
+  // Quem nao tiver textarea (linha sem texto) mantem como undefined no array.
+  const rows = document.querySelectorAll('.pair-row');
+  const newBlocks = [];
+  rows.forEach((row, i) => {
+    const ta = row.querySelector('.pair-textarea');
+    newBlocks[i] = ta ? ta.value : (state.textBlocks[i] !== undefined ? state.textBlocks[i] : '');
+  });
+  // Remove trailing undefined/null (mas mantem strings vazias)
+  while (newBlocks.length > 0 && newBlocks[newBlocks.length - 1] === undefined) {
+    newBlocks.pop();
+  }
+  state.textBlocks = newBlocks;
+}
+
+// ═════════════════════════════════════════════════════════
+// DRAG & DROP da lista pareada (foto + texto)
+// ─────────────────────────────────────────────────────────
+// Cada linha tem 2 handles:
+//   - .photo-handle → reordena state.photos
+//   - .text-handle  → reordena state.textBlocks
+//
+// Funciona em mouse e touch. Quando o handle é segurado e
+// arrastado, identifica a linha-alvo (drop) e troca de posição
+// no array correspondente. Depois re-renderiza tudo.
+// ═════════════════════════════════════════════════════════
+let dragState = null; // { handleKind, fromIdx, rowEl, startY, currentY, ghost }
+
+function enableDragAndDrop() {
+  const list = document.getElementById('blocksList');
+  if (!list) return;
+
+  list.querySelectorAll('.pair-handle').forEach(handle => {
+    if (handle.classList.contains('disabled')) return;
+    handle.addEventListener('mousedown', onDragStart);
+    handle.addEventListener('touchstart', onDragStart, { passive: false });
+  });
+}
+
+function onDragStart(ev) {
+  ev.preventDefault();
+  const handle = ev.currentTarget;
+  const row = handle.closest('.pair-row');
+  if (!row) return;
+
+  const isPhoto = handle.classList.contains('photo-handle');
+  const fromIdx = Number(row.dataset.index);
+  const startY = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+
+  // Sincroniza textos antes de mover (pra nao perder edicoes)
+  syncBlocksFromUI();
+
+  dragState = {
+    handleKind: isPhoto ? 'photo' : 'text',
+    fromIdx,
+    rowEl: row,
+    startY,
+    currentY: startY,
+    targetIdx: fromIdx
+  };
+
+  row.classList.add('dragging');
+  document.body.style.cursor = 'grabbing';
+
+  // Listeners globais (move + end)
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup',   onDragEnd);
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend',  onDragEnd);
+  document.addEventListener('touchcancel', onDragEnd);
+}
+
+function onDragMove(ev) {
+  if (!dragState) return;
+  ev.preventDefault();
+
+  const y = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+  dragState.currentY = y;
+
+  // Acha em qual linha o cursor esta (pra mostrar destaque)
+  const list = document.getElementById('blocksList');
+  const rows = Array.from(list.querySelectorAll('.pair-row'));
+
+  // Tira destaque de todas
+  rows.forEach(r => r.classList.remove('drop-target'));
+
+  // Acha a linha mais proxima do cursor
+  let targetIdx = dragState.fromIdx;
+  let minDist = Infinity;
+  rows.forEach((r, i) => {
+    const rect = r.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    const dist = Math.abs(y - center);
+    if (dist < minDist) {
+      minDist = dist;
+      targetIdx = i;
     }
   });
+
+  dragState.targetIdx = targetIdx;
+  if (targetIdx !== dragState.fromIdx) {
+    rows[targetIdx].classList.add('drop-target');
+  }
+}
+
+function onDragEnd() {
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup',   onDragEnd);
+  document.removeEventListener('touchmove', onDragMove);
+  document.removeEventListener('touchend',  onDragEnd);
+  document.removeEventListener('touchcancel', onDragEnd);
+  document.body.style.cursor = '';
+
+  if (!dragState) return;
+
+  const { handleKind, fromIdx, targetIdx } = dragState;
+
+  if (fromIdx !== targetIdx) {
+    if (handleKind === 'photo') {
+      // Reordena state.photos
+      moveArrayItem(state.photos, fromIdx, targetIdx);
+    } else {
+      // Reordena state.textBlocks. Como textBlocks pode ser
+      // mais curto que photos, garante que tenha entradas ate o maior indice.
+      const maxI = Math.max(fromIdx, targetIdx);
+      while (state.textBlocks.length <= maxI) state.textBlocks.push('');
+      moveArrayItem(state.textBlocks, fromIdx, targetIdx);
+    }
+  }
+
+  dragState = null;
+  renderBlocks();
+  renderPhotos();   // tambem atualiza grid de cima
+}
+
+// Move um item de um indice pra outro mantendo os outros
+function moveArrayItem(arr, from, to) {
+  if (from === to) return;
+  if (from < 0 || from >= arr.length) return;
+  const item = arr.splice(from, 1)[0];
+  // Insere na posicao alvo (o splice ja ajustou os indices)
+  if (to > arr.length) to = arr.length;
+  arr.splice(to, 0, item);
 }
 
 function renderBlocks() {
   const container = document.getElementById('blocksContainer');
   const list = document.getElementById('blocksList');
   const count = document.getElementById('blocksCount');
-  if (!state.textBlocks.length) {
+
+  // Mostra a caixa se tiver fotos OU textos
+  const hasContent = state.photos.length > 0 || state.textBlocks.length > 0;
+  if (!hasContent) {
     container.style.display = 'none';
     return;
   }
+
   container.style.display = 'block';
-  count.textContent = '(' + state.textBlocks.length + ')';
+
+  // Total de linhas = max(fotos, textos) — slots vazios completam o menor
+  const totalRows = Math.max(state.photos.length, state.textBlocks.length);
+  count.textContent = '(' + totalRows + ')';
   list.innerHTML = '';
-  state.textBlocks.forEach((text, i) => {
+
+  for (let i = 0; i < totalRows; i++) {
+    const photo = state.photos[i] || null;
+    const text  = state.textBlocks[i] !== undefined ? state.textBlocks[i] : null;
+
     const item = document.createElement('div');
-    item.className = 'block-item';
-    item.innerHTML =
-      '<span class="block-num">' + (i + 1) + '</span>' +
-      '<textarea rows="1" placeholder="Bloco vazio (será ignorado)">' +
-        escapeHtml(text) + '</textarea>' +
-      '<button class="block-remove" title="Remover bloco" data-i="' + i + '">✕</button>';
+    item.className = 'pair-row';
+    item.dataset.index = i;
+
+    // ── Coluna 1: miniatura + handle foto ──
+    const photoCol = document.createElement('div');
+    photoCol.className = 'pair-photo-col';
+    if (photo) {
+      photoCol.innerHTML =
+        '<div class="pair-handle photo-handle" data-i="' + i + '" title="Arrastar foto">⋮⋮</div>' +
+        '<div class="pair-thumb-wrap">' +
+          '<img class="pair-thumb" src="' + photo.thumbUrl + '" alt="" />' +
+          '<span class="pair-thumb-num">' + (i + 1) + '</span>' +
+        '</div>';
+    } else {
+      photoCol.innerHTML =
+        '<div class="pair-handle photo-handle disabled" title="Sem foto">⋮⋮</div>' +
+        '<div class="pair-thumb-wrap empty">' +
+          '<span class="pair-thumb-empty">(sem foto)</span>' +
+        '</div>';
+    }
+
+    // ── Coluna 2: textarea + handle texto + remover ──
+    const textCol = document.createElement('div');
+    textCol.className = 'pair-text-col';
+    if (text !== null) {
+      textCol.innerHTML =
+        '<div class="pair-text-row">' +
+          '<div class="pair-handle text-handle" data-i="' + i + '" title="Arrastar texto">⋮⋮</div>' +
+          '<textarea class="pair-textarea" rows="1" placeholder="Texto (deixe vazio pra não aparecer)">' +
+            escapeHtml(text) +
+          '</textarea>' +
+          '<button class="block-remove" title="Remover texto" data-i="' + i + '">✕</button>' +
+        '</div>';
+    } else {
+      textCol.innerHTML =
+        '<div class="pair-text-row">' +
+          '<div class="pair-handle text-handle disabled" title="Sem texto">⋮⋮</div>' +
+          '<div class="pair-text-empty">' +
+            '<button class="btn-add-text-here" data-i="' + i + '" title="Adicionar texto nesta linha">+ adicionar texto</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    item.appendChild(photoCol);
+    item.appendChild(textCol);
     list.appendChild(item);
-  });
-  // Liga os removes
+  }
+
+  // Listeners — remover texto
   list.querySelectorAll('.block-remove').forEach(btn => {
     btn.addEventListener('click', () => removeBlock(Number(btn.dataset.i)));
   });
-  // Auto-resize das textareas (cresce conforme o conteúdo) +
-  // listener pra atualizar o cálculo de tempo quando o atendente edita
-  list.querySelectorAll('textarea').forEach(ta => {
+
+  // Listeners — adicionar texto numa linha que ainda não tem
+  list.querySelectorAll('.btn-add-text-here').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.i);
+      // Garante que o array tem entrada nessa posição
+      while (state.textBlocks.length <= i) state.textBlocks.push('');
+      renderBlocks();
+      setTimeout(() => {
+        const tas = document.querySelectorAll('.pair-textarea');
+        if (tas[i]) tas[i].focus();
+      }, 30);
+    });
+  });
+
+  // Auto-resize das textareas + atualizar timing
+  list.querySelectorAll('.pair-textarea').forEach(ta => {
     const autoResize = () => {
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
@@ -677,6 +895,10 @@ function renderBlocks() {
       updateTimingCalc();
     });
   });
+
+  // Liga drag & drop nos handles
+  enableDragAndDrop();
+
   updateTimingCalc();
 }
 
@@ -689,7 +911,7 @@ function updateTimingCalc() {
   if (!calc) return;
 
   // Conta os blocos PREENCHIDOS atualmente na UI
-  const tas = document.querySelectorAll('.block-item textarea');
+  const tas = document.querySelectorAll('.pair-textarea');
   let n = 0;
   tas.forEach(ta => { if (ta.value.trim()) n++; });
 
@@ -697,7 +919,7 @@ function updateTimingCalc() {
     calc.style.display = 'none';
     return;
   }
-  const dur = Math.max(1, Number(document.getElementById('inTextoDur').value) || 6);
+  const dur = Math.max(1, Number(document.getElementById('inTextoDur').value) || 4);
   const total = 2 + (n * dur) + ((n - 1) * 0.15);
   const musicDur = state.music.duration;
   const ok = total <= musicDur;
@@ -743,7 +965,6 @@ function setAiStatus(type, message) {
 
 // Expõe pra HTML inline
 window.processText   = processText;
-window.reprocessText = reprocessText;
 window.addEmptyBlock = addEmptyBlock;
 window.removeBlock   = removeBlock;
 
@@ -775,6 +996,7 @@ async function handlePhotos(e) {
   }
   hideToast();
   renderPhotos();
+  renderBlocks();  // tambem atualiza lista pareada
 }
 
 function renderPhotos() {
@@ -813,6 +1035,7 @@ function removePhoto(i) {
   if (p && p.thumbUrl) URL.revokeObjectURL(p.thumbUrl);
   state.photos.splice(i, 1);
   renderPhotos();
+  renderBlocks();  // atualiza lista pareada
 }
 
 // ═══ UPLOAD DE MÚSICA ═══════════════════════════════════════
@@ -967,8 +1190,8 @@ async function generateVideo() {
     return toast('Clique em "Processar texto com IA" antes de gerar o vídeo.', 'error');
   }
 
-  const textDuration = Math.max(1, Number(document.getElementById('inTextoDur').value) || 6);
-  const textColor = state.textColor || '#FFFFFF';
+  const textDuration = Math.max(1, Number(document.getElementById('inTextoDur').value) || 4);
+  const textColor = state.textColor || '#ffffff';
 
   // Validação: o tempo total dos blocos tem que caber na música.
   // 2s de espera inicial + (nº de blocos × duração de cada).
@@ -1163,11 +1386,11 @@ function goNewOrder() {
   document.getElementById('blocksContainer').style.display = 'none';
   document.getElementById('blocksList').innerHTML = '';
   setAiStatus('', '');
-  document.getElementById('inTextoDur').value = '6';
+  document.getElementById('inTextoDur').value = '4';
   // Reseta a cor pro branco (padrão)
-  state.textColor = '#FFFFFF';
+  state.textColor = '#ffffff';
   document.querySelectorAll('.color-swatch').forEach(sw => {
-    sw.classList.toggle('selected', sw.dataset.color === '#FFFFFF');
+    sw.classList.toggle('selected', sw.dataset.color === '#ffffff');
   });
   renderPhotos();
   removeMusic();
