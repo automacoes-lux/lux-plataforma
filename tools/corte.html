@@ -103,9 +103,11 @@
   .wave-times {
     display: flex;
     justify-content: space-between;
-    margin-top: 6px;
-    font-size: 11px;
-    color: var(--text-dim);
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--gold-bright);
+    font-weight: 600;
+    letter-spacing: .02em;
     font-variant-numeric: tabular-nums;
   }
 
@@ -361,8 +363,8 @@
     <div class="wave-wrap">
       <canvas id="waveCanvas"></canvas>
       <div class="wave-times">
-        <span id="waveStart">0:00</span>
-        <span id="waveEnd">0:00</span>
+        <span id="waveStart">0:00 (início)</span>
+        <span id="waveEnd">0:00 (fim)</span>
       </div>
 
       <!-- Slider duplo (corte início/fim) -->
@@ -374,17 +376,11 @@
       </div>
     </div>
 
+    <!-- Botão pré-visualizar logo abaixo do slider duplo -->
+    <button class="btn-play" id="btnPreview" style="margin-top:14px">▶ Pré-visualizar resultado</button>
+
+    <!-- Sliders de fade -->
     <div style="margin-top:14px">
-      <div class="control-row">
-        <span class="label">⏱ Início</span>
-        <input type="range" class="slider" id="sliderStart" min="0" max="1000" value="0">
-        <span class="val" id="valStart">0:00</span>
-      </div>
-      <div class="control-row">
-        <span class="label">⏱ Fim</span>
-        <input type="range" class="slider" id="sliderEnd" min="0" max="1000" value="1000">
-        <span class="val" id="valEnd">0:00</span>
-      </div>
       <div class="control-row">
         <span class="label">📈 Fade-in</span>
         <input type="range" class="slider" id="sliderFadeIn" min="0" max="100" step="1" value="20">
@@ -396,13 +392,14 @@
         <span class="val" id="valFadeOut">3.0s</span>
       </div>
     </div>
+  </div>
 
-    <button class="btn-play" id="btnPreview">▶ Pré-visualizar resultado</button>
-
+  <!-- Fora da caixa Editor: progresso de export + botões finais -->
+  <div id="exportSection" class="hidden">
     <div class="progress-bar hidden" id="exportProgressBar"><div class="fill" id="exportFill"></div></div>
     <div class="progress-detail hidden" id="exportDetail"></div>
 
-    <button class="btn-primary" id="btnExport" style="margin-top:14px">⬇ Baixar MP3</button>
+    <button class="btn-primary" id="btnExport">⬇ Baixar MP3</button>
     <button class="btn-secondary" id="btnReset">+ Novo arquivo</button>
   </div>
 
@@ -490,6 +487,7 @@ async function handleFile(file) {
 
     // Mostra editor
     $('cardEditor').classList.remove('hidden');
+    $('exportSection').classList.remove('hidden');
 
     initEditor();
   } catch (err) {
@@ -510,8 +508,6 @@ function initEditor() {
   // Sincroniza valores iniciais
   $('rangeStart').value = 0;
   $('rangeEnd').value = STEPS;
-  $('sliderStart').value = 0;
-  $('sliderEnd').value = STEPS;
 
   // Atualiza tudo na primeira vez
   updateRanges();
@@ -523,7 +519,6 @@ function initEditor() {
     let end = parseInt($('rangeEnd').value, 10);
     if (start >= end - 10) start = end - 10; // garante pelo menos 1% de duração
     e.target.value = start;
-    $('sliderStart').value = start;
     updateRanges();
     drawWaveform();
   });
@@ -532,27 +527,6 @@ function initEditor() {
     let start = parseInt($('rangeStart').value, 10);
     if (end <= start + 10) end = start + 10;
     e.target.value = end;
-    $('sliderEnd').value = end;
-    updateRanges();
-    drawWaveform();
-  });
-
-  // Listeners — sliders separados (mesma lógica)
-  $('sliderStart').addEventListener('input', (e) => {
-    let start = parseInt(e.target.value, 10);
-    let end = parseInt($('sliderEnd').value, 10);
-    if (start >= end - 10) start = end - 10;
-    e.target.value = start;
-    $('rangeStart').value = start;
-    updateRanges();
-    drawWaveform();
-  });
-  $('sliderEnd').addEventListener('input', (e) => {
-    let end = parseInt(e.target.value, 10);
-    let start = parseInt($('sliderStart').value, 10);
-    if (end <= start + 10) end = start + 10;
-    e.target.value = end;
-    $('rangeEnd').value = end;
     updateRanges();
     drawWaveform();
   });
@@ -569,8 +543,6 @@ function updateRanges() {
   const startSec = startPct * duration;
   const endSec = endPct * duration;
 
-  $('valStart').textContent = fmtTime(startSec);
-  $('valEnd').textContent = fmtTime(endSec);
   $('waveStart').textContent = fmtTime(startSec) + ' (início)';
   $('waveEnd').textContent = fmtTime(endSec) + ' (fim)';
 
@@ -657,13 +629,21 @@ function drawWaveform() {
     ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
   }
 
-  // Linhas verticais nos pontos de corte
-  ctx.strokeStyle = 'rgba(226,186,95,.8)';
-  ctx.lineWidth = 2;
+  // Linhas verticais nos pontos de corte — grossas e nítidas
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'butt';
+  // Linha de início (verde claro pra diferenciar visualmente)
+  ctx.strokeStyle = '#E2BA5F';
+  ctx.shadowColor = 'rgba(226,186,95,.9)';
+  ctx.shadowBlur = 6;
   ctx.beginPath();
   ctx.moveTo(startX, 0); ctx.lineTo(startX, h);
+  ctx.stroke();
+  // Linha de fim (mesma cor pra coerência)
+  ctx.beginPath();
   ctx.moveTo(endX, 0); ctx.lineTo(endX, h);
   ctx.stroke();
+  ctx.shadowBlur = 0; // reseta sombra pra não vazar pra próximas chamadas
 }
 
 // Re-desenha quando a janela muda de tamanho
@@ -903,6 +883,7 @@ $('btnReset').addEventListener('click', () => {
   $('fileInfo').classList.remove('visible');
   $('fileInput').value = '';
   $('cardEditor').classList.add('hidden');
+  $('exportSection').classList.add('hidden');
 });
 
 // ============================================================
@@ -922,8 +903,17 @@ async function boot() {
     console.warn('[corte] auth-iframe.js nao carregou; ferramenta offline-only');
   }
 
+  // Aguarda lamejs carregar (vem do CDN externo, pode demorar ate 5s).
+  // So mostra erro se realmente nao carregar mesmo depois de esperar.
+  let lameTries = 0;
+  while (typeof lamejs === 'undefined' && lameTries < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    lameTries++;
+  }
   if (typeof lamejs === 'undefined') {
     showError('Encoder MP3 não carregou (CDN bloqueado). Recarregue a página.');
+  } else {
+    console.log('[corte] lamejs carregado em', (lameTries * 100), 'ms');
   }
 }
 
