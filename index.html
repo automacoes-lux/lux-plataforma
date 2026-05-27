@@ -120,9 +120,10 @@
         <div class="nav-icon">🎤</div> Cover
         <span class="nav-badge badge-live">LIVE</span>
       </a>
-      <a class="nav-item" data-tool="corte" href="#">
+      <a class="nav-item soon" data-tool="corte" href="#" data-soon-unless-admin>
         <div class="nav-icon">✂️</div> Corte
-        <span class="nav-badge badge-live">LIVE</span>
+        <span class="nav-badge badge-live badge-normal" style="display:none">LIVE</span>
+        <span class="nav-badge badge-warning badge-soon">EM BREVE</span>
       </a>
       <a class="nav-item soon" data-tool="videos" href="#" data-soon-unless-admin>
         <div class="nav-icon">🎬</div> Vídeo Padrão
@@ -237,12 +238,13 @@
           </div>
         </div>
 
-        <div class="tool-card" data-card-tool="corte" onclick="loadTool('corte')">
+        <div class="tool-card soon" data-card-tool="corte" data-soon-unless-admin onclick="loadTool('corte')">
           <div class="tool-card-icon">✂️</div>
           <div class="tool-card-name">CORTE</div>
           <div class="tool-card-desc">Corte trechos da música com fade-in e fade-out suaves. Perfeito pra ajustar instrumentais antes de entregar pro cliente.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
+            <span class="status-live status-normal" style="display:none">● Disponível</span>
+            <span class="status-soon-warning status-soon">● Em breve</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
