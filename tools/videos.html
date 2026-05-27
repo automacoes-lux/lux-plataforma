@@ -125,39 +125,46 @@ body{
 .block-remove{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s}
 .block-remove:hover{color:#E87A7A;background:rgba(232,122,122,.08)}
 
-/* ── Lista pareada (foto + texto) ── */
-.pair-row{display:flex;flex-direction:column;gap:8px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;transition:border-color .15s,opacity .15s,transform .15s}
-.pair-row:focus-within{border-color:var(--border-bright)}
-.pair-row.dragging{opacity:.5;border-color:var(--gold)}
-.pair-row.drop-target{border-color:var(--gold);background:rgba(201,168,76,.06)}
+/* ── Lista pareada: 2 colunas independentes ── */
+.pair-container{display:flex;gap:14px;align-items:flex-start;margin-top:.4rem}
+.pair-column{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.pair-column-photos{flex:0 0 auto;width:160px}
+.pair-column-texts{flex:1;min-width:0}
+.pair-column-title{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:4px}
+.pair-column-list{display:flex;flex-direction:column;gap:8px}
 
-/* Coluna foto */
-.pair-photo-col{display:flex;align-items:center;gap:8px}
-.pair-thumb-wrap{position:relative;width:72px;height:72px;flex-shrink:0;border-radius:8px;overflow:hidden;background:var(--bg-input);border:1px solid var(--border)}
+/* Celulas (foto OU texto) */
+.pair-cell{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;align-items:center;gap:8px;transition:border-color .15s,opacity .15s,background .15s}
+.pair-cell.empty{border-style:dashed;background:transparent}
+.pair-cell.dragging{opacity:.4;border-color:var(--gold)}
+.pair-cell.drop-target{border-color:var(--gold);background:rgba(201,168,76,.08);border-style:solid}
+.pair-cell:focus-within{border-color:var(--border-bright)}
+
+/* Foto cell */
+.pair-photo-cell{padding:6px 8px}
+.pair-thumb-wrap{position:relative;width:96px;height:96px;flex:1;border-radius:6px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
 .pair-thumb-wrap.empty{background:transparent;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center}
 .pair-thumb{width:100%;height:100%;object-fit:cover;display:block}
-.pair-thumb-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;line-height:1}
+.pair-thumb-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.78);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;line-height:1}
 .pair-thumb-empty{font-size:10px;color:var(--text-dim);text-align:center;padding:4px;font-style:italic}
 
-/* Coluna texto */
-.pair-text-col{flex:1;min-width:0}
-.pair-text-row{display:flex;align-items:flex-start;gap:8px}
+/* Texto cell */
+.pair-text-cell{padding:8px 10px;min-height:96px}
+.pair-text-num{font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:.5px solid var(--border-bright);min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pair-textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.45;resize:vertical;min-height:36px;padding:2px 0}
-.pair-text-empty{flex:1;display:flex;align-items:center;min-height:36px}
-.btn-add-text-here{background:transparent;border:1px dashed var(--border);color:var(--text-dim);padding:6px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.btn-add-text-here{flex:1;background:transparent;border:1px dashed var(--border);color:var(--text-dim);padding:8px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;transition:all .15s}
 .btn-add-text-here:hover{border-color:var(--gold-dim);color:var(--text);border-style:solid}
 
-/* Handles de drag */
+/* Handle de drag */
 .pair-handle{cursor:grab;color:var(--gold-dim);font-weight:700;letter-spacing:-2px;padding:6px 4px;font-size:14px;user-select:none;line-height:1;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;touch-action:none}
 .pair-handle:hover:not(.disabled){color:var(--gold);background:rgba(201,168,76,.08)}
 .pair-handle:active:not(.disabled){cursor:grabbing}
 .pair-handle.disabled{cursor:not-allowed;opacity:.3;pointer-events:none}
 
-/* Em telas maiores: foto e texto lado a lado */
-@media (min-width:520px){
-  .pair-row{flex-direction:row;align-items:flex-start;gap:14px}
-  .pair-photo-col{flex-shrink:0}
-  .pair-text-col{padding-top:4px}
+@media (max-width:520px){
+  .pair-container{flex-direction:column}
+  .pair-column-photos{width:100%}
+  .pair-thumb-wrap{height:72px;width:72px;flex:0 0 72px}
 }
 
 .btn-add-block{width:100%;margin-top:.7rem;padding:10px;background:transparent;border:1px dashed var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;letter-spacing:.02em;transition:all .15s}
@@ -250,6 +257,24 @@ input[type="file"]{display:none}
 .history-loading{text-align:center;padding:40px 20px;color:var(--text-dim)}
 .history-refresh{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:7px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .history-refresh:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* ── Histórico padrão Lux (igual Cover/Maestro) ── */
+.lux-history-empty{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:14px}
+.lux-history-totals{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:12px 16px;background:rgba(201,168,76,.06);border:.5px solid var(--gold-dim);border-radius:10px;font-size:12px;flex-wrap:wrap;gap:8px}
+.lux-history-totals strong{color:var(--gold);font-weight:600}
+.lux-history-item{background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:all .15s}
+.lux-history-item:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
+.lux-history-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.lux-history-item-title{font-family:'Cinzel',serif;color:var(--gold);font-size:14px;font-weight:600;letter-spacing:.04em;word-break:break-word;margin-bottom:4px}
+.lux-history-item-meta{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:4px}
+.lux-history-status{font-size:11px;font-weight:600;letter-spacing:.04em}
+.lux-history-status.ok{color:#7FB87A}
+.lux-history-status.err{color:#E87A7A}
+.lux-history-status.pending{color:#E8A84C}
+.lux-history-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.lux-history-cost{font-size:14px;color:#7FB87A;font-weight:600}
+.lux-history-view{padding:7px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap}
+.lux-history-view:hover{background:rgba(201,168,76,.2)}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -389,20 +414,29 @@ input[type="file"]{display:none}
       <!-- Status da IA (loading / erro) -->
       <div class="ai-status" id="aiStatus"></div>
 
-      <!-- Blocos prontos (aparece após processar) -->
+      <!-- Blocos prontos: 2 colunas independentes (fotos | textos) -->
       <div class="blocks-container" id="blocksContainer" style="display:none">
         <div class="blocks-header">
           <div>
             <div class="blocks-title">Blocos prontos <span id="blocksCount">0</span></div>
-            <div class="field-hint" style="margin-top:2px">Arraste pra reordenar. Cada linha = uma foto + um texto. Use o handle ⋮⋮ da foto pra mover a foto, ou o handle ⋮⋮ do texto pra mover só o texto.</div>
+            <div class="field-hint" style="margin-top:2px">Arraste fotos e textos pra reordenar. Foto sobe/desce só na coluna esquerda; texto só na direita.</div>
           </div>
         </div>
-        <div class="blocks-list" id="blocksList"></div>
-        <button type="button" class="btn-add-block" onclick="addEmptyBlock()">+ Adicionar bloco vazio</button>
+        <div class="pair-container">
+          <div class="pair-column pair-column-photos">
+            <div class="pair-column-title">📷 Fotos</div>
+            <div id="photosColumn" class="pair-column-list"></div>
+          </div>
+          <div class="pair-column pair-column-texts">
+            <div class="pair-column-title">💬 Textos</div>
+            <div id="textsColumn" class="pair-column-list"></div>
+            <button type="button" class="btn-add-block" onclick="addEmptyBlock()">+ Adicionar texto vazio</button>
+          </div>
+        </div>
       </div>
 
       <div class="field" style="margin-top:1.2rem">
-        <label>Cada bloco fica na tela por (s)</label>
+        <label>Cada foto e texto permanecem na tela por (s)</label>
         <input id="inTextoDur" type="number" min="1" step="1" value="4"/>
         <div class="field-hint" id="textTimingHint">
           Vale pra todos os blocos.
@@ -460,23 +494,12 @@ input[type="file"]{display:none}
 
   <!-- ═══ HISTÓRICO ═════════════════════════════════════════════ -->
   <div class="panel" id="panel-historico">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px">
-      <div>
-        <div class="result-title">Histórico de vídeos</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Clique em "Ver" para abrir o vídeo</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="history-refresh" onclick="runDebug()" title="Diagnóstico do último pedido">🐞 Debug</button>
-        <button class="history-refresh" onclick="loadHistory()">🔄 Atualizar</button>
-      </div>
+    <div style="margin-bottom:1.2rem">
+      <div class="result-title">Histórico de vídeos</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Clique em "Ver" para abrir o vídeo.</div>
     </div>
     <div id="historyContainer">
       <div class="history-loading">Carregando histórico...</div>
-    </div>
-    <!-- Caixa de resultado do debug (aparece só quando clicado) -->
-    <div id="debugBox" style="display:none;margin-top:1.2rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-      <div style="font-size:11px;color:var(--gold-dim);font-family:'Cinzel',serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">🐞 Diagnóstico — último pedido</div>
-      <textarea id="debugOutput" readonly style="width:100%;min-height:280px;background:var(--bg);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);padding:12px;font-family:monospace;font-size:11px;line-height:1.5;resize:vertical"></textarea>
     </div>
   </div>
 
@@ -623,7 +646,7 @@ async function processText() {
   }
 }
 
-// (função reprocessText removida — botão também foi removido da UI)
+// (função reprocessText removida — botão também saiu da UI)
 
 function addEmptyBlock() {
   // Coleta os textos editados atuais antes de adicionar (pra não perder edições)
@@ -647,15 +670,19 @@ function removeBlock(i) {
 // Lê o conteúdo atual das textareas dos blocos e atualiza o state
 // (chamado antes de qualquer mudança estrutural pra preservar edições)
 function syncBlocksFromUI() {
-  // Lê textos da nova UI pareada (.pair-textarea), respeitando a ordem visual atual.
-  // Quem nao tiver textarea (linha sem texto) mantem como undefined no array.
-  const rows = document.querySelectorAll('.pair-row');
+  // Le os textos da coluna de textos respeitando a ordem visual atual
+  const textsCol = document.getElementById('textsColumn');
+  if (!textsCol) return;
+  const cells = textsCol.querySelectorAll('.pair-text-cell');
   const newBlocks = [];
-  rows.forEach((row, i) => {
-    const ta = row.querySelector('.pair-textarea');
-    newBlocks[i] = ta ? ta.value : (state.textBlocks[i] !== undefined ? state.textBlocks[i] : '');
+  cells.forEach((cell, i) => {
+    const ta = cell.querySelector('.pair-textarea');
+    if (ta) {
+      newBlocks[i] = ta.value;
+    }
+    // Se a celula é vazia (sem textarea), nao adiciona nada — fica undefined no slot
   });
-  // Remove trailing undefined/null (mas mantem strings vazias)
+  // Trim de undefined no final
   while (newBlocks.length > 0 && newBlocks[newBlocks.length - 1] === undefined) {
     newBlocks.pop();
   }
@@ -663,23 +690,17 @@ function syncBlocksFromUI() {
 }
 
 // ═════════════════════════════════════════════════════════
-// DRAG & DROP da lista pareada (foto + texto)
+// DRAG & DROP de 2 colunas independentes (fotos | textos)
 // ─────────────────────────────────────────────────────────
-// Cada linha tem 2 handles:
-//   - .photo-handle → reordena state.photos
-//   - .text-handle  → reordena state.textBlocks
-//
-// Funciona em mouse e touch. Quando o handle é segurado e
-// arrastado, identifica a linha-alvo (drop) e troca de posição
-// no array correspondente. Depois re-renderiza tudo.
+// Cada celula (foto ou texto) tem um handle ⋮⋮. Quando arrastado,
+// o item sobe/desce DENTRO da sua propria coluna. Foto reordena
+// state.photos; texto reordena state.textBlocks.
+// Funciona em mouse e touch (mobile).
 // ═════════════════════════════════════════════════════════
-let dragState = null; // { handleKind, fromIdx, rowEl, startY, currentY, ghost }
+let dragState = null;
 
 function enableDragAndDrop() {
-  const list = document.getElementById('blocksList');
-  if (!list) return;
-
-  list.querySelectorAll('.pair-handle').forEach(handle => {
+  document.querySelectorAll('.pair-handle').forEach(handle => {
     if (handle.classList.contains('disabled')) return;
     handle.addEventListener('mousedown', onDragStart);
     handle.addEventListener('touchstart', onDragStart, { passive: false });
@@ -689,29 +710,28 @@ function enableDragAndDrop() {
 function onDragStart(ev) {
   ev.preventDefault();
   const handle = ev.currentTarget;
-  const row = handle.closest('.pair-row');
-  if (!row) return;
+  const cell = handle.closest('.pair-cell');
+  if (!cell) return;
 
-  const isPhoto = handle.classList.contains('photo-handle');
-  const fromIdx = Number(row.dataset.index);
+  const kind = handle.dataset.kind; // 'photo' ou 'text'
+  const fromIdx = Number(cell.dataset.index);
   const startY = (ev.touches ? ev.touches[0].clientY : ev.clientY);
 
-  // Sincroniza textos antes de mover (pra nao perder edicoes)
+  // Sincroniza textos antes (preserva edicoes)
   syncBlocksFromUI();
 
   dragState = {
-    handleKind: isPhoto ? 'photo' : 'text',
+    kind,
     fromIdx,
-    rowEl: row,
+    cellEl: cell,
     startY,
-    currentY: startY,
-    targetIdx: fromIdx
+    targetIdx: fromIdx,
+    columnSel: kind === 'photo' ? '#photosColumn .pair-cell' : '#textsColumn .pair-cell'
   };
 
-  row.classList.add('dragging');
+  cell.classList.add('dragging');
   document.body.style.cursor = 'grabbing';
 
-  // Listeners globais (move + end)
   document.addEventListener('mousemove', onDragMove);
   document.addEventListener('mouseup',   onDragEnd);
   document.addEventListener('touchmove', onDragMove, { passive: false });
@@ -722,33 +742,29 @@ function onDragStart(ev) {
 function onDragMove(ev) {
   if (!dragState) return;
   ev.preventDefault();
-
   const y = (ev.touches ? ev.touches[0].clientY : ev.clientY);
-  dragState.currentY = y;
 
-  // Acha em qual linha o cursor esta (pra mostrar destaque)
-  const list = document.getElementById('blocksList');
-  const rows = Array.from(list.querySelectorAll('.pair-row'));
+  // So olha as cells da MESMA coluna (foto move dentro de fotos; texto dentro de textos)
+  const cells = Array.from(document.querySelectorAll(dragState.columnSel));
+  cells.forEach(c => c.classList.remove('drop-target'));
 
-  // Tira destaque de todas
-  rows.forEach(r => r.classList.remove('drop-target'));
-
-  // Acha a linha mais proxima do cursor
+  // Encontra a cell mais proxima do cursor
   let targetIdx = dragState.fromIdx;
   let minDist = Infinity;
-  rows.forEach((r, i) => {
-    const rect = r.getBoundingClientRect();
+  cells.forEach((c) => {
+    const rect = c.getBoundingClientRect();
     const center = rect.top + rect.height / 2;
     const dist = Math.abs(y - center);
     if (dist < minDist) {
       minDist = dist;
-      targetIdx = i;
+      targetIdx = Number(c.dataset.index);
     }
   });
 
   dragState.targetIdx = targetIdx;
   if (targetIdx !== dragState.fromIdx) {
-    rows[targetIdx].classList.add('drop-target');
+    const target = cells.find(c => Number(c.dataset.index) === targetIdx);
+    if (target) target.classList.add('drop-target');
   }
 }
 
@@ -762,15 +778,13 @@ function onDragEnd() {
 
   if (!dragState) return;
 
-  const { handleKind, fromIdx, targetIdx } = dragState;
+  const { kind, fromIdx, targetIdx } = dragState;
 
   if (fromIdx !== targetIdx) {
-    if (handleKind === 'photo') {
-      // Reordena state.photos
+    if (kind === 'photo') {
       moveArrayItem(state.photos, fromIdx, targetIdx);
     } else {
-      // Reordena state.textBlocks. Como textBlocks pode ser
-      // mais curto que photos, garante que tenha entradas ate o maior indice.
+      // Garante que textBlocks tem espaço ate o indice alvo
       const maxI = Math.max(fromIdx, targetIdx);
       while (state.textBlocks.length <= maxI) state.textBlocks.push('');
       moveArrayItem(state.textBlocks, fromIdx, targetIdx);
@@ -779,22 +793,21 @@ function onDragEnd() {
 
   dragState = null;
   renderBlocks();
-  renderPhotos();   // tambem atualiza grid de cima
+  renderPhotos();   // atualiza grid de cima
 }
 
-// Move um item de um indice pra outro mantendo os outros
 function moveArrayItem(arr, from, to) {
   if (from === to) return;
   if (from < 0 || from >= arr.length) return;
   const item = arr.splice(from, 1)[0];
-  // Insere na posicao alvo (o splice ja ajustou os indices)
   if (to > arr.length) to = arr.length;
   arr.splice(to, 0, item);
 }
 
 function renderBlocks() {
   const container = document.getElementById('blocksContainer');
-  const list = document.getElementById('blocksList');
+  const photosCol = document.getElementById('photosColumn');
+  const textsCol = document.getElementById('textsColumn');
   const count = document.getElementById('blocksCount');
 
   // Mostra a caixa se tiver fotos OU textos
@@ -803,77 +816,75 @@ function renderBlocks() {
     container.style.display = 'none';
     return;
   }
-
   container.style.display = 'block';
 
-  // Total de linhas = max(fotos, textos) — slots vazios completam o menor
+  // Total de linhas exibidas = max(fotos, textos) — slots vazios completam o menor
   const totalRows = Math.max(state.photos.length, state.textBlocks.length);
   count.textContent = '(' + totalRows + ')';
-  list.innerHTML = '';
 
+  // ── COLUNA DE FOTOS ──
+  photosCol.innerHTML = '';
   for (let i = 0; i < totalRows; i++) {
     const photo = state.photos[i] || null;
-    const text  = state.textBlocks[i] !== undefined ? state.textBlocks[i] : null;
-
-    const item = document.createElement('div');
-    item.className = 'pair-row';
-    item.dataset.index = i;
-
-    // ── Coluna 1: miniatura + handle foto ──
-    const photoCol = document.createElement('div');
-    photoCol.className = 'pair-photo-col';
+    const cell = document.createElement('div');
+    cell.dataset.kind = 'photo';
+    cell.dataset.index = i;
     if (photo) {
-      photoCol.innerHTML =
-        '<div class="pair-handle photo-handle" data-i="' + i + '" title="Arrastar foto">⋮⋮</div>' +
+      cell.className = 'pair-cell pair-photo-cell';
+      cell.innerHTML =
+        '<div class="pair-handle" data-i="' + i + '" data-kind="photo" title="Arrastar foto">⋮⋮</div>' +
         '<div class="pair-thumb-wrap">' +
           '<img class="pair-thumb" src="' + photo.thumbUrl + '" alt="" />' +
           '<span class="pair-thumb-num">' + (i + 1) + '</span>' +
         '</div>';
     } else {
-      photoCol.innerHTML =
-        '<div class="pair-handle photo-handle disabled" title="Sem foto">⋮⋮</div>' +
+      cell.className = 'pair-cell pair-photo-cell empty';
+      cell.innerHTML =
+        '<div class="pair-handle disabled" title="Sem foto">⋮⋮</div>' +
         '<div class="pair-thumb-wrap empty">' +
           '<span class="pair-thumb-empty">(sem foto)</span>' +
         '</div>';
     }
-
-    // ── Coluna 2: textarea + handle texto + remover ──
-    const textCol = document.createElement('div');
-    textCol.className = 'pair-text-col';
-    if (text !== null) {
-      textCol.innerHTML =
-        '<div class="pair-text-row">' +
-          '<div class="pair-handle text-handle" data-i="' + i + '" title="Arrastar texto">⋮⋮</div>' +
-          '<textarea class="pair-textarea" rows="1" placeholder="Texto (deixe vazio pra não aparecer)">' +
-            escapeHtml(text) +
-          '</textarea>' +
-          '<button class="block-remove" title="Remover texto" data-i="' + i + '">✕</button>' +
-        '</div>';
-    } else {
-      textCol.innerHTML =
-        '<div class="pair-text-row">' +
-          '<div class="pair-handle text-handle disabled" title="Sem texto">⋮⋮</div>' +
-          '<div class="pair-text-empty">' +
-            '<button class="btn-add-text-here" data-i="' + i + '" title="Adicionar texto nesta linha">+ adicionar texto</button>' +
-          '</div>' +
-        '</div>';
-    }
-
-    item.appendChild(photoCol);
-    item.appendChild(textCol);
-    list.appendChild(item);
+    photosCol.appendChild(cell);
   }
 
-  // Listeners — remover texto
-  list.querySelectorAll('.block-remove').forEach(btn => {
+  // ── COLUNA DE TEXTOS ──
+  textsCol.innerHTML = '';
+  for (let i = 0; i < totalRows; i++) {
+    const text = state.textBlocks[i];
+    const cell = document.createElement('div');
+    cell.dataset.kind = 'text';
+    cell.dataset.index = i;
+    if (text !== undefined && text !== null) {
+      cell.className = 'pair-cell pair-text-cell';
+      cell.innerHTML =
+        '<div class="pair-handle" data-i="' + i + '" data-kind="text" title="Arrastar texto">⋮⋮</div>' +
+        '<span class="pair-text-num">' + (i + 1) + '</span>' +
+        '<textarea class="pair-textarea" rows="1" placeholder="Texto (vazio = não aparece)">' +
+          escapeHtml(text) +
+        '</textarea>' +
+        '<button class="block-remove" title="Remover texto" data-i="' + i + '">✕</button>';
+    } else {
+      cell.className = 'pair-cell pair-text-cell empty';
+      cell.innerHTML =
+        '<div class="pair-handle disabled" title="Sem texto">⋮⋮</div>' +
+        '<span class="pair-text-num">' + (i + 1) + '</span>' +
+        '<button class="btn-add-text-here" data-i="' + i + '" title="Adicionar texto nesta linha">+ adicionar texto</button>';
+    }
+    // Move o botão de adicionar texto vazio se for a última linha
+    textsCol.appendChild(cell);
+  }
+
+  // ── Listeners ──
+  // Remover texto
+  textsCol.querySelectorAll('.block-remove').forEach(btn => {
     btn.addEventListener('click', () => removeBlock(Number(btn.dataset.i)));
   });
-
-  // Listeners — adicionar texto numa linha que ainda não tem
-  list.querySelectorAll('.btn-add-text-here').forEach(btn => {
+  // Adicionar texto numa linha vazia
+  textsCol.querySelectorAll('.btn-add-text-here').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = Number(btn.dataset.i);
-      // Garante que o array tem entrada nessa posição
+      syncBlocksFromUI();
       while (state.textBlocks.length <= i) state.textBlocks.push('');
       renderBlocks();
       setTimeout(() => {
@@ -882,9 +893,8 @@ function renderBlocks() {
       }, 30);
     });
   });
-
-  // Auto-resize das textareas + atualizar timing
-  list.querySelectorAll('.pair-textarea').forEach(ta => {
+  // Auto-resize textareas + recalcular timing
+  textsCol.querySelectorAll('.pair-textarea').forEach(ta => {
     const autoResize = () => {
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
@@ -896,7 +906,7 @@ function renderBlocks() {
     });
   });
 
-  // Liga drag & drop nos handles
+  // Liga drag & drop nas 2 colunas
   enableDragAndDrop();
 
   updateTimingCalc();
@@ -996,7 +1006,7 @@ async function handlePhotos(e) {
   }
   hideToast();
   renderPhotos();
-  renderBlocks();  // tambem atualiza lista pareada
+  renderBlocks();   // atualiza lista pareada também
 }
 
 function renderPhotos() {
@@ -1035,7 +1045,7 @@ function removePhoto(i) {
   if (p && p.thumbUrl) URL.revokeObjectURL(p.thumbUrl);
   state.photos.splice(i, 1);
   renderPhotos();
-  renderBlocks();  // atualiza lista pareada
+  renderBlocks();   // atualiza lista pareada
 }
 
 // ═══ UPLOAD DE MÚSICA ═══════════════════════════════════════
@@ -1454,85 +1464,98 @@ async function loadHistory() {
 
     if (!data.orders || !data.orders.length) {
       container.innerHTML =
-        '<div class="empty-state"><span class="icon">📂</span>' +
-        '<p>Nenhum vídeo no histórico ainda.</p></div>';
+        '<div class="lux-history-empty">Nenhum vídeo gerado ainda.<br/>Volte pra aba "Novo Pedido" e crie o primeiro!</div>';
       return;
     }
 
-    const list = document.createElement('div');
-    list.className = 'history-list';
-    data.orders.forEach(o => {
-      const statusClass = o.status === 'COMPLETED' ? 'completed'
-                        : o.status === 'ERROR'     ? 'error'
-                        : o.status === 'RENDERING' ? 'rendering' : 'created';
-      const statusLabel = o.status === 'COMPLETED' ? 'Concluído'
-                        : o.status === 'ERROR'     ? 'Erro'
-                        : o.status === 'RENDERING' ? 'Renderizando' : 'Criado';
-      const custoBRL = formatBRL(o.costBRL);
-      const custoBadge = custoBRL
-        ? '<span class="badge cost">' + custoBRL + '</span>' : '';
+    // Totais (só conta + total em R$)
+    const concluidos = data.orders.filter(o => o.status === 'COMPLETED');
+    const totalBRL = concluidos.reduce((s, o) => s + (Number(o.costBRL) || 0), 0);
 
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      item.innerHTML =
-        '<div class="history-item-info">' +
-          '<div class="history-client">' + escapeHtml(o.clientName) + '</div>' +
-          '<div class="history-meta">' +
-            '<span>👤 ' + escapeHtml(o.attendantName || '—') + '</span>' +
-            '<span>📅 ' + escapeHtml(o.createdAt || '—') + '</span>' +
-            '<span>📷 ' + (o.photoCount || 0) + '</span>' +
-            (o.musicDuration ? '<span>🎵 ' + formatDuration(o.musicDuration) + '</span>' : '') +
-            (o.hasText ? '<span>💬 texto</span>' : '') +
-            '<span class="badge ' + statusClass + '">' + statusLabel + '</span>' +
-            custoBadge +
-          '</div>' +
-        '</div>' +
-        (o.status === 'COMPLETED' && o.videoUrl
-          ? '<button class="history-btn-view" data-url="' + escapeAttr(o.videoUrl) +
-            '" data-client="' + escapeAttr(o.clientName) +
-            '" data-costbrl="' + (o.costBRL != null ? o.costBRL : '') +
-            '" data-costusd="' + (o.costUSD != null ? o.costUSD : '') +
-            '" data-att="' + escapeAttr(o.attendantName || '') + '">Ver →</button>'
-          : '');
-      const btn = item.querySelector('.history-btn-view');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          state.atendente = btn.dataset.att || state.atendente;
-          state.currentVideo = {
-            videoUrl: btn.dataset.url,
-            clientName: btn.dataset.client,
-            costBRL: btn.dataset.costbrl !== '' ? Number(btn.dataset.costbrl) : null,
-            costUSD: btn.dataset.costusd !== '' ? Number(btn.dataset.costusd) : null
-          };
-          renderResult();
-          goTab('resultado');
-        });
-      }
-      list.appendChild(item);
+    let html = `
+      <div class="lux-history-totals">
+        <div><strong>${concluidos.length}</strong> vídeo${concluidos.length === 1 ? '' : 's'} concluído${concluidos.length === 1 ? '' : 's'}</div>
+        <div>Total: <strong>${formatBRL(totalBRL) || 'R$ 0,00'}</strong></div>
+      </div>
+    `;
+
+    data.orders.forEach(o => {
+      const statusLabel = o.status === 'COMPLETED' ? '✓ Concluído'
+                        : o.status === 'ERROR'     ? '✗ Erro'
+                        : o.status === 'RENDERING' ? '⏳ Renderizando'
+                        : '○ Criado';
+      const statusCss   = o.status === 'COMPLETED' ? 'ok'
+                        : o.status === 'ERROR'     ? 'err'
+                        : 'pending';
+
+      const isDone = o.status === 'COMPLETED' && o.videoUrl;
+      const cost   = formatBRL(o.costBRL);
+
+      // Formato data: "27/05/2026 às 14:32"
+      const dataFmt = formatDateBR(o.createdAt);
+
+      html += `
+        <div class="lux-history-item">
+          <div class="lux-history-item-top">
+            <div style="flex:1;min-width:0">
+              <div class="lux-history-item-title">${escapeHtml(o.clientName || '(sem nome)')}</div>
+              <div class="lux-history-item-meta">
+                📅 ${dataFmt}
+                ${o.attendantName ? ' · 👤 ' + escapeHtml(o.attendantName) : ''}
+              </div>
+              <div class="lux-history-status ${statusCss}">${statusLabel}</div>
+            </div>
+            <div class="lux-history-right">
+              ${cost ? '<div class="lux-history-cost">' + cost + '</div>' : ''}
+              ${isDone
+                ? '<button class="lux-history-view" data-url="' + escapeAttr(o.videoUrl) +
+                  '" data-client="' + escapeAttr(o.clientName) +
+                  '" data-costbrl="' + (o.costBRL != null ? o.costBRL : '') +
+                  '" data-costusd="' + (o.costUSD != null ? o.costUSD : '') +
+                  '" data-att="' + escapeAttr(o.attendantName || '') + '">Ver →</button>'
+                : ''}
+            </div>
+          </div>
+        </div>
+      `;
     });
-    container.innerHTML = '';
-    container.appendChild(list);
+
+    container.innerHTML = html;
+
+    // Liga os botões "Ver"
+    container.querySelectorAll('.lux-history-view').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.atendente = btn.dataset.att || state.atendente;
+        state.currentVideo = {
+          videoUrl: btn.dataset.url,
+          clientName: btn.dataset.client,
+          costBRL: btn.dataset.costbrl !== '' ? Number(btn.dataset.costbrl) : null,
+          costUSD: btn.dataset.costusd !== '' ? Number(btn.dataset.costusd) : null
+        };
+        renderResult();
+        goTab('resultado');
+      });
+    });
   } catch (err) {
     container.innerHTML =
-      '<div class="empty-state"><span class="icon">⚠️</span>' +
-      '<p style="color:#E87A7A">' + escapeHtml(err.message) + '</p></div>';
+      '<div class="lux-history-empty" style="color:#E87A7A">Erro: ' + escapeHtml(err.message) + '</div>';
   }
 }
 
-// ═══ DEBUG — diagnóstico do último pedido (TEMPORÁRIO) ══════
-async function runDebug() {
-  const box = document.getElementById('debugBox');
-  const out = document.getElementById('debugOutput');
-  box.style.display = 'block';
-  out.value = 'Consultando o servidor...';
-  try {
-    const resp = await window.__luxFetch(WORKER_URL + '/debug/lastError');
-    const data = await resp.json();
-    out.value = JSON.stringify(data, null, 2);
-  } catch (err) {
-    out.value = 'Erro ao consultar debug: ' + err.message;
-  }
+// Formata data ISO em "DD/MM/AAAA às HH:MM"
+function formatDateBR(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return String(s);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm}/${yy} às ${hh}:${mi}`;
 }
+
+// (função runDebug removida — botões Debug/Atualizar saíram da UI)
 
 // ═══ STATUS / TIMER ═════════════════════════════════════════
 function setStatus(text, sub, timer) {
@@ -1623,7 +1646,6 @@ window.goNewOrder = goNewOrder;
 window.loadHistory = loadHistory;
 window.checkPending = checkPending;
 window.clearPending = clearPending;
-window.runDebug = runDebug;
 </script>
 
 </body>
