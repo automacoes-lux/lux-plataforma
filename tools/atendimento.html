@@ -613,8 +613,11 @@ body{
         <option value="musica">Música</option>
         <option value="locucao">Locução</option>
         <option value="logo3d">Logo 3D</option>
-        <option value="video">Vídeo</option>
+        <option value="video">Vídeo Padrão</option>
         <option value="figurinha">Figurinha</option>
+        <option value="animacao">Animação</option>
+        <option value="cover">Cover</option>
+        <option value="corte">Corte</option>
         <option value="objecoes">Objeções</option>
       </select>
     </div>
@@ -687,9 +690,11 @@ const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 
 const SEG_LABELS = {
   musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
-  video:'Vídeo', figurinha:'Figurinha', objecoes:'Objeções'
+  video:'Vídeo Padrão', figurinha:'Figurinha',
+  animacao:'Animação', cover:'Cover', corte:'Corte',
+  objecoes:'Objeções'
 };
-const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','objecoes'];
+const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','cover','corte','objecoes'];
 
 const state = {
   protocols: [],
@@ -1140,7 +1145,9 @@ async function confirmarDisparoAlerta() {
 // ════════════════════════════════════════════════════════════
 const TUTORIAL_SEG_LABELS = {
   musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
-  video:'Vídeo', figurinha:'Figurinha', cover:'Cover', objecoes:'Objeções'
+  video:'Vídeo Padrão', figurinha:'Figurinha',
+  animacao:'Animação', cover:'Cover', corte:'Corte',
+  objecoes:'Objeções'
 };
 
 const tutorialState = {
