@@ -243,6 +243,42 @@ body{
 }
 .tutorial-video-empty .ic{font-size:32px;color:rgba(201,168,76,.4)}
 
+/* Capa do vídeo (modo visualização) — fundo dourado + play grande */
+.tutorial-video-cover{
+  width:100%;aspect-ratio:16/9;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(201,168,76,.22) 0%, rgba(201,168,76,.06) 45%, transparent 70%),
+    linear-gradient(135deg, #1a1408 0%, #0d0a04 55%, #080604 100%);
+  border:1px solid rgba(201,168,76,.35);
+  border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;
+  margin-bottom:14px;cursor:pointer;
+  transition:border-color .2s, transform .15s, box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.tutorial-video-cover:hover{
+  border-color:var(--gold);
+  box-shadow:0 0 24px rgba(201,168,76,.18) inset;
+}
+.tutorial-video-cover .cover-play-btn{
+  width:74px;height:74px;border-radius:50%;
+  background:linear-gradient(135deg, var(--gold-bright,#e8c96a) 0%, var(--gold,#c9a84c) 60%, var(--gold-dim,#a8893c) 100%);
+  color:#0a0a0a;
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;padding-left:5px;
+  box-shadow:0 6px 22px rgba(201,168,76,.4);
+  transition:transform .15s;
+}
+.tutorial-video-cover:hover .cover-play-btn{transform:scale(1.08)}
+.tutorial-video-cover .cover-label{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:15px;font-weight:600;letter-spacing:.06em;
+}
+.tutorial-video-cover .cover-sub{
+  font-size:12px;color:var(--text-mid);letter-spacing:.02em;
+}
+
 /* Estado: vídeo pronto pra carregar (clique pra assistir) */
 .tutorial-video-loading{
   width:100%;aspect-ratio:16/9;
@@ -1240,12 +1276,11 @@ function renderTutorial() {
     // Modo visualização
     if (t.videoPrincipal) {
       va.innerHTML = `
-        <div class="tutorial-video-loading" id="videoPrincipalContainer">
-          <span class="ic">▶</span>
-          <span>Tutorial em vídeo</span>
-          <button class="tutorial-file-btn" style="margin-top:8px" onclick="carregarVideo('${t.videoPrincipal.fileId}', 'videoPrincipalContainer', this)">
-            ▶ Assistir
-          </button>
+        <div class="tutorial-video-cover" id="videoPrincipalContainer"
+             onclick="carregarVideo('${t.videoPrincipal.fileId}', 'videoPrincipalContainer', this)">
+          <div class="cover-play-btn">▶</div>
+          <div class="cover-label">Tutorial em vídeo</div>
+          <div class="cover-sub">Clique para assistir</div>
         </div>
       `;
     } else {
@@ -1290,14 +1325,10 @@ function renderFileList(container, files, editing, defaultIcon, kind) {
     const ic = iconForMime(f.mimeType) || defaultIcon;
     const size = formatBytes(f.size || 0);
 
-    // Vídeo extra abre num player inline (busca via fetch autenticado)
-    // Arquivo normal faz download
+    // Vídeos extras e arquivos: ambos fazem download (atendente baixa pra usar)
     let actions;
     if (editing) {
       actions = `<button class="tutorial-file-btn danger" onclick="removerArquivo('${f.fileId}')">🗑</button>`;
-    } else if (kind === 'video') {
-      const slot = 'videoExtra-' + f.fileId;
-      actions = `<button class="tutorial-file-btn" onclick="abrirVideoExtra('${f.fileId}', this)">▶ Assistir</button>`;
     } else {
       actions = `<button class="tutorial-file-btn" onclick="baixarArquivo('${f.fileId}', this)">⬇ Baixar</button>`;
     }
@@ -1400,7 +1431,10 @@ async function carregarVideo(fileId, containerId, btn) {
 
   // Mostra estado de loading
   const sizeStr = fileMeta ? formatBytes(fileMeta.size || 0) : '';
-  container.classList.add('progress');
+  // Se era a capa dourada, troca pra estilo de loading padrão
+  container.className = 'tutorial-video-loading progress';
+  container.style.cursor = 'default';
+  container.onclick = null;
   container.innerHTML = `
     <div style="font-size:32px;color:var(--gold)">⏳</div>
     <div style="color:var(--gold);font-size:13px">Baixando vídeo ${sizeStr}...</div>
