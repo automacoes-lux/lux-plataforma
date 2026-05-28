@@ -798,9 +798,23 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
     currentTaskId = null;
   }, 600);
 
-  // 6. Pre-seta nome do download
-  $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
+  // 6. Pre-seta nome do download — no máximo as 2 primeiras palavras do título
+  $('btnDownload').dataset.filename = montarNomeDownload(baseName);
+}
+
+// Pega no máximo as 2 primeiras palavras do título original.
+// Ex: "pra sempre recordar" -> "pra sempre.wav"
+//     "Amor" -> "Amor.wav"
+//     "Te Amo Demais Meu Bem" -> "Te Amo.wav"
+function montarNomeDownload(baseName) {
+  // Remove extensão (.mp3, .wav, etc) se vier no nome
+  let nome = String(baseName || 'cover').replace(/\.[^.]+$/, '').trim();
+  // Quebra em palavras (qualquer espaço em branco) e pega as 2 primeiras
+  const palavras = nome.split(/\s+/).filter(Boolean).slice(0, 2);
+  let final = palavras.join(' ').trim();
+  // Fallback se ficar vazio
+  if (!final) final = 'cover';
+  return final + '.wav';
 }
 
 // ============================================================
