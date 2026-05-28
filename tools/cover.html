@@ -772,16 +772,29 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   ctx.close();
 
   // 3. Aceleração 2x via Tone.GrainPlayer (mantém o tom)
-  setStep('pitch', 'active', '');
-  setProgress(80, 'Finalizando...');
+  // ⚠️ TESTE TEMPORÁRIO (28/05): SPEEDUP_ENABLED=false entrega o instrumental
+  //    PURO (velocidade original, sem aceleração) pra avaliar a qualidade da
+  //    separação dos stems isoladamente. Pra reativar a velocidade 2x, mude
+  //    SPEEDUP_ENABLED de volta pra true.
+  const SPEEDUP_ENABLED = false;
 
   let pitchedBuffer;
-  try {
-    pitchedBuffer = await applySpeedUp(mixedBuffer, PLAYBACK_RATE);
-    setStep('pitch', 'done', 'Velocidade 2x aplicada');
-  } catch (err) {
-    setStep('pitch', 'error', err.message);
-    throw err;
+  if (SPEEDUP_ENABLED) {
+    setStep('pitch', 'active', '');
+    setProgress(80, 'Finalizando...');
+    try {
+      pitchedBuffer = await applySpeedUp(mixedBuffer, PLAYBACK_RATE);
+      setStep('pitch', 'done', 'Velocidade 2x aplicada');
+    } catch (err) {
+      setStep('pitch', 'error', err.message);
+      throw err;
+    }
+  } else {
+    // Modo teste: entrega o instrumental sem alteração de velocidade
+    setStep('pitch', 'active', '');
+    setProgress(80, 'Finalizando...');
+    pitchedBuffer = mixedBuffer;
+    setStep('pitch', 'done', 'Instrumental original (teste)');
   }
 
   // 4. Encode WAV
