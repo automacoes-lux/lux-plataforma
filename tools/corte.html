@@ -369,7 +369,7 @@
 
     <div class="wave-wrap">
       <canvas id="waveCanvas"></canvas>
-      <div class="wave-hint">🔊 Clique em qualquer ponto da onda pra ouvir a música a partir dali</div>
+      <div class="wave-hint">🔊 Clique na onda pra ouvir a partir dali — para automaticamente no marcador de fim</div>
       <div class="wave-times">
         <span id="waveStart">0:00 (início)</span>
         <span id="waveEnd">0:00 (fim)</span>
@@ -710,7 +710,17 @@ function tocarLivreDe(offsetSec) {
   if (isPlaying) stopPreview();
 
   const dur = audioBuffer.duration;
+  // Limite de fim = marcador de FIM do corte (linha dourada da direita).
+  // O play livre para quando o playhead chega nesse ponto.
+  const endSec = (parseInt($('rangeEnd').value, 10) / 1000) * dur;
   offsetSec = Math.max(0, Math.min(offsetSec, dur - 0.05));
+
+  // Se clicou DEPOIS do marcador de fim, não tem o que tocar
+  if (offsetSec >= endSec) {
+    playheadPct = offsetSec / dur;
+    drawWaveform();
+    return;
+  }
 
   freeCtx = new (window.AudioContext || window.webkitAudioContext)();
   freeSource = freeCtx.createBufferSource();
@@ -727,21 +737,23 @@ function tocarLivreDe(offsetSec) {
     }
   };
 
-  freeSource.start(0, offsetSec);
+  // Toca do ponto clicado até o marcador de fim (duração limitada)
+  const playDuration = Math.max(0.05, endSec - offsetSec);
+  freeSource.start(0, offsetSec, playDuration);
   freeStartCtxTime = freeCtx.currentTime;
   freeStartOffset = offsetSec;
   isPlayingFree = true;
 
-  // Anima o playhead enquanto toca
+  // Anima o playhead enquanto toca — para no marcador de fim
   const tick = () => {
     if (!isPlayingFree || !freeCtx) return;
     const elapsed = freeCtx.currentTime - freeStartCtxTime;
     const posSec = freeStartOffset + elapsed;
     playheadPct = Math.min(1, posSec / dur);
     drawWaveform();
-    if (posSec >= dur) {
+    if (posSec >= endSec) {
       pararPlayLivre();
-      playheadPct = null;
+      playheadPct = endSec / dur;   // deixa o cursor parado no marcador de fim
       drawWaveform();
       return;
     }
