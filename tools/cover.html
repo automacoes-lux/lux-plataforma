@@ -165,11 +165,6 @@
     transition: all .15s;
   }
   .btn-secondary:hover { background: rgba(201,168,76,.08); }
-  .btn-secondary--lg {
-    font-size: 16px;
-    padding: 14px 22px;
-    font-weight: 600;
-  }
 
   /* ─── Progresso ─── */
   .progress-section {
@@ -405,6 +400,23 @@
   }
   .history-totals strong { color: var(--gold); font-weight: 600; }
 
+  /* Seletor de tuning */
+  .tuning-row .tuning-select {
+    background: var(--bg-input);
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    max-width: 220px;
+  }
+  .tuning-row .tuning-select:focus {
+    outline: 1px solid var(--gold);
+    outline-offset: 1px;
+  }
+
 </style>
 </head>
 <body>
@@ -450,6 +462,24 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>⚙️ Operações</h2>
+      <div class="options">
+        <div class="option-row">
+          <span class="label">🎤 Remover vocal</span>
+          <span class="value">SIM (StemSplit)</span>
+        </div>
+        <div class="option-row">
+          <span class="label">⚡ Velocidade</span>
+          <span class="value">2x (mantém tom)</span>
+        </div>
+        <div class="option-row">
+          <span class="label">📥 Formato final</span>
+          <span class="value">WAV</span>
+        </div>
+      </div>
+    </div>
+
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -460,25 +490,25 @@
 
       <div class="progress-step" id="step-upload">
         <div class="step-icon">⏳</div>
-        <div class="step-text">1. Fazendo upload</div>
+        <div class="step-text">1. Fazendo a mágica acontecer</div>
         <div class="step-detail" id="step-upload-detail"></div>
       </div>
 
       <div class="progress-step" id="step-process">
         <div class="step-icon">⏳</div>
-        <div class="step-text">2. Codificando áudio</div>
+        <div class="step-text">2. Removendo vocal</div>
         <div class="step-detail" id="step-process-detail"></div>
       </div>
 
       <div class="progress-step" id="step-download">
         <div class="step-icon">⏳</div>
-        <div class="step-text">3. Aplicando efeitos</div>
+        <div class="step-text">3. Baixando instrumental</div>
         <div class="step-detail" id="step-download-detail"></div>
       </div>
 
       <div class="progress-step" id="step-pitch">
         <div class="step-icon">⏳</div>
-        <div class="step-text">4. Finalizando</div>
+        <div class="step-text">4. Aplicando efeito</div>
         <div class="step-detail" id="step-pitch-detail"></div>
       </div>
 
@@ -501,7 +531,7 @@
       <h2>✅ Cover pronto</h2>
       <audio class="audio-preview" id="audioPreview" controls></audio>
       <button class="btn-primary" id="btnDownload">⬇ Baixar cover (WAV)</button>
-      <button class="btn-secondary btn-secondary--lg" id="btnNew">+ Novo cover</button>
+      <button class="btn-secondary" id="btnNew">+ Novo cover</button>
     </div>
   </div>
 
@@ -528,8 +558,10 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-let PITCH_SEMITONES = -6; // mudado pelo slider na UI
-const POLL_INTERVAL_MS = 5000;   // 5s entre polls do PoYo
+// Velocidade 2x preservando o tom (time-stretching, não chipmunk).
+// Implementado via Tone.GrainPlayer com playbackRate=2 e detune=0.
+const PLAYBACK_RATE = 2;
+const POLL_INTERVAL_MS = 5000;   // 5s entre polls do StemSplit
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
 
 // ============================================================
@@ -642,7 +674,7 @@ async function startProcessing(file) {
   setProgress(5, 'Enviando arquivo...');
 
   try {
-    // 1. Upload pro Worker (que sobe no R2 e repassa pro PoYo)
+    // 1. Upload pro Worker (que repassa pro StemSplit)
     const form = new FormData();
     form.append('file', file);
 
@@ -658,7 +690,7 @@ async function startProcessing(file) {
 
     currentTaskId = data.taskId;
     setStep('upload', 'done', 'Enviado');
-    setProgress(15, 'Codificando áudio...');
+    setProgress(15, 'Fazendo a mágica acontecer...');
 
     // 2. Polling
     await pollTask(data.taskId);
@@ -695,28 +727,28 @@ async function pollTask(taskId) {
       continue;
     }
 
-    if (data.state === 'success' && data.ready) {
+    if (data.state === 'success' && data.instrumentalUrl) {
       setStep('process', 'done', 'Vocal removido');
-      setProgress(50, 'Aplicando efeitos...');
-      // Browser baixa stems via Worker (CORS) e mixa
-      await downloadAndProcess(taskId, data.filename || 'cover', data.instrumentalStems || []);
+      setProgress(50, 'Baixando instrumental...');
+      // Passa taskId (não a URL direta) — Worker faz proxy pra evitar CORS
+      await downloadAndProcess(taskId, data.filename || 'cover');
       return;
     }
 
     if (data.state === 'error') {
-      throw new Error('PoYo retornou erro: ' + (data.error || 'desconhecido'));
+      throw new Error('StemSplit retornou erro: ' + (data.error || 'desconhecido'));
     }
 
     // Ainda processando
     const ssProgress = Math.max(0, Math.min(100, data.progress || 0));
-    const overallPct = 15 + (ssProgress * 0.35); // 15-50% durante PoYo
-    setProgress(overallPct, `Codificando áudio... (${ssProgress}%)`);
+    const overallPct = 15 + (ssProgress * 0.35); // 15-50% durante StemSplit
+    setProgress(overallPct, `Fazendo a mágica acontecer... (${ssProgress}%)`);
 
     attempts++;
     await sleep(POLL_INTERVAL_MS);
   }
 
-  throw new Error('Timeout: PoYo demorou mais de 30 minutos');
+  throw new Error('Timeout: StemSplit demorou mais de 30 minutos');
 }
 
 function sleep(ms) {
@@ -724,175 +756,100 @@ function sleep(ms) {
 }
 
 // ============================================================
-// Download dos stems + mixagem + pitch shift
+// Download do instrumental + speed-up 2x
 // ============================================================
-async function downloadAndProcess(taskId, baseName, instrumentalStems) {
+async function downloadAndProcess(taskId, baseName) {
   setStep('download', 'active', '');
 
-  if (!instrumentalStems || instrumentalStems.length === 0) {
-    setStep('download', 'error', 'Nenhum stem instrumental disponível');
-    throw new Error('PoYo não retornou stems instrumentais');
-  }
-
-  // 1. Baixa todos os stems via Worker (proxy server-side resolve CORS)
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const decodedBuffers = [];
-
+  // 1. Baixa o instrumental via Worker (proxy server-side resolve CORS do R2 StemSplit)
+  let audioBuffer;
   try {
-    for (let i = 0; i < instrumentalStems.length; i++) {
-      const stemName = instrumentalStems[i];
-      const pct = 50 + ((i + 1) / instrumentalStems.length) * 12; // 50% -> 62%
-      setProgress(pct, `Aplicando efeitos... (${i + 1}/${instrumentalStems.length})`);
-      setStep('download', 'active', `${i + 1}/${instrumentalStems.length} ${stemName}`);
+    const audioResp = await window.__luxFetch(WORKER_URL + '/download/' + taskId);
+    if (!audioResp.ok) throw new Error('Download retornou ' + audioResp.status);
+    const arrayBuf = await audioResp.arrayBuffer();
+    setStep('download', 'done', fmtBytes(arrayBuf.byteLength));
+    setProgress(65, 'Decodificando áudio...');
 
-      const resp = await window.__luxFetch(WORKER_URL + '/download/' + taskId + '/' + stemName);
-      if (!resp.ok) throw new Error(`Download de '${stemName}' retornou ${resp.status}`);
-      const buf = await resp.arrayBuffer();
-      const decoded = await ctx.decodeAudioData(buf.slice(0));
-      decodedBuffers.push({ name: stemName, buffer: decoded });
-    }
-    setStep('download', 'done', `${instrumentalStems.length} stems`);
-  } catch (err) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    audioBuffer = await ctx.decodeAudioData(arrayBuf.slice(0));
     ctx.close();
+  } catch (err) {
     setStep('download', 'error', err.message);
     throw err;
   }
 
-  // 2. Mixa todos os stems em um único AudioBuffer
-  setProgress(67, 'Aplicando efeitos...');
-  let mixedBuffer;
-  try {
-    mixedBuffer = mixAudioBuffers(decodedBuffers.map(b => b.buffer));
-  } catch (err) {
-    ctx.close();
-    throw new Error('Falha ao mixar stems: ' + err.message);
-  }
-  ctx.close();
-
-  // 3. Pitch shift via Tone.js PitchShift
+  // 2. Aceleração 2x via Tone.GrainPlayer (mantém o tom)
   setStep('pitch', 'active', '');
-  setProgress(80, 'Finalizando...');
+  setProgress(80, 'Aplicando efeito...');
 
   let pitchedBuffer;
   try {
-    pitchedBuffer = await applyPitchShift(mixedBuffer, PITCH_SEMITONES);
-    setStep('pitch', 'done', 'Pitch aplicado');
+    pitchedBuffer = await applySpeedUp(audioBuffer, PLAYBACK_RATE);
+    setStep('pitch', 'done', 'Velocidade 2x aplicada');
   } catch (err) {
     setStep('pitch', 'error', err.message);
     throw err;
   }
 
-  // 4. Encode WAV
-  setProgress(95, 'Finalizando...');
+  // 3. Encode WAV
+  setProgress(95, 'Finalizando WAV...');
   processedBlob = audioBufferToWav(pitchedBuffer);
 
-  // 5. Mostra player + botão download
+  // 4. Mostra player + botão download
   const url = URL.createObjectURL(processedBlob);
   $('audioPreview').src = url;
 
   setProgress(100, 'Pronto!');
   setTimeout(() => {
     showScreen('result');
+    // Limpa task no estado
     currentTaskId = null;
   }, 600);
 
-  // 6. Pre-seta nome do download
+  // 5. Pre-seta nome do download
   $('btnDownload').dataset.filename =
-    String(baseName).replace(/\.[^.]+$/, '') + '_cover.wav';
+    String(baseName).replace(/\.[^.]+$/, '') + '_cover_2x.wav';
 }
 
 // ============================================================
-// Mixa N AudioBuffers somando seus samples
+// Time-stretch (aceleração mantendo o tom original)
 // ============================================================
-function mixAudioBuffers(buffers) {
-  if (!buffers || buffers.length === 0) {
-    throw new Error('Nenhum buffer para mixar');
-  }
-  if (buffers.length === 1) return buffers[0];
+// Usa Tone.GrainPlayer (granular synthesis) — permite ajustar
+// playbackRate e detune independentemente. playbackRate=2 acelera
+// 2x, detune=0 mantém o tom original (não fica voz de chipmunk).
+//
+// Doc Tone.js: https://tonejs.github.io/docs/15.0.4/classes/GrainPlayer.html
+//
+// grainSize e overlap afetam qualidade vs delay:
+// - grainSize menor: mais responsivo, mais artefatos
+// - overlap maior: mais suave, mais delay no início
+// Valores 0.1/0.1 são bem balanceados pra speed-up.
 
-  // Pega especificacoes do primeiro buffer como referencia
-  const sampleRate = buffers[0].sampleRate;
-  const numChannels = Math.max(...buffers.map(b => b.numberOfChannels));
-  const length = Math.max(...buffers.map(b => b.length));
-
-  // Cria buffer de saida
-  const outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
-    numChannels, length, sampleRate
-  );
-  const out = outCtx.createBuffer(numChannels, length, sampleRate);
-
-  // Soma cada canal de cada buffer no buffer de saida
-  for (let c = 0; c < numChannels; c++) {
-    const outCh = out.getChannelData(c);
-    for (const buf of buffers) {
-      // Se buffer for mono, usa canal 0 pra todos os canais
-      const srcCh = buf.numberOfChannels > c
-        ? buf.getChannelData(c)
-        : buf.getChannelData(0);
-      const len = Math.min(srcCh.length, outCh.length);
-      for (let i = 0; i < len; i++) {
-        outCh[i] += srcCh[i];
-      }
-    }
-  }
-
-  // Normalizacao: encontra o pico e divide se passar de 1.0
-  // (somar 3-5 stems pode estourar)
-  let peak = 0;
-  for (let c = 0; c < numChannels; c++) {
-    const ch = out.getChannelData(c);
-    for (let i = 0; i < ch.length; i++) {
-      const abs = Math.abs(ch[i]);
-      if (abs > peak) peak = abs;
-    }
-  }
-  if (peak > 0.98) {
-    const gain = 0.98 / peak;
-    for (let c = 0; c < numChannels; c++) {
-      const ch = out.getChannelData(c);
-      for (let i = 0; i < ch.length; i++) {
-        ch[i] *= gain;
-      }
-    }
-  }
-
-  return out;
-}
-
-// ============================================================
-// Pitch shift (varispeed via playbackRate em OfflineAudioContext)
-// ============================================================
-// ════════════════════════════════════════════════════════════
-// Pitch shift mantendo velocidade original
-// Usa Tone.js PitchShift via Tone.Offline()
-// ════════════════════════════════════════════════════════════
-// VARIÁVEL DE TUNING — testa valores diferentes
-// Valores típicos: 0.1 (default Tone.js), 0.15, 0.2, 0.3
-// Valores maiores = menos chiado, mais atraso (eco no início)
-let WINDOW_SIZE_TEST = 0.15; // pode ser mudado pelo seletor na UI
-
-async function applyPitchShift(buffer, semitones) {
-  // Aguarda Tone.js carregar (defer-safe)
+async function applySpeedUp(buffer, rate) {
   if (typeof Tone === 'undefined') {
     throw new Error('Tone.js não carregou. Verifica conexão.');
   }
 
-  const durationSeconds = buffer.duration;
+  // Quando acelera N vezes, a duração final é (original / N)
+  const newDuration = buffer.duration / rate;
 
-  console.log('[pitch] semitones=', semitones, 'windowSize=', WINDOW_SIZE_TEST);
+  console.log('[speedup] rate=', rate, 'newDuration=', newDuration.toFixed(2), 's');
 
   const rendered = await Tone.Offline(async () => {
-    const pitchShift = new Tone.PitchShift({
-      pitch: semitones,
-      windowSize: WINDOW_SIZE_TEST,
-      delayTime: 0,
-      feedback: 0,
-      wet: 1
+    const grain = new Tone.GrainPlayer({
+      url: buffer,
+      playbackRate: rate,
+      detune: 0,          // detune=0 -> mantém o tom original
+      grainSize: 0.1,
+      overlap: 0.1,
+      loop: false
     }).toDestination();
 
-    const player = new Tone.Player(buffer).connect(pitchShift);
-    player.start(0);
-  }, durationSeconds, buffer.numberOfChannels);
+    // Aguarda o buffer ser carregado pelo GrainPlayer
+    await Tone.loaded();
+
+    grain.start(0);
+  }, newDuration, buffer.numberOfChannels);
 
   return rendered.get ? rendered.get() : rendered;
 }
@@ -1169,8 +1126,7 @@ async function boot() {
     return;
   }
   setupTabs();
-  // Pitch fixo em -6 semitons, windowSize fixo em 0.15 (Suave).
-  // Sem seletores na UI — atendente não precisa configurar.
+  // (Listener do seletor de qualidade removido — agora velocidade 2x é fixa)
   checkRecovery();
 }
 
