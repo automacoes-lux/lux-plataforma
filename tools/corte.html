@@ -100,6 +100,13 @@
     cursor: crosshair;
     touch-action: none;
   }
+  .wave-hint {
+    font-size: 12px;
+    color: var(--text-mid, #8a8680);
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: .01em;
+  }
   .wave-times {
     display: flex;
     justify-content: space-between;
@@ -362,6 +369,7 @@
 
     <div class="wave-wrap">
       <canvas id="waveCanvas"></canvas>
+      <div class="wave-hint">🔊 Clique em qualquer ponto da onda pra ouvir a música a partir dali</div>
       <div class="wave-times">
         <span id="waveStart">0:00 (início)</span>
         <span id="waveEnd">0:00 (fim)</span>
@@ -422,6 +430,15 @@ let originalFilename = 'audio';
 let previewSource = null;      // AudioBufferSourceNode atual (pra parar)
 let previewCtx = null;
 let isPlaying = false;
+
+// Playback livre (clica na waveform e ouve dali em diante)
+let freeSource = null;         // AudioBufferSourceNode do play livre
+let freeCtx = null;            // AudioContext do play livre
+let freeStartCtxTime = 0;      // ctx.currentTime no momento que começou
+let freeStartOffset = 0;       // ponto (em segundos) de onde começou a tocar
+let isPlayingFree = false;
+let playheadPct = null;        // posição do cursor de reprodução (0..1), null = escondido
+let playheadRAF = null;        // id do requestAnimationFrame
 
 const $ = (id) => document.getElementById(id);
 
@@ -646,10 +663,125 @@ function drawWaveform() {
   ctx.moveTo(endX, 0); ctx.lineTo(endX, h);
   ctx.stroke();
   ctx.shadowBlur = 0; // reseta sombra pra não vazar pra próximas chamadas
+
+  // Playhead (cursor de reprodução) — linha branca fina
+  if (playheadPct !== null) {
+    const px = playheadPct * w;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255,255,255,.8)';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.moveTo(px, 0); ctx.lineTo(px, h);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Bolinha no topo da linha
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(px, 5, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // Re-desenha quando a janela muda de tamanho
 window.addEventListener('resize', () => { if (audioBuffer) drawWaveform(); });
+
+// ============================================================
+// PLAY LIVRE — clica na waveform e ouve dali em diante
+// ============================================================
+// Toca o áudio ORIGINAL a partir do ponto clicado (ignora marcadores
+// de corte). Serve pra explorar a música e achar onde cortar.
+// Um playhead branco mostra onde está tocando.
+
+function pararPlayLivre() {
+  try { if (freeSource) freeSource.stop(); } catch (e) {}
+  if (freeCtx) { try { freeCtx.close(); } catch (e) {} }
+  freeSource = null;
+  freeCtx = null;
+  isPlayingFree = false;
+  if (playheadRAF) { cancelAnimationFrame(playheadRAF); playheadRAF = null; }
+}
+
+function tocarLivreDe(offsetSec) {
+  if (!audioBuffer) return;
+
+  // Para qualquer reprodução em andamento (preview ou play livre anterior)
+  pararPlayLivre();
+  if (isPlaying) stopPreview();
+
+  const dur = audioBuffer.duration;
+  offsetSec = Math.max(0, Math.min(offsetSec, dur - 0.05));
+
+  freeCtx = new (window.AudioContext || window.webkitAudioContext)();
+  freeSource = freeCtx.createBufferSource();
+  freeSource.buffer = audioBuffer;     // áudio ORIGINAL, sem corte/fade
+  freeSource.connect(freeCtx.destination);
+
+  freeSource.onended = () => {
+    // Só limpa se não foi um stop manual que já zerou
+    if (isPlayingFree) {
+      isPlayingFree = false;
+      playheadPct = null;
+      if (playheadRAF) { cancelAnimationFrame(playheadRAF); playheadRAF = null; }
+      drawWaveform();
+    }
+  };
+
+  freeSource.start(0, offsetSec);
+  freeStartCtxTime = freeCtx.currentTime;
+  freeStartOffset = offsetSec;
+  isPlayingFree = true;
+
+  // Anima o playhead enquanto toca
+  const tick = () => {
+    if (!isPlayingFree || !freeCtx) return;
+    const elapsed = freeCtx.currentTime - freeStartCtxTime;
+    const posSec = freeStartOffset + elapsed;
+    playheadPct = Math.min(1, posSec / dur);
+    drawWaveform();
+    if (posSec >= dur) {
+      pararPlayLivre();
+      playheadPct = null;
+      drawWaveform();
+      return;
+    }
+    playheadRAF = requestAnimationFrame(tick);
+  };
+  playheadRAF = requestAnimationFrame(tick);
+}
+
+// Click na waveform → calcula posição e toca dali
+function onWaveClick(clientX) {
+  if (!audioBuffer) return;
+  const canvas = $('waveCanvas');
+  const rect = canvas.getBoundingClientRect();
+  let pct = (clientX - rect.left) / rect.width;
+  pct = Math.max(0, Math.min(1, pct));
+
+  // Se clicou no MESMO ponto enquanto toca (tolerância), alterna pausa
+  if (isPlayingFree) {
+    pararPlayLivre();
+    playheadPct = pct;        // deixa o cursor onde clicou
+    drawWaveform();
+    // Toca do novo ponto
+    tocarLivreDe(pct * audioBuffer.duration);
+    return;
+  }
+
+  tocarLivreDe(pct * audioBuffer.duration);
+}
+
+(function bindWaveClick() {
+  const canvas = $('waveCanvas');
+  if (!canvas) return;
+  canvas.addEventListener('click', (e) => onWaveClick(e.clientX));
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+      e.preventDefault();
+      onWaveClick(e.touches[0].clientX);
+    }
+  }, { passive: false });
+})();
 
 // ============================================================
 // PROCESSAMENTO — corte + fade
@@ -713,10 +845,17 @@ function processAudio(srcBuffer, startSec, endSec, fadeIn, fadeOut) {
 $('btnPreview').addEventListener('click', async () => {
   if (!audioBuffer) return;
 
-  // Se já está tocando, para
+  // Se já está tocando o preview, para
   if (isPlaying) {
     stopPreview();
     return;
+  }
+
+  // Para o play livre se estiver rolando (não pode tocar os 2 juntos)
+  if (isPlayingFree) {
+    pararPlayLivre();
+    playheadPct = null;
+    drawWaveform();
   }
 
   const { startSec, endSec, fadeIn, fadeOut } = getCurrentValues();
@@ -880,6 +1019,8 @@ function floatTo16BitPCM(float32) {
 // ============================================================
 $('btnReset').addEventListener('click', () => {
   if (isPlaying) stopPreview();
+  pararPlayLivre();
+  playheadPct = null;
   audioBuffer = null;
   originalFilename = 'audio';
   $('fileInfo').classList.remove('visible');
