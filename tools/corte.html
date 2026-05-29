@@ -369,7 +369,7 @@
 
     <div class="wave-wrap">
       <canvas id="waveCanvas"></canvas>
-      <div class="wave-hint">🔊 Clique na onda pra ouvir a partir dali — para automaticamente no marcador de fim</div>
+      <div class="wave-hint">🔊 Clique na onda pra ouvir dali — termina com fade-out no marcador de fim</div>
       <div class="wave-times">
         <span id="waveStart">0:00 (início)</span>
         <span id="waveEnd">0:00 (fim)</span>
@@ -710,9 +710,7 @@ function tocarLivreDe(offsetSec) {
   if (isPlaying) stopPreview();
 
   const dur = audioBuffer.duration;
-  // Limite de fim = marcador de FIM do corte (linha dourada da direita).
-  // O play livre para quando o playhead chega nesse ponto.
-  const endSec = (parseInt($('rangeEnd').value, 10) / 1000) * dur;
+  const { startSec, endSec, fadeIn, fadeOut } = getCurrentValues();
   offsetSec = Math.max(0, Math.min(offsetSec, dur - 0.05));
 
   // Se clicou DEPOIS do marcador de fim, não tem o que tocar
@@ -724,11 +722,13 @@ function tocarLivreDe(offsetSec) {
 
   freeCtx = new (window.AudioContext || window.webkitAudioContext)();
   freeSource = freeCtx.createBufferSource();
-  freeSource.buffer = audioBuffer;     // áudio ORIGINAL, sem corte/fade
-  freeSource.connect(freeCtx.destination);
+  freeSource.buffer = audioBuffer;     // áudio original
+  // GainNode pra aplicar o fade-out em tempo real (sem reprocessar buffer)
+  const gainNode = freeCtx.createGain();
+  freeSource.connect(gainNode);
+  gainNode.connect(freeCtx.destination);
 
   freeSource.onended = () => {
-    // Só limpa se não foi um stop manual que já zerou
     if (isPlayingFree) {
       isPlayingFree = false;
       playheadPct = null;
@@ -737,8 +737,31 @@ function tocarLivreDe(offsetSec) {
     }
   };
 
-  // Toca do ponto clicado até o marcador de fim (duração limitada)
+  // ── Agenda o fade-out pra terminar exatamente no marcador de fim ──
+  // fadeOutStartSec = onde o fade-out começa (em segundos do áudio original)
+  const now = freeCtx.currentTime;
   const playDuration = Math.max(0.05, endSec - offsetSec);
+
+  if (fadeOut > 0) {
+    const fadeOutStartSec = endSec - fadeOut;   // ponto onde o fade começa
+    if (offsetSec >= fadeOutStartSec) {
+      // Cliquei DENTRO da zona de fade-out → já começa com ganho reduzido
+      // Proporção do quanto já passou do fade (0 = início do fade, 1 = fim)
+      const prog = (offsetSec - fadeOutStartSec) / fadeOut;   // 0..1
+      const startGain = Math.max(0, (1 - prog) * (1 - prog)); // curva x^2
+      gainNode.gain.setValueAtTime(startGain, now);
+      // Rampa até 0 no tempo restante
+      const tempoRestante = endSec - offsetSec;
+      gainNode.gain.linearRampToValueAtTime(0.0001, now + tempoRestante);
+    } else {
+      // Cliquei ANTES do fade-out → toca normal até o fade começar, depois desce
+      const tempoAteFade = fadeOutStartSec - offsetSec;
+      gainNode.gain.setValueAtTime(1, now);
+      gainNode.gain.setValueAtTime(1, now + tempoAteFade);
+      gainNode.gain.linearRampToValueAtTime(0.0001, now + tempoAteFade + fadeOut);
+    }
+  }
+
   freeSource.start(0, offsetSec, playDuration);
   freeStartCtxTime = freeCtx.currentTime;
   freeStartOffset = offsetSec;
