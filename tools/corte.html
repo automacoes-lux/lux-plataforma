@@ -430,6 +430,7 @@ let originalFilename = 'audio';
 let previewSource = null;      // AudioBufferSourceNode atual (pra parar)
 let previewCtx = null;
 let isPlaying = false;
+let previewRAF = null;         // requestAnimationFrame do playhead do preview
 
 // Playback livre (clica na waveform e ouve dali em diante)
 let freeSource = null;         // AudioBufferSourceNode do play livre
@@ -906,12 +907,30 @@ $('btnPreview').addEventListener('click', async () => {
       isPlaying = false;
       $('btnPreview').textContent = '▶ Pré-visualizar resultado';
       $('btnPreview').classList.remove('playing');
+      // Limpa o playhead ao terminar
+      if (previewRAF) { cancelAnimationFrame(previewRAF); previewRAF = null; }
+      playheadPct = null;
+      drawWaveform();
     };
     previewSource.start(0);
 
     isPlaying = true;
     $('btnPreview').textContent = '⏹ Parar';
     $('btnPreview').classList.add('playing');
+
+    // ── Playhead do preview: vai do marcador de início ao de fim ──
+    const dur = audioBuffer.duration;
+    const previewStartCtxTime = previewCtx.currentTime;
+    const tickPreview = () => {
+      if (!isPlaying || !previewCtx) return;
+      const elapsed = previewCtx.currentTime - previewStartCtxTime;
+      const posSec = startSec + elapsed;       // posição absoluta no áudio original
+      playheadPct = Math.min(endSec / dur, posSec / dur);
+      drawWaveform();
+      if (posSec >= endSec) return;            // onended cuida da limpeza
+      previewRAF = requestAnimationFrame(tickPreview);
+    };
+    previewRAF = requestAnimationFrame(tickPreview);
   } catch (err) {
     showError(err.message);
   }
@@ -929,6 +948,10 @@ function stopPreview() {
   isPlaying = false;
   $('btnPreview').textContent = '▶ Pré-visualizar resultado';
   $('btnPreview').classList.remove('playing');
+  // Limpa o playhead
+  if (previewRAF) { cancelAnimationFrame(previewRAF); previewRAF = null; }
+  playheadPct = null;
+  drawWaveform();
 }
 
 // ============================================================
