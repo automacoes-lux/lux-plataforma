@@ -447,6 +447,13 @@ input[type="file"]{display:none}
   background:rgba(232,122,122,.06);border:1px solid rgba(232,122,122,.25);
   border-radius:var(--radius);color:#E87A7A;
 }
+.btn-cancel-order{
+  display:block;width:100%;margin-top:8px;padding:9px;
+  background:transparent;border:1px solid rgba(232,122,122,.4);
+  border-radius:var(--radius);color:#E87A7A;cursor:pointer;
+  font-size:12.5px;font-weight:500;transition:all .15s;
+}
+.btn-cancel-order:hover{background:rgba(232,122,122,.1);border-color:#E87A7A}
 
 .btn-download{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1704,10 +1711,16 @@ function renderAllSessions() {
     } else if (s.status === 'error') {
       statusBadge = '<div class="session-status error">✕ Erro</div>';
       bottomArea  = `<div class="session-error-msg">${escapeHtml(s.error || 'Falha na geração. Tente gerar novamente.')}</div>`;
+    } else if (s.status === 'cancelled') {
+      statusBadge = '<div class="session-status error">⊘ Cancelado</div>';
+      bottomArea  = `<div class="session-error-msg">Pedido cancelado.</div>`;
     } else {
       // generating ou rendering
       statusBadge = '<div class="session-status generating"><span class="mini-spinner"></span> Gerando...</div>';
-      bottomArea  = `<div class="session-generating-msg">⏳ Vídeo sendo gerado em segundo plano. Pode levar alguns minutos. Esta lista atualiza sozinha.</div>`;
+      bottomArea  = `
+        <div class="session-generating-msg">⏳ Vídeo sendo gerado em segundo plano. Pode levar alguns minutos. Esta lista atualiza sozinha.</div>
+        <button class="btn-cancel-order" onclick="cancelarPedido('${s.id}')">⊘ Cancelar geração</button>
+      `;
     }
 
     const durStr = (s.duration != null) ? s.duration + 's' : '—';
@@ -1731,6 +1744,24 @@ function renderAllSessions() {
     wrap.appendChild(el);
   });
 }
+
+// Cancela um pedido em andamento (limpa pedidos travados)
+async function cancelarPedido(orderId) {
+  if (!confirm('Cancelar a geração deste vídeo? Os clipes já gerados serão descartados.')) return;
+  try {
+    const resp = await api('/cancelOrder?orderId=' + encodeURIComponent(orderId), { method: 'POST' });
+    const data = await resp.json();
+    if (!data.ok) { alert('Erro: ' + (data.error || 'falha ao cancelar')); return; }
+    // Atualiza localmente
+    const s = videoSessions.find(x => x.id === orderId);
+    if (s) { s.status = 'cancelled'; }
+    localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+    renderAllSessions();
+  } catch (e) {
+    alert('Erro ao cancelar: ' + e.message);
+  }
+}
+window.cancelarPedido = cancelarPedido;
 
 // ── Polling automático da aba Resultados ──
 // Enquanto houver pedidos "generating"/"rendering", consulta o servidor
@@ -1782,7 +1813,8 @@ async function refreshSessionsFromServer() {
         'RENDERING': 'rendering',
         'GENERATING_CLIPS': 'generating',
         'GENERATING': 'generating',
-        'ERROR': 'error'
+        'ERROR': 'error',
+        'CANCELLED': 'cancelled'
       };
       const fromServer = data.orders
         .filter(o => statusMap[o.status])
