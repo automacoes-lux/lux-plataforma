@@ -146,6 +146,8 @@ body{
 .pair-thumb-wrap.empty{background:transparent;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center}
 .pair-thumb{width:100%;height:100%;object-fit:cover;display:block}
 .pair-thumb-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.78);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;line-height:1}
+.pair-thumb-remove{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s;padding:0}
+.pair-thumb-remove:hover{background:rgba(232,122,122,.95)}
 .pair-thumb-empty{font-size:10px;color:var(--text-dim);text-align:center;padding:4px;font-style:italic}
 
 /* Texto cell — mesma altura da foto cell (alinhamento perfeito 1:1) */
@@ -838,6 +840,7 @@ function renderBlocks() {
         '<div class="pair-thumb-wrap">' +
           '<img class="pair-thumb" src="' + photo.thumbUrl + '" alt="" />' +
           '<span class="pair-thumb-num">' + (i + 1) + '</span>' +
+          '<button class="pair-thumb-remove" data-i="' + i + '" title="Remover imagem">✕</button>' +
         '</div>';
     } else {
       cell.className = 'pair-cell pair-photo-cell empty';
@@ -878,6 +881,13 @@ function renderBlocks() {
   }
 
   // ── Listeners ──
+  // Remover foto (botão ✕ na thumb)
+  photosCol.querySelectorAll('.pair-thumb-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removePhoto(Number(btn.dataset.i));
+    });
+  });
   // Remover texto
   textsCol.querySelectorAll('.block-remove').forEach(btn => {
     btn.addEventListener('click', () => removeBlock(Number(btn.dataset.i)));
