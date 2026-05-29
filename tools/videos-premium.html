@@ -154,9 +154,21 @@ input[type="file"]{display:none}
 .photo-premium-item{
   background:var(--bg-input);border:.5px solid var(--border);
   border-radius:var(--radius-lg);padding:14px;
-  display:grid;grid-template-columns:140px 1fr;gap:14px;
+  display:grid;grid-template-columns:28px 140px 1fr;gap:12px;
+  align-items:stretch;
   animation:fadeIn .3s ease;
 }
+.photo-premium-item.dragging{opacity:.45;border-color:var(--gold)}
+.photo-premium-item.drop-target{border-color:var(--gold);background:rgba(201,168,76,.06)}
+/* Handle de arrastar (reordenar imagens) */
+.photo-drag-handle{
+  display:flex;align-items:center;justify-content:center;
+  cursor:grab;color:var(--gold-dim);font-size:16px;font-weight:700;
+  letter-spacing:-2px;user-select:none;border-radius:6px;
+  transition:color .15s,background .15s;touch-action:none;
+}
+.photo-drag-handle:hover{color:var(--gold);background:rgba(201,168,76,.08)}
+.photo-drag-handle:active{cursor:grabbing}
 .photo-premium-item.analyzing{
   border-color:rgba(232,168,76,.35);
   background:linear-gradient(135deg,var(--bg-input),rgba(232,168,76,.04));
@@ -168,7 +180,7 @@ input[type="file"]{display:none}
   border-color:rgba(232,122,122,.4);
 }
 .photo-premium-thumb{
-  position:relative;aspect-ratio:1;
+  position:relative;width:140px;height:140px;
   background:#000;border-radius:var(--radius);overflow:hidden;
 }
 .photo-premium-thumb img{width:100%;height:100%;object-fit:cover}
@@ -206,7 +218,7 @@ input[type="file"]{display:none}
   border-radius:50%;animation:spin .7s linear infinite;
 }
 .prompt-field{
-  position:relative;
+  position:relative;flex:1;display:flex;flex-direction:column;
 }
 .prompt-field label{
   font-size:10px;font-weight:600;letter-spacing:.08em;
@@ -220,12 +232,12 @@ input[type="file"]{display:none}
   margin-left:6px;letter-spacing:.06em;
 }
 .prompt-field textarea{
-  width:100%;padding:10px 36px 10px 12px;
+  width:100%;flex:1;padding:10px 36px 10px 12px;
   font-size:13px;line-height:1.45;
   background:var(--bg-card);color:var(--text);
   border:1px solid var(--border);border-radius:var(--radius);
   font-family:'DM Sans',sans-serif;outline:none;
-  resize:vertical;min-height:62px;
+  resize:none;min-height:110px;
   transition:all .18s;
 }
 .prompt-field textarea:focus{
@@ -233,6 +245,26 @@ input[type="file"]{display:none}
 }
 .prompt-field textarea:disabled{
   opacity:.5;cursor:not-allowed;
+}
+/* Campo de legenda dentro do card da imagem */
+.legenda-field{margin-top:4px}
+.legenda-field label{
+  font-size:10px;font-weight:600;letter-spacing:.08em;
+  color:var(--gold-dim);margin-bottom:4px;display:block;
+  text-transform:uppercase;
+}
+.legenda-field .legenda-opt{
+  color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;
+}
+.legenda-textarea{
+  width:100%;padding:8px 12px;font-size:13px;line-height:1.4;
+  background:rgba(201,168,76,.04);color:var(--text);
+  border:1px solid rgba(201,168,76,.25);border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;outline:none;resize:none;min-height:44px;
+  transition:all .18s;
+}
+.legenda-textarea:focus{
+  border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,.07);
 }
 .prompt-field .clear-btn{
   position:absolute;top:24px;right:6px;
@@ -505,13 +537,13 @@ input[type="file"]{display:none}
     <div class="card">
       <div class="card-title">
         Fotos do cliente
-        <span class="card-title-count" id="photoCounter">0 / 6</span>
+        <span class="card-title-count" id="photoCounter">0 / 10</span>
       </div>
       <div class="upload-area" id="photoUploadArea" onclick="document.getElementById('photoInput').click()">
         <input type="file" id="photoInput" multiple accept="image/jpeg,image/png,image/webp" onchange="handlePhotos(event)"/>
         <span class="icon">📸</span>
         <p>Clique para adicionar fotos</p>
-        <span>Mínimo <strong>3 fotos</strong> · Máximo <strong>6 fotos</strong> · Cada foto vira <strong>5 segundos de vídeo IA</strong></span>
+        <span>Mínimo <strong>3 fotos</strong> · Máximo <strong>10 fotos</strong> · Cada foto vira <strong>1 clipe de 5s gerado por IA</strong></span>
       </div>
 
       <!-- LISTA DE FOTOS COM PROMPTS -->
@@ -543,18 +575,17 @@ input[type="file"]{display:none}
       </div>
     </div>
 
-    <!-- TEXTO/LEGENDA (opcional) -->
+    <!-- TEXTO/LEGENDA — config global (o texto é por imagem, no card de cada foto) -->
     <div class="card">
       <div class="card-title">
         Texto/legenda do vídeo
         <span class="card-title-count" style="background:rgba(180,180,180,.08);color:var(--text-dim)">opcional</span>
       </div>
-      <div class="field">
-        <label>Texto da legenda</label>
-        <div class="text-input-wrap">
-          <textarea id="legendText" placeholder="Cole aqui o texto que vai aparecer no vídeo. A IA divide automaticamente em blocos." maxlength="500"></textarea>
-          <span class="text-counter"><span id="textCount">0</span>/500</span>
-        </div>
+      <div class="field" style="margin-bottom:1rem">
+        <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin:0">
+          💡 Digite a legenda <strong>dentro de cada imagem</strong> (no campo "💬 Legenda nesta imagem").
+          Cada texto aparece quando aquela imagem estiver na tela.
+        </p>
       </div>
       <div class="field">
         <label>Cor do texto</label>
@@ -563,8 +594,8 @@ input[type="file"]{display:none}
         </div>
       </div>
       <div class="field">
-        <label>Duração de cada bloco (segundos)</label>
-        <input type="number" id="textDuration" value="6" min="2" max="15"/>
+        <label>Cada texto permanece na tela por (segundos)</label>
+        <input type="number" id="textDuration" value="5" min="2" max="15"/>
       </div>
     </div>
 
@@ -597,7 +628,7 @@ input[type="file"]{display:none}
       <span class="icon">⏱️</span>
       <div>
         <strong>O Vídeo Premium leva mais tempo</strong>
-        A IA precisa gerar cada clipe individualmente. <strong>Tempo total: 3 a 6 minutos.</strong>
+        A IA precisa gerar cada clipe individualmente. <strong>Tempo total: 3 a 10 minutos</strong> (depende da quantidade de imagens).
         Não feche a tela durante o processamento — você verá o progresso em tempo real.
       </div>
     </div>
@@ -670,7 +701,7 @@ const IMAGE_QUALITY = 0.82;
 
 // Limites
 const MIN_PHOTOS = 3;
-const MAX_PHOTOS = 6;
+const MAX_PHOTOS = 10;
 const SECONDS_PER_CLIP = 5;
 const MIN_MUSIC_SECONDS = 5;
 const MAX_MUSIC_SECONDS = 180;
@@ -680,8 +711,8 @@ const MAX_TEXT_CHARS = 500;
 
 // Cores da paleta (8 cores comuns + branco)
 const TEXT_COLORS = [
-  '#FFFFFF', '#FFD700', '#FF6B6B', '#7FB87A',
-  '#4D9DE0', '#E8A84C', '#C84B7F', '#080808'
+  '#ffffff', '#fffa00', '#ff7500', '#00ff18',
+  '#ff0000', '#0090ff', '#ff3eaa'
 ];
 
 // Polling do JSON2Video
@@ -708,7 +739,7 @@ let logoFile = null;
 let logoMeta = { name:'', size:0 };
 let currentClientName = null;
 let currentOperator = null;
-let selectedColor = '#FFFFFF';
+let selectedColor = '#ffffff';
 let videoSessions = JSON.parse(localStorage.getItem('lux_video_premium_sessions') || '[]');
 
 // Cronômetro
@@ -767,8 +798,11 @@ function renderColorPalette() {
 
 // ═══ CONTADOR DE TEXTO ════════════════════════════════════
 function setupTextCounter() {
+  // O texto agora é por imagem (campo dentro de cada card), não há mais
+  // um textarea global. Mantido como no-op pra não quebrar chamadas antigas.
   const ta = document.getElementById('legendText');
   const cnt = document.getElementById('textCount');
+  if (!ta || !cnt) return;
   ta.addEventListener('input', () => {
     cnt.textContent = ta.value.length;
   });
@@ -816,6 +850,7 @@ async function prepareSinglePhoto(file) {
       mimeType: optimized.type || 'image/jpeg',
       prompt_en: '',
       prompt_pt: '',
+      legenda: '',           // legenda que casa com esta imagem (opcional)
       status: 'analyzing',
       errorMsg: ''
     };
@@ -876,8 +911,7 @@ function blobToBase64(blob) {
 
 function removePhoto(photoId) {
   photos = photos.filter(p => p.id !== photoId);
-  const el = document.getElementById('photo-item-' + photoId);
-  if (el) el.remove();
+  renderAllPhotos();        // re-renderiza pra atualizar números e ordem
   updatePhotoInfo();
   updateGenerateButton();
 }
@@ -893,15 +927,18 @@ function updatePhotoInfo() {
   bar.style.display = 'flex';
   const totalSize = photos.reduce((s, p) => s + p.optimizedSize, 0);
   document.getElementById('photoTotalSize').textContent = formatSize(totalSize);
+  // Os clipes (5s cada) se repetem pra preencher a música. A duração final
+  // do vídeo é a da música, não N×5s. Mostramos os segundos gerados (custo).
   const dur = photos.length * SECONDS_PER_CLIP;
-  document.getElementById('photoTotalDuration').textContent = dur + 's';
+  document.getElementById('photoTotalDuration').textContent = dur + 's gerados';
 
   // Atualiza prévia
   const prev = document.getElementById('videoPreviewInfo');
   if (photos.length >= MIN_PHOTOS) {
     prev.classList.add('show');
     document.getElementById('previewClips').textContent = photos.length;
-    document.getElementById('previewDuration').textContent = dur + ' segundos';
+    document.getElementById('previewDuration').textContent =
+      'duração da música (clipes repetem pra preencher)';
   } else {
     prev.classList.remove('show');
   }
@@ -924,6 +961,7 @@ function renderPhotoItem(photo) {
   const num = photos.findIndex(p => p.id === photo.id) + 1;
 
   item.innerHTML = `
+    <div class="photo-drag-handle" data-photoid="${photo.id}" title="Arrastar pra reordenar">⋮⋮</div>
     <div class="photo-premium-thumb">
       <img src="${photo.thumbUrl}" alt="Foto ${num}"/>
       <span class="photo-premium-num">${String(num).padStart(2, '0')}</span>
@@ -944,7 +982,7 @@ function renderPhotoItem(photo) {
         <button class="clear-btn" onclick="clearPrompt('${photo.id}', 'pt')" title="Limpar texto">✕</button>
         <div class="prompt-sync-indicator" id="sync-${photo.id}"></div>
       </div>
-      <div class="prompt-field">
+      <div class="prompt-field" style="display:none">
         <label>Prompt para a IA <span class="lang-tag">EN</span></label>
         <textarea
           id="en-${photo.id}"
@@ -953,9 +991,102 @@ function renderPhotoItem(photo) {
           onblur="onPromptEnBlur('${photo.id}')"></textarea>
         <button class="clear-btn" onclick="clearPrompt('${photo.id}', 'en')" title="Limpar texto">✕</button>
       </div>
+      <div class="legenda-field">
+        <label>💬 Legenda nesta imagem <span class="legenda-opt">(opcional)</span></label>
+        <textarea
+          class="legenda-textarea"
+          id="legenda-${photo.id}"
+          placeholder="Texto que aparece quando esta imagem estiver na tela"
+          maxlength="120"
+          oninput="onLegendaInput('${photo.id}')">${photo.legenda || ''}</textarea>
+      </div>
     </div>
   `;
   list.appendChild(item);
+
+  // Liga o drag handle desta foto
+  const handle = item.querySelector('.photo-drag-handle');
+  if (handle) {
+    handle.addEventListener('mousedown', (e) => onPhotoDragStart(e, photo.id));
+    handle.addEventListener('touchstart', (e) => onPhotoDragStart(e, photo.id), { passive: false });
+  }
+}
+
+// Re-renderiza TODA a lista de fotos na ordem atual do array `photos`.
+// Usado após reordenar (drag) ou remover, pra atualizar números e ordem.
+// Preserva o conteúdo dos prompts (que está no objeto photo).
+function renderAllPhotos() {
+  const list = document.getElementById('photosPremiumList');
+  if (!list) return;
+  list.innerHTML = '';
+  photos.forEach(photo => {
+    renderPhotoItem(photo);
+    // Reaplica o estado visual e os textos dos prompts
+    refreshPhotoItem(photo.id);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// DRAG das fotos (reordenar) — handle ⋮⋮
+// ════════════════════════════════════════════════════════════
+let photoDragState = null;
+
+function onPhotoDragStart(ev, photoId) {
+  ev.preventDefault();
+  const fromIdx = photos.findIndex(p => p.id === photoId);
+  if (fromIdx === -1) return;
+
+  const item = document.getElementById('photo-item-' + photoId);
+  if (item) item.classList.add('dragging');
+
+  photoDragState = { photoId, fromIdx, targetIdx: fromIdx };
+  document.body.style.cursor = 'grabbing';
+
+  document.addEventListener('mousemove', onPhotoDragMove);
+  document.addEventListener('mouseup', onPhotoDragEnd);
+  document.addEventListener('touchmove', onPhotoDragMove, { passive: false });
+  document.addEventListener('touchend', onPhotoDragEnd);
+}
+
+function onPhotoDragMove(ev) {
+  if (!photoDragState) return;
+  ev.preventDefault();
+  const y = ev.touches ? ev.touches[0].clientY : ev.clientY;
+
+  const items = Array.from(document.querySelectorAll('.photo-premium-item'));
+  items.forEach(it => it.classList.remove('drop-target'));
+
+  let targetIdx = photoDragState.fromIdx;
+  let minDist = Infinity;
+  items.forEach((it, idx) => {
+    const rect = it.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    const dist = Math.abs(y - center);
+    if (dist < minDist) { minDist = dist; targetIdx = idx; }
+  });
+
+  photoDragState.targetIdx = targetIdx;
+  if (targetIdx !== photoDragState.fromIdx && items[targetIdx]) {
+    items[targetIdx].classList.add('drop-target');
+  }
+}
+
+function onPhotoDragEnd() {
+  document.removeEventListener('mousemove', onPhotoDragMove);
+  document.removeEventListener('mouseup', onPhotoDragEnd);
+  document.removeEventListener('touchmove', onPhotoDragMove);
+  document.removeEventListener('touchend', onPhotoDragEnd);
+  document.body.style.cursor = '';
+
+  if (!photoDragState) return;
+  const { fromIdx, targetIdx } = photoDragState;
+  photoDragState = null;
+
+  if (fromIdx !== targetIdx && fromIdx >= 0 && targetIdx >= 0) {
+    const moved = photos.splice(fromIdx, 1)[0];
+    photos.splice(targetIdx, 0, moved);
+  }
+  renderAllPhotos();
 }
 
 // Atualiza o estado visual de 1 foto
@@ -995,6 +1126,14 @@ function refreshPhotoItem(photoId) {
     ptEl.placeholder = 'Edite manualmente em inglês embaixo';
     enEl.placeholder = 'Digite o prompt em inglês manualmente';
   }
+}
+
+// Guarda a legenda digitada no objeto da foto (casa com a imagem)
+function onLegendaInput(photoId) {
+  const photo = photos.find(p => p.id === photoId);
+  if (!photo) return;
+  const el = document.getElementById('legenda-' + photoId);
+  if (el) photo.legenda = el.value;
 }
 
 // Limpa um campo de prompt (botão ✕)
@@ -1262,27 +1401,14 @@ async function generateVideo() {
   startTimer();
 
   try {
-    // 1. Processar texto (se houver) — opcional
-    let textBlocks = [];
+    // 1. Legendas por imagem — montadas direto na ordem das fotos.
+    //    Cada legenda casa com sua imagem (texto aparece quando o clipe
+    //    daquela imagem toca na 1ª rodada). Não usa mais /processText.
     let aiCostUSD = 0;
     let aiCostBRL = 0;
-    const rawText = document.getElementById('legendText').value.trim();
-    if (rawText) {
-      updateStatus('Processando texto com IA...');
-      const txResp = await api('/processText', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: rawText,
-          musicDuration: photos.length * SECONDS_PER_CLIP   // duração do vídeo
-        })
-      });
-      const txData = await txResp.json();
-      if (!txData.ok) throw new Error(txData.error || 'Falha ao processar texto');
-      textBlocks = txData.blocks || [];
-      aiCostUSD += Number(txData.aiCostUSD) || 0;
-      aiCostBRL += Number(txData.aiCostBRL) || 0;
-    }
+    const textBlocks = photos
+      .map(p => (p.legenda || '').trim())
+      .filter(t => t.length > 0);
 
     // Soma custos das análises de imagem (já gastas)
     // Nota: não temos como saber os custos exatos dos analyzeImage do front,
@@ -1316,7 +1442,7 @@ async function generateVideo() {
         logo:          logoData,
         textBlocks,
         textColor:     selectedColor,
-        textDuration:  Number(document.getElementById('textDuration').value) || 6,
+        textDuration:  Number(document.getElementById('textDuration').value) || 5,
         aiCostUSD,
         aiCostBRL
       })
@@ -1424,8 +1550,6 @@ function resetForm() {
   logoFile = null;
   logoMeta = { name:'', size:0 };
   document.getElementById('clientName').value = '';
-  document.getElementById('legendText').value = '';
-  document.getElementById('textCount').textContent = '0';
   document.getElementById('photosPremiumList').innerHTML = '';
   document.getElementById('musicPreview').style.display = 'none';
   document.getElementById('musicUploadArea').style.display = 'block';
