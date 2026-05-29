@@ -914,28 +914,83 @@ function updateTimingCalc() {
   const calc = document.getElementById('timingCalc');
   if (!calc) return;
 
-  // Conta os blocos PREENCHIDOS atualmente na UI
-  const tas = document.querySelectorAll('.pair-textarea');
-  let n = 0;
-  tas.forEach(ta => { if (ta.value.trim()) n++; });
-
-  if (n === 0 || !state.music || !state.music.duration) {
+  if (!state.music || !state.music.duration) {
     calc.style.display = 'none';
     return;
   }
-  const dur = Math.max(1, Number(document.getElementById('inTextoDur').value) || 4);
-  const total = 2 + (n * dur) + ((n - 1) * 0.15);
-  const musicDur = state.music.duration;
-  const ok = total <= musicDur;
 
-  calc.style.display = 'flex';
-  calc.className = 'timing-calc ' + (ok ? 'ok' : 'overflow');
-  const icon = ok ? '✓' : '⚠';
-  calc.innerHTML =
-    '<span>' + icon + '</span>' +
-    '<span>' + n + ' bloco' + (n === 1 ? '' : 's') + ' × ' + dur + 's = ' +
-    total.toFixed(1) + 's de texto (música tem ' + musicDur + 's)' +
-    (ok ? '' : ' — não cabe!') + '</span>';
+  const dur = Math.max(1, Number(document.getElementById('inTextoDur').value) || 4);
+  const musicDur = state.music.duration;
+
+  // Conta os blocos de texto PREENCHIDOS atualmente na UI
+  const tas = document.querySelectorAll('.pair-textarea');
+  let nText = 0;
+  tas.forEach(ta => { if (ta.value.trim()) nText++; });
+
+  const nImg = state.photos.length;
+
+  // Se não há nem imagem nem texto, esconde
+  if (nImg === 0 && nText === 0) {
+    calc.style.display = 'none';
+    return;
+  }
+
+  const linhas = [];
+  let algumProblema = false;
+
+  // ── IMAGENS ──
+  // Cada imagem fica (dur + 0.5)s na tela. Elas REPETEM pra preencher a
+  // música. "Sobram imagens" quando há mais imagens do que cabe na música
+  // numa passada — ou seja, nem todas aparecem uma vez sequer.
+  if (nImg > 0) {
+    const slotImg = dur + 0.5;                       // duração de cada imagem
+    const cabemNaMusica = Math.floor(musicDur / slotImg);  // quantas cabem 1x
+    const tempoTodas = (nImg * slotImg);
+    if (nImg > cabemNaMusica) {
+      // Sobram imagens: a música é curta demais pra mostrar todas uma vez
+      const sobram = nImg - cabemNaMusica;
+      algumProblema = true;
+      linhas.push({
+        ok: false,
+        txt: '⚠ ' + nImg + ' imagens × ' + slotImg.toFixed(1) + 's = ' +
+             tempoTodas.toFixed(1) + 's, mas a música tem só ' + musicDur +
+             's — ' + sobram + ' imagem' + (sobram === 1 ? '' : 's') +
+             ' não aparece' + (sobram === 1 ? '' : 'm') +
+             '. Diminua o tempo de cada imagem pra caber todas.'
+      });
+    } else {
+      // Todas cabem (e podem repetir pra preencher o resto da música)
+      const repete = tempoTodas < musicDur;
+      linhas.push({
+        ok: true,
+        txt: '✓ ' + nImg + ' imagens × ' + slotImg.toFixed(1) + 's = ' +
+             tempoTodas.toFixed(1) + 's' +
+             (repete ? ' — todas aparecem e repetem pra preencher os ' + musicDur + 's da música' :
+                       ' — todas cabem nos ' + musicDur + 's da música')
+      });
+    }
+  }
+
+  // ── TEXTO ──
+  if (nText > 0) {
+    const totalTxt = 2 + (nText * dur) + ((nText - 1) * 0.15);
+    const okTxt = totalTxt <= musicDur;
+    if (!okTxt) algumProblema = true;
+    linhas.push({
+      ok: okTxt,
+      txt: (okTxt ? '✓ ' : '⚠ ') + nText + ' bloco' + (nText === 1 ? '' : 's') +
+           ' de texto × ' + dur + 's = ' + totalTxt.toFixed(1) + 's' +
+           (okTxt ? '' : ' — não cabe na música de ' + musicDur + 's!')
+    });
+  }
+
+  calc.style.display = 'block';
+  calc.className = 'timing-calc ' + (algumProblema ? 'overflow' : 'ok');
+  calc.innerHTML = linhas.map(l =>
+    '<div style="display:flex;gap:6px;align-items:flex-start;line-height:1.4' +
+    (l.ok ? '' : ';color:#E87A7A') + '">' +
+    '<span>' + escapeHtml(l.txt) + '</span></div>'
+  ).join('');
 }
 
 // Marca os blocos como inválidos (quando o atendente edita o texto bruto)
@@ -1073,6 +1128,7 @@ async function handleMusic(e) {
     document.getElementById('musicPreview').classList.add('show');
     document.getElementById('musicUpload').style.display = 'none';
     hideToast();
+    updateTimingCalc();   // recalcula somatório (imagens + texto) com a nova música
   } catch (err) {
     toast('Erro ao carregar música: ' + err.message, 'error');
   }
@@ -1242,8 +1298,8 @@ async function generateVideo() {
     // Salva pedido pendente (recuperação se fechar a aba)
     savePending(orderData.orderId, state.cliente);
 
-    // ── 2. produceVideo ──
-    setStatus('Iniciando renderização...', 'O vídeo está sendo montado', '');
+    // ── 2. produceVideo (dispara o render e responde rápido) ──
+    setStatus('Enviando pra geração...', 'O vídeo será montado em segundo plano', '');
     const produceResp = await window.__luxFetch(WORKER_URL + '/produceVideo', {
       method: 'POST',
       body: JSON.stringify({ orderId: state.currentOrderId })
@@ -1257,9 +1313,18 @@ async function generateVideo() {
       return;
     }
 
-    // ── 3. polling ──
-    setStatus('Renderizando vídeo...', 'Isso leva alguns minutos. Pode aguardar aqui.', '');
-    startPolling(state.currentOrderId);
+    // ── 3. BACKGROUND: libera a tela. O Histórico acompanha sozinho. ──
+    stopTimer();
+    clearPending();
+    statusBar.classList.remove('show');
+    genBtn.disabled = false;
+
+    goNewOrder();              // limpa o formulário pra um novo vídeo
+    goTab('historico');        // leva pro Histórico
+    loadHistory();             // mostra o pedido como "Renderizando"
+    startHistoryPolling();     // começa a acompanhar os pedidos em andamento
+
+    toast('✅ Vídeo enviado! Pode fechar a tela — ele aparece pronto no Histórico.', 'success');
 
   } catch (err) {
     stopTimer();
@@ -1578,10 +1643,61 @@ async function loadHistory() {
         goTab('resultado');
       });
     });
+
+    // Se há pedidos em andamento, garante o polling rodando; senão, para.
+    const temPendente = data.orders.some(o => o.status === 'RENDERING');
+    if (temPendente) {
+      startHistoryPolling();
+    } else {
+      stopHistoryPolling();
+    }
   } catch (err) {
     container.innerHTML =
       '<div class="lux-history-empty" style="color:#E87A7A">Erro: ' + escapeHtml(err.message) + '</div>';
   }
+}
+
+// ── Polling automático do Histórico ──
+// Enquanto houver pedidos RENDERING, a cada 15s: chama /checkStatus pra
+// cada um (é o checkStatus que detecta o JSON2Video pronto, baixa o MP4 e
+// marca COMPLETED), depois recarrega a lista. Para quando tudo termina.
+let historyPollId = null;
+let historyPollPending = [];   // orderIds em andamento
+function startHistoryPolling() {
+  if (historyPollId) return;   // já rodando
+  historyPollId = setInterval(async () => {
+    try {
+      // Descobre os pedidos em andamento
+      const resp = await window.__luxFetch(WORKER_URL + '/listOrders');
+      const data = await resp.json();
+      if (!data.ok || !Array.isArray(data.orders)) return;
+
+      const pendentes = data.orders.filter(o => o.status === 'RENDERING');
+      if (!pendentes.length) {
+        stopHistoryPolling();
+        // Recarrega uma última vez se estiver na aba (mostra tudo concluído)
+        const ph = document.getElementById('panel-historico');
+        if (ph && ph.classList.contains('active')) loadHistory();
+        return;
+      }
+
+      // "Empurra" cada pedido pendente via checkStatus (finaliza quando pronto)
+      for (const o of pendentes) {
+        try {
+          await window.__luxFetch(
+            WORKER_URL + '/checkStatus?orderId=' + encodeURIComponent(o.orderId)
+          );
+        } catch (e) { /* tenta de novo no próximo ciclo */ }
+      }
+
+      // Se estiver vendo o histórico, recarrega pra refletir o novo status
+      const ph = document.getElementById('panel-historico');
+      if (ph && ph.classList.contains('active')) loadHistory();
+    } catch (e) { /* silencia erros transitórios */ }
+  }, 15000);
+}
+function stopHistoryPolling() {
+  if (historyPollId) { clearInterval(historyPollId); historyPollId = null; }
 }
 
 // Formata data ISO em "DD/MM/AAAA às HH:MM"
