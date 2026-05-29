@@ -212,10 +212,12 @@ input[type="file"]{display:none}
 .prompt-status.analyzing{color:#E8A84C}
 .prompt-status.analyzed{color:#7FB87A}
 .prompt-status.error{color:#E87A7A}
-.prompt-status .mini-spinner{
+.prompt-status .mini-spinner,
+.session-status .mini-spinner{
   width:10px;height:10px;
   border:1.5px solid rgba(232,168,76,.25);border-top-color:#E8A84C;
   border-radius:50%;animation:spin .7s linear infinite;
+  display:inline-block;
 }
 .prompt-field{
   position:relative;flex:1;display:flex;flex-direction:column;
@@ -433,7 +435,18 @@ input[type="file"]{display:none}
 }
 .session-status.completed{color:#7FB87A}
 .session-status.rendering{color:#E8A84C}
+.session-status.generating{color:#E8A84C;display:flex;align-items:center;gap:6px;justify-content:flex-end}
 .session-status.error{color:#E87A7A}
+.session-generating-msg{
+  margin-top:10px;padding:10px 14px;font-size:12.5px;line-height:1.45;
+  background:rgba(232,168,76,.06);border:1px solid rgba(232,168,76,.22);
+  border-radius:var(--radius);color:var(--text-mid);
+}
+.session-error-msg{
+  margin-top:10px;padding:10px 14px;font-size:12.5px;line-height:1.45;
+  background:rgba(232,122,122,.06);border:1px solid rgba(232,122,122,.25);
+  border-radius:var(--radius);color:#E87A7A;
+}
 
 .btn-download{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1454,25 +1467,51 @@ async function generateVideo() {
     // Salva localmente como pendente
     savePendingOrder(orderId, clientName);
 
-    // 3. Disparar produção (Atlas Cloud + JSON2Video)
-    updateStatus('Gerando clipes IA...', 'Atlas Cloud está animando cada foto. Pode levar 2-4 minutos.');
+    // 3. Disparar produção em BACKGROUND (Worker responde na hora)
+    updateStatus('Iniciando geração...', 'O vídeo será gerado em segundo plano.');
     const prodResp = await api('/produceVideo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId })
     });
     const prodData = await prodResp.json();
-    if (!prodData.ok) throw new Error(prodData.error || 'Falha ao produzir vídeo');
+    if (!prodData.ok) throw new Error(prodData.error || 'Falha ao iniciar produção');
 
-    if (prodData.status === 'completed') {
+    // Se por acaso já veio pronto (cache/idempotência), finaliza direto
+    if (prodData.status === 'completed' && prodData.videoUrl) {
       finishGeneration(orderId, prodData.videoUrl, prodData);
       return;
     }
 
-    // 4. Polling do JSON2Video
-    updateStatus('Renderizando vídeo final...', 'JSON2Video está montando os clipes. Mais 1-2 minutos.');
-    pollStartTime = Date.now();
-    pollIntervalId = setInterval(() => pollStatus(orderId), POLL_INTERVAL_MS);
+    // 4. Background: registra o pedido como "gerando" e libera a tela.
+    //    O atendente pode fechar tudo — a aba Resultados acompanha sozinha.
+    const session = {
+      id: orderId,
+      clientName: currentClientName,
+      operator: '—',
+      videoUrl: null,
+      photoCount: photos.length,
+      duration: null,
+      costBRL: null,
+      costUSD: null,
+      createdAt: new Date().toISOString(),
+      status: 'generating'
+    };
+    videoSessions.unshift(session);
+    localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+
+    clearPendingOrder();
+    hideStatus();
+    stopTimer();
+    document.getElementById('genBtn').disabled = false;
+
+    renderAllSessions();
+    resetForm();
+    document.querySelector('.tab:nth-child(2)').click();   // vai pra Resultados
+    startResultsPolling();   // começa a acompanhar os pedidos em andamento
+
+    alert('✅ Vídeo enviado pra geração!\n\nVocê pode fechar esta tela e fazer outras coisas. ' +
+          'O vídeo vai aparecer pronto na aba Resultados em alguns minutos.');
 
   } catch (err) {
     console.error('Erro:', err);
@@ -1656,6 +1695,22 @@ function renderAllSessions() {
     const initials = (s.clientName || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const dateStr = new Date(s.createdAt).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const costStr = (s.costBRL != null) ? 'R$ ' + s.costBRL.toFixed(2) : '—';
+
+    // Status: generating | rendering | completed | error
+    let statusBadge, bottomArea;
+    if (s.status === 'completed' && s.videoUrl) {
+      statusBadge = '<div class="session-status completed">✓ Pronto</div>';
+      bottomArea  = `<a href="${s.videoUrl}" target="_blank" class="btn-download" download>⬇ Baixar vídeo MP4</a>`;
+    } else if (s.status === 'error') {
+      statusBadge = '<div class="session-status error">✕ Erro</div>';
+      bottomArea  = `<div class="session-error-msg">${escapeHtml(s.error || 'Falha na geração. Tente gerar novamente.')}</div>`;
+    } else {
+      // generating ou rendering
+      statusBadge = '<div class="session-status generating"><span class="mini-spinner"></span> Gerando...</div>';
+      bottomArea  = `<div class="session-generating-msg">⏳ Vídeo sendo gerado em segundo plano. Pode levar alguns minutos. Esta lista atualiza sozinha.</div>`;
+    }
+
+    const durStr = (s.duration != null) ? s.duration + 's' : '—';
     el.innerHTML = `
       <div class="session-header">
         <div class="session-avatar">${initials}</div>
@@ -1664,17 +1719,56 @@ function renderAllSessions() {
           <span class="atendente">${escapeHtml(s.operator || '—')}</span>
           <div class="session-meta">
             <span class="meta-tag">${s.photoCount || 0} fotos</span>
-            <span class="meta-tag">${s.duration || 0}s</span>
+            <span class="meta-tag">${durStr}</span>
             <span class="meta-tag">${dateStr}</span>
             <span class="meta-tag">${costStr}</span>
           </div>
         </div>
-        <div class="session-status completed">✓ Pronto</div>
+        ${statusBadge}
       </div>
-      <a href="${s.videoUrl}" target="_blank" class="btn-download" download>⬇ Baixar vídeo MP4</a>
+      ${bottomArea}
     `;
     wrap.appendChild(el);
   });
+}
+
+// ── Polling automático da aba Resultados ──
+// Enquanto houver pedidos "generating"/"rendering", consulta o servidor
+// a cada 15s e atualiza a lista. Para sozinho quando tudo termina.
+let resultsPollId = null;
+function startResultsPolling() {
+  if (resultsPollId) return;   // já rodando
+  resultsPollId = setInterval(async () => {
+    const pendentes = videoSessions.filter(
+      s => s.status === 'generating' || s.status === 'rendering'
+    );
+    if (!pendentes.length) {
+      clearInterval(resultsPollId);
+      resultsPollId = null;
+      return;
+    }
+    // Checa cada pendente
+    for (const s of pendentes) {
+      try {
+        const resp = await api('/checkStatus?orderId=' + encodeURIComponent(s.id));
+        const data = await resp.json();
+        if (data.status === 'completed' && data.videoUrl) {
+          s.status = 'completed';
+          s.videoUrl = data.videoUrl;
+          s.costBRL = data.costBRL;
+          s.costUSD = data.costUSD;
+        } else if (data.status === 'error' || data.status === 'failed') {
+          s.status = 'error';
+          s.error = data.error || 'Falha na geração';
+        } else if (data.status === 'rendering') {
+          s.status = 'rendering';
+        }
+        // generating: mantém
+      } catch (e) { /* tenta de novo no próximo ciclo */ }
+    }
+    localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
+    renderAllSessions();
+  }, 15000);
 }
 
 async function refreshSessionsFromServer() {
@@ -1682,21 +1776,29 @@ async function refreshSessionsFromServer() {
     const resp = await api('/listOrders');
     const data = await resp.json();
     if (data.ok && Array.isArray(data.orders)) {
-      // Merge: prioriza dados do servidor
       const local = videoSessions;
+      const statusMap = {
+        'COMPLETED': 'completed',
+        'RENDERING': 'rendering',
+        'GENERATING': 'generating',
+        'ERROR': 'error'
+      };
       const fromServer = data.orders
-        .filter(o => o.status === 'COMPLETED' && o.videoUrl)
+        .filter(o => statusMap[o.status])
         .map(o => ({
           id: o.orderId,
           clientName: o.clientName,
           operator: o.attendantName || o.attendantEmail || '—',
-          videoUrl: o.videoUrl,
+          videoUrl: o.videoUrl || null,
           photoCount: o.photoCount,
-          duration: (o.photoCount || 0) * SECONDS_PER_CLIP,
-          costBRL: o.costBRL,
-          costUSD: o.costUSD,
+          duration: (o.status === 'COMPLETED')
+            ? Math.round(o.musicDuration || (o.photoCount || 0) * SECONDS_PER_CLIP)
+            : null,
+          costBRL: o.costBRL ?? null,
+          costUSD: o.costUSD ?? null,
           createdAt: o.createdAt,
-          status: 'completed'
+          status: statusMap[o.status],
+          error: o.genError || o.errorMsg || null
         }));
       const allIds = new Set();
       const merged = [];
@@ -1709,6 +1811,10 @@ async function refreshSessionsFromServer() {
       videoSessions = merged;
       localStorage.setItem('lux_video_premium_sessions', JSON.stringify(videoSessions));
       renderAllSessions();
+      // Se há pedidos em andamento, garante o polling rodando
+      if (videoSessions.some(s => s.status === 'generating' || s.status === 'rendering')) {
+        startResultsPolling();
+      }
     }
   } catch (e) { /* mantém o localStorage */ }
 }
