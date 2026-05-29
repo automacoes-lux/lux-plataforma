@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cover — Plataforma Lux</title>
 <script src="../js/auth-iframe.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -528,8 +527,9 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-// Velocidade 2x preservando o tom (time-stretching, não chipmunk).
-// Implementado via Tone.GrainPlayer com playbackRate=2 e detune=0.
+// Velocidade 2x PURA (varispeed): acelera 2x e sobe o tom 1 oitava,
+// igual acelerar um vinil. Resample limpo via OfflineAudioContext,
+// sem granular synthesis (sem o "tropeço" do GrainPlayer).
 const PLAYBACK_RATE = 2;
 const POLL_INTERVAL_MS = 5000;   // 5s entre polls do PoYo
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
@@ -771,12 +771,8 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
   ctx.close();
 
-  // 3. Aceleração 2x via Tone.GrainPlayer (mantém o tom)
-  // ⚠️ TESTE TEMPORÁRIO (28/05): SPEEDUP_ENABLED=false entrega o instrumental
-  //    PURO (velocidade original, sem aceleração) pra avaliar a qualidade da
-  //    separação dos stems isoladamente. Pra reativar a velocidade 2x, mude
-  //    SPEEDUP_ENABLED de volta pra true.
-  const SPEEDUP_ENABLED = false;
+  // 3. Aceleração 2x PURA (resample/varispeed — acelera + sobe o tom, sem tropeço)
+  const SPEEDUP_ENABLED = true;
 
   let pitchedBuffer;
   if (SPEEDUP_ENABLED) {
@@ -889,46 +885,34 @@ function mixAudioBuffers(buffers) {
 }
 
 // ============================================================
-// Time-stretch (aceleração mantendo o tom original)
+// Aceleração 2x PURA (resample / varispeed — igual acelerar um vinil)
 // ============================================================
-// Usa Tone.GrainPlayer (granular synthesis) — permite ajustar
-// playbackRate e detune independentemente. playbackRate=2 acelera
-// 2x, detune=0 mantém o tom original (não fica voz de chipmunk).
-//
-// Doc Tone.js: https://tonejs.github.io/docs/15.0.4/classes/GrainPlayer.html
-//
-// grainSize e overlap afetam qualidade vs delay:
-// - grainSize menor: mais responsivo, mais artefatos
-// - overlap maior: mais suave, mais delay no início
-// Valores 0.1/0.1 são bem balanceados pra speed-up.
+// Toca o áudio com playbackRate=2 dentro de um OfflineAudioContext.
+// Isso acelera 2x E sobe o tom naturalmente (1 oitava) — exatamente
+// como acelerar uma fita ou vinil. SEM granular synthesis, então
+// NÃO tem o "tropeço"/artefato de grão que o GrainPlayer causava.
+// O resultado é limpo e, ao voltar pra 1x num editor, fica perfeito.
 
 async function applySpeedUp(buffer, rate) {
-  if (typeof Tone === 'undefined') {
-    throw new Error('Tone.js não carregou. Verifica conexão.');
-  }
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate  = buffer.sampleRate;
+  // Duração e nº de samples finais: tudo dividido pela velocidade
+  const newLength = Math.ceil(buffer.length / rate);
 
-  // Quando acelera N vezes, a duração final é (original / N)
-  const newDuration = buffer.duration / rate;
+  console.log('[speedup] resample puro rate=', rate,
+    'newDuration=', (newLength / sampleRate).toFixed(2), 's');
 
-  console.log('[speedup] rate=', rate, 'newDuration=', newDuration.toFixed(2), 's');
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const offline = new OfflineCtx(numChannels, newLength, sampleRate);
 
-  const rendered = await Tone.Offline(async () => {
-    const grain = new Tone.GrainPlayer({
-      url: buffer,
-      playbackRate: rate,
-      detune: 0,          // detune=0 -> mantém o tom original
-      grainSize: 0.1,
-      overlap: 0.1,
-      loop: false
-    }).toDestination();
+  const source = offline.createBufferSource();
+  source.buffer = buffer;
+  source.playbackRate.value = rate;   // 2 = acelera 2x + sobe o tom (varispeed)
+  source.connect(offline.destination);
+  source.start(0);
 
-    // Aguarda o buffer ser carregado pelo GrainPlayer
-    await Tone.loaded();
-
-    grain.start(0);
-  }, newDuration, buffer.numberOfChannels);
-
-  return rendered.get ? rendered.get() : rendered;
+  const rendered = await offline.startRendering();
+  return rendered;
 }
 
 // ============================================================
