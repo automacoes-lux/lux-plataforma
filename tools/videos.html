@@ -1508,7 +1508,12 @@ function goNewOrder() {
   state.aiCostUSD = 0;
   state.aiCostBRL = 0;
   document.getElementById('blocksContainer').style.display = 'none';
-  document.getElementById('blocksList').innerHTML = '';
+  // Limpa as 2 colunas (estrutura nova). Antes usava 'blocksList' que não
+  // existe mais — causava "Cannot set properties of null".
+  const _pc = document.getElementById('photosColumn');
+  const _tc = document.getElementById('textsColumn');
+  if (_pc) _pc.innerHTML = '';
+  if (_tc) _tc.innerHTML = '';
   setAiStatus('', '');
   document.getElementById('inTextoDur').value = '4';
   // Reseta a cor pro branco (padrão)
