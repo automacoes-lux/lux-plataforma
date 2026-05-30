@@ -536,6 +536,7 @@ input[type="file"]{display:none}
   <div class="tabs">
     <button class="tab active" onclick="switchTab('gerar', this)">Criar vídeo</button>
     <button class="tab" onclick="switchTab('resultados', this)">Histórico</button>
+    <button class="tab" id="tabRegras" onclick="switchTab('regras', this)" style="display:none">⚙ Regras da IA</button>
   </div>
 
   <!-- PANEL GERAR -->
@@ -685,6 +686,41 @@ input[type="file"]{display:none}
     </div>
   </div>
 
+  <!-- PANEL REGRAS DA IA (só admin) -->
+  <div class="panel" id="panel-regras">
+    <div class="card">
+      <div class="card-title">⚙ Regras da IA <span class="card-title-count" style="background:rgba(201,168,76,.15);color:var(--gold)">admin</span></div>
+      <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin:0 0 1.2rem">
+        Estas regras são lidas pela IA <strong>antes</strong> de criar o prompt de cada imagem.
+        Você controla o que a IA <strong>deve</strong> e <strong>não deve</strong> fazer.
+        <br/><span style="color:#E8A84C">⚠ Se as duas caixas ficarem vazias, a geração de vídeo é bloqueada.</span>
+      </p>
+
+      <div class="field">
+        <label>✅ O que a IA DEVE fazer (prioridades)</label>
+        <div class="text-input-wrap">
+          <textarea id="regraDeve" maxlength="300" rows="5"
+            placeholder="Ex: Aplicar efeitos cinematográficos, zoom dinâmico, reflexos. Pessoas devem acenar e sorrir. Destacar o produto com luz quente e visão ampla promocional."></textarea>
+          <span class="text-counter"><span id="regraDeveCount">0</span>/300</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:1rem">
+        <label>❌ O que a IA NÃO deve fazer (evitar)</label>
+        <div class="text-input-wrap">
+          <textarea id="regraNaoDeve" maxlength="300" rows="5"
+            placeholder="Ex: Não manter textos de panfletos/encartes sobrepostos. Não mudar o produto. Não adicionar logos ou marcas d'água. Não distorcer o ambiente original."></textarea>
+          <span class="text-counter"><span id="regraNaoDeveCount">0</span>/300</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btnSalvarRegras" onclick="salvarRegras()" style="margin-top:1.2rem;width:100%">
+        💾 Salvar regras
+      </button>
+      <div id="regrasStatus" style="margin-top:10px;font-size:12.5px;text-align:center"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- MODAL erro de rede -->
@@ -787,7 +823,78 @@ window.addEventListener('DOMContentLoaded', () => {
   renderAllSessions();
   checkPendingOrder();
   setupTextCounter();
+  checkAdminAndRules();
+  // Contadores das caixas de regras
+  const rd = document.getElementById('regraDeve');
+  const rn = document.getElementById('regraNaoDeve');
+  if (rd) rd.addEventListener('input', updateRegrasCount);
+  if (rn) rn.addEventListener('input', updateRegrasCount);
 });
+
+// Verifica se o usuário é admin → mostra a aba "Regras da IA" e carrega as regras
+async function checkAdminAndRules() {
+  try {
+    const resp = await api('/admin/me');
+    const data = await resp.json();
+    if (data.ok && data.user && data.user.role === 'admin') {
+      document.getElementById('tabRegras').style.display = '';
+      // Carrega as regras salvas
+      try {
+        const r = await api('/promptRules');
+        const rd = await r.json();
+        if (rd.ok && rd.rules) {
+          document.getElementById('regraDeve').value = rd.rules.deve || '';
+          document.getElementById('regraNaoDeve').value = rd.rules.naoDeve || '';
+          updateRegrasCount();
+        }
+      } catch (e) {}
+    }
+  } catch (e) { /* não é admin ou erro — aba fica escondida */ }
+}
+
+// Contadores de caracteres das caixas de regras
+function updateRegrasCount() {
+  const d = document.getElementById('regraDeve');
+  const n = document.getElementById('regraNaoDeve');
+  if (d) document.getElementById('regraDeveCount').textContent = d.value.length;
+  if (n) document.getElementById('regraNaoDeveCount').textContent = n.value.length;
+}
+
+// Salva as regras no servidor
+async function salvarRegras() {
+  const deve = document.getElementById('regraDeve').value.trim();
+  const naoDeve = document.getElementById('regraNaoDeve').value.trim();
+  const status = document.getElementById('regrasStatus');
+  const btn = document.getElementById('btnSalvarRegras');
+
+  if (!deve && !naoDeve) {
+    status.style.color = '#E87A7A';
+    status.textContent = '⚠ Preencha pelo menos uma das caixas. Com as duas vazias a geração fica bloqueada.';
+    return;
+  }
+
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Salvando...';
+  try {
+    const resp = await api('/promptRules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deve, naoDeve })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Falha ao salvar');
+    status.style.color = '#7FB87A';
+    status.textContent = '✓ Regras salvas! A IA vai usá-las nas próximas gerações.';
+  } catch (e) {
+    status.style.color = '#E87A7A';
+    status.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+window.salvarRegras = salvarRegras;
 
 // ═══ TABS ═══════════════════════════════════════════════════
 function switchTab(name, btn) {
