@@ -279,6 +279,8 @@ input[type="file"]{display:none}
 .lux-history-cost{font-size:14px;color:#7FB87A;font-weight:600}
 .lux-history-view{padding:7px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap}
 .lux-history-view:hover{background:rgba(201,168,76,.2)}
+.lux-history-edit{padding:7px 14px;background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.08em;transition:all .15s;white-space:nowrap;margin-top:6px}
+.lux-history-edit:hover{background:rgba(201,168,76,.1);color:var(--gold)}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1438,6 +1440,7 @@ function renderResult() {
         '</div>' +
         '<div class="result-actions">' +
           '<button class="btn-download" id="btnDownloadVideo">⬇ Baixar vídeo</button>' +
+          '<button class="btn-secondary" onclick="editarPedido(\'' + (state.currentOrderId || v.orderId || '') + '\')">✏ Editar</button>' +
           '<button class="btn-secondary" onclick="goNewOrder()">+ Novo vídeo</button>' +
         '</div>' +
       '</div>' +
@@ -1488,6 +1491,125 @@ function renderResult() {
       }
     });
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITAR pedido pronto — reabre no Novo Pedido com tudo preenchido
+// (funciona até 3 dias após gerar, enquanto os arquivos existem no R2)
+// ════════════════════════════════════════════════════════════
+async function editarPedido(orderId) {
+  if (!orderId) { toast('Pedido inválido.', 'error'); return; }
+  try {
+    toast('Carregando pedido pra edição...', 'info');
+
+    // 1. Pega os metadados do pedido
+    const resp = await window.__luxFetch(WORKER_URL + '/getOrderForEdit?orderId=' + encodeURIComponent(orderId));
+    const data = await resp.json();
+    if (!data.ok) {
+      toast(data.error || 'Não foi possível editar este pedido.', 'error');
+      return;
+    }
+    const edit = data.edit;
+
+    // 2. Limpa o formulário atual
+    goNewOrder();
+
+    // 3. Re-preenche cliente
+    document.getElementById('inCliente').value = edit.clientName || '';
+
+    // 4. Baixa as fotos via proxy (CORS ok) e recria o state.photos
+    for (let i = 0; i < edit.photoUrls.length; i++) {
+      try {
+        const r = await window.__luxFetch(WORKER_URL + '/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=photo&idx=' + i);
+        if (!r.ok) continue;
+        const blob = await r.blob();
+        const base64 = await blobToBase64(blob);
+        state.photos.push({
+          file: null, base64: base64, mime: blob.type || 'image/jpeg',
+          name: 'foto-' + (i + 1) + '.jpg', thumbUrl: URL.createObjectURL(blob), size: blob.size
+        });
+      } catch (e) { /* pula foto com erro */ }
+    }
+    renderPhotos();
+
+    // 5. Baixa a música
+    try {
+      const r = await window.__luxFetch(WORKER_URL + '/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=music');
+      if (r.ok) {
+        const blob = await r.blob();
+        const base64 = await blobToBase64(blob);
+        const dur = await getAudioDurationFromBlob(blob);
+        state.music = {
+          base64: base64, mime: blob.type || 'audio/mpeg',
+          name: 'musica.mp3', size: blob.size, duration: Math.round(dur)
+        };
+        document.getElementById('musicName').textContent = state.music.name;
+        document.getElementById('musicSize').textContent = (state.music.size / 1024 / 1024).toFixed(1) + ' MB';
+        document.getElementById('musicDuration').textContent = formatDuration(state.music.duration);
+        document.getElementById('musicPreview').classList.add('show');
+        document.getElementById('musicUpload').style.display = 'none';
+      }
+    } catch (e) {}
+
+    // 6. Baixa a logo (se houver)
+    if (edit.logoUrl) {
+      try {
+        const r = await window.__luxFetch(WORKER_URL + '/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=logo');
+        if (r.ok) {
+          const blob = await r.blob();
+          const base64 = await blobToBase64(blob);
+          state.logo = { base64: base64, mime: blob.type || 'image/png', name: 'logo.png', size: blob.size };
+          document.getElementById('logoThumb').src = URL.createObjectURL(blob);
+          document.getElementById('logoName').textContent = state.logo.name;
+          document.getElementById('logoSize').textContent = (state.logo.size / 1024).toFixed(0) + ' KB';
+          document.getElementById('logoPreview').classList.add('show');
+          document.getElementById('logoUpload').style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    // 7. Re-preenche textos (blocos), cor e duração
+    state.textColor = edit.textColor || '#ffffff';
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+      sw.classList.toggle('selected', sw.dataset.color === state.textColor);
+    });
+    document.getElementById('inTextoDur').value = String(edit.textDuration || 4);
+
+    if (Array.isArray(edit.textBlocks) && edit.textBlocks.length) {
+      state.textBlocks = edit.textBlocks.slice();
+      state.textProcessed = true;
+      document.getElementById('blocksContainer').style.display = '';
+      renderBlocks();
+    }
+
+    updateTimingCalc();
+    goTab('novo');
+    toast('Pedido carregado! Ajuste o que quiser e gere de novo.', 'success');
+  } catch (err) {
+    toast('Erro ao editar: ' + err.message, 'error');
+  }
+}
+window.editarPedido = editarPedido;
+
+// Verifica se um pedido ainda está na janela de 3 dias pra editar
+function podeEditar(o) {
+  if (o.editCleaned) return false;
+  const ts = o.finishedTs || 0;
+  if (!ts) return false;   // pedidos antigos (sem timestamp) não editáveis
+  const TRES_DIAS = 3 * 24 * 60 * 60 * 1000;
+  return (Date.now() - ts) <= TRES_DIAS;
+}
+window.podeEditar = podeEditar;
+
+// Duração de áudio a partir de um Blob (pra edição)
+function getAudioDurationFromBlob(blob) {
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    const url = URL.createObjectURL(blob);
+    audio.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(audio.duration || 0); };
+    audio.onerror = () => { URL.revokeObjectURL(url); resolve(0); };
+    audio.src = url;
+  });
 }
 
 function goNewOrder() {
@@ -1633,6 +1755,9 @@ async function loadHistory() {
                   '" data-costbrl="' + (o.costBRL != null ? o.costBRL : '') +
                   '" data-costusd="' + (o.costUSD != null ? o.costUSD : '') +
                   '" data-att="' + escapeAttr(o.attendantName || '') + '">Ver →</button>'
+                : ''}
+              ${isDone && podeEditar(o)
+                ? '<button class="lux-history-edit" onclick="editarPedido(\'' + escapeAttr(o.orderId || '') + '\')">✏ Editar</button>'
                 : ''}
             </div>
           </div>
