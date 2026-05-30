@@ -464,6 +464,15 @@ input[type="file"]{display:none}
   transition:all .15s;letter-spacing:.02em;font-family:'DM Sans',sans-serif;
 }
 .btn-download:hover{background:rgba(201,168,76,.16)}
+.btn-edit-order{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:11px;margin-top:8px;
+  background:transparent;color:var(--text-mid);
+  border:.5px solid var(--border-bright);border-radius:var(--radius);
+  font-size:13.5px;font-weight:500;cursor:pointer;
+  transition:all .15s;letter-spacing:.02em;font-family:'DM Sans',sans-serif;
+}
+.btn-edit-order:hover{background:rgba(201,168,76,.1);color:var(--gold)}
 .btn-recheck{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:12px;margin-top:8px;
@@ -1814,7 +1823,9 @@ function renderAllSessions() {
     let statusBadge, bottomArea;
     if (s.status === 'completed' && s.videoUrl) {
       statusBadge = '<div class="session-status completed">✓ Pronto</div>';
-      bottomArea  = `<a href="${s.videoUrl}" target="_blank" class="btn-download" download>⬇ Baixar vídeo MP4</a>`;
+      const editavel = podeEditarSessao(s);
+      bottomArea  = `<a href="${s.videoUrl}" target="_blank" class="btn-download" download>⬇ Baixar vídeo MP4</a>` +
+        (editavel ? `<button class="btn-edit-order" onclick="editarPedido('${s.id}')">✏ Editar</button>` : '');
     } else if (s.status === 'error') {
       statusBadge = '<div class="session-status error">✕ Erro</div>';
       bottomArea  = `<div class="session-error-msg">${escapeHtml(s.error || 'Falha na geração. Tente gerar novamente.')}</div>`;
@@ -1869,6 +1880,126 @@ async function cancelarPedido(orderId) {
   }
 }
 window.cancelarPedido = cancelarPedido;
+
+// Verifica se uma sessão ainda está na janela de 3 dias pra editar
+function podeEditarSessao(s) {
+  if (s.editCleaned) return false;
+  const ts = s.finishedTs || 0;
+  if (!ts) return false;
+  const TRES_DIAS = 3 * 24 * 60 * 60 * 1000;
+  return (Date.now() - ts) <= TRES_DIAS;
+}
+
+// Duração de áudio a partir de um Blob (pra edição)
+function getAudioDurationFromBlob(blob) {
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    const url = URL.createObjectURL(blob);
+    audio.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(audio.duration || 0); };
+    audio.onerror = () => { URL.revokeObjectURL(url); resolve(0); };
+    audio.src = url;
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITAR pedido pronto — reabre no Criar Vídeo com tudo preenchido
+// (até 3 dias após gerar, enquanto os arquivos existem no R2)
+// ════════════════════════════════════════════════════════════
+async function editarPedido(orderId) {
+  if (!orderId) { alert('Pedido inválido.'); return; }
+  try {
+    // 1. Pega os metadados
+    const resp = await api('/getOrderForEdit?orderId=' + encodeURIComponent(orderId));
+    const data = await resp.json();
+    if (!data.ok) { alert(data.error || 'Não foi possível editar este pedido.'); return; }
+    const edit = data.edit;
+
+    // 2. Limpa o estado atual (igual ao "novo pedido")
+    photos.forEach(p => p.thumbUrl && URL.revokeObjectURL(p.thumbUrl));
+    photos = [];
+    musicFile = null;
+    logoFile = null;
+    document.getElementById('clientName').value = edit.clientName || '';
+
+    // 3. Reconstrói as fotos (com prompts e legendas) via proxy
+    for (let i = 0; i < edit.photoUrls.length; i++) {
+      try {
+        const r = await api('/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=photo&idx=' + i);
+        if (!r.ok) continue;
+        const blob = await r.blob();
+        const base64 = await blobToBase64(blob);
+        // Garante um File com nome (algumas funções usam .name)
+        const f = new File([blob], 'foto-' + (i + 1) + '.jpg', { type: blob.type || 'image/jpeg' });
+        photos.push({
+          id: 'p_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+          file: f,
+          originalSize: blob.size,
+          optimizedSize: blob.size,
+          thumbUrl: URL.createObjectURL(blob),
+          base64: base64,
+          mimeType: blob.type || 'image/jpeg',
+          prompt_en: (edit.photoPrompts && edit.photoPrompts[i]) || '',
+          prompt_pt: '',
+          legenda: (edit.legendas && edit.legendas[i]) || '',
+          status: 'analyzed',      // já tem prompt; mostra como pronto pra editar
+          errorMsg: ''
+        });
+      } catch (e) { /* pula foto com erro */ }
+    }
+
+    // 4. Música
+    try {
+      const r = await api('/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=music');
+      if (r.ok) {
+        const blob = await r.blob();
+        const dur = await getAudioDurationFromBlob(blob);
+        musicFile = new File([blob], 'musica.mp3', { type: blob.type || 'audio/mpeg' });
+        if (typeof musicMeta !== 'undefined') musicMeta = { name: 'musica.mp3', size: blob.size, duration: Math.round(dur) };
+        document.getElementById('musicName').textContent = 'musica.mp3';
+        const ms = document.getElementById('musicSize'); if (ms) ms.textContent = formatSize(blob.size);
+        const md = document.getElementById('musicDuration'); if (md) md.textContent = Math.round(dur) + 's';
+        document.getElementById('musicPreview').style.display = 'flex';
+        const mua = document.getElementById('musicUploadArea'); if (mua) mua.style.display = 'none';
+      }
+    } catch (e) {}
+
+    // 5. Logo (se houver)
+    if (edit.logoUrl) {
+      try {
+        const r = await api('/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=logo');
+        if (r.ok) {
+          const blob = await r.blob();
+          logoFile = new File([blob], 'logo.png', { type: blob.type || 'image/png' });
+          if (typeof logoMeta !== 'undefined') logoMeta = { name: 'logo.png', size: blob.size };
+          document.getElementById('logoName').textContent = 'logo.png';
+          const ls = document.getElementById('logoSize'); if (ls) ls.textContent = formatSize(blob.size);
+          document.getElementById('logoThumb').src = URL.createObjectURL(blob);
+          document.getElementById('logoPreview').style.display = 'flex';
+          const lua = document.getElementById('logoUploadArea'); if (lua) lua.style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    // 6. Cor e duração do texto
+    selectedColor = edit.textColor || selectedColor;
+    if (typeof renderColorPalette === 'function') renderColorPalette();
+    const durEl = document.getElementById('textDuration');
+    if (durEl) durEl.value = String(edit.textDuration || 5);
+
+    // 7. Re-renderiza tudo e volta pro Criar Vídeo
+    if (typeof renderAllPhotos === 'function') renderAllPhotos();
+    if (typeof updatePhotoInfo === 'function') updatePhotoInfo();
+    if (typeof updateGenerateButton === 'function') updateGenerateButton();
+
+    // Vai pra aba Criar vídeo
+    const tabGerar = document.querySelector('.tab');
+    switchTab('gerar', tabGerar);
+    alert('Pedido carregado! Ajuste o que quiser e gere de novo.');
+  } catch (err) {
+    alert('Erro ao editar: ' + err.message);
+  }
+}
+window.editarPedido = editarPedido;
 
 // ── Polling automático da aba Resultados ──
 // Enquanto houver pedidos "generating"/"rendering", consulta o servidor
@@ -1937,6 +2068,8 @@ async function refreshSessionsFromServer() {
           costBRL: o.costBRL ?? null,
           costUSD: o.costUSD ?? null,
           createdAt: o.createdAt,
+          finishedTs: o.finishedTs || null,
+          editCleaned: !!o.editCleaned,
           status: statusMap[o.status],
           error: o.genError || o.errorMsg || null
         }));
