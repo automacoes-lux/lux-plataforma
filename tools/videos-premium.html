@@ -1013,6 +1013,10 @@ async function analyzeSequentially() {
       }
 
       await analyzePhotoInBackground(photo, prevPrompts);
+
+      // Pequeno delay entre as análises: garante que o prompt anterior já foi
+      // salvo no objeto da foto antes de gerar o próximo (que o lê pra variar).
+      await new Promise(r => setTimeout(r, 600));
     }
   } finally {
     isAnalyzingSequence = false;
