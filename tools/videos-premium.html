@@ -258,6 +258,18 @@ input[type="file"]{display:none}
 .legenda-field .legenda-opt{
   color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;
 }
+.legenda-drag-handle{
+  float:right;font-size:9px;color:var(--text-dim);cursor:grab;
+  letter-spacing:.05em;padding:1px 6px;border-radius:4px;
+  border:1px solid rgba(201,168,76,.2);user-select:none;
+  transition:all .15s;
+}
+.legenda-drag-handle:hover{color:var(--gold);border-color:var(--gold);background:rgba(201,168,76,.08)}
+.legenda-drag-handle:active{cursor:grabbing}
+.photo-premium-item.legenda-drop-target{
+  outline:2px dashed var(--gold);outline-offset:2px;
+  background:rgba(201,168,76,.06);
+}
 .legenda-textarea{
   width:100%;padding:8px 12px;font-size:13px;line-height:1.4;
   background:rgba(201,168,76,.04);color:var(--text);
@@ -531,7 +543,7 @@ input[type="file"]{display:none}
   <div class="pending-banner" id="pendingBanner">
     <span class="pending-icon">⏳</span>
     <div class="pending-text">
-      <strong>Vídeo Premium em andamento</strong>
+      <strong>Vídeo IA em andamento</strong>
       <span id="pendingDetails"></span>
       <small id="pendingAge"></small>
     </div>
@@ -657,7 +669,7 @@ input[type="file"]{display:none}
     <div class="premium-time-warning">
       <span class="icon">⏱️</span>
       <div>
-        <strong>O Vídeo Premium leva mais tempo</strong>
+        <strong>O Vídeo IA leva mais tempo</strong>
         A IA precisa gerar cada clipe individualmente. <strong>Tempo total: 3 a 10 minutos</strong> (depende da quantidade de imagens).
         Não feche a tela durante o processamento — você verá o progresso em tempo real.
       </div>
@@ -670,7 +682,7 @@ input[type="file"]{display:none}
     </div>
 
     <button class="btn-generate" id="genBtn" onclick="generateVideo()" disabled>
-      ✨ &nbsp;GERAR VÍDEO PREMIUM
+      ✨ &nbsp;GERAR VÍDEO IA
     </button>
 
     <div class="status-bar" id="statusBar">
@@ -689,7 +701,7 @@ input[type="file"]{display:none}
     <div id="resultsSessions">
       <div class="results-empty" id="resultsEmpty">
         <span class="big">✨</span>
-        Nenhum vídeo Premium gerado ainda.<br/>
+        Nenhum vídeo IA gerado ainda.<br/>
         Os vídeos aparecem aqui após a renderização.
       </div>
     </div>
@@ -957,16 +969,53 @@ async function handlePhotos(e) {
     return;
   }
 
+  // ── FASE 1: carrega TODAS as fotos primeiro (sem analisar ainda) ──
+  // Cada foto entra como "na fila" — a análise só começa quando o upload
+  // de todas terminar, e então roda em SEQUÊNCIA (cada prompt vê os anteriores).
+  const adicionadas = [];
   for (const file of newFiles) {
     if (!file.type.startsWith('image/')) continue;
     const photo = await prepareSinglePhoto(file);
     if (!photo) continue;
+    photo.status = 'queued';   // aguardando análise sequencial
     photos.push(photo);
+    adicionadas.push(photo);
     renderPhotoItem(photo);
+    refreshPhotoItem(photo.id);
     updatePhotoInfo();
     updateGenerateButton();
-    // Dispara análise IA em background
-    analyzePhotoInBackground(photo);
+  }
+
+  // ── FASE 2: análise SEQUENCIAL automática (sem botão) ──
+  // Roda da 1ª à última foto da fila, mostrando "✓ Prompt gerado" em cada uma.
+  await analyzeSequentially();
+}
+
+// Analisa as fotos pendentes (status 'queued') uma a uma, em ordem.
+// Cada chamada recebe os prompts já gerados pra criar VARIAÇÃO de ângulo.
+let isAnalyzingSequence = false;
+async function analyzeSequentially() {
+  if (isAnalyzingSequence) return;   // evita 2 sequências ao mesmo tempo
+  isAnalyzingSequence = true;
+  try {
+    // Processa na ordem atual das fotos (respeita reordenação)
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      if (photo.status !== 'queued') continue;   // já analisada ou em erro
+
+      photo.status = 'analyzing';
+      refreshPhotoItem(photo.id);
+
+      // Coleta os prompts das fotos ANTERIORES (já analisadas) pra variação
+      const prevPrompts = [];
+      for (let j = 0; j < i; j++) {
+        if (photos[j].prompt_en) prevPrompts.push(photos[j].prompt_en);
+      }
+
+      await analyzePhotoInBackground(photo, prevPrompts);
+    }
+  } finally {
+    isAnalyzingSequence = false;
   }
 }
 
@@ -1128,7 +1177,10 @@ function renderPhotoItem(photo) {
         <button class="clear-btn" onclick="clearPrompt('${photo.id}', 'en')" title="Limpar texto">✕</button>
       </div>
       <div class="legenda-field">
-        <label>💬 Legenda nesta imagem <span class="legenda-opt">(opcional)</span></label>
+        <label>
+          💬 Legenda nesta imagem <span class="legenda-opt">(opcional)</span>
+          <span class="legenda-drag-handle" id="legdrag-${photo.id}" title="Arraste pra mover esta legenda pra outra foto">⠿ mover</span>
+        </label>
         <textarea
           class="legenda-textarea"
           id="legenda-${photo.id}"
@@ -1145,6 +1197,13 @@ function renderPhotoItem(photo) {
   if (handle) {
     handle.addEventListener('mousedown', (e) => onPhotoDragStart(e, photo.id));
     handle.addEventListener('touchstart', (e) => onPhotoDragStart(e, photo.id), { passive: false });
+  }
+
+  // Liga o drag da LEGENDA (arrastar a legenda pra outra foto)
+  const legHandle = item.querySelector('.legenda-drag-handle');
+  if (legHandle) {
+    legHandle.addEventListener('mousedown', (e) => onLegendaDragStart(e, photo.id));
+    legHandle.addEventListener('touchstart', (e) => onLegendaDragStart(e, photo.id), { passive: false });
   }
 }
 
@@ -1225,29 +1284,113 @@ function onPhotoDragEnd() {
   renderAllPhotos();
 }
 
+// ════════════════════════════════════════════════════════════
+// DRAG da LEGENDA — arrasta o texto de uma foto e solta em outra
+// ════════════════════════════════════════════════════════════
+let legendaDragState = null;
+function onLegendaDragStart(e, photoId) {
+  e.preventDefault();
+  e.stopPropagation();
+  legendaDragState = { fromId: photoId, targetId: null };
+  document.body.style.cursor = 'grabbing';
+  document.addEventListener('mousemove', onLegendaDragMove);
+  document.addEventListener('mouseup', onLegendaDragEnd);
+  document.addEventListener('touchmove', onLegendaDragMove, { passive: false });
+  document.addEventListener('touchend', onLegendaDragEnd);
+  // Feedback visual: marca a legenda de origem
+  const src = document.getElementById('legenda-' + photoId);
+  if (src) src.style.opacity = '0.4';
+}
+
+function onLegendaDragMove(e) {
+  if (!legendaDragState) return;
+  if (e.cancelable) e.preventDefault();
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+
+  // Acha sobre qual card de foto o cursor está
+  const items = Array.from(document.querySelectorAll('.photo-premium-item'));
+  items.forEach(it => it.classList.remove('legenda-drop-target'));
+
+  let alvo = null;
+  for (const it of items) {
+    const rect = it.getBoundingClientRect();
+    if (y >= rect.top && y <= rect.bottom && x >= rect.left && x <= rect.right) {
+      alvo = it; break;
+    }
+  }
+  if (alvo) {
+    const alvoId = alvo.id.replace('photo-item-', '');
+    legendaDragState.targetId = alvoId;
+    if (alvoId !== legendaDragState.fromId) alvo.classList.add('legenda-drop-target');
+  } else {
+    legendaDragState.targetId = null;
+  }
+}
+
+function onLegendaDragEnd() {
+  document.removeEventListener('mousemove', onLegendaDragMove);
+  document.removeEventListener('mouseup', onLegendaDragEnd);
+  document.removeEventListener('touchmove', onLegendaDragMove);
+  document.removeEventListener('touchend', onLegendaDragEnd);
+  document.body.style.cursor = '';
+
+  // Restaura opacidade
+  document.querySelectorAll('.legenda-textarea').forEach(t => t.style.opacity = '');
+  document.querySelectorAll('.photo-premium-item').forEach(it => it.classList.remove('legenda-drop-target'));
+
+  if (!legendaDragState) return;
+  const { fromId, targetId } = legendaDragState;
+  legendaDragState = null;
+
+  if (!targetId || targetId === fromId) return;
+
+  const origem = photos.find(p => p.id === fromId);
+  const destino = photos.find(p => p.id === targetId);
+  if (!origem || !destino) return;
+
+  // MOVE a legenda: o destino recebe; se já tinha algo, TROCA (não perde nada)
+  const tmp = destino.legenda || '';
+  destino.legenda = origem.legenda || '';
+  origem.legenda = tmp;
+
+  // Atualiza os campos na tela
+  const elDest = document.getElementById('legenda-' + targetId);
+  const elOrig = document.getElementById('legenda-' + fromId);
+  if (elDest) elDest.value = destino.legenda;
+  if (elOrig) elOrig.value = origem.legenda;
+}
+
 // Atualiza o estado visual de 1 foto
 function refreshPhotoItem(photoId) {
   const photo = photos.find(p => p.id === photoId);
   if (!photo) return;
   const item = document.getElementById('photo-item-' + photoId);
   if (!item) return;
-  item.classList.remove('analyzing', 'analyzed', 'error');
+  item.classList.remove('analyzing', 'analyzed', 'error', 'queued');
   item.classList.add(photo.status);
 
   const statusEl = document.getElementById('status-' + photoId);
   const ptEl = document.getElementById('pt-' + photoId);
   const enEl = document.getElementById('en-' + photoId);
 
-  if (photo.status === 'analyzing') {
+  if (photo.status === 'queued') {
     statusEl.className = 'prompt-status analyzing';
-    statusEl.innerHTML = '<span class="mini-spinner"></span><span>Analisando com IA...</span>';
+    statusEl.innerHTML = '<span>⏳</span><span>Na fila — aguardando as fotos anteriores...</span>';
+    ptEl.disabled = true;
+    enEl.disabled = true;
+    ptEl.placeholder = 'Na fila...';
+    enEl.placeholder = 'Na fila...';
+  } else if (photo.status === 'analyzing') {
+    statusEl.className = 'prompt-status analyzing';
+    statusEl.innerHTML = '<span class="mini-spinner"></span><span>Gerando prompt com IA...</span>';
     ptEl.disabled = true;
     enEl.disabled = true;
     ptEl.placeholder = 'Aguardando análise da IA...';
     enEl.placeholder = 'Aguardando análise da IA...';
   } else if (photo.status === 'analyzed') {
     statusEl.className = 'prompt-status analyzed';
-    statusEl.innerHTML = '<span>✓</span><span>Pronto · edite se quiser melhorar</span>';
+    statusEl.innerHTML = '<span>✓</span><span>Prompt gerado · edite se quiser</span>';
     ptEl.disabled = false;
     enEl.disabled = false;
     ptEl.value = photo.prompt_pt;
@@ -1289,7 +1432,7 @@ function clearPrompt(photoId, lang) {
 // ═══════════════════════════════════════════════════════════════
 // ANÁLISE IA — chama /analyzeImage em background
 // ═══════════════════════════════════════════════════════════════
-async function analyzePhotoInBackground(photo) {
+async function analyzePhotoInBackground(photo, prevPrompts) {
   try {
     const resp = await api('/analyzeImage', {
       method: 'POST',
@@ -1297,7 +1440,8 @@ async function analyzePhotoInBackground(photo) {
       body: JSON.stringify({
         image: photo.base64,
         mimeType: photo.mimeType,
-        photoIndex: photos.findIndex(p => p.id === photo.id) + 1
+        photoIndex: photos.findIndex(p => p.id === photo.id) + 1,
+        previousPrompts: Array.isArray(prevPrompts) ? prevPrompts : []
       })
     });
     const data = await resp.json();
@@ -1506,16 +1650,16 @@ function updateGenerateButton() {
       btn.innerHTML = '✨ &nbsp;PREENCHA O NOME DO CLIENTE';
     } else if (photos.length < MIN_PHOTOS) {
       btn.innerHTML = `✨ &nbsp;ENVIE PELO MENOS ${MIN_PHOTOS} FOTOS`;
-    } else if (photos.some(p => p.status === 'analyzing')) {
-      const restantes = photos.filter(p => p.status === 'analyzing').length;
-      btn.innerHTML = `⏳ &nbsp;ANALISANDO ${restantes} FOTO${restantes>1?'S':''}...`;
+    } else if (photos.some(p => p.status === 'analyzing' || p.status === 'queued')) {
+      const prontas = photos.filter(p => p.status === 'analyzed').length;
+      btn.innerHTML = `⏳ &nbsp;GERANDO PROMPTS ${prontas}/${photos.length}...`;
     } else if (!musicFile) {
       btn.innerHTML = '✨ &nbsp;ENVIE A MÚSICA';
     } else {
-      btn.innerHTML = '✨ &nbsp;GERAR VÍDEO PREMIUM';
+      btn.innerHTML = '✨ &nbsp;GERAR VÍDEO IA';
     }
   } else {
-    btn.innerHTML = '✨ &nbsp;GERAR VÍDEO PREMIUM';
+    btn.innerHTML = '✨ &nbsp;GERAR VÍDEO IA';
   }
 }
 
@@ -1808,7 +1952,7 @@ function dismissPending() {
 function renderAllSessions() {
   const wrap = document.getElementById('resultsSessions');
   if (!videoSessions.length) {
-    wrap.innerHTML = '<div class="results-empty"><span class="big">✨</span>Nenhum vídeo Premium gerado ainda.<br/>Os vídeos aparecem aqui após a renderização.</div>';
+    wrap.innerHTML = '<div class="results-empty"><span class="big">✨</span>Nenhum vídeo IA gerado ainda.<br/>Os vídeos aparecem aqui após a renderização.</div>';
     return;
   }
   wrap.innerHTML = '';
