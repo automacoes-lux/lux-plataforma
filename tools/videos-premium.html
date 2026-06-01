@@ -1039,6 +1039,7 @@ async function prepareSinglePhoto(file) {
       mimeType: optimized.type || 'image/jpeg',
       prompt_en: '',
       prompt_pt: '',
+      safety_en: '',
       legenda: '',           // legenda que casa com esta imagem (opcional)
       status: 'analyzing',
       errorMsg: ''
@@ -1458,6 +1459,7 @@ async function analyzePhotoInBackground(photo, prevPrompts) {
       photo.status = 'analyzed';
       photo.prompt_en = data.prompt_en || data.prompt || '';
       photo.prompt_pt = data.prompt_pt || '';
+      photo.safety_en = data.safety_en || '';
     }
   } catch (err) {
     photo.status = 'error';
@@ -1705,7 +1707,19 @@ async function generateVideo() {
       mimeType: p.mimeType,
       name: 'foto.jpg'
     }));
-    const photoPrompts = photos.map(p => (p.prompt_en || '').trim() || 'Subtle slow zoom in, cinematic commercial style');
+    // Monta o prompt final de cada foto: prompt + trava de segurança (proibições).
+    // A trava (safety_en) vem das regras "NÃO DEVE" do painel, traduzidas pra inglês.
+    // Garante que o Seedance receba as proibições no texto (ele não tem campo negativo).
+    const NUCLEO_SEGURANCA = 'Static scene, camera movement only, the subject stays completely still, no text or letters, no added people or animals, preserve the original image.';
+    const photoPrompts = photos.map(p => {
+      let base = (p.prompt_en || '').trim() || 'Subtle slow zoom in, cinematic commercial style';
+      const safety = (p.safety_en || '').trim() || NUCLEO_SEGURANCA;
+      // Evita duplicar se o prompt já termina com a trava
+      if (!base.toLowerCase().includes('no text') && !base.toLowerCase().includes('camera movement only')) {
+        base = base + ' ' + safety;
+      }
+      return base;
+    });
 
     const musicBase64 = await blobToBase64(musicFile);
     let logoData = null;
