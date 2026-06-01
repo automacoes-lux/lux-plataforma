@@ -1710,12 +1710,12 @@ async function generateVideo() {
     // Monta o prompt final de cada foto: prompt + trava de segurança (proibições).
     // A trava (safety_en) vem das regras "NÃO DEVE" do painel, traduzidas pra inglês.
     // Garante que o Seedance receba as proibições no texto (ele não tem campo negativo).
-    const NUCLEO_SEGURANCA = 'Static scene, camera movement only, the subject stays completely still, no text or letters, no added people or animals, preserve the original image.';
+    const NUCLEO_SEGURANCA = 'The main product or object stays completely still; camera movement only on objects; existing people may smile and gently wave; do not add new people, animals or vehicles; no invented text or logos; preserve the original image.';
     const photoPrompts = photos.map(p => {
       let base = (p.prompt_en || '').trim() || 'Subtle slow zoom in, cinematic commercial style';
       const safety = (p.safety_en || '').trim() || NUCLEO_SEGURANCA;
       // Evita duplicar se o prompt já termina com a trava
-      if (!base.toLowerCase().includes('no text') && !base.toLowerCase().includes('camera movement only')) {
+      if (!base.toLowerCase().includes('do not add new people') && !base.toLowerCase().includes('stays completely still')) {
         base = base + ' ' + safety;
       }
       return base;
