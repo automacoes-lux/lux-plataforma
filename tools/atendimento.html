@@ -624,56 +624,8 @@ body{
     </button>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════
-       CAIXA TUTORIAL (por aba) — fixa no topo, abaixo dos botões
-       ════════════════════════════════════════════════════════ -->
-  <div class="tutorial-card" id="tutorialCard">
-    <div class="tutorial-head">
-      <div class="title">
-        <span class="icon">🎓</span>
-        <span id="tutorialTitle">Tutorial</span>
-      </div>
-      <button class="tutorial-btn-edit" id="tutorialBtnEdit" onclick="toggleTutorialEdit()" style="display:none">
-        <span id="tutorialBtnEditLabel">✎ Editar</span>
-      </button>
-    </div>
-
-    <!-- Upload progress (aparece durante upload) -->
-    <div class="tutorial-upload-progress" id="tutorialProgress"></div>
-
-    <!-- ═══ Vídeo principal ═══ -->
-    <div id="tutorialVideoArea"><!-- player ou empty/upload --></div>
-
-    <!-- ═══ Observação ═══ -->
-    <div class="tutorial-obs-label">Observações</div>
-    <div id="tutorialObsArea"><!-- texto ou textarea --></div>
-
-    <!-- ═══ Vídeos extras ═══ -->
-    <div class="tutorial-section">
-      <div class="tutorial-section-label">
-        <span>Vídeos extras</span>
-        <button class="tutorial-add-btn admin-only" id="btnAddVideoExtra" onclick="document.getElementById('inputVideoExtra').click()" style="display:none">+ Vídeo</button>
-      </div>
-      <div class="tutorial-file-list" id="tutorialVideosExtras"></div>
-      <input type="file" id="inputVideoExtra" accept="video/*" style="display:none" onchange="onUploadFile(this.files[0],'video-extra')">
-    </div>
-
-    <!-- ═══ Arquivos ═══ -->
-    <div class="tutorial-section">
-      <div class="tutorial-section-label">
-        <span>Arquivos disponíveis</span>
-        <button class="tutorial-add-btn admin-only" id="btnAddArquivo" onclick="document.getElementById('inputArquivo').click()" style="display:none">+ Arquivo</button>
-      </div>
-      <div class="tutorial-file-list" id="tutorialArquivos"></div>
-      <input type="file" id="inputArquivo" style="display:none" onchange="onUploadFile(this.files[0],'arquivo')">
-    </div>
-
-    <!-- Botões de ação no modo edição -->
-    <div class="tutorial-edit-actions" id="tutorialEditActions" style="display:none">
-      <button class="tutorial-btn-edit" onclick="toggleTutorialEdit()">Fechar edição</button>
-      <button class="tutorial-btn-save" id="btnSalvarObs" onclick="salvarObservacao()">Salvar observação</button>
-    </div>
-  </div>
+  <!-- A caixa de tutorial por segmento foi removida.
+       Todos os vídeos tutoriais agora ficam na aba "Tutoriais". -->
 
   <!-- Lista de protocolos -->
   <div id="list">
@@ -826,7 +778,7 @@ async function init() {
   }
 
   await loadProtocols();
-  loadTutorial(state.activeSeg);  // carrega tutorial inicial
+  // (a caixa de tutorial por segmento foi removida — vídeos agora na aba Tutoriais)
 }
 
 async function loadProtocols() {
@@ -879,7 +831,6 @@ function setSeg(s) {
   const ehCards = SECOES_CARDS.includes(s);
   // Elementos do modo PROTOCOLOS
   document.getElementById('list').style.display = ehCards ? 'none' : '';
-  document.getElementById('tutorialCard').style.display = ehCards ? 'none' : '';
   // Barra admin de protocolos: só aparece se for admin E não for aba de cards
   const adminBar = document.getElementById('adminBar');
   if (adminBar) {
@@ -896,7 +847,6 @@ function setSeg(s) {
     loadCards(s);
   } else {
     renderList();
-    loadTutorial(s);
   }
 }
 
