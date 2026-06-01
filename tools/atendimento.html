@@ -192,6 +192,47 @@ body{
 }
 .tutorial-card.show{display:block}
 
+/* ═══ CARDS (Tutoriais / Ferramentas) ═══ */
+.cards-admin-bar{display:flex;justify-content:flex-end;margin-bottom:1.2rem}
+.card-item{display:block!important;margin-bottom:1.5rem}
+.card-head{padding-bottom:12px;border-bottom:1px solid rgba(201,168,76,.15);margin-bottom:14px}
+.card-titulo{font-family:'Cinzel',serif;font-size:16px;color:var(--gold);font-weight:600;letter-spacing:.04em}
+.card-titulo-input{
+  width:100%;font-family:'Cinzel',serif;font-size:16px;color:var(--gold);font-weight:600;
+  background:var(--bg-input);border:1px solid rgba(201,168,76,.25);border-radius:8px;padding:8px 12px;
+}
+.card-titulo-input:focus{outline:none;border-color:var(--gold)}
+.card-capa{margin-bottom:14px;border-radius:10px;overflow:hidden;background:#0a0a0a}
+.card-capa img{width:100%;display:block;max-height:320px;object-fit:cover}
+.card-capa-empty{
+  display:flex;align-items:center;justify-content:center;height:140px;cursor:pointer;
+  border:2px dashed rgba(201,168,76,.3);color:var(--text-mid);font-size:14px;
+}
+.card-capa-empty:hover{border-color:var(--gold);color:var(--gold)}
+.card-video-area{margin-bottom:14px}
+.card-video{width:100%;border-radius:10px;background:#000;max-height:420px;margin-bottom:8px}
+.card-upload-btn{
+  width:100%;padding:14px;background:rgba(201,168,76,.07);color:var(--gold);
+  border:1px dashed rgba(201,168,76,.35);border-radius:10px;cursor:pointer;font-size:14px;
+}
+.card-upload-btn:hover{background:rgba(201,168,76,.14)}
+.card-obs-input{
+  width:100%;min-height:60px;background:var(--bg-input);color:var(--text);
+  border:1px solid rgba(201,168,76,.25);border-radius:8px;padding:10px 12px;
+  font-family:'DM Sans',sans-serif;font-size:14px;resize:vertical;margin-bottom:8px;
+}
+.card-obs-input:focus{outline:none;border-color:var(--gold)}
+.card-obs-text{font-size:14px;color:var(--text-mid);line-height:1.5;white-space:pre-wrap;margin-bottom:8px}
+.card-add-btn{
+  background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.3);
+  border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;
+}
+.card-add-btn:hover{background:rgba(201,168,76,.2)}
+.card-admin-actions{
+  display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
+  border-top:1px solid rgba(201,168,76,.15);
+}
+
 .tutorial-head{
   display:flex;align-items:center;justify-content:space-between;
   padding-bottom:12px;border-bottom:1px solid rgba(201,168,76,.15);
@@ -561,6 +602,8 @@ body{
     </div>
   </div>
 
+  <!-- (título da página vem do shell; aqui é o subtítulo) -->
+
   <!-- Aviso de atualização (só atendente, quando admin mudou algo) -->
   <div class="update-banner" id="updateBanner">
     <div class="dot"></div>
@@ -637,7 +680,24 @@ body{
     <div class="state-msg"><span class="icon">⏳</span><div>Carregando protocolos…</div></div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════
+       ÁREA DE CARDS (abas Tutoriais e Ferramentas)
+       ════════════════════════════════════════════════════════ -->
+  <div id="cardsArea" style="display:none">
+    <!-- Barra admin dos cards (só admin) -->
+    <div class="cards-admin-bar" id="cardsAdminBar" style="display:none">
+      <button class="btn-primary" onclick="criarNovoCard()">+ Novo card</button>
+    </div>
+    <div id="cardsList"></div>
+  </div>
+
 </div>
+
+<!-- input escondido pra upload de capa (reusado por todos os cards) -->
+<input type="file" id="inputCardCover" accept="image/*" style="display:none">
+<input type="file" id="inputCardVideoPrincipal" accept="video/*" style="display:none">
+<input type="file" id="inputCardVideoExtra" accept="video/*" style="display:none">
+<input type="file" id="inputCardArquivo" style="display:none">
 
 <!-- Modal criar/editar (admin) -->
 <div class="modal-overlay" id="editModal">
@@ -728,9 +788,12 @@ const SEG_LABELS = {
   musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
   video:'Vídeo Padrão', figurinha:'Figurinha',
   animacao:'Animação', cover:'Cover', corte:'Corte',
-  objecoes:'Objeções'
+  objecoes:'Objeções',
+  tutoriais:'Tutoriais', ferramentas:'Ferramentas'
 };
-const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','cover','corte','objecoes'];
+const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','cover','corte','objecoes','tutoriais','ferramentas'];
+// Abas que usam o sistema de CARDS livres (não protocolos)
+const SECOES_CARDS = ['tutoriais','ferramentas'];
 
 const state = {
   protocols: [],
@@ -812,8 +875,29 @@ function renderSegs() {
 function setSeg(s) {
   state.activeSeg = s;
   renderSegs();
-  renderList();
-  loadTutorial(s);  // carrega tutorial da nova aba
+
+  const ehCards = SECOES_CARDS.includes(s);
+  // Elementos do modo PROTOCOLOS
+  document.getElementById('list').style.display = ehCards ? 'none' : '';
+  document.getElementById('tutorialCard').style.display = ehCards ? 'none' : '';
+  // Barra admin de protocolos: só aparece se for admin E não for aba de cards
+  const adminBar = document.getElementById('adminBar');
+  if (adminBar) {
+    if (!ehCards && state.isAdmin) adminBar.classList.add('show');
+    else adminBar.classList.remove('show');
+  }
+  // Área de CARDS
+  document.getElementById('cardsArea').style.display = ehCards ? '' : 'none';
+  // Barra admin dos cards: só admin
+  const cardsAdminBar = document.getElementById('cardsAdminBar');
+  if (cardsAdminBar) cardsAdminBar.style.display = (ehCards && state.isAdmin) ? '' : 'none';
+
+  if (ehCards) {
+    loadCards(s);
+  } else {
+    renderList();
+    loadTutorial(s);
+  }
 }
 
 function renderList() {
@@ -1098,6 +1182,257 @@ function toast(msg, type) {
   t.className = 'toast show' + (type === 'error' ? ' error' : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast' + (type === 'error' ? ' error' : ''); }, 3200);
+}
+
+// ════════════════════════════════════════════════════════════
+// CARDS LIVRES (abas Tutoriais e Ferramentas)
+// ════════════════════════════════════════════════════════════
+const cardsState = { secao: null, cards: [], uploadCardId: null };
+
+async function loadCards(secao) {
+  cardsState.secao = secao;
+  const cont = document.getElementById('cardsList');
+  cont.innerHTML = '<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/cards/' + secao);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro');
+    cardsState.cards = data.cards || [];
+    renderCards();
+  } catch (err) {
+    cont.innerHTML = '<div class="state-msg"><span class="icon">⚠️</span><div>Falha ao carregar: ' + escapeHtml(err.message) + '</div></div>';
+  }
+}
+
+function renderCards() {
+  const cont = document.getElementById('cardsList');
+  const cards = cardsState.cards;
+  if (!cards.length) {
+    cont.innerHTML = '<div class="state-msg"><span class="icon">📭</span><div>Nenhum card ainda.' +
+      (state.isAdmin ? ' Clique em "+ Novo card" para criar.' : '') + '</div></div>';
+    return;
+  }
+  cont.innerHTML = cards.map((c, idx) => renderCardHtml(c, idx)).join('');
+}
+
+function renderCardHtml(c, idx) {
+  const admin = state.isAdmin;
+  const base = WORKER_URL + '/cards/' + cardsState.secao + '/' + c.id;
+
+  // Capa (visível pra todos)
+  let capaHtml = '';
+  if (c.capa && c.capa.fileId) {
+    capaHtml = `<div class="card-capa"><img src="${base}/file/${c.capa.fileId}" alt="capa" loading="lazy"/></div>`;
+  } else if (admin) {
+    capaHtml = `<div class="card-capa card-capa-empty" onclick="uploadCardCover('${c.id}')">
+      <span>🖼 Adicionar capa</span></div>`;
+  }
+
+  // Vídeo principal
+  let videoHtml = '';
+  if (c.videoPrincipal && c.videoPrincipal.fileId) {
+    videoHtml = `<video class="card-video" controls preload="metadata" src="${base}/file/${c.videoPrincipal.fileId}"></video>`;
+    if (admin) {
+      videoHtml += `<button class="btn-mini danger" onclick="removerCardFile('${c.id}','${c.videoPrincipal.fileId}')">🗑 Remover vídeo</button>`;
+    }
+  } else if (admin) {
+    videoHtml = `<button class="card-upload-btn" onclick="uploadCardFile('${c.id}','video-principal')">🎬 Enviar vídeo principal</button>`;
+  }
+
+  // Observações
+  let obsHtml = '';
+  if (admin) {
+    obsHtml = `<textarea class="card-obs-input" id="cardObs-${c.id}" placeholder="Observações (opcional)">${escapeHtml(c.observacao || '')}</textarea>
+      <button class="btn-mini" onclick="salvarCardObs('${c.id}')">💾 Salvar observação</button>`;
+  } else if (c.observacao) {
+    obsHtml = `<div class="card-obs-text">${escapeHtml(c.observacao)}</div>`;
+  }
+
+  // Vídeos extras
+  const videosExtras = (c.videosExtras || []).map(f =>
+    renderCardFileRow(c.id, f, base, '🎞', admin)).join('');
+  const addVideoExtra = admin
+    ? `<button class="card-add-btn" onclick="uploadCardFile('${c.id}','video-extra')">+ Vídeo extra</button>` : '';
+
+  // Arquivos
+  const arquivos = (c.arquivos || []).map(f =>
+    renderCardFileRow(c.id, f, base, '📎', admin)).join('');
+  const addArquivo = admin
+    ? `<button class="card-add-btn" onclick="uploadCardFile('${c.id}','arquivo')">+ Arquivo</button>` : '';
+
+  // Título (editável p/ admin)
+  const tituloHtml = admin
+    ? `<input class="card-titulo-input" id="cardTitulo-${c.id}" value="${escapeHtml(c.titulo || '')}" onblur="salvarCardTitulo('${c.id}')"/>`
+    : `<div class="card-titulo">${escapeHtml(c.titulo || '')}</div>`;
+
+  // Ações admin (reordenar + apagar)
+  const isFirst = idx === 0, isLast = idx === cardsState.cards.length - 1;
+  const adminActions = admin ? `
+    <div class="card-admin-actions">
+      <button class="proto-reorder-btn" ${isFirst?'disabled':`onclick="moverCard('${c.id}','up')"`}>↑</button>
+      <button class="proto-reorder-btn" ${isLast?'disabled':`onclick="moverCard('${c.id}','down')"`}>↓</button>
+      ${(c.capa && c.capa.fileId) ? `<button class="btn-mini" onclick="uploadCardCover('${c.id}')">🖼 Trocar capa</button>` : ''}
+      <button class="btn-mini danger" onclick="apagarCard('${c.id}')">🗑 Apagar card</button>
+    </div>` : '';
+
+  return `
+    <div class="tutorial-card card-item" id="cardItem-${c.id}">
+      <div class="card-head">${tituloHtml}</div>
+      ${capaHtml}
+      <div class="card-video-area">${videoHtml}</div>
+      <div class="tutorial-obs-label">Observações</div>
+      ${obsHtml}
+      <div class="tutorial-section">
+        <div class="tutorial-section-label"><span>Vídeos extras</span>${addVideoExtra}</div>
+        <div class="tutorial-file-list">${videosExtras}</div>
+      </div>
+      <div class="tutorial-section">
+        <div class="tutorial-section-label"><span>Arquivos disponíveis</span>${addArquivo}</div>
+        <div class="tutorial-file-list">${arquivos}</div>
+      </div>
+      ${adminActions}
+    </div>`;
+}
+
+function renderCardFileRow(cardId, f, base, icon, admin) {
+  const del = admin
+    ? `<button class="tutorial-file-del" onclick="removerCardFile('${cardId}','${f.fileId}')">🗑</button>` : '';
+  return `<div class="tutorial-file-item">
+    <span class="tutorial-file-icon">${icon}</span>
+    <a class="tutorial-file-name" href="${base}/file/${f.fileId}" target="_blank" download>${escapeHtml(f.name)}</a>
+    <span class="tutorial-file-size">${formatBytes(f.size || 0)}</span>
+    ${del}
+  </div>`;
+}
+
+// ---- Ações de admin nos cards ----
+async function criarNovoCard() {
+  const titulo = prompt('Nome do novo card:', 'Novo tutorial');
+  if (titulo === null) return;
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/new', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo: titulo.trim() || 'Novo card' })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    showToast('Card criado!');
+    await loadCards(cardsState.secao);
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+
+async function salvarCardTitulo(cardId) {
+  const el = document.getElementById('cardTitulo-' + cardId);
+  if (!el) return;
+  const card = cardsState.cards.find(c => c.id === cardId);
+  if (card && card.titulo === el.value.trim()) return; // não mudou
+  try {
+    await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo: el.value.trim() })
+    });
+    if (card) card.titulo = el.value.trim();
+  } catch (err) { showToast('Erro ao salvar título', 'error'); }
+}
+
+async function salvarCardObs(cardId) {
+  const el = document.getElementById('cardObs-' + cardId);
+  if (!el) return;
+  try {
+    await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ observacao: el.value })
+    });
+    showToast('Observação salva!');
+  } catch (err) { showToast('Erro ao salvar', 'error'); }
+}
+
+async function apagarCard(cardId) {
+  if (!confirm('Apagar este card e todos os seus arquivos? Esta ação não pode ser desfeita.')) return;
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId, { method: 'DELETE' });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    showToast('Card apagado.');
+    await loadCards(cardsState.secao);
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+
+async function moverCard(cardId, dir) {
+  const cards = cardsState.cards;
+  const i = cards.findIndex(c => c.id === cardId);
+  if (i < 0) return;
+  const j = dir === 'up' ? i - 1 : i + 1;
+  if (j < 0 || j >= cards.length) return;
+  [cards[i], cards[j]] = [cards[j], cards[i]];
+  renderCards();
+  try {
+    await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/reorder', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ordem: cards.map(c => c.id) })
+    });
+  } catch (err) { showToast('Erro ao reordenar', 'error'); }
+}
+
+// ---- Upload de capa ----
+function uploadCardCover(cardId) {
+  const input = document.getElementById('inputCardCover');
+  input.onchange = async () => {
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    showToast('Enviando capa…');
+    try {
+      const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/cover', {
+        method: 'POST', body: fd
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+      showToast('Capa enviada!');
+      await loadCards(cardsState.secao);
+    } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+  };
+  input.click();
+}
+
+// ---- Upload de vídeo/arquivo ----
+function uploadCardFile(cardId, tipo) {
+  let inputId = 'inputCardArquivo';
+  if (tipo === 'video-principal') inputId = 'inputCardVideoPrincipal';
+  else if (tipo === 'video-extra') inputId = 'inputCardVideoExtra';
+  const input = document.getElementById(inputId);
+  input.onchange = async () => {
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('tipo', tipo);
+    showToast('Enviando ' + file.name + '…');
+    try {
+      const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/upload', {
+        method: 'POST', body: fd
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+      showToast('Arquivo enviado!');
+      await loadCards(cardsState.secao);
+    } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+  };
+  input.click();
+}
+
+async function removerCardFile(cardId, fileId) {
+  if (!confirm('Remover este arquivo?')) return;
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/file/' + fileId, { method: 'DELETE' });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    showToast('Arquivo removido.');
+    await loadCards(cardsState.secao);
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
 }
 
 function escapeHtml(s) {
