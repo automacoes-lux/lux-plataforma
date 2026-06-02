@@ -1260,9 +1260,9 @@ async function criarNovoCard() {
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error);
-    showToast('Card criado!');
+    toast('Card criado!');
     await loadCards(cardsState.secao);
-  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
 
 async function salvarCardTitulo(cardId) {
@@ -1276,7 +1276,7 @@ async function salvarCardTitulo(cardId) {
       body: JSON.stringify({ titulo: el.value.trim() })
     });
     if (card) card.titulo = el.value.trim();
-  } catch (err) { showToast('Erro ao salvar título', 'error'); }
+  } catch (err) { toast('Erro ao salvar título', 'error'); }
 }
 
 async function salvarCardObs(cardId) {
@@ -1287,8 +1287,8 @@ async function salvarCardObs(cardId) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ observacao: el.value })
     });
-    showToast('Observação salva!');
-  } catch (err) { showToast('Erro ao salvar', 'error'); }
+    toast('Observação salva!');
+  } catch (err) { toast('Erro ao salvar', 'error'); }
 }
 
 async function apagarCard(cardId) {
@@ -1297,9 +1297,9 @@ async function apagarCard(cardId) {
     const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId, { method: 'DELETE' });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error);
-    showToast('Card apagado.');
+    toast('Card apagado.');
     await loadCards(cardsState.secao);
-  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
 
 async function moverCard(cardId, dir) {
@@ -1315,7 +1315,7 @@ async function moverCard(cardId, dir) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ordem: cards.map(c => c.id) })
     });
-  } catch (err) { showToast('Erro ao reordenar', 'error'); }
+  } catch (err) { toast('Erro ao reordenar', 'error'); }
 }
 
 // ---- Upload de capa ----
@@ -1331,16 +1331,16 @@ function uploadCardCover(cardId) {
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
-    showToast('Enviando capa…');
+    toast('Enviando capa…');
     try {
       const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/cover', {
         method: 'POST', body: fd
       });
       const data = await resp.json();
       if (!data.ok) throw new Error(data.error || 'Erro');
-      showToast('Capa enviada!');
+      toast('Capa enviada!');
       await loadCards(cardsState.secao);
-    } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+    } catch (err) { toast('Erro: ' + err.message, 'error'); }
   };
   input.click();
 }
@@ -1359,16 +1359,16 @@ function uploadCardFile(cardId, tipo) {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('tipo', tipo);
-    showToast('Enviando ' + file.name + '… (pode levar um tempo)');
+    toast('Enviando ' + file.name + '… (pode levar um tempo)');
     try {
       const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/upload', {
         method: 'POST', body: fd
       });
       const data = await resp.json();
       if (!data.ok) throw new Error(data.error || 'Erro');
-      showToast('Arquivo enviado!');
+      toast('Arquivo enviado!');
       await loadCards(cardsState.secao);
-    } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+    } catch (err) { toast('Erro: ' + err.message, 'error'); }
   };
   input.click();
 }
@@ -1379,9 +1379,9 @@ async function removerCardFile(cardId, fileId) {
     const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/file/' + fileId, { method: 'DELETE' });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error);
-    showToast('Arquivo removido.');
+    toast('Arquivo removido.');
     await loadCards(cardsState.secao);
-  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
 
 function escapeHtml(s) {
