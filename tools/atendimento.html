@@ -645,12 +645,6 @@ body{
 
 </div>
 
-<!-- input escondido pra upload de capa (reusado por todos os cards) -->
-<input type="file" id="inputCardCover" accept="image/*" style="display:none">
-<input type="file" id="inputCardVideoPrincipal" accept="video/*" style="display:none">
-<input type="file" id="inputCardVideoExtra" accept="video/*" style="display:none">
-<input type="file" id="inputCardArquivo" style="display:none">
-
 <!-- Modal criar/editar (admin) -->
 <div class="modal-overlay" id="editModal">
   <div class="modal">
@@ -739,11 +733,11 @@ const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 const SEG_LABELS = {
   musica:'Música', locucao:'Locução', logo3d:'Logo 3D',
   video:'Vídeo Padrão', figurinha:'Figurinha',
-  animacao:'Animação', cover:'Cover', corte:'Corte',
+  animacao:'Animação',
   objecoes:'Objeções',
   tutoriais:'Tutoriais', ferramentas:'Ferramentas'
 };
-const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','cover','corte','objecoes','tutoriais','ferramentas'];
+const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','objecoes','tutoriais','ferramentas'];
 // Abas que usam o sistema de CARDS livres (não protocolos)
 const SECOES_CARDS = ['tutoriais','ferramentas'];
 
@@ -1326,10 +1320,14 @@ async function moverCard(cardId, dir) {
 
 // ---- Upload de capa ----
 function uploadCardCover(cardId) {
-  const input = document.getElementById('inputCardCover');
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  document.body.appendChild(input);
   input.onchange = async () => {
     const file = input.files[0];
-    input.value = '';
+    document.body.removeChild(input);
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
@@ -1339,7 +1337,7 @@ function uploadCardCover(cardId) {
         method: 'POST', body: fd
       });
       const data = await resp.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) throw new Error(data.error || 'Erro');
       showToast('Capa enviada!');
       await loadCards(cardsState.secao);
     } catch (err) { showToast('Erro: ' + err.message, 'error'); }
@@ -1349,24 +1347,25 @@ function uploadCardCover(cardId) {
 
 // ---- Upload de vídeo/arquivo ----
 function uploadCardFile(cardId, tipo) {
-  let inputId = 'inputCardArquivo';
-  if (tipo === 'video-principal') inputId = 'inputCardVideoPrincipal';
-  else if (tipo === 'video-extra') inputId = 'inputCardVideoExtra';
-  const input = document.getElementById(inputId);
+  const input = document.createElement('input');
+  input.type = 'file';
+  if (tipo === 'video-principal' || tipo === 'video-extra') input.accept = 'video/*';
+  input.style.display = 'none';
+  document.body.appendChild(input);
   input.onchange = async () => {
     const file = input.files[0];
-    input.value = '';
+    document.body.removeChild(input);
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
     fd.append('tipo', tipo);
-    showToast('Enviando ' + file.name + '…');
+    showToast('Enviando ' + file.name + '… (pode levar um tempo)');
     try {
       const resp = await window.__luxFetch(WORKER_URL + '/cards/' + cardsState.secao + '/' + cardId + '/upload', {
         method: 'POST', body: fd
       });
       const data = await resp.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) throw new Error(data.error || 'Erro');
       showToast('Arquivo enviado!');
       await loadCards(cardsState.secao);
     } catch (err) { showToast('Erro: ' + err.message, 'error'); }
