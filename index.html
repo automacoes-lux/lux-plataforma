@@ -454,7 +454,8 @@ function openLogoAnim(event) {
     ov.id = 'logoanim-modal';
     ov.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;opacity:0;transition:opacity .2s';
     ov.innerHTML = `
-      <div style="background:#141414;border:1px solid #C9A84C;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:'DM Sans',sans-serif">
+      <div style="background:#141414;border:1px solid #C9A84C;border-radius:14px;max-width:380px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:'DM Sans',sans-serif;position:relative">
+        <button id="logoanim-x" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:#8a857a;font-size:22px;line-height:1;cursor:pointer;padding:4px 8px;font-family:'DM Sans',sans-serif" title="Fechar">×</button>
         <div style="font-family:'Cinzel',serif;color:#D4AF37;font-size:17px;font-weight:600;letter-spacing:.06em;margin-bottom:10px;text-align:center">🎬 ANIMAÇÃO DE LOGO</div>
         <p style="color:#cfcabf;font-size:14px;line-height:1.6;text-align:center;margin:0 0 18px">
           Use o e-mail e a senha abaixo para entrar no Renderforest. Toque em cada um para copiar.
@@ -473,7 +474,7 @@ function openLogoAnim(event) {
         </button>
 
         <button id="logoanim-open" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#D4AF37,#E8C766);border:none;border-radius:9px;padding:13px;cursor:pointer;color:#1A1A1A;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase">Abrir ferramenta</button>
-        <button id="logoanim-cancel" style="width:100%;margin-top:8px;background:transparent;border:none;color:#8a857a;font-size:12px;cursor:pointer;padding:8px;font-family:'DM Sans',sans-serif">Cancelar</button>
+        <button id="logoanim-cancel" style="width:100%;margin-top:8px;background:transparent;border:none;color:#8a857a;font-size:12px;cursor:pointer;padding:8px;font-family:'DM Sans',sans-serif">Fechar</button>
       </div>`;
     document.body.appendChild(ov);
 
@@ -489,8 +490,9 @@ function openLogoAnim(event) {
           }).catch(() => {});
         }
       } catch (e) { /* nunca trava a abertura por causa do log */ }
+      // Abre o site numa nova aba, mas MANTÉM a caixa aberta — assim o atendente
+      // pode voltar e copiar a senha depois de colar o e-mail. Fecha só no X.
       window.open(LOGOANIM_URL, '_blank', 'noopener');
-      close();
     };
 
     const copiar = async (texto, iconEl) => {
@@ -513,7 +515,9 @@ function openLogoAnim(event) {
     });
     ov.querySelector('#logoanim-open').addEventListener('click', goOpen);
     ov.querySelector('#logoanim-cancel').addEventListener('click', close);
-    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    ov.querySelector('#logoanim-x').addEventListener('click', close);
+    // Não fecha ao clicar fora — evita perder a senha sem querer.
+    // Fecha só pelo X ou pelo Cancelar.
   }
   requestAnimationFrame(() => { ov.style.opacity = '1'; });
 }
