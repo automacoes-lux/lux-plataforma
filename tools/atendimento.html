@@ -70,6 +70,10 @@ body{
 }
 .seg-btn:hover{background:var(--bg-hover);color:var(--text)}
 .seg-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600}
+/* Aba Tutoriais em vermelho (destaque) */
+.seg-btn.seg-tutoriais{color:#e72041;border-color:#e72041}
+.seg-btn.seg-tutoriais:hover{background:rgba(231,32,65,.12);color:#e72041}
+.seg-btn.seg-tutoriais.active{background:#e72041;color:#fff;border-color:#e72041}
 .seg-btn .count{font-size:11px;opacity:.7;margin-left:4px}
 
 /* Caixa de protocolo */
@@ -735,11 +739,11 @@ const SEG_LABELS = {
   video:'Vídeo Padrão', figurinha:'Figurinha',
   animacao:'Animação',
   objecoes:'Objeções',
-  tutoriais:'Tutoriais', ferramentas:'Ferramentas'
+  tutoriais:'Tutoriais'
 };
-const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','objecoes','tutoriais','ferramentas'];
+const SEG_ORDER = ['musica','locucao','logo3d','video','figurinha','animacao','objecoes','tutoriais'];
 // Abas que usam o sistema de CARDS livres (não protocolos)
-const SECOES_CARDS = ['tutoriais','ferramentas'];
+const SECOES_CARDS = ['tutoriais'];
 
 const state = {
   protocols: [],
@@ -811,7 +815,7 @@ function renderSegs() {
   state.protocols.forEach(p => { if (counts[p.seg] != null) counts[p.seg]++; });
 
   const html = SEG_ORDER.map(s =>
-    `<button class="seg-btn ${s === state.activeSeg ? 'active' : ''}" onclick="setSeg('${s}')">
+    `<button class="seg-btn ${s === 'tutoriais' ? 'seg-tutoriais' : ''} ${s === state.activeSeg ? 'active' : ''}" onclick="setSeg('${s}')">
        ${SEG_LABELS[s]}<span class="count">${counts[s]}</span>
      </button>`
   ).join('');
