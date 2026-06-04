@@ -363,7 +363,7 @@ input[type="file"]{display:none}
       <div class="upload-area" id="musicUpload" onclick="document.getElementById('musicInput').click()">
         <input id="musicInput" type="file" accept="audio/*"/>
         <span class="icon">🎵</span>
-        <p>Clique para enviar a música (MP3)</p>
+        <p>Clique para enviar a música (MP3, WAV, M4A, OGG…)</p>
         <span>Entre 5s e 3min · o vídeo terá a duração da música</span>
       </div>
       <div class="media-preview" id="musicPreview">
@@ -1116,16 +1116,23 @@ async function handleMusic(e) {
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!file) return;
-  if (!/^audio\//.test(file.type)) return toast('Selecione um arquivo de áudio.', 'error');
+  // Aceita por MIME (audio/*) OU por extensão de áudio conhecida.
+  // Alguns formatos (wav, flac, m4a) às vezes vêm com MIME vazio/genérico,
+  // então a checagem por extensão garante que não sejam rejeitados à toa.
+  const EXT_AUDIO_OK = /\.(mp3|wav|wave|m4a|aac|ogg|oga|opus|flac|wma|mpeg|mpga|mp2|aiff|aif|amr|3gp|caf)$/i;
+  const ehAudio = /^audio\//i.test(file.type) || EXT_AUDIO_OK.test(file.name || '');
+  if (!ehAudio) return toast('Selecione um arquivo de áudio (MP3, WAV, M4A, OGG, etc).', 'error');
 
   try {
     showToast('Carregando música...', 'info');
     const duration = await getAudioDuration(file);
-    if (duration < MIN_MUSIC_SECONDS) {
+    // duration === 0 significa que não foi possível medir (formato exótico),
+    // mas o arquivo é válido — então pula as validações de tamanho.
+    if (duration > 0 && duration < MIN_MUSIC_SECONDS) {
       hideToast();
       return toast('Música muito curta (mínimo ' + MIN_MUSIC_SECONDS + 's).', 'error');
     }
-    if (duration > MAX_MUSIC_SECONDS) {
+    if (duration > 0 && duration > MAX_MUSIC_SECONDS) {
       hideToast();
       return toast('Música muito longa (máximo 3 minutos).', 'error');
     }
@@ -1156,9 +1163,48 @@ function getAudioDuration(file) {
   return new Promise((resolve, reject) => {
     const audio = document.createElement('audio');
     const url = URL.createObjectURL(file);
-    audio.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(audio.duration); };
-    audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Áudio inválido')); };
+    let done = false;
+    const finish = (dur) => {
+      if (done) return; done = true;
+      URL.revokeObjectURL(url);
+      resolve(dur);
+    };
+    audio.onloadedmetadata = () => {
+      const d = audio.duration;
+      if (isFinite(d) && d > 0) finish(d);
+      else tryWebAudio(file).then(finish).catch(() => finish(0));
+    };
+    // Se o <audio> não toca o formato, NÃO rejeita: tenta o Web Audio API,
+    // que decodifica mais formatos (wav, flac, etc). Se ainda falhar, resolve 0
+    // (o backend ainda processa o arquivo; a duração 0 só pula a validação local).
+    audio.onerror = () => {
+      tryWebAudio(file).then(finish).catch(() => finish(0));
+    };
     audio.src = url;
+    // Timeout de segurança: se travar a leitura, parte pro Web Audio
+    setTimeout(() => {
+      if (!done) tryWebAudio(file).then(finish).catch(() => finish(0));
+    }, 8000);
+  });
+}
+
+// Mede a duração decodificando com Web Audio API (suporta mais formatos
+// que o elemento <audio>). Usado como fallback quando o <audio> falha.
+function tryWebAudio(file) {
+  return new Promise((resolve, reject) => {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return reject(new Error('sem AudioContext'));
+      const ctx = new AC();
+      const reader = new FileReader();
+      reader.onload = () => {
+        ctx.decodeAudioData(reader.result)
+          .then(buf => { const d = buf.duration; ctx.close(); resolve(d); })
+          .catch(err => { ctx.close(); reject(err); });
+      };
+      reader.onerror = () => reject(new Error('falha ao ler arquivo'));
+      reader.readAsArrayBuffer(file);
+    } catch (e) { reject(e); }
   });
 }
 
