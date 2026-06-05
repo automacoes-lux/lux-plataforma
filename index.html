@@ -141,8 +141,8 @@
         <div class="nav-icon">📋</div> Suporte
         <span class="nav-dot" id="atendimentoDot" style="display:none"></span>
       </a>
-      <a class="nav-item" data-tool="meus-custos" href="#">
-        <div class="nav-icon">💰</div> Meus Custos
+      <a class="nav-item" data-tool="financeiro-atendente" href="#" data-role-required="atendente" style="display:none">
+        <div class="nav-icon">💰</div> Financeiro
         <span class="nav-badge badge-live">LIVE</span>
       </a>
       <a class="nav-item" data-tool="financeiro" href="#" data-role-required="admin" style="display:none">
@@ -349,11 +349,11 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- MEUS CUSTOS (atendente — só os custos dele) -->
-    <div id="view-meus-custos" class="tool-panel">
+    <!-- FINANCEIRO (atendente — só o dele + ranking) -->
+    <div id="view-financeiro-atendente" class="tool-panel" data-role-required="atendente" style="display:none">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">💰 MEUS CUSTOS</span>
+        <span class="tool-panel-title">💰 FINANCEIRO</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
