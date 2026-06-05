@@ -364,7 +364,7 @@ input[type="file"]{display:none}
         <input id="musicInput" type="file" accept="audio/*"/>
         <span class="icon">🎵</span>
         <p>Clique para enviar a música (MP3, WAV, M4A, OGG…)</p>
-        <span>Entre 5s e 3min · o vídeo terá a duração da música</span>
+        <span>Entre 5s e 5min · o vídeo terá a duração da música</span>
       </div>
       <div class="media-preview" id="musicPreview">
         <div class="media-icon">🎵</div>
@@ -526,7 +526,7 @@ const JPEG_QUALITY = 0.82;
 const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 30;
 const MIN_MUSIC_SECONDS = 5;
-const MAX_MUSIC_SECONDS = 180;
+const MAX_MUSIC_SECONDS = 300;
 const LOGO_MAX_BYTES = 8 * 1024 * 1024;
 
 // Polling
@@ -1134,7 +1134,7 @@ async function handleMusic(e) {
     }
     if (duration > 0 && duration > MAX_MUSIC_SECONDS) {
       hideToast();
-      return toast('Música muito longa (máximo 3 minutos).', 'error');
+      return toast('Música muito longa (máximo 5 minutos).', 'error');
     }
     const base64 = await blobToBase64(file);
     state.music = {
