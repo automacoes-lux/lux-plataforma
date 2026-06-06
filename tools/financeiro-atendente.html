@@ -25,7 +25,7 @@ body{
 .page-sub{font-size:14px;color:var(--text-dim);margin-top:5px}
 
 .card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.4rem;margin-bottom:1.1rem}
-.card-title{font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:#FFF;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:8px}
+.card-title{font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:#FFF;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:8px}
 .card-title::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
 
 .fin-mode-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
@@ -40,19 +40,17 @@ body{
 .field input{width:100%;padding:11px 13px;font-size:16px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none}
 .btn-secondary{padding:11px 16px;background:transparent;color:var(--text);border:.5px solid var(--border-bright);border-radius:var(--radius);font-size:15px;cursor:pointer}
 
-.fin-total{background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.03));border:1px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.6rem;text-align:center;margin-bottom:1.1rem}
-.fin-total .label{font-size:12px;color:var(--gold-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
-.fin-total .value{font-family:'Cinzel',serif;color:var(--gold);font-size:38px;font-weight:700}
-.fin-total .sub{font-size:14px;color:var(--text-dim);margin-top:6px}
-
 .breakdown{display:flex;flex-direction:column;gap:3px}
 .bd-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);font-size:16px}
 .bd-row .k{color:var(--text-mid);display:flex;align-items:center;gap:8px}
 .bd-row .v{font-variant-numeric:tabular-nums;font-weight:600}
 .bd-row.neg .v{color:var(--danger)}
-.bd-row.final{background:rgba(201,168,76,.08);border-color:var(--border-bright);margin-top:6px}
-.bd-row.final .k{color:var(--gold)}
-.bd-row.final .v{color:var(--gold);font-family:'Cinzel',serif;font-size:20px}
+.bd-row.sub{background:rgba(255,255,255,.04)}
+.bd-row.sub .k,.bd-row.sub .v{color:var(--text)}
+.bd-note{text-align:center;font-size:13px;color:var(--text-dim);padding:4px 0}
+.bd-row.final{background:rgba(201,168,76,.1);border-color:var(--border-bright);margin-top:4px}
+.bd-row.final .k{color:var(--gold);font-weight:600}
+.bd-row.final .v{color:var(--gold);font-family:'Cinzel',serif;font-size:22px}
 
 .day-toggle{margin-top:12px;text-align:center}
 .day-toggle button{background:none;border:none;color:var(--gold-dim);font-size:14px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.04em}
@@ -63,7 +61,6 @@ body{
 .day-item .ent{text-align:right;min-width:90px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* extrato de recebimentos */
 .rec-box{max-height:380px;overflow-y:auto;border:.5px solid var(--border);border-radius:var(--radius);margin-top:6px}
 .rec-item{display:grid;grid-template-columns:1.6fr 1fr .8fr auto;gap:10px;padding:10px 13px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:14px;align-items:center}
 .rec-item:last-child{border-bottom:none}
@@ -72,7 +69,6 @@ body{
 .rec-item .rd,.rec-item .rh{color:var(--text-dim);text-align:right;font-variant-numeric:tabular-nums}
 .rec-item .rv{color:var(--ok);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 
-/* ranking */
 .trophy-card{border-radius:var(--radius-lg);padding:1.5rem 1.2rem;text-align:center;margin-bottom:1rem;border:1px solid var(--border-bright)}
 .trophy-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.05));border-color:rgba(201,168,76,.7)}
 .trophy-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.16),rgba(200,200,210,.03));border-color:rgba(200,200,210,.5)}
@@ -110,6 +106,7 @@ body{
     <div class="page-sub" id="pgSub">Quanto você vendeu e recebeu.</div>
   </div>
 
+  <!-- Filtro -->
   <div class="card">
     <div class="fin-mode-toggle">
       <button class="fin-mode-btn active" data-mode="dia" onclick="setMode('dia')">Hoje</button>
@@ -126,9 +123,14 @@ body{
     </div>
   </div>
 
-  <div id="meContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
+  <!-- 1) Sua conta -->
+  <div id="contaContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
 
+  <!-- 2) Ranking -->
   <div class="card"><div class="card-title">🏆 Ranking da equipe</div><div id="rankContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div></div>
+
+  <!-- 3) Meus recebimentos -->
+  <div id="recContainer"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -144,7 +146,7 @@ async function init(){
   document.getElementById('navNext').addEventListener('click',()=>step(1));
   setMode('dia');
 }
-function fmtBRL(v){ return 'R$ '+Number(v||0).toFixed(2).replace('.',','); }
+function fmtBRL(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDBR(s){ return s ? s.split('-').reverse().join('/') : '—'; }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -163,21 +165,24 @@ function step(dir){ if(mode==='dia')ref.setDate(ref.getDate()+dir); else if(mode
 async function loadTudo(){ const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[1]; if(!curFrom||!curTo){ toast('Escolha as datas.','error'); return; } document.getElementById('navLabel').textContent=rg[2]||`${fmtDBR(curFrom)} a ${fmtDBR(curTo)}`; await Promise.all([loadMe(),loadRanking()]); }
 
 async function loadMe(){
-  const cont=document.getElementById('meContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
-  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderMe(d.me,d.recebimentos||[]); }
+  const cont=document.getElementById('contaContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  document.getElementById('recContainer').innerHTML='';
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderConta(d.me); renderRecebimentos(d.recebimentos||[]); }
   catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
 }
-function renderMe(me,recebimentos){
-  const cont=document.getElementById('meContainer');
+function renderConta(me){
+  const cont=document.getElementById('contaContainer');
   const dias=(me.dias||[]).filter(x=>x.entradaBRL>0||x.liquidoBRL!==0);
+  const resultado=(me.entradaBRL||0)-(me.impostoBRL||0)-(me.anuncioBRL||0)-(me.custoIaBRL||0);
   let html=`
-    <div class="fin-total"><div class="label">Seu líquido no período</div><div class="value">${fmtBRL(me.liquidoBRL)}</div><div class="sub">Vendas (entrada): ${fmtBRL(me.entradaBRL)}</div></div>
     <div class="card"><div class="card-title">Sua conta</div>
       <div class="breakdown">
         <div class="bd-row"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(me.entradaBRL)}</span></div>
         <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(me.impostoBRL)}</span></div>
         <div class="bd-row neg"><span class="k">➖ Anúncio</span><span class="v">- ${fmtBRL(me.anuncioBRL)}</span></div>
-        <div class="bd-row neg"><span class="k">➖ Custos (IA)</span><span class="v">- ${fmtBRL(me.custoIaBRL)}</span></div>
+        <div class="bd-row neg"><span class="k">➖ Plataforma</span><span class="v">- ${fmtBRL(me.custoIaBRL)}</span></div>
+        <div class="bd-row sub"><span class="k">= Resultado</span><span class="v">${fmtBRL(resultado)}</span></div>
+        <div class="bd-note">➗ sua parte (metade)</div>
         <div class="bd-row final"><span class="k">= Líquido</span><span class="v">${fmtBRL(me.liquidoBRL)}</span></div>
       </div>`;
   if(dias.length){
@@ -185,9 +190,11 @@ function renderMe(me,recebimentos){
       <div class="day-list" id="dayList">${dias.map(x=>`<div class="day-item"><span class="d">${fmtDBR(x.data)}</span><span class="ent">vendas ${fmtBRL(x.entradaBRL)}</span><span class="liq">${fmtBRL(x.liquidoBRL)}</span></div>`).join('')}</div>`;
   }
   html+=`</div>`;
-
-  // extrato de recebimentos dele
-  html+=`<div class="card"><div class="card-title">🧾 Meus recebimentos (${recebimentos.length})</div>`;
+  cont.innerHTML=html;
+}
+function renderRecebimentos(recebimentos){
+  const cont=document.getElementById('recContainer');
+  let html=`<div class="card"><div class="card-title">🧾 Meus recebimentos (${recebimentos.length})</div>`;
   if(recebimentos.length){
     html+=`<div class="rec-box"><div class="rec-item head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>`;
     html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
@@ -212,12 +219,12 @@ function renderRanking(d){
   if(!rk.length){ cont.innerHTML='<div class="state-msg"><div>Ainda não há vendas neste período.</div></div>'; return; }
   const eu=d.eu; let html='';
   if(eu){
-    if(eu.top) html+=`<div class="trophy-card t${eu.top}"><div class="trophy-emoji">${MEDALHA[eu.top]}</div><div class="trophy-pos">${eu.top}º lugar</div><div class="trophy-msg">${FRASES[eu.top]}</div>${eu.entradaBRL!=null?`<div class="trophy-val">${fmtBRL(eu.entradaBRL)} em vendas</div>`:''}</div>`;
+    if(eu.top) html+=`<div class="trophy-card t${eu.top}"><div class="trophy-emoji">${MEDALHA[eu.top]}</div><div class="trophy-pos">${eu.top}º lugar</div><div class="trophy-msg">${FRASES[eu.top]}</div>${eu.valorBRL!=null?`<div class="trophy-val">${fmtBRL(eu.valorBRL)} de líquido</div>`:''}</div>`;
     else if(eu.ehUltimo) html+=`<div class="trophy-card last"><div class="trophy-emoji">🌱</div><div class="trophy-pos">Você está em ${eu.pos}º</div><div class="trophy-msg">${FRASE_ULTIMO}</div></div>`;
     else html+=`<div class="trophy-card"><div class="trophy-emoji">🎯</div><div class="trophy-pos">Você está em ${eu.pos}º de ${d.total}</div><div class="trophy-msg">Tá no caminho! Cada venda te aproxima do pódio. Bora pra cima! 🚀</div></div>`;
   }
   html+='<div class="rank-list">';
-  rk.forEach(x=>{ const medal=x.top?`<span class="rank-medal">${MEDALHA[x.top]}</span>`:''; const val=(x.entradaBRL!=null)?`<span class="rank-val">${fmtBRL(x.entradaBRL)}</span>`:''; html+=`<div class="rank-row${x.ehMeu?' me':''}"><div class="rank-pos">${x.pos}</div><div class="rank-name">${escapeHtml(x.nome)}${x.ehMeu?'<span class="you">(você)</span>':''}</div>${medal}${val}</div>`; });
+  rk.forEach(x=>{ const medal=x.top?`<span class="rank-medal">${MEDALHA[x.top]}</span>`:''; const val=(x.valorBRL!=null)?`<span class="rank-val">${fmtBRL(x.valorBRL)}</span>`:''; html+=`<div class="rank-row${x.ehMeu?' me':''}"><div class="rank-pos">${x.pos}</div><div class="rank-name">${escapeHtml(x.nome)}${x.ehMeu?'<span class="you">(você)</span>':''}</div>${medal}${val}</div>`; });
   html+='</div>';
   cont.innerHTML=html;
 }

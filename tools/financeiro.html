@@ -100,7 +100,8 @@ input[type="file"]{display:none}
 /* % por atendente (imagem) */
 .pct-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:14px}
 .pct-row .pn{color:var(--text)}
-.pct-row .pn small{color:var(--text-dim);font-size:12px}
+.pct-row .pn small{display:block;margin-top:5px;color:var(--text-dim);font-size:13px;font-weight:600}
+.pct-row .pn small.ok{color:var(--ok)}
 .pct-row .pn small.nomatch{color:#E87A7A}
 .pct-row input{width:90px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px;text-align:right}
 
@@ -113,7 +114,7 @@ input[type="file"]{display:none}
 .confer-status.diff{background:rgba(232,168,76,.1);border:.5px solid rgba(232,168,76,.4);color:#E8A84C}
 
 /* relatório de transações (scroll) */
-.tx-toggle{background:none;border:none;color:var(--gold-dim);font-size:14px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.04em;padding:4px 0}
+.tx-toggle{background:none;border:none;color:#FFF;font-size:16px;font-weight:600;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.04em;padding:6px 0}
 .tx-box{max-height:360px;overflow-y:auto;margin-top:8px;border:.5px solid var(--border);border-radius:var(--radius)}
 .tx-item{display:grid;grid-template-columns:1.5fr 1fr .8fr auto;gap:10px;padding:8px 12px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:13px;align-items:center}
 .tx-item:last-child{border-bottom:none}
@@ -244,9 +245,9 @@ input[type="file"]{display:none}
         <div class="value" id="revLiquido">R$ 0,00</div>
         <div class="sub" id="revSub">—</div>
       </div>
-      <div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto 6%</span><span>Anúncio ✎</span><span>Custo IA</span><span>Líquido</span></div>
+      <div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto 6%</span><span>Anúncio ✎</span><span>Plataforma</span><span>Líquido</span></div>
       <div id="revTable"></div>
-      <div class="hint-box">✎ Todas as colunas <b>Entrada, Imposto, Anúncio e Custo IA</b> são editáveis — o líquido recalcula na hora.</div>
+      <div class="hint-box">✎ Todas as colunas <b>Entrada, Imposto, Anúncio e Plataforma</b> são editáveis — o líquido recalcula na hora.</div>
 
       <div id="revNaoId"></div>
       <div id="revDebitos"></div>
@@ -272,7 +273,8 @@ input[type="file"]{display:none}
     <div class="card">
       <div class="card-title">Visão geral</div>
       <div class="fin-mode-toggle">
-        <button class="fin-mode-btn active" data-mode="dia" onclick="setMode('dia')">Dia</button>
+        <button class="fin-mode-btn active" data-mode="hoje" onclick="setMode('hoje')">Hoje</button>
+        <button class="fin-mode-btn" data-mode="ontem" onclick="setMode('ontem')">Ontem</button>
         <button class="fin-mode-btn" data-mode="semana" onclick="setMode('semana')">Semana</button>
         <button class="fin-mode-btn" data-mode="mes" onclick="setMode('mes')">Mês</button>
         <button class="fin-mode-btn" data-mode="ano" onclick="setMode('ano')">Ano</button>
@@ -313,13 +315,14 @@ async function init(){
     document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
-    if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('dia'); }
+    if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
   }));
   setupUpload(); loadCambio();
 }
 
 // helpers
-function fmtBRL(v){ return 'R$ '+Number(v||0).toFixed(2).replace('.',','); }
+function fmtBRL(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtNum(v){ return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDBR(s){ return s ? s.split('-').reverse().join('/') : '—'; }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -418,7 +421,7 @@ function renderPct(soma){
   const t=document.getElementById('pctTable'); t.innerHTML='';
   pctState.forEach((p,i)=>{
     const row=document.createElement('div'); row.className='pct-row';
-    row.innerHTML=`<div class="pn">${escapeHtml(p.nome)}${p.email?'<small>✓ atendente reconhecido</small>':'<small class="nomatch">⚠ não casou com nenhum atendente</small>'}</div>
+    row.innerHTML=`<div class="pn">${escapeHtml(p.nome)}${p.email?'<small class="ok">✓ atendente reconhecido</small>':'<small class="nomatch">❌ atendente não reconhecido</small>'}</div>
       <input type="number" step="0.1" data-i="${i}" value="${Number(p.percent||0)}">`;
     t.appendChild(row);
   });
@@ -454,7 +457,8 @@ async function organizar(){
 
 function recalcLinha(i){
   const a=preview.atendentes[i];
-  a.liquidoBRL=Math.round(((a.entradaBRL||0)-(a.impostoBRL||0)-(a.anuncioBRL||0)-(a.custoIaBRL||0))*100)/100;
+  // líquido do atendente = metade do resultado (a outra metade é dos sócios)
+  a.liquidoBRL=Math.round((((a.entradaBRL||0)-(a.impostoBRL||0)-(a.anuncioBRL||0)-(a.custoIaBRL||0))/2)*100)/100;
   const el=document.getElementById('liq-'+i); if(el) el.textContent=fmtBRL(a.liquidoBRL);
   recalcTotais();
 }
@@ -477,7 +481,7 @@ function renderRevisao(){
       <div class="cell" data-l="Entrada"><input class="edit" inputmode="decimal" data-i="${i}" data-f="entradaBRL" value="${(a.entradaBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Imposto"><input class="edit" inputmode="decimal" data-i="${i}" data-f="impostoBRL" value="${(a.impostoBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Anúncio"><input class="edit" inputmode="decimal" data-i="${i}" data-f="anuncioBRL" value="${(a.anuncioBRL||0).toFixed(2)}"></div>
-      <div class="cell" data-l="Custo IA"><input class="edit" inputmode="decimal" data-i="${i}" data-f="custoIaBRL" value="${(a.custoIaBRL||0).toFixed(2)}"></div>
+      <div class="cell" data-l="Plataforma"><input class="edit" inputmode="decimal" data-i="${i}" data-f="custoIaBRL" value="${(a.custoIaBRL||0).toFixed(2)}"></div>
       <div class="cell liquido" data-l="Líquido"><span id="liq-${i}">${fmtBRL(a.liquidoBRL)}</span></div>`;
     tb.appendChild(row);
   });
@@ -541,17 +545,27 @@ async function enviar(){
 }
 
 // ── visão geral ──
-let geralLoadedOnce=false, geralMode='dia', geralRef=new Date();
-function setMode(m){ geralMode=m; document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); document.getElementById('customBox').classList.toggle('hidden',m!=='custom'); document.getElementById('navBox').classList.toggle('hidden',m==='custom'); if(m!=='custom'){ geralRef=new Date(); loadGeral(); } }
+let geralLoadedOnce=false, geralMode='hoje', geralRef=new Date();
+function setMode(m){
+  geralMode=m;
+  document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  document.getElementById('customBox').classList.toggle('hidden',m!=='custom');
+  document.getElementById('navBox').classList.toggle('hidden',m==='custom');
+  if(m!=='custom'){
+    geralRef=new Date();
+    if(m==='ontem') geralRef.setDate(geralRef.getDate()-1);
+    loadGeral();
+  }
+}
 function semanaSabSex(r){ const d=new Date(r),dow=d.getDay(),dd=(dow+1)%7; const s=new Date(d); s.setDate(d.getDate()-dd); const e=new Date(s); e.setDate(s.getDate()+6); return [s,e]; }
 function rangeFor(m,r){
-  if(m==='dia') return [ymd(r),ymd(r),fmtDBR(ymd(r))];
+  if(m==='hoje'||m==='ontem') return [ymd(r),ymd(r),fmtDBR(ymd(r))];
   if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
   if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
   if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
   return [document.getElementById('cFrom').value,document.getElementById('cTo').value,''];
 }
-function stepRef(dir){ if(geralMode==='dia')geralRef.setDate(geralRef.getDate()+dir); else if(geralMode==='semana')geralRef.setDate(geralRef.getDate()+7*dir); else if(geralMode==='mes')geralRef.setMonth(geralRef.getMonth()+dir); else if(geralMode==='ano')geralRef.setFullYear(geralRef.getFullYear()+dir); loadGeral(); }
+function stepRef(dir){ if(geralMode==='hoje'||geralMode==='ontem')geralRef.setDate(geralRef.getDate()+dir); else if(geralMode==='semana')geralRef.setDate(geralRef.getDate()+7*dir); else if(geralMode==='mes')geralRef.setMonth(geralRef.getMonth()+dir); else if(geralMode==='ano')geralRef.setFullYear(geralRef.getFullYear()+dir); loadGeral(); }
 document.getElementById('navPrev').addEventListener('click',()=>stepRef(-1));
 document.getElementById('navNext').addEventListener('click',()=>stepRef(1));
 async function loadGeral(){
@@ -567,22 +581,22 @@ function renderGeral(d){
   const atts=(d.atendentes||[]);
   let html=`
     <div class="fin-total"><div class="label">Líquido total da equipe</div><div class="value">${fmtBRL(t.liquidoBRL)}</div>
-      <div class="sub">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Custo IA ${fmtBRL(t.custoIaBRL)}</div></div>
+      <div class="sub">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)}</div></div>
     <div class="lucros">
       <div class="lucro-card hl"><div class="lv">${fmtBRL(t.lucroTotalBRL)}</div><div class="ll">Lucro total</div></div>
       <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroEquipeBRL)}</div><div class="ll">Lucro equipe</div></div>
       <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroSocioBRL)}</div><div class="ll">Lucro por sócio</div></div>
     </div>`;
   if(!atts.length){ html+='<div class="state-msg"><div>Nenhum fechamento enviado neste período ainda.</div></div>'; cont.innerHTML=html; return; }
-  html+='<div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto</span><span>Anúncio</span><span>Custo IA</span><span>Líquido</span></div>';
+  html+='<div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto</span><span>Anúncio</span><span>Plataforma</span><span>Líquido</span></div>';
   atts.forEach((a,i)=>{
     html+=`<div class="att-row2 att-toggle" data-i="${i}">
       <div class="nome">${i+1}. ${escapeHtml(a.nome)}</div>
       <div class="num" data-l="Entrada">${fmtBRL(a.entradaBRL)}</div>
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>
-      <div class="num" data-l="Custo IA">${fmtBRL(a.custoIaBRL)}</div>
-      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}</span><button class="copybtn" data-v="${Number(a.liquidoBRL||0).toFixed(2)}" title="Copiar o lucro para pagamento">📋</button></div>
+      <div class="num" data-l="Plataforma">${fmtBRL(a.custoIaBRL)}</div>
+      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}</span><button class="copybtn" data-v="${fmtNum(a.liquidoBRL)}" title="Copiar o lucro para pagamento">📋</button></div>
     </div>
     <div class="att-expand hidden" id="exp-${i}">${(a.dias||[]).map(dd=>`<div class="day-row"><span>${fmtDBR(dd.data)}</span><span>${fmtBRL(dd.entradaBRL)}</span><span>${fmtBRL(dd.impostoBRL)}</span><span>${fmtBRL(dd.anuncioBRL)}</span><span>${fmtBRL(dd.custoIaBRL)}</span><span style="color:var(--gold)">${fmtBRL(dd.liquidoBRL)}</span></div>`).join('')||'<div class="day-row"><span>Sem dias.</span></div>'}</div>`;
   });
@@ -590,11 +604,11 @@ function renderGeral(d){
   cont.querySelectorAll('.att-toggle').forEach(row=>row.addEventListener('click',()=>document.getElementById('exp-'+row.dataset.i).classList.toggle('hidden')));
   cont.querySelectorAll('.copybtn').forEach(btn=>btn.addEventListener('click',async(e)=>{
     e.stopPropagation();
-    const valor=String(btn.dataset.v||'0').replace('.',',');  // ex: 1234,56
+    const valor=String(btn.dataset.v||'0');  // ex: 2.396,06
     try{ await navigator.clipboard.writeText(valor); }catch(_){ const ta=document.createElement('textarea'); ta.value=valor; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-    const orig=btn.textContent; btn.textContent='✓'; btn.classList.add('copied');
+    // permanece verde pra marcar quem já foi copiado/pago (não volta sozinho)
+    btn.textContent='✓ copiado'; btn.classList.add('copied');
     toast('Copiado: '+valor,'success');
-    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); }, 1600);
   }));
 }
 
