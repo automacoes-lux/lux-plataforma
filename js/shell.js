@@ -17,7 +17,7 @@ const TOOLS = {
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
   atendimento:       'tools/atendimento.html',
-  'meus-custos':     'tools/meus-custos.html',
+  'financeiro-atendente': 'tools/financeiro-atendente.html',
   financeiro:        'tools/financeiro.html',
   admin:             'tools/admin.html',
 };
