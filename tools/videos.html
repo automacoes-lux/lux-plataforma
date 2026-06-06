@@ -574,6 +574,21 @@ input[type="file"]{display:none}
   </div>
 </div>
 
+<!-- ═══ EDITOR DE GRADE (2 fotos, zoom/posição individual) ═══ -->
+<div class="editor-overlay" id="gridEditorOverlay">
+  <div class="editor-modal">
+    <div class="editor-title">Ajustar grade (2 fotos)</div>
+    <div class="editor-stage"><canvas id="gridEditorCanvas" class="editor-canvas"></canvas></div>
+    <div class="editor-ctrl"><label>Zoom topo</label><input type="range" id="gridZoomTop" min="100" max="400" value="100"/></div>
+    <div class="editor-ctrl"><label>Zoom baixo</label><input type="range" id="gridZoomBot" min="100" max="400" value="100"/></div>
+    <div class="editor-hint">Arraste cada foto pra posicionar · use os zooms pra aproximar cada uma.</div>
+    <div class="editor-actions">
+      <button class="ed-cancel" onclick="closeGridEditor()">Cancelar</button>
+      <button class="ed-save" onclick="saveGridEditor()">Salvar grade</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══ LUX VÍDEOS — JS ════════════════════════════════════════
 const WORKER_URL = 'https://lux-videos.plataformalux.workers.dev';
@@ -1397,28 +1412,100 @@ function drawCover(ctx, img, dx, dy, dw, dh) {
 async function combinarGrade() {
   if (gridSel.length !== 2) return toast('Selecione exatamente 2 fotos.', 'error');
   const pair = gridSel.slice().sort((a, b) => a - b);
-  const a = pair[0], b = pair[1];
-  const pa = state.photos[a], pb = state.photos[b];
+  await openGridEditor(pair[0], pair[1]);   // abre o editor de grade (zoom/posição por foto)
+}
+
+// ── Editor de grade: 2 fotos empilhadas, cada uma com zoom/posição ──
+const GRID_GAP = 6;
+let ged = null;  // { a, b, cellH, cells:[{img,scale,minScale,maxScale,offX,offY}], dragging, activeCell }
+
+async function openGridEditor(aIdx, bIdx) {
+  const pa = state.photos[aIdx], pb = state.photos[bIdx];
   let imgA, imgB;
   try {
     imgA = await loadImg(pa.origBase64 || pa.base64);
     imgB = await loadImg(pb.origBase64 || pb.base64);
   } catch (e) { return toast('Não consegui abrir as fotos.', 'error'); }
+  const cellH = (OUT_H - GRID_GAP) / 2;
+  const mk = (img) => {
+    const minScale = Math.max(OUT_W / img.naturalWidth, cellH / img.naturalHeight);
+    return { img, minScale, maxScale: minScale * 4, scale: minScale,
+             offX: (OUT_W - img.naturalWidth * minScale) / 2,
+             offY: (cellH - img.naturalHeight * minScale) / 2 };
+  };
+  ged = { a: aIdx, b: bIdx, cellH, cells: [mk(imgA), mk(imgB)], dragging: false, activeCell: 0 };
+  document.getElementById('gridZoomTop').value = 100;
+  document.getElementById('gridZoomBot').value = 100;
+  const cv = document.getElementById('gridEditorCanvas'); cv.width = ED_DW; cv.height = ED_DH;
+  bindGridEditorEvents();
+  drawGridEditor();
+  document.getElementById('gridEditorOverlay').classList.add('show');
+}
+function clampCell(c, cellH) {
+  const dw = c.img.naturalWidth * c.scale, dh = c.img.naturalHeight * c.scale;
+  c.offX = Math.min(0, Math.max(OUT_W - dw, c.offX));
+  c.offY = Math.min(0, Math.max(cellH - dh, c.offY));
+}
+function drawGridEditor() {
+  if (!ged) return;
+  const cv = document.getElementById('gridEditorCanvas'); const ctx = cv.getContext('2d');
+  const ds = ED_DW / OUT_W, cellHd = ged.cellH * ds, gapd = GRID_GAP * ds;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, ED_DW, ED_DH);
+  ged.cells.forEach((c, idx) => {
+    clampCell(c, ged.cellH);
+    const oy = idx === 0 ? 0 : (cellHd + gapd);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, oy, ED_DW, cellHd); ctx.clip();
+    ctx.drawImage(c.img, c.offX * ds, oy + c.offY * ds, c.img.naturalWidth * c.scale * ds, c.img.naturalHeight * c.scale * ds);
+    ctx.restore();
+  });
+}
+function bindGridEditorEvents() {
+  const cv = document.getElementById('gridEditorCanvas');
+  if (cv._bound) return; cv._bound = true;
+  const ds = ED_DW / OUT_W;
+  const xy = (e) => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; };
+  const cellAt = (y) => { const cellHd = ged.cellH * ds, gapd = GRID_GAP * ds; if (y < cellHd) return 0; if (y > cellHd + gapd) return 1; return -1; };
+  const start = (e) => { if (!ged) return; const p = xy(e); const ci = cellAt(p.y); if (ci < 0) return; e.preventDefault(); ged.dragging = true; ged.activeCell = ci; ged.lastX = p.x; ged.lastY = p.y; };
+  const move = (e) => { if (!ged || !ged.dragging) return; e.preventDefault(); const p = xy(e); const c = ged.cells[ged.activeCell]; c.offX += (p.x - ged.lastX) / ds; c.offY += (p.y - ged.lastY) / ds; ged.lastX = p.x; ged.lastY = p.y; drawGridEditor(); };
+  const end = () => { if (ged) ged.dragging = false; };
+  cv.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', start, { passive: false }); cv.addEventListener('touchmove', move, { passive: false }); cv.addEventListener('touchend', end);
+  const zoom = (sliderId, idx) => document.getElementById(sliderId).addEventListener('input', (e) => {
+    if (!ged) return;
+    const c = ged.cells[idx];
+    const t = (Number(e.target.value) - 100) / 300;
+    const newScale = c.minScale + t * (c.maxScale - c.minScale);
+    const cx = OUT_W / 2, cy = ged.cellH / 2, k = newScale / c.scale;
+    c.offX = cx - (cx - c.offX) * k; c.offY = cy - (cy - c.offY) * k; c.scale = newScale;
+    drawGridEditor();
+  });
+  zoom('gridZoomTop', 0); zoom('gridZoomBot', 1);
+}
+function closeGridEditor() { document.getElementById('gridEditorOverlay').classList.remove('show'); ged = null; }
+async function saveGridEditor() {
+  if (!ged) return;
   const cv = document.createElement('canvas'); cv.width = OUT_W; cv.height = OUT_H;
-  const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
-  const gap = 6, cellH = (OUT_H - gap) / 2;
-  drawCover(ctx, imgA, 0, 0, OUT_W, cellH);
-  drawCover(ctx, imgB, 0, cellH + gap, OUT_W, cellH);
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
+  ged.cells.forEach((c, idx) => {
+    clampCell(c, ged.cellH);
+    const oy = idx === 0 ? 0 : (ged.cellH + GRID_GAP);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, oy, OUT_W, ged.cellH); ctx.clip();
+    ctx.drawImage(c.img, c.offX, oy + c.offY, c.img.naturalWidth * c.scale, c.img.naturalHeight * c.scale);
+    ctx.restore();
+  });
   const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
   const base64 = await blobToBase64(blob);
-  const novo = { file: null, base64, origBase64: base64, mime: 'image/jpeg', name: 'grade.jpg', thumbUrl: URL.createObjectURL(blob), size: blob.size, edited: true };
-  if (pa.thumbUrl) URL.revokeObjectURL(pa.thumbUrl);
-  if (pb.thumbUrl) URL.revokeObjectURL(pb.thumbUrl);
-  // remove a 2ª (índice maior) e a 1ª, e insere a combinada na posição da 1ª
-  state.photos.splice(b, 1);
-  state.photos.splice(a, 1);
-  state.photos.splice(a, 0, novo);
+  const lo = Math.min(ged.a, ged.b), hi = Math.max(ged.a, ged.b);
+  const pa = state.photos[lo], pb = state.photos[hi];
+  if (pa && pa.thumbUrl) URL.revokeObjectURL(pa.thumbUrl);
+  if (pb && pb.thumbUrl) URL.revokeObjectURL(pb.thumbUrl);
+  const novo = { kind: 'photo', file: null, base64, origBase64: base64, mime: 'image/jpeg', name: 'grade.jpg', thumbUrl: URL.createObjectURL(blob), size: blob.size, edited: true };
+  state.photos.splice(hi, 1);
+  state.photos.splice(lo, 1);
+  state.photos.splice(lo, 0, novo);
+  closeGridEditor();
   cancelGridMode();
   renderPhotos(); renderBlocks();
   toast('Grade criada ✓ (2 fotos viraram 1)', 'success');
@@ -1431,6 +1518,8 @@ window.saveEditor = saveEditor;
 window.toggleGridMode = toggleGridMode;
 window.cancelGridMode = cancelGridMode;
 window.combinarGrade = combinarGrade;
+window.closeGridEditor = closeGridEditor;
+window.saveGridEditor = saveGridEditor;
 
 // ═══ UPLOAD DE MÚSICA ═══════════════════════════════════════
 document.getElementById('musicInput').addEventListener('change', handleMusic);
