@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Financeiro</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+<script src="../js/auth-iframe.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg-card:#121212;--bg-input:#1C1C1C;--text-mid:#B0A080;--ok:#7FB87A;--danger:#E87A7A}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:820px;margin:0 auto;padding:1.6rem 1.4rem 5rem}
+.page-header{margin-bottom:1.2rem}
+.page-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.14em;color:var(--gold);font-weight:600}
+.page-sub{font-size:12px;color:var(--text-dim);margin-top:4px}
+
+.card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.3rem;margin-bottom:1.1rem}
+.card-title{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:#FFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
+
+/* Filtro de período */
+.fin-mode-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.fin-mode-btn{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.fin-mode-btn.active{background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
+.fin-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:.4rem}
+.fin-nav button{background:transparent;border:1px solid var(--border-bright);color:var(--gold);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px}
+.fin-nav .lbl{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;min-width:190px;text-align:center}
+.fin-date-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px}
+.fin-date-row .f{flex:1;min-width:120px}
+.field label{font-size:11px;color:var(--gold-dim);display:block;margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.field input{width:100%;padding:10px 12px;font-size:14px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none}
+.btn-secondary{padding:10px 16px;background:transparent;color:var(--text);border:.5px solid var(--border-bright);border-radius:var(--radius);font-size:13px;cursor:pointer}
+
+/* Total líquido */
+.fin-total{background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.03));border:1px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;margin-bottom:1.1rem}
+.fin-total .label{font-size:10px;color:var(--gold-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
+.fin-total .value{font-family:'Cinzel',serif;color:var(--gold);font-size:34px;font-weight:700}
+.fin-total .sub{font-size:12px;color:var(--text-dim);margin-top:6px}
+
+/* Quebra da conta */
+.breakdown{display:flex;flex-direction:column;gap:2px}
+.bd-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);font-size:14px}
+.bd-row .k{color:var(--text-mid);display:flex;align-items:center;gap:8px}
+.bd-row .v{font-variant-numeric:tabular-nums;font-weight:600}
+.bd-row.neg .v{color:var(--danger)}
+.bd-row.pos .v{color:var(--text)}
+.bd-row.final{background:rgba(201,168,76,.08);border-color:var(--border-bright);margin-top:6px}
+.bd-row.final .k{color:var(--gold)}
+.bd-row.final .v{color:var(--gold);font-family:'Cinzel',serif;font-size:18px}
+
+/* Detalhe por dia */
+.day-toggle{margin-top:12px;text-align:center}
+.day-toggle button{background:none;border:none;color:var(--gold-dim);font-size:12px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.06em}
+.day-list{margin-top:10px;display:none}
+.day-list.show{display:block;animation:fadeIn .2s ease both}
+.day-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px 12px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:12px;color:var(--text-dim)}
+.day-item .d{color:var(--text-mid)}
+.day-item .liq{color:var(--gold);font-weight:600;text-align:right;min-width:80px}
+.day-item .ent{text-align:right;min-width:80px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ─── RANKING ─── */
+.trophy-card{border-radius:var(--radius-lg);padding:1.4rem 1.2rem;text-align:center;margin-bottom:1rem;position:relative;overflow:hidden;border:1px solid var(--border-bright)}
+.trophy-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.05));border-color:rgba(201,168,76,.7)}
+.trophy-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.16),rgba(200,200,210,.03));border-color:rgba(200,200,210,.5)}
+.trophy-card.t3{background:linear-gradient(135deg,rgba(205,127,50,.16),rgba(205,127,50,.03));border-color:rgba(205,127,50,.5)}
+.trophy-card.last{background:linear-gradient(135deg,rgba(232,122,122,.1),rgba(232,122,122,.02));border-color:rgba(232,122,122,.4)}
+.trophy-emoji{font-size:48px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.trophy-pos{font-family:'Cinzel',serif;font-size:13px;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:4px}
+.trophy-card.t2 .trophy-pos{color:#C8C8D2}.trophy-card.t3 .trophy-pos{color:#E2A86A}.trophy-card.last .trophy-pos{color:var(--danger)}
+.trophy-msg{font-size:14px;color:var(--text);line-height:1.6;max-width:520px;margin:0 auto}
+.trophy-val{margin-top:8px;font-family:'Cinzel',serif;font-size:20px;color:var(--gold);font-weight:700}
+
+.rank-list{display:flex;flex-direction:column;gap:6px;margin-top:1rem}
+.rank-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius)}
+.rank-row.me{background:rgba(201,168,76,.1);border-color:var(--border-bright);box-shadow:0 0 0 1px rgba(201,168,76,.2)}
+.rank-pos{width:30px;height:30px;border-radius:50%;background:rgba(201,168,76,.12);color:var(--gold);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Cinzel',serif}
+.rank-row.me .rank-pos{background:var(--gold);color:#1A1A1A}
+.rank-name{flex:1;min-width:0;font-size:14px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-name .you{font-size:10px;color:var(--gold-dim);margin-left:6px}
+.rank-medal{font-size:18px;flex-shrink:0}
+.rank-val{font-variant-numeric:tabular-nums;color:var(--gold-dim);font-size:13px;font-weight:600;flex-shrink:0}
+
+.state-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.6rem 1rem;color:var(--text-dim);text-align:center;gap:10px;font-size:14px}
+.state-msg .icon{font-size:30px;opacity:.5}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);padding:12px 20px;background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius);font-size:13px;color:var(--text);opacity:0;transition:all .25s;pointer-events:none;z-index:2000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{border-color:var(--danger);color:#FFB0B0}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="page-header">
+    <div class="page-title">💰 Meu Financeiro</div>
+    <div class="page-sub" id="pgSub">Quanto você vendeu e recebeu.</div>
+  </div>
+
+  <!-- Filtro -->
+  <div class="card">
+    <div class="fin-mode-toggle">
+      <button class="fin-mode-btn active" data-mode="dia"    onclick="setMode('dia')">Hoje</button>
+      <button class="fin-mode-btn"        data-mode="semana" onclick="setMode('semana')">Semana</button>
+      <button class="fin-mode-btn"        data-mode="mes"    onclick="setMode('mes')">Mês</button>
+      <button class="fin-mode-btn"        data-mode="ano"    onclick="setMode('ano')">Ano</button>
+      <button class="fin-mode-btn"        data-mode="custom" onclick="setMode('custom')">Período</button>
+    </div>
+    <div class="fin-nav" id="navBox">
+      <button id="navPrev">‹</button>
+      <span class="lbl" id="navLabel">—</span>
+      <button id="navNext">›</button>
+    </div>
+    <div class="fin-date-row hidden" id="customBox">
+      <div class="f field"><label>De</label><input type="date" id="cFrom"/></div>
+      <div class="f field"><label>Até</label><input type="date" id="cTo"/></div>
+      <button class="btn-secondary" onclick="loadTudo()">Ver</button>
+    </div>
+  </div>
+
+  <!-- Minha conta -->
+  <div id="meContainer">
+    <div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>
+  </div>
+
+  <!-- Ranking -->
+  <div class="card" id="rankCard">
+    <div class="card-title">🏆 Ranking da equipe</div>
+    <div id="rankContainer">
+      <div class="state-msg"><span class="icon">⏳</span><div>Carregando ranking…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
+
+let meuNome = '';
+let mode='dia', ref=new Date();
+
+window.addEventListener('DOMContentLoaded', init);
+async function init(){
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/admin/me');
+    const d=await r.json();
+    if(d.ok){ meuNome=d.user.name||d.user.email; document.getElementById('pgSub').textContent='Olá, '+meuNome+' — aqui está quanto você vendeu e recebeu.'; }
+  }catch(e){/* segue mesmo assim */}
+  document.getElementById('navPrev').addEventListener('click',()=>step(-1));
+  document.getElementById('navNext').addEventListener('click',()=>step(1));
+  setMode('dia');
+}
+
+// Helpers
+function fmtBRL(v){ return 'R$ ' + Number(v||0).toFixed(2).replace('.',','); }
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmtDBR(s){ return s ? s.split('-').reverse().join('/') : '—'; }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg,type='info'){ const el=document.getElementById('toast'); el.className='toast show '+type; el.textContent=msg; clearTimeout(window.__tt); window.__tt=setTimeout(()=>el.classList.remove('show'),3200); }
+
+// Período
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  document.getElementById('customBox').classList.toggle('hidden',m!=='custom');
+  document.getElementById('navBox').classList.toggle('hidden',m==='custom');
+  if(m!=='custom'){ ref=new Date(); loadTudo(); }
+}
+function semanaSabSex(r){ const d=new Date(r),dow=d.getDay(),dd=(dow+1)%7; const s=new Date(d); s.setDate(d.getDate()-dd); const e=new Date(s); e.setDate(s.getDate()+6); return [s,e]; }
+function rangeFor(m,r){
+  if(m==='dia') return [ymd(r),ymd(r),'Hoje · '+fmtDBR(ymd(r))];
+  if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0);
+    const M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
+  if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
+  return [document.getElementById('cFrom').value, document.getElementById('cTo').value, ''];
+}
+function step(dir){
+  if(mode==='dia') ref.setDate(ref.getDate()+dir);
+  else if(mode==='semana') ref.setDate(ref.getDate()+7*dir);
+  else if(mode==='mes') ref.setMonth(ref.getMonth()+dir);
+  else if(mode==='ano') ref.setFullYear(ref.getFullYear()+dir);
+  loadTudo();
+}
+
+let curFrom='', curTo='';
+async function loadTudo(){
+  const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[1];
+  if(!curFrom||!curTo){ toast('Escolha as duas datas.','error'); return; }
+  document.getElementById('navLabel').textContent=rg[2]||`${fmtDBR(curFrom)} a ${fmtDBR(curTo)}`;
+  await Promise.all([ loadMe(), loadRanking() ]);
+}
+
+// ── Minha conta ──
+async function loadMe(){
+  const cont=document.getElementById('meContainer');
+  cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`);
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    renderMe(d.me);
+  }catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
+}
+function renderMe(me){
+  const cont=document.getElementById('meContainer');
+  const dias=(me.dias||[]).filter(x=>x.entradaBRL>0||x.liquidoBRL!==0);
+  let html=`
+    <div class="fin-total">
+      <div class="label">Seu líquido no período</div>
+      <div class="value">${fmtBRL(me.liquidoBRL)}</div>
+      <div class="sub">Vendas (entrada): ${fmtBRL(me.entradaBRL)}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sua conta</div>
+      <div class="breakdown">
+        <div class="bd-row pos"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(me.entradaBRL)}</span></div>
+        <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(me.impostoBRL)}</span></div>
+        <div class="bd-row neg"><span class="k">➖ Anúncio</span><span class="v">- ${fmtBRL(me.anuncioBRL)}</span></div>
+        <div class="bd-row neg"><span class="k">➖ Custos (IA)</span><span class="v">- ${fmtBRL(me.custoIaBRL)}</span></div>
+        ${me.ajusteBRL ? `<div class="bd-row pos"><span class="k">± Ajuste</span><span class="v">${fmtBRL(me.ajusteBRL)}</span></div>`:''}
+        <div class="bd-row final"><span class="k">= Líquido</span><span class="v">${fmtBRL(me.liquidoBRL)}</span></div>
+      </div>`;
+  if(dias.length){
+    html+=`<div class="day-toggle"><button onclick="document.getElementById('dayList').classList.toggle('show')">▾ ver dia a dia (${dias.length})</button></div>
+      <div class="day-list" id="dayList">
+        ${dias.map(x=>`<div class="day-item"><span class="d">${fmtDBR(x.data)}</span><span class="ent">vendas ${fmtBRL(x.entradaBRL)}</span><span class="liq">${fmtBRL(x.liquidoBRL)}</span></div>`).join('')}
+      </div>`;
+  }
+  html+=`</div>`;
+  cont.innerHTML=html;
+}
+
+// ── Ranking ──
+const FRASES={
+  1:'🏆 Você é o nº 1! Performance espetacular — a equipe inteira se inspira em você. Obrigado por puxar o time pra cima!',
+  2:'🥈 Quase lá! Você está voando — falta pouquíssimo pro topo. Orgulho da equipe!',
+  3:'🥉 Pódio merecido! Sua consistência faz diferença. Bora subir mais um degrau!'
+};
+const FRASE_ULTIMO='Essa rodada foi mais dura, mas é só uma fase. Você tem talento de sobra — bora virar esse jogo juntos. Conte com a gente! 💪';
+const MEDALHA={1:'🥇',2:'🥈',3:'🥉'};
+
+async function loadRanking(){
+  const cont=document.getElementById('rankContainer');
+  cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando ranking…</div></div>';
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/ranking?from=${curFrom}&to=${curTo}`);
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    renderRanking(d);
+  }catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
+}
+function renderRanking(d){
+  const cont=document.getElementById('rankContainer');
+  const rk=d.ranking||[];
+  if(!rk.length){ cont.innerHTML='<div class="state-msg"><div>Ainda não há vendas neste período.</div></div>'; return; }
+  const eu=d.eu;
+  let html='';
+
+  // Destaque pro próprio atendente (troféu se top 1-3, incentivo se último)
+  if(eu){
+    if(eu.top){
+      html+=`<div class="trophy-card t${eu.top}">
+        <div class="trophy-emoji">${MEDALHA[eu.top]}</div>
+        <div class="trophy-pos">${eu.top}º lugar</div>
+        <div class="trophy-msg">${FRASES[eu.top]}</div>
+        ${eu.entradaBRL!=null?`<div class="trophy-val">${fmtBRL(eu.entradaBRL)} em vendas</div>`:''}
+      </div>`;
+    } else if(eu.ehUltimo){
+      html+=`<div class="trophy-card last">
+        <div class="trophy-emoji">🌱</div>
+        <div class="trophy-pos">Você está em ${eu.pos}º</div>
+        <div class="trophy-msg">${FRASE_ULTIMO}</div>
+      </div>`;
+    } else {
+      html+=`<div class="trophy-card">
+        <div class="trophy-emoji">🎯</div>
+        <div class="trophy-pos">Você está em ${eu.pos}º de ${d.total}</div>
+        <div class="trophy-msg">Tá no caminho! Cada venda te aproxima do pódio. Bora pra cima! 🚀</div>
+      </div>`;
+    }
+  }
+
+  // Lista completa (posições; valor só do TOP 1 e do próprio)
+  html+='<div class="rank-list">';
+  rk.forEach(x=>{
+    const medal = x.top ? `<span class="rank-medal">${MEDALHA[x.top]}</span>` : '';
+    const val = (x.entradaBRL!=null) ? `<span class="rank-val">${fmtBRL(x.entradaBRL)}</span>` : '';
+    html+=`<div class="rank-row${x.ehMeu?' me':''}">
+      <div class="rank-pos">${x.pos}</div>
+      <div class="rank-name">${escapeHtml(x.nome)}${x.ehMeu?'<span class="you">(você)</span>':''}</div>
+      ${medal}${val}
+    </div>`;
+  });
+  html+='</div>';
+  cont.innerHTML=html;
+}
+</script>
+</body>
+</html>

@@ -250,6 +250,13 @@ body{
         <option value="admin">Admin</option>
       </select>
     </div>
+    <div class="field">
+      <label>Chave PIX (parte antes do @)</label>
+      <input id="newPixKey" type="text" placeholder="ex: rayane" autocomplete="off"/>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.4">
+        Só o texto antes do <strong>@luxmarketing.com.br</strong>. É o que liga o nome do extrato a este atendente no Financeiro. Deixe vazio se não tiver.
+      </div>
+    </div>
     <div class="modal-buttons">
       <button class="btn-secondary" onclick="closeAddModal()">Cancelar</button>
       <button class="btn-primary" id="btnSaveUser" onclick="saveUser()">Salvar</button>
@@ -339,24 +346,33 @@ function renderUsers() {
     const roleLabel  = u.role === 'admin' ? 'Admin' : 'Atendente';
     const createdAt  = u.createdAt ? formatDate(u.createdAt) : '—';
 
+    const pixInfo = u.pixKey
+      ? `PIX: <strong>${escapeHtml(u.pixKey)}</strong> · `
+      : (u.role === 'atendente' ? '<span style="color:#E8A84C">sem chave PIX</span> · ' : '');
+
     const row = document.createElement('div');
     row.className = 'user-row';
     row.innerHTML = `
       <div class="user-info">
         <div class="user-name">${escapeHtml(u.name || u.email)}</div>
         <div class="user-email">${escapeHtml(u.email)}</div>
-        <div class="user-meta">Cadastrado em ${createdAt}${u.createdBy ? ' por ' + escapeHtml(u.createdBy) : ''}</div>
+        <div class="user-meta">${pixInfo}Cadastrado em ${createdAt}${u.createdBy ? ' por ' + escapeHtml(u.createdBy) : ''}</div>
       </div>
       <span class="role-badge ${roleClass}">${roleLabel}</span>
       <div class="user-actions">
+        <button class="btn-icon btn-edit" title="Editar" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || '')}" data-role="${escapeAttr(u.role || 'atendente')}" data-pix="${escapeAttr(u.pixKey || '')}">✎</button>
         ${isYou
           ? '<span class="you-tag">(você)</span>'
           : `<button class="btn-icon" title="Remover" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || u.email)}">✕</button>`
         }
       </div>
     `;
+    row.querySelector('.btn-edit').addEventListener('click', (e) => {
+      const b = e.currentTarget;
+      openEditModal(b.dataset.email, b.dataset.name, b.dataset.role, b.dataset.pix);
+    });
     if (!isYou) {
-      row.querySelector('.btn-icon').addEventListener('click', (e) => {
+      row.querySelector('.btn-icon:not(.btn-edit)').addEventListener('click', (e) => {
         const btn = e.currentTarget;
         openDeleteModal(btn.dataset.email, btn.dataset.name);
       });
@@ -377,21 +393,35 @@ function renderError(msg) {
     </div>`;
 }
 
-// ═══ MODAL ADICIONAR ═══
+// ═══ MODAL ADICIONAR / EDITAR ═══
 function openAddModal() {
-  document.getElementById('newEmail').value = '';
-  document.getElementById('newName').value  = '';
-  document.getElementById('newRole').value  = 'atendente';
+  document.querySelector('#addModal .modal-title').textContent = 'Novo Usuário';
+  const em = document.getElementById('newEmail');
+  em.value = ''; em.removeAttribute('readonly'); em.style.opacity = '1';
+  document.getElementById('newName').value   = '';
+  document.getElementById('newRole').value    = 'atendente';
+  document.getElementById('newPixKey').value  = '';
   document.getElementById('addModal').classList.add('show');
-  setTimeout(() => document.getElementById('newEmail').focus(), 100);
+  setTimeout(() => em.focus(), 100);
+}
+function openEditModal(email, name, role, pixKey) {
+  document.querySelector('#addModal .modal-title').textContent = 'Editar Usuário';
+  const em = document.getElementById('newEmail');
+  em.value = email; em.setAttribute('readonly', 'readonly'); em.style.opacity = '0.7';
+  document.getElementById('newName').value   = name || '';
+  document.getElementById('newRole').value    = role || 'atendente';
+  document.getElementById('newPixKey').value  = pixKey || '';
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(() => document.getElementById('newName').focus(), 100);
 }
 function closeAddModal() {
   document.getElementById('addModal').classList.remove('show');
 }
 async function saveUser() {
-  const email = document.getElementById('newEmail').value.trim().toLowerCase();
-  const name  = document.getElementById('newName').value.trim();
-  const role  = document.getElementById('newRole').value;
+  const email  = document.getElementById('newEmail').value.trim().toLowerCase();
+  const name   = document.getElementById('newName').value.trim();
+  const role   = document.getElementById('newRole').value;
+  const pixKey = document.getElementById('newPixKey').value.trim().toLowerCase();
 
   if (!email) return toast('Email é obrigatório.', 'error');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Email inválido.', 'error');
@@ -402,7 +432,7 @@ async function saveUser() {
   try {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ email, name, role })
+      body: JSON.stringify({ email, name, role, pixKey })
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao salvar');
