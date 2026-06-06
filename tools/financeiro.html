@@ -69,6 +69,7 @@ input[type="file"]{display:none}
 .fin-total .label{font-size:12px;color:var(--gold-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
 .fin-total .value{font-family:'Cinzel',serif;color:var(--gold);font-size:32px;font-weight:700}
 .fin-total .sub{font-size:13px;color:var(--text-dim);margin-top:6px}
+.fin-total .sub.big{font-size:18px;color:#FFF;line-height:1.5}
 
 /* tabela editável da revisão (6 colunas) */
 .rev-head,.rev-row{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:8px;align-items:center}
@@ -581,7 +582,7 @@ function renderGeral(d){
   const atts=(d.atendentes||[]);
   let html=`
     <div class="fin-total"><div class="label">Líquido total da equipe</div><div class="value">${fmtBRL(t.liquidoBRL)}</div>
-      <div class="sub">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)}</div></div>
+      <div class="sub big">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)} · Lucro por sócio ${fmtBRL(t.lucroSocioBRL)}</div></div>
     <div class="lucros">
       <div class="lucro-card hl"><div class="lv">${fmtBRL(t.lucroTotalBRL)}</div><div class="ll">Lucro total</div></div>
       <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroEquipeBRL)}</div><div class="ll">Lucro equipe</div></div>
