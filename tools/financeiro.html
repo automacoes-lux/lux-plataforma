@@ -146,6 +146,14 @@ input[type="file"]{display:none}
 .lucro-card .lv{font-family:'Cinzel',serif;color:var(--gold);font-size:20px;font-weight:700}
 .lucro-card .ll{font-size:12px;color:var(--text-dim);margin-top:3px}
 
+/* caixa verde — entradas acumuladas da semana (admin) */
+.week-card{background:linear-gradient(135deg,rgba(127,184,122,.22),rgba(127,184,122,.04));border:1px solid rgba(127,184,122,.5);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.1rem;box-shadow:0 8px 28px rgba(127,184,122,.14)}
+.week-label{font-size:13px;color:#9be79a;letter-spacing:.06em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.week-value{font-family:'Cinzel',serif;font-size:34px;font-weight:700;color:#cdeccb;margin:4px 0 12px;text-shadow:0 2px 12px rgba(127,184,122,.25)}
+.week-chart{width:100%;height:96px;display:block;overflow:visible}
+.week-days{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--text-dim)}
+.week-days span{flex:1;text-align:center}
+
 .att-toggle{cursor:pointer}
 .att-row2{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:8px;align-items:center;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:15px;margin-bottom:6px}
 .att-row2 .nome{font-weight:600;color:var(--text)}
@@ -569,11 +577,50 @@ function rangeFor(m,r){
 function stepRef(dir){ if(geralMode==='hoje'||geralMode==='ontem')geralRef.setDate(geralRef.getDate()+dir); else if(geralMode==='semana')geralRef.setDate(geralRef.getDate()+7*dir); else if(geralMode==='mes')geralRef.setMonth(geralRef.getMonth()+dir); else if(geralMode==='ano')geralRef.setFullYear(geralRef.getFullYear()+dir); loadGeral(); }
 document.getElementById('navPrev').addEventListener('click',()=>stepRef(-1));
 document.getElementById('navNext').addEventListener('click',()=>stepRef(1));
+// ── caixa verde: entradas acumuladas da semana atual (sáb→sex) ──
+let weekAdminData=null;
+async function ensureWeekAdmin(){
+  if(weekAdminData) return;
+  const wk=semanaSabSex(new Date());
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/admin/range?from=${ymd(wk[0])}&to=${ymd(wk[1])}`);
+    const d=await r.json();
+    if(d.ok) weekAdminData={d, sab:wk[0], sex:wk[1]};
+  }catch(_){}
+}
+function weekAdminHtml(){
+  if(!weekAdminData) return '';
+  const W=weekAdminData;
+  const datas=[]; let dd=new Date(W.sab); for(let i=0;i<7;i++){ datas.push(ymd(dd)); dd.setDate(dd.getDate()+1); }
+  const mapa={}; (W.d.atendentes||[]).forEach(a=>(a.dias||[]).forEach(x=>{ mapa[x.data]=(mapa[x.data]||0)+(x.entradaBRL||0); }));
+  const diarios=datas.map(dt=>mapa[dt]||0);
+  let cum=0; const acum=diarios.map(v=>{cum+=v;return cum;});
+  const total=cum;
+  const CW=320,CH=96,P=12, maxV=Math.max(...acum,1);
+  const xs=i=>P+i*(CW-2*P)/6, ys=v=>CH-P-(v/maxV)*(CH-2*P);
+  const pts=acum.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const area=`${xs(0).toFixed(1)},${CH-P} ${pts} ${xs(6).toFixed(1)},${CH-P}`;
+  const dots=acum.map((v,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.2" fill="#eafaea" stroke="#7FB87A" stroke-width="1.5"/>`).join('');
+  const L=['Sáb','Dom','Seg','Ter','Qua','Qui','Sex'];
+  return `<div class="week-card">
+    <div class="week-label">Entradas acumuladas da semana · ${fmtDBR(ymd(W.sab))} a ${fmtDBR(ymd(W.sex))}</div>
+    <div class="week-value">${fmtBRL(total)}</div>
+    <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">
+      <defs><linearGradient id="wgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(127,184,122,.45)"/><stop offset="100%" stop-color="rgba(127,184,122,0)"/></linearGradient></defs>
+      <polygon points="${area}" fill="url(#wgA)"/>
+      <polyline points="${pts}" fill="none" stroke="#9be79a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>
+    <div class="week-days">${L.map(l=>`<span>${l}</span>`).join('')}</div>
+  </div>`;
+}
+
 async function loadGeral(){
   const rg=rangeFor(geralMode,geralRef); const from=rg[0],to=rg[1],label=rg[2];
   if(!from||!to){ toast('Escolha as datas.','error'); return; }
   document.getElementById('navLabel').textContent=label||`${fmtDBR(from)} a ${fmtDBR(to)}`;
   const cont=document.getElementById('geralContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  await ensureWeekAdmin();
   try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/admin/range?from=${from}&to=${to}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderGeral(d); }
   catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
 }
@@ -581,12 +628,12 @@ function renderGeral(d){
   const cont=document.getElementById('geralContainer'); const t=d.total||{};
   const atts=(d.atendentes||[]);
   let html=`
-    <div class="fin-total"><div class="label">Líquido total da equipe</div><div class="value">${fmtBRL(t.liquidoBRL)}</div>
-      <div class="sub big">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)} · Lucro por sócio ${fmtBRL(t.lucroSocioBRL)}</div></div>
+    <div class="fin-total"><div class="label">Lucro por sócio</div><div class="value">${fmtBRL(t.lucroSocioBRL)}</div>
+      <div class="sub big">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)}</div></div>
+    ${weekAdminHtml()}
     <div class="lucros">
       <div class="lucro-card hl"><div class="lv">${fmtBRL(t.lucroTotalBRL)}</div><div class="ll">Lucro total</div></div>
       <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroEquipeBRL)}</div><div class="ll">Lucro equipe</div></div>
-      <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroSocioBRL)}</div><div class="ll">Lucro por sócio</div></div>
     </div>`;
   if(!atts.length){ html+='<div class="state-msg"><div>Nenhum fechamento enviado neste período ainda.</div></div>'; cont.innerHTML=html; return; }
   html+='<div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto</span><span>Anúncio</span><span>Plataforma</span><span>Líquido</span></div>';
