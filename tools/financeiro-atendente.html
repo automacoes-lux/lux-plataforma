@@ -95,6 +95,8 @@ body{
 .rank-row.me .rank-pos{background:var(--gold);color:#1A1A1A}
 .rank-name{flex:1;min-width:0;font-size:16px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rank-name .you{font-size:11px;color:var(--gold-dim);margin-left:6px}
+.dupla-tag{font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.4);margin-left:6px;vertical-align:middle}
+.rank-val small{color:var(--text-dim);font-weight:500;font-size:12px}
 .rank-medal{font-size:20px;flex-shrink:0}
 .rank-val{font-variant-numeric:tabular-nums;color:var(--gold-dim);font-size:15px;font-weight:600;flex-shrink:0}
 
@@ -269,12 +271,19 @@ function renderRanking(d){
   if(!rk.length){ cont.innerHTML='<div class="state-msg"><div>Ainda não há vendas neste período.</div></div>'; return; }
   const eu=d.eu; let html='';
   if(eu){
-    if(eu.top) html+=`<div class="trophy-card t${eu.top}"><div class="trophy-emoji">${MEDALHA[eu.top]}</div><div class="trophy-pos">${eu.top}º lugar</div><div class="trophy-msg">${FRASES[eu.top]}</div>${eu.valorBRL!=null?`<div class="trophy-val">Lucro de ${fmtBRL(eu.valorBRL)}</div>`:''}</div>`;
+    if(eu.top) html+=`<div class="trophy-card t${eu.top}"><div class="trophy-emoji">${MEDALHA[eu.top]}</div><div class="trophy-pos">${eu.top}º lugar</div><div class="trophy-msg">${FRASES[eu.top]}</div>${eu.valorBRL!=null?`<div class="trophy-val">Lucro de ${fmtBRL(eu.valorBRL)}${eu.dupla&&eu.valorTotalBRL!=null?` <span style="font-size:15px;opacity:.85">(total ${fmtBRL(eu.valorTotalBRL)})</span>`:''}</div>`:''}</div>`;
     else if(eu.ehUltimo) html+=`<div class="trophy-card last"><div class="trophy-emoji">🌱</div><div class="trophy-pos">Você está em ${eu.pos}º</div><div class="trophy-msg">${FRASE_ULTIMO}</div></div>`;
     else html+=`<div class="trophy-card"><div class="trophy-emoji">🎯</div><div class="trophy-pos">Você está em ${eu.pos}º de ${d.total}</div><div class="trophy-msg">Tá no caminho! Cada venda te aproxima do pódio. Bora pra cima! 🚀</div></div>`;
   }
   html+='<div class="rank-list">';
-  rk.forEach(x=>{ const medal=x.top?`<span class="rank-medal">${MEDALHA[x.top]}</span>`:''; const val=(x.valorBRL!=null)?`<span class="rank-val">${fmtBRL(x.valorBRL)}</span>`:''; html+=`<div class="rank-row${x.ehMeu?' me':''}"><div class="rank-pos">${x.pos}</div><div class="rank-name">${escapeHtml(x.nome)}${x.ehMeu?'<span class="you">(você)</span>':''}</div>${medal}${val}</div>`; });
+  rk.forEach(x=>{
+    const medal=x.top?`<span class="rank-medal">${MEDALHA[x.top]}</span>`:'';
+    const val=(x.valorBRL!=null)
+      ? `<span class="rank-val">${fmtBRL(x.valorBRL)}${x.dupla&&x.valorTotalBRL!=null?` <small>(total ${fmtBRL(x.valorTotalBRL)})</small>`:''}</span>`
+      : '';
+    const tag=x.dupla?'<span class="dupla-tag">dupla</span>':'';
+    html+=`<div class="rank-row${x.ehMeu?' me':''}"><div class="rank-pos">${x.pos}</div><div class="rank-name">${escapeHtml(x.nome)}${tag}${x.ehMeu?'<span class="you">(você)</span>':''}</div>${medal}${val}</div>`;
+  });
   html+='</div>';
   cont.innerHTML=html;
 }
