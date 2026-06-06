@@ -148,7 +148,14 @@ input[type="file"]{display:none}
 .att-row2{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:8px;align-items:center;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:15px;margin-bottom:6px}
 .att-row2 .nome{font-weight:600;color:var(--text)}
 .att-row2 .num{text-align:right;color:var(--text-mid);font-variant-numeric:tabular-nums}
-.att-row2 .liquido{color:var(--gold);font-weight:600;text-align:right}
+.att-row2 .liquido{color:var(--gold);font-weight:600;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.copybtn{background:rgba(201,168,76,.12);border:.5px solid var(--border-bright);color:var(--gold);border-radius:6px;padding:4px 9px;font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.copybtn:hover{background:rgba(201,168,76,.22)}
+.copybtn.copied{background:rgba(127,184,122,.18);border-color:rgba(127,184,122,.5);color:var(--ok)}
+.danger-zone{margin-top:1.4rem;padding-top:1rem;border-top:.5px dashed rgba(232,122,122,.3);display:flex;gap:10px;flex-wrap:wrap}
+.danger-zone button{flex:1;min-width:150px}
+.btn-danger{padding:11px 16px;background:rgba(232,122,122,.08);border:.5px solid rgba(232,122,122,.45);color:#E87A7A;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-danger:hover{background:rgba(232,122,122,.16)}
 .att-expand{padding:6px 12px 12px 14px}
 .day-row{display:grid;grid-template-columns:1fr repeat(5,auto);gap:10px;font-size:13px;color:var(--text-dim);padding:5px 0;border-bottom:.5px solid rgba(255,255,255,.04)}
 .day-row span:not(:first-child){text-align:right;font-variant-numeric:tabular-nums;min-width:66px}
@@ -280,6 +287,10 @@ input[type="file"]{display:none}
         <button class="btn-secondary" onclick="loadGeral()">Ver</button>
       </div>
       <div id="geralContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
+      <div class="danger-zone">
+        <button class="btn-danger" onclick="apagarPeriodo()">🗑 Apagar este período</button>
+        <button class="btn-danger" onclick="apagarTudo()">🗑 Apagar TODOS (limpar teste)</button>
+      </div>
     </div>
   </div>
 </div>
@@ -407,7 +418,7 @@ function renderPct(soma){
   const t=document.getElementById('pctTable'); t.innerHTML='';
   pctState.forEach((p,i)=>{
     const row=document.createElement('div'); row.className='pct-row';
-    row.innerHTML=`<div class="pn">${escapeHtml(p.nome)}${p.email?`<small>${escapeHtml(p.email)}</small>`:'<small class="nomatch">⚠ não casou com nenhum atendente</small>'}</div>
+    row.innerHTML=`<div class="pn">${escapeHtml(p.nome)}${p.email?'<small>✓ atendente reconhecido</small>':'<small class="nomatch">⚠ não casou com nenhum atendente</small>'}</div>
       <input type="number" step="0.1" data-i="${i}" value="${Number(p.percent||0)}">`;
     t.appendChild(row);
   });
@@ -571,12 +582,43 @@ function renderGeral(d){
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>
       <div class="num" data-l="Custo IA">${fmtBRL(a.custoIaBRL)}</div>
-      <div class="num liquido" data-l="Líquido">${fmtBRL(a.liquidoBRL)}</div>
+      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}</span><button class="copybtn" data-v="${Number(a.liquidoBRL||0).toFixed(2)}" title="Copiar o lucro para pagamento">📋</button></div>
     </div>
     <div class="att-expand hidden" id="exp-${i}">${(a.dias||[]).map(dd=>`<div class="day-row"><span>${fmtDBR(dd.data)}</span><span>${fmtBRL(dd.entradaBRL)}</span><span>${fmtBRL(dd.impostoBRL)}</span><span>${fmtBRL(dd.anuncioBRL)}</span><span>${fmtBRL(dd.custoIaBRL)}</span><span style="color:var(--gold)">${fmtBRL(dd.liquidoBRL)}</span></div>`).join('')||'<div class="day-row"><span>Sem dias.</span></div>'}</div>`;
   });
   cont.innerHTML=html;
   cont.querySelectorAll('.att-toggle').forEach(row=>row.addEventListener('click',()=>document.getElementById('exp-'+row.dataset.i).classList.toggle('hidden')));
+  cont.querySelectorAll('.copybtn').forEach(btn=>btn.addEventListener('click',async(e)=>{
+    e.stopPropagation();
+    const valor=String(btn.dataset.v||'0').replace('.',',');  // ex: 1234,56
+    try{ await navigator.clipboard.writeText(valor); }catch(_){ const ta=document.createElement('textarea'); ta.value=valor; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    const orig=btn.textContent; btn.textContent='✓'; btn.classList.add('copied');
+    toast('Copiado: '+valor,'success');
+    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); }, 1600);
+  }));
+}
+
+// ── apagar dados de teste ──
+async function apagarPeriodo(){
+  const rg=rangeFor(geralMode,geralRef); const from=rg[0],to=rg[1];
+  if(!from||!to){ toast('Escolha o período primeiro.','error'); return; }
+  if(!confirm(`Apagar os fechamentos de ${fmtDBR(from)} a ${fmtDBR(to)}?\n\nOs atendentes deixam de ver esses dias. Não dá pra desfazer.`)) return;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/admin/apagar',{method:'POST',body:JSON.stringify({scope:'periodo',from,to})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    toast(`✓ ${d.apagados} dia(s) apagado(s).`,'success'); loadGeral();
+  }catch(err){ toast('Erro: '+err.message,'error'); }
+}
+async function apagarTudo(){
+  if(!confirm('⚠️ APAGAR TODOS os fechamentos enviados?\n\nIsto limpa TODOS os dias de TODOS os atendentes (use só pra limpar testes). Não dá pra desfazer.')) return;
+  const t=prompt('Confirmação final. Digite a palavra EXATAMENTE:\n\nAPAGAR');
+  if(t===null) return;
+  if(t.trim()!=='APAGAR'){ toast('Confirmação incorreta. Nada foi apagado.','error'); return; }
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/admin/apagar',{method:'POST',body:JSON.stringify({scope:'tudo',confirm:'APAGAR'})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    toast(`✓ Tudo limpo (${d.apagados} fechamento(s) apagado(s)).`,'success'); loadGeral();
+  }catch(err){ toast('Erro: '+err.message,'error'); }
 }
 </script>
 </body>
