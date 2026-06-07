@@ -243,10 +243,7 @@
         </div>
         <input type="file" id="iaFile" accept="image/*" class="hidden">
 
-        <label class="lbl" style="margin-top:14px">Pedido extra (opcional)</label>
-        <textarea id="iaPrompt" rows="2" placeholder="Ex.: remova o número de telefone e o ícone do WhatsApp"></textarea>
-
-        <button class="btn btn-dl" id="iaRun" disabled style="margin-top:12px;flex:none;width:100%">✨ Isolar logo com IA</button>
+        <button class="btn btn-dl" id="iaRun" disabled style="margin-top:14px;flex:none;width:100%">✨ Isolar logo com IA</button>
         <div class="iastatus" id="iaStatus"></div>
       </div>
       <div class="preview-card">
@@ -276,15 +273,9 @@
       <input type="file" id="file" accept="image/*" class="hidden">
 
       <div style="margin-top:18px">
-        <div class="section-title">2 · Modo</div>
-        <div class="toggle">
-          <button id="mSelo" class="active">Montar selo</button>
-          <button id="mCut">Recortar círculo</button>
-        </div>
-
-        <!-- COR DO CÍRCULO (modo selo) -->
+        <!-- COR DO CÍRCULO -->
         <div id="grpColor" class="ctrl">
-          <label class="lbl">Cor do círculo</label>
+          <div class="section-title">2 · Cor do círculo</div>
           <div class="seg">
             <label class="opt sel"><input type="radio" name="col" value="auto" checked>
               <span>Cor do fundo (automático)<small>usa a cor predominante da arte</small></span></label>
@@ -297,19 +288,10 @@
           </div>
         </div>
 
-        <!-- TAMANHO DA LOGO (modo selo) -->
+        <!-- TAMANHO DA LOGO -->
         <div id="grpSize" class="ctrl">
-          <div class="row"><label class="lbl" style="margin:0">Tamanho da logo no círculo</label><span class="slider-val" id="sizeVal">80%</span></div>
+          <div class="section-title row"><span>3 · Tamanho da logo</span><span class="slider-val" id="sizeVal">80%</span></div>
           <input type="range" id="logoSize" min="40" max="100" value="80">
-        </div>
-
-        <!-- ZOOM (modo recortar) -->
-        <div id="grpZoom" class="ctrl hidden">
-          <div class="row"><label class="lbl" style="margin:0">Zoom</label><span class="slider-val" id="zoomVal">100%</span></div>
-          <input type="range" id="zoom" min="50" max="220" value="100">
-          <div style="margin-top:6px;color:var(--muted);font-size:11px;line-height:1.45">
-            Recorta uma imagem já pronta (ex.: o círculo que o GPT gerou) num círculo com cantos transparentes.
-          </div>
         </div>
       </div>
     </div>
@@ -377,7 +359,6 @@
   const $ = id => document.getElementById(id);
   const out = $('out'), ctx = out.getContext('2d');
   let img = null;            // Image carregada
-  let mode = 'selo';         // 'selo' | 'cut'
   let cornerColor = {r:154,g:154,b:154}; // cor de fundo detectada
 
   /* ---------- UPLOAD ---------- */
@@ -475,40 +456,18 @@
 
     ctx.save();
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.closePath();
-
-    if(mode==='selo'){
-      ctx.fillStyle = circleColor();         // disco sólido e opaco
-      ctx.fill();
-      ctx.clip();
-      const source = img;
-      const sw = source.naturalWidth||source.width, sh = source.naturalHeight||source.height;
-      const box = (2*r) * (+$('logoSize').value/100);
-      const scale = Math.min(box/sw, box/sh);
-      const dw=sw*scale, dh=sh*scale;
-      ctx.drawImage(source, cx-dw/2, cy-dh/2, dw, dh);
-    } else {
-      // recortar: a própria imagem preenche o círculo
-      ctx.clip();
-      const sw=img.naturalWidth, sh=img.naturalHeight;
-      const cover = Math.max((2*r)/sw,(2*r)/sh) * (+$('zoom').value/100);
-      const dw=sw*cover, dh=sh*cover;
-      ctx.drawImage(img, cx-dw/2, cy-dh/2, dw, dh);
-    }
+    ctx.fillStyle = circleColor();           // disco sólido e opaco
+    ctx.fill();
+    ctx.clip();
+    const sw = img.naturalWidth, sh = img.naturalHeight;
+    const box = (2*r) * (+$('logoSize').value/100);
+    const scale = Math.min(box/sw, box/sh);
+    const dw=sw*scale, dh=sh*scale;
+    ctx.drawImage(img, cx-dw/2, cy-dh/2, dw, dh);
     ctx.restore();
   }
 
   /* ---------- UI WIRING ---------- */
-  $('mSelo').addEventListener('click',()=>setMode('selo'));
-  $('mCut').addEventListener('click',()=>setMode('cut'));
-  function setMode(m){
-    mode=m;
-    $('mSelo').classList.toggle('active',m==='selo');
-    $('mCut').classList.toggle('active',m==='cut');
-    ['grpColor','grpSize'].forEach(g=>$(g).classList.toggle('hidden',m!=='selo'));
-    $('grpZoom').classList.toggle('hidden',m!=='cut');
-    render();
-  }
-
   document.querySelectorAll('input[name=col]').forEach(el=>{
     el.addEventListener('change',()=>{
       document.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.querySelector('input').checked));
@@ -523,7 +482,6 @@
   $('hex').addEventListener('input',e=>{ const v=e.target.value; if(/^#?[0-9a-fA-F]{6}$/.test(v)){ const h=v[0]==='#'?v:'#'+v; $('color').value=h; render(); }});
 
   $('logoSize').addEventListener('input',e=>{ $('sizeVal').textContent=e.target.value+'%'; render(); });
-  $('zoom').addEventListener('input',e=>{ $('zoomVal').textContent=e.target.value+'%'; render(); });
 
   /* ---------- DOWNLOAD / RESET ---------- */
   $('dl').addEventListener('click',()=>{
@@ -555,7 +513,7 @@
   const WORKER = 'https://lux-figurinhas.plataformalux.workers.dev';
 
   const drop = $('iaDrop'), file = $('iaFile');
-  const promptEl = $('iaPrompt'), runBtn = $('iaRun'), statusEl = $('iaStatus');
+  const runBtn = $('iaRun'), statusEl = $('iaStatus');
   const canvas = $('iaCanvas'), out = $('iaOut'), empty = $('iaEmpty');
   const cropHint = $('iaCropHint');
   const redoBtn = $('iaRedo'), dlBtn = $('iaDownload'), useBtn = $('iaUse');
@@ -689,7 +647,7 @@
         body: JSON.stringify({
           imageBase64: b64,
           imageMimeType: 'image/png',
-          prompt: promptEl.value.trim()
+          prompt: ''
         })
       });
       let data = {};
