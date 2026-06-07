@@ -2224,6 +2224,7 @@ async function loadHistory() {
                 ${o.attendantName ? ' · 👤 ' + escapeHtml(o.attendantName) : ''}
               </div>
               <div class="lux-history-status ${statusCss}">${statusLabel}</div>
+              ${o.status === 'ERROR' && o.errorMessage ? '<div class="lux-history-item-meta" style="color:#E87A7A;margin-top:4px;white-space:normal">⚠ ' + escapeHtml(o.errorMessage) + '</div>' : ''}
             </div>
             <div class="lux-history-right">
               ${cost ? '<div class="lux-history-cost">' + cost + '</div>' : ''}
