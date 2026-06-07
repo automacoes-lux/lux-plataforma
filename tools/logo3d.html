@@ -630,6 +630,34 @@
     return c.toDataURL('image/png').split(',')[1];
   }
 
+  // Remove o fundo VERDE (#00FF00) que a IA usou e o deixa transparente.
+  // Branco/preto/vermelho/cinza da logo NÃO são tocados (só pixels onde o verde domina).
+  function removeGreen(srcUrl){
+    return new Promise(resolve => {
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = im.naturalWidth; c.height = im.naturalHeight;
+        const x = c.getContext('2d');
+        x.drawImage(im, 0, 0);
+        let d; try { d = x.getImageData(0,0,c.width,c.height); } catch(e){ resolve(srcUrl); return; }
+        const px = d.data;
+        for(let i=0;i<px.length;i+=4){
+          const r=px[i], g=px[i+1], b=px[i+2];
+          if(g>90 && r < g*0.75 && b < g*0.75){
+            px[i+3]=0;                       // fundo verde → transparente
+          } else if(g>90 && r < g*0.90 && b < g*0.90){
+            px[i+1]=Math.round((r+b)/2);      // borda esverdeada → tira o "spill" de verde
+          }
+        }
+        x.putImageData(d,0,0);
+        resolve(c.toDataURL('image/png'));
+      };
+      im.onerror = () => resolve(srcUrl);
+      im.src = srcUrl;
+    });
+  }
+
   /* ----- CHAMADA À IA ----- */
   runBtn.addEventListener('click', async () => {
     if (!iaImg) return;
@@ -657,7 +685,10 @@
         runBtn.disabled = false;
         return;
       }
-      resultUrl = 'data:image/png;base64,' + data.b64;
+      // A IA devolve a logo sobre fundo VERDE sólido — removemos o verde aqui no
+      // navegador (deixando transparente). Assim o branco/preto/cores da logo ficam
+      // intactos (não dependemos do alpha da IA, que apagava o branco).
+      resultUrl = await removeGreen('data:image/png;base64,' + data.b64);
       out.src = resultUrl;
       showResult();
       const custo = (data.costBRL != null)
