@@ -232,7 +232,8 @@
     </div>
     <p class="iadesc">
       A IA remove telefone, WhatsApp, textos e fundo, deixando <b>só a logo</b> em PNG transparente.
-      Use quando a arte do cliente vem "poluída". Depois dá pra mandar pro selo abaixo.
+      Suba a arte e, ao lado, <b>arraste com o mouse marcando só a parte da logo</b> — isso ajuda a IA a
+      pegar a logo certa (e não um pedaço só). A marcação é opcional. Depois dá pra mandar pro selo abaixo.
     </p>
     <div class="ialayout">
       <div>
@@ -250,12 +251,15 @@
       </div>
       <div class="preview-card">
         <div class="stage" style="min-height:240px">
-          <div class="empty" id="iaEmpty"><span class="big">✨</span>O resultado da IA aparece aqui</div>
+          <div class="empty" id="iaEmpty"><span class="big">✨</span>Suba a arte do cliente ao lado</div>
+          <canvas id="iaCanvas" style="display:none;max-width:100%;touch-action:none;cursor:crosshair"></canvas>
           <img id="iaOut" alt="logo isolada"/>
         </div>
+        <div class="iastatus" id="iaCropHint" style="text-align:center"></div>
         <div class="actions">
+          <button class="btn btn-ghost small" id="iaRedo" disabled style="flex:1">↺ Refazer seleção</button>
           <button class="btn btn-ghost small" id="iaDownload" disabled style="flex:1">⬇ Baixar PNG</button>
-          <button class="btn btn-dl small" id="iaUse" disabled style="flex:1">➡ Usar no selo abaixo</button>
+          <button class="btn btn-dl small" id="iaUse" disabled style="flex:1">➡ Usar no selo</button>
         </div>
       </div>
     </div>
@@ -264,7 +268,7 @@
   <div class="layout">
     <!-- CONTROLES -->
     <div class="card">
-      <div class="section-title">1 · Imagem</div>
+      <div class="section-title">1 · Upload Manual</div>
       <div class="drop" id="drop">
         <div class="ic">⬆️</div>
         <p><b>Clique, arraste ou cole</b> a imagem<br>(logo isolada ou arte do cliente)</p>
@@ -284,27 +288,12 @@
           <div class="seg">
             <label class="opt sel"><input type="radio" name="col" value="auto" checked>
               <span>Cor do fundo (automático)<small>usa a cor predominante da arte</small></span></label>
-            <label class="opt"><input type="radio" name="col" value="contrast">
-              <span>Contraste P/B<small>logo clara → preto · logo escura → branco</small></span></label>
             <label class="opt"><input type="radio" name="col" value="manual">
               <span>Manual<small>escolho a cor na mão</small></span></label>
           </div>
           <div class="colorpick" id="manualPick">
             <input type="color" id="color" value="#9a9a9a">
             <input type="text" class="hex" id="hex" value="#9A9A9A">
-          </div>
-        </div>
-
-        <!-- REMOVER FUNDO DA LOGO (modo selo) -->
-        <div id="grpKey" class="ctrl">
-          <label class="check"><input type="checkbox" id="key">
-            <span>Remover o fundo da logo</span></label>
-          <div style="margin-top:6px;color:var(--muted);font-size:11px;line-height:1.45">
-            Use quando a logo vier num fundo diferente do círculo (ex.: logo em fundo branco indo pra círculo preto).
-          </div>
-          <div id="tolWrap" class="disabled" style="margin-top:10px">
-            <div class="row"><label class="lbl" style="margin:0">Tolerância</label><span class="slider-val" id="tolVal">30</span></div>
-            <input type="range" id="tol" min="5" max="120" value="30">
           </div>
         </div>
 
@@ -321,15 +310,6 @@
           <div style="margin-top:6px;color:var(--muted);font-size:11px;line-height:1.45">
             Recorta uma imagem já pronta (ex.: o círculo que o GPT gerou) num círculo com cantos transparentes.
           </div>
-        </div>
-
-        <div class="ctrl">
-          <label class="lbl">Resolução de saída</label>
-          <select id="res">
-            <option value="512">512 × 512</option>
-            <option value="1024" selected>1024 × 1024</option>
-            <option value="2048">2048 × 2048</option>
-          </select>
         </div>
       </div>
     </div>
@@ -484,26 +464,10 @@
     return (sum/n) > 140;
   }
 
-  /* ---------- KEYING (remover fundo da logo) ---------- */
-  function keyedLogo(){
-    const c=document.createElement('canvas');
-    const w=c.width=img.naturalWidth, h=c.height=img.naturalHeight;
-    const cx=c.getContext('2d'); cx.drawImage(img,0,0);
-    let d; try{ d=cx.getImageData(0,0,w,h); }catch(e){ return img; }
-    const px=d.data, tol=+$('tol').value, soft=tol*1.5;
-    for(let i=0;i<px.length;i+=4){
-      const dist=Math.hypot(px[i]-cornerColor.r,px[i+1]-cornerColor.g,px[i+2]-cornerColor.b);
-      if(dist<=tol) px[i+3]=0;
-      else if(dist<soft) px[i+3]=Math.round(px[i+3]*((dist-tol)/(soft-tol)));
-    }
-    cx.putImageData(d,0,0);
-    return c;
-  }
-
   /* ---------- RENDER ---------- */
   function render(){
     if(!img) return;
-    const S = +$('res').value;
+    const S = 1024;
     out.width=S; out.height=S;
     ctx.clearRect(0,0,S,S);                 // tudo transparente
     const r = S/2 - 2;                       // raio (cantos ficam de fora → transparentes)
@@ -516,7 +480,7 @@
       ctx.fillStyle = circleColor();         // disco sólido e opaco
       ctx.fill();
       ctx.clip();
-      const source = $('key').checked ? keyedLogo() : img;
+      const source = img;
       const sw = source.naturalWidth||source.width, sh = source.naturalHeight||source.height;
       const box = (2*r) * (+$('logoSize').value/100);
       const scale = Math.min(box/sw, box/sh);
@@ -540,7 +504,7 @@
     mode=m;
     $('mSelo').classList.toggle('active',m==='selo');
     $('mCut').classList.toggle('active',m==='cut');
-    ['grpColor','grpKey','grpSize'].forEach(g=>$(g).classList.toggle('hidden',m!=='selo'));
+    ['grpColor','grpSize'].forEach(g=>$(g).classList.toggle('hidden',m!=='selo'));
     $('grpZoom').classList.toggle('hidden',m!=='cut');
     render();
   }
@@ -558,11 +522,8 @@
   $('color').addEventListener('input',e=>{ $('hex').value=e.target.value.toUpperCase(); render(); });
   $('hex').addEventListener('input',e=>{ const v=e.target.value; if(/^#?[0-9a-fA-F]{6}$/.test(v)){ const h=v[0]==='#'?v:'#'+v; $('color').value=h; render(); }});
 
-  $('key').addEventListener('change',e=>{ $('tolWrap').classList.toggle('disabled',!e.target.checked); render(); });
-  $('tol').addEventListener('input',e=>{ $('tolVal').textContent=e.target.value; render(); });
   $('logoSize').addEventListener('input',e=>{ $('sizeVal').textContent=e.target.value+'%'; render(); });
   $('zoom').addEventListener('input',e=>{ $('zoomVal').textContent=e.target.value+'%'; render(); });
-  $('res').addEventListener('change',render);
 
   /* ---------- DOWNLOAD / RESET ---------- */
   $('dl').addEventListener('click',()=>{
@@ -587,7 +548,7 @@
   }
 })();
 
-/* ───────── ISOLAR LOGO COM IA (chama o Worker /logoIsolar) ───────── */
+/* ───────── ISOLAR LOGO COM IA (com seleção/recorte → Worker /logoIsolar) ───────── */
 (function(){
   "use strict";
   const $ = id => document.getElementById(id);
@@ -595,14 +556,28 @@
 
   const drop = $('iaDrop'), file = $('iaFile');
   const promptEl = $('iaPrompt'), runBtn = $('iaRun'), statusEl = $('iaStatus');
-  const out = $('iaOut'), empty = $('iaEmpty');
-  const dlBtn = $('iaDownload'), useBtn = $('iaUse');
+  const canvas = $('iaCanvas'), out = $('iaOut'), empty = $('iaEmpty');
+  const cropHint = $('iaCropHint');
+  const redoBtn = $('iaRedo'), dlBtn = $('iaDownload'), useBtn = $('iaUse');
+  const cctx = canvas.getContext('2d');
 
-  let currentB64 = '';   // base64 puro da imagem de entrada (sem prefixo data:)
-  let currentMime = 'image/png';
-  let resultUrl = '';    // data URL do PNG isolado
+  let iaImg = null;     // Image da arte de entrada
+  let selDisp = null;   // seleção em coords do canvas (display): {x,y,w,h}
+  let resultUrl = '';   // data URL do PNG isolado
 
   function setStatus(msg, cls){ statusEl.textContent = msg || ''; statusEl.className = 'iastatus' + (cls ? ' ' + cls : ''); }
+
+  /* ----- ESTADOS do painel da direita ----- */
+  function showCrop(){
+    empty.style.display='none'; out.style.display='none'; canvas.style.display='block';
+    cropHint.textContent = 'Arraste sobre a logo para marcar só ela (opcional). Sem marcação = imagem inteira.';
+    redoBtn.disabled = true; dlBtn.disabled = true; useBtn.disabled = true;
+    fitCanvas(); drawCrop();
+  }
+  function showResult(){
+    empty.style.display='none'; canvas.style.display='none'; out.style.display='block';
+    cropHint.textContent = ''; redoBtn.disabled = false; dlBtn.disabled = false; useBtn.disabled = false;
+  }
 
   /* ----- UPLOAD da arte de entrada ----- */
   drop.addEventListener('click', () => file.click());
@@ -612,25 +587,99 @@
   drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) readFile(f); });
 
   function readFile(f){
-    currentMime = f.type || 'image/png';
     const r = new FileReader();
     r.onload = ev => {
-      const url = String(ev.target.result || '');
-      const comma = url.indexOf(',');
-      currentB64 = comma >= 0 ? url.slice(comma + 1) : '';
-      runBtn.disabled = !currentB64;
-      setStatus('Imagem carregada. Clique em "Isolar logo com IA".', '');
+      const im = new Image();
+      im.onload = () => {
+        iaImg = im; selDisp = null;
+        runBtn.disabled = false;
+        showCrop();
+        setStatus('Arte carregada. Marque a logo (opcional) e clique em "Isolar".', '');
+      };
+      im.src = ev.target.result;
     };
     r.readAsDataURL(f);
   }
 
+  /* ----- CANVAS de seleção ----- */
+  function fitCanvas(){
+    if(!iaImg) return;
+    const stage = canvas.parentElement;
+    const maxW = Math.max(120, stage.clientWidth - 48); // stage tem padding 24 de cada lado
+    const maxH = 320;
+    const ratio = Math.min(maxW/iaImg.naturalWidth, maxH/iaImg.naturalHeight, 1);
+    canvas.width  = Math.max(1, Math.round(iaImg.naturalWidth  * ratio));
+    canvas.height = Math.max(1, Math.round(iaImg.naturalHeight * ratio));
+  }
+  function drawCrop(){
+    if(!iaImg) return;
+    cctx.clearRect(0,0,canvas.width,canvas.height);
+    cctx.drawImage(iaImg, 0,0, canvas.width, canvas.height);
+    if(selDisp && selDisp.w>1 && selDisp.h>1){
+      // escurece tudo fora da seleção
+      cctx.fillStyle='rgba(0,0,0,.55)';
+      cctx.fillRect(0,0,canvas.width,selDisp.y);
+      cctx.fillRect(0,selDisp.y+selDisp.h,canvas.width,canvas.height-(selDisp.y+selDisp.h));
+      cctx.fillRect(0,selDisp.y,selDisp.x,selDisp.h);
+      cctx.fillRect(selDisp.x+selDisp.w,selDisp.y,canvas.width-(selDisp.x+selDisp.w),selDisp.h);
+      // borda dourada
+      cctx.strokeStyle='#E2BA5F'; cctx.lineWidth=2;
+      cctx.strokeRect(selDisp.x+0.5, selDisp.y+0.5, selDisp.w, selDisp.h);
+    }
+  }
+
+  let dragging=false, startX=0, startY=0;
+  function ptr(e){
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const py = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return { x: Math.min(canvas.width, Math.max(0,px)), y: Math.min(canvas.height, Math.max(0,py)) };
+  }
+  canvas.addEventListener('pointerdown', e=>{
+    if(!iaImg) return;
+    e.preventDefault();
+    dragging=true;
+    const p=ptr(e); startX=p.x; startY=p.y;
+    selDisp={x:p.x,y:p.y,w:0,h:0};
+    try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const p=ptr(e);
+    selDisp={ x:Math.min(startX,p.x), y:Math.min(startY,p.y), w:Math.abs(p.x-startX), h:Math.abs(p.y-startY) };
+    drawCrop();
+  });
+  function endDrag(){
+    if(!dragging) return;
+    dragging=false;
+    if(selDisp && (selDisp.w<6 || selDisp.h<6)) selDisp=null; // clique simples = sem seleção
+    drawCrop();
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  // Monta o base64 a enviar: o recorte da seleção, ou a imagem inteira
+  function buildBase64(){
+    const c = document.createElement('canvas');
+    let sx=0, sy=0, sw=iaImg.naturalWidth, sh=iaImg.naturalHeight;
+    if(selDisp && selDisp.w>1 && selDisp.h>1){
+      const fx = iaImg.naturalWidth/canvas.width, fy = iaImg.naturalHeight/canvas.height;
+      sx=Math.round(selDisp.x*fx); sy=Math.round(selDisp.y*fy);
+      sw=Math.round(selDisp.w*fx); sh=Math.round(selDisp.h*fy);
+    }
+    c.width=sw; c.height=sh;
+    c.getContext('2d').drawImage(iaImg, sx,sy,sw,sh, 0,0,sw,sh);
+    return c.toDataURL('image/png').split(',')[1];
+  }
+
   /* ----- CHAMADA À IA ----- */
   runBtn.addEventListener('click', async () => {
-    if (!currentB64) return;
+    if (!iaImg) return;
     if (!window.__luxFetch) {
       setStatus('Você precisa estar logado na plataforma para usar a IA.', 'err');
       return;
     }
+    const b64 = buildBase64();
     runBtn.disabled = true;
     setStatus('Isolando a logo com IA… isso pode levar alguns segundos.', 'run');
     try {
@@ -638,8 +687,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageBase64: currentB64,
-          imageMimeType: currentMime,
+          imageBase64: b64,
+          imageMimeType: 'image/png',
           prompt: promptEl.value.trim()
         })
       });
@@ -652,10 +701,7 @@
       }
       resultUrl = 'data:image/png;base64,' + data.b64;
       out.src = resultUrl;
-      out.style.display = 'block';
-      empty.style.display = 'none';
-      dlBtn.disabled = false;
-      useBtn.disabled = false;
+      showResult();
       const custo = (data.costBRL != null)
         ? ('R$ ' + Number(data.costBRL).toFixed(2).replace('.', ','))
         : '—';
@@ -665,6 +711,13 @@
     } finally {
       runBtn.disabled = false;
     }
+  });
+
+  /* ----- Refazer seleção (volta pro recorte sem subir de novo) ----- */
+  redoBtn.addEventListener('click', () => {
+    if(!iaImg) return;
+    showCrop();
+    setStatus('Marque a logo de novo e clique em "Isolar".', '');
   });
 
   /* ----- BAIXAR resultado ----- */
@@ -682,6 +735,11 @@
     window.__luxSeloLoadDataURL(resultUrl);
     const layout = document.querySelector('.layout');
     if (layout) layout.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Reajusta o canvas se a janela mudar de tamanho (rotação no celular etc)
+  window.addEventListener('resize', () => {
+    if(iaImg && canvas.style.display !== 'none'){ selDisp=null; fitCanvas(); drawCrop(); }
   });
 })();
 </script>
