@@ -12,6 +12,7 @@
 const TOOLS = {
   figurinhas:        'tools/figurinhas.html',
   musica:            'tools/maestro.html',
+  logo3d:            'tools/logo3d.html',
   cover:             'tools/cover.html',
   corte:             'tools/corte.html',
   videos:            'tools/videos.html',
