@@ -1929,49 +1929,24 @@ function renderResult() {
       '</div>' +
     '</div>';
 
-  // Liga o botão de baixar via Worker proxy (resolve CORS do R2 público)
+  // Liga o botão de baixar — DOWNLOAD NATIVO do navegador.
+  // /downloadVideo é rota pública e devolve o MP4 com Content-Disposition:
+  // attachment, então o navegador baixa direto (sem fetch+blob, sem carregar
+  // o vídeo inteiro na memória — funciona pra qualquer tamanho/duração).
   const btnDl = document.getElementById('btnDownloadVideo');
   if (btnDl) {
-    btnDl.addEventListener('click', async () => {
-      btnDl.disabled = true;
+    btnDl.addEventListener('click', () => {
+      const orderId = state.currentOrderId || v.orderId;
+      if (!orderId) { toast('OrderId não encontrado.', 'error'); return; }
+      const a = document.createElement('a');
+      a.href = WORKER_URL + '/downloadVideo?orderId=' + encodeURIComponent(orderId);
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       const originalText = btnDl.textContent;
-      btnDl.textContent = '⏳ Baixando...';
-      try {
-        // Usa o Worker como proxy — ele lê o vídeo do R2 binding e devolve
-        // com CORS habilitado (URL pública do R2 não tem CORS).
-        const orderId = state.currentOrderId || v.orderId;
-        if (!orderId) throw new Error('OrderId não encontrado');
-
-        const resp = await window.__luxFetch(
-          WORKER_URL + '/downloadVideo?orderId=' + encodeURIComponent(orderId)
-        );
-        if (!resp.ok) {
-          // Tenta ler erro como JSON
-          let errMsg = 'HTTP ' + resp.status;
-          try {
-            const errJson = await resp.json();
-            errMsg = errJson.error || errMsg;
-          } catch (e) {}
-          throw new Error(errMsg);
-        }
-
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'video-' + String(v.clientName || 'lux').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        btnDl.textContent = '✓ Baixado!';
-        setTimeout(() => { btnDl.textContent = originalText; btnDl.disabled = false; }, 1500);
-      } catch (err) {
-        console.error('[download] erro:', err);
-        btnDl.textContent = originalText;
-        btnDl.disabled = false;
-        toast('Erro ao baixar: ' + err.message + '. Tente novamente.', 'error');
-      }
+      btnDl.textContent = '✓ Download iniciado';
+      setTimeout(() => { btnDl.textContent = originalText; }, 2000);
     });
   }
 }
