@@ -386,7 +386,7 @@ input[type="file"]{display:none}
         <input id="photosInput" type="file" accept="image/*,video/*" multiple/>
         <span class="icon">📷🎬</span>
         <p>Clique para enviar fotos e/ou clipes</p>
-        <span>Fotos (JPG/PNG) + clipes de vídeo (até 15s · 30MB cada) · misture na ordem que quiser</span>
+        <span>Fotos (JPG/PNG) + clipes de vídeo (até 60s · 50MB cada) · misture na ordem que quiser</span>
       </div>
       <div class="photos-grid" id="photosGrid"></div>
       <div class="grid-toolbar" id="gridToolbar">
@@ -602,8 +602,8 @@ const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 30;
 const MIN_MUSIC_SECONDS = 5;
 const MAX_MUSIC_SECONDS = 300;
-const MAX_CLIP_SECONDS = 15;
-const MAX_CLIP_BYTES = 30 * 1024 * 1024;   // 30 MB por clipe
+const MAX_CLIP_SECONDS = 60;
+const MAX_CLIP_BYTES = 50 * 1024 * 1024;   // 50 MB por clipe
 const LOGO_MAX_BYTES = 8 * 1024 * 1024;
 
 // Polling
@@ -1184,7 +1184,7 @@ function getVideoMeta(file) {
 }
 
 async function handleClipFile(file) {
-  if (file.size > MAX_CLIP_BYTES) return toast('Clipe "' + file.name + '" muito pesado (máx 30 MB).', 'error');
+  if (file.size > MAX_CLIP_BYTES) return toast('Clipe "' + file.name + '" muito pesado (máx ' + Math.round(MAX_CLIP_BYTES / 1024 / 1024) + ' MB).', 'error');
   let meta;
   try { showToast('Lendo clipe ' + file.name + '...', 'info'); meta = await getVideoMeta(file); }
   catch (e) { hideToast(); return toast('Não consegui ler o clipe ' + file.name + '.', 'error'); }
@@ -1194,10 +1194,15 @@ async function handleClipFile(file) {
   }
   try {
     showToast('Enviando clipe ' + file.name + '...', 'info');
-    const base64 = await blobToBase64(file);
-    const resp = await window.__luxFetch(WORKER_URL + '/uploadClip', {
+    // Envio BINÁRIO: manda o ARQUIVO cru (sem virar base64) — não estoura a
+    // memória do Worker. Os metadados vão na URL; o __luxFetch deixa o navegador
+    // definir o Content-Type do File sozinho (não força application/json p/ Blob).
+    const qs = '?name='     + encodeURIComponent(file.name) +
+               '&mime='     + encodeURIComponent(file.type || 'video/mp4') +
+               '&duration=' + Math.round(meta.duration);
+    const resp = await window.__luxFetch(WORKER_URL + '/uploadClip' + qs, {
       method: 'POST',
-      body: JSON.stringify({ base64, mimeType: file.type || 'video/mp4', name: file.name, duration: Math.round(meta.duration) })
+      body: file
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Falha ao enviar clipe');
