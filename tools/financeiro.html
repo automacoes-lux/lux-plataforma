@@ -106,6 +106,21 @@ input[type="file"]{display:none}
 .pct-row .pn small.nomatch{color:#E87A7A}
 .pct-row input{width:90px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px;text-align:right}
 
+/* Mercado Pago / Entradas e Saídas diversas (por atendente) */
+.mp-row{display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;padding:8px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:14px}
+.div-row{display:grid;grid-template-columns:1fr 120px 150px;gap:8px;align-items:center;padding:8px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:14px}
+.mp-row .nm,.div-row .nm{color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-row input,.div-row input{background:var(--bg);border:.5px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:14px;width:100%}
+.mp-row input,.div-row input.val{text-align:right}
+.div-row input.lbl{text-align:left}
+.div-row input.lbl::placeholder{color:var(--text-dim)}
+.rev-row .nome .compo,.att-row2 .nome .compo{display:block;font-weight:400;font-size:12px;color:var(--text-dim);margin-top:3px}
+.rev-row .nome .compo b,.att-row2 .nome .compo b{color:var(--gold-dim);font-weight:600}
+@media(max-width:600px){
+  .div-row{grid-template-columns:1fr 1fr;gap:6px}
+  .div-row .nm{grid-column:1/-1}
+}
+
 .confer{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:.6rem}
 @media(max-width:540px){.confer{grid-template-columns:1fr}}
 .confer .c{display:flex;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:8px;font-size:14px}
@@ -224,6 +239,16 @@ input[type="file"]{display:none}
             <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
           </div>
         </div>
+
+        <!-- Mercado Pago (por atendente) -->
+        <div class="section-sub">💳 Mercado Pago — vendas fora do extrato</div>
+        <div class="hint" style="margin:-2px 0 8px">Vendas recebidas no Mercado Pago (conta separada — não aparecem no extrato do Sicredi). Entram como venda: somam na Entrada, com 6% e divididas ÷2.</div>
+        <div id="mpTable"></div>
+
+        <!-- Entradas e Saídas diversas (por atendente) -->
+        <div class="section-sub">↔ Entradas e Saídas diversas</div>
+        <div class="hint" style="margin:-2px 0 8px">Some (+) ou tire (−) um valor por atendente e diga o motivo numa palavra (ex.: <b>devolução</b>, <b>entrada</b>). Ajusta a Entrada (com 6% e ÷2).</div>
+        <div id="divTable"></div>
       </div>
     </div>
 
@@ -311,7 +336,7 @@ input[type="file"]{display:none}
 <script>
 const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 const IMPOSTO_PCT = 0.06;
-let parsed=null, preview=null, pctState=null, cambio=null;
+let parsed=null, preview=null, pctState=null, cambio=null, atendentesList=[];
 
 window.addEventListener('DOMContentLoaded', init);
 async function init(){
@@ -326,7 +351,45 @@ async function init(){
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
   }));
-  setupUpload(); loadCambio();
+  setupUpload(); loadCambio(); loadAtendentes();
+}
+
+// ── lista de atendentes (p/ Mercado Pago e Diversas) ──
+async function loadAtendentes(){
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/atendentes'); const d=await r.json();
+    if(d.ok){ atendentesList=d.atendentes||[]; renderMpDiv(); }
+  }catch(e){ /* silencioso */ }
+}
+function renderMpDiv(){
+  const mp=document.getElementById('mpTable'), dv=document.getElementById('divTable');
+  if(!mp||!dv) return;
+  if(!atendentesList.length){ mp.innerHTML='<div class="hint">Nenhum atendente cadastrado.</div>'; dv.innerHTML=''; return; }
+  mp.innerHTML=atendentesList.map(a=>`<div class="mp-row"><div class="nm">${escapeHtml(a.nome)}</div><input type="text" inputmode="decimal" class="val" data-email="${escapeHtml(a.email)}" placeholder="0,00"></div>`).join('');
+  dv.innerHTML=atendentesList.map(a=>`<div class="div-row"><div class="nm">${escapeHtml(a.nome)}</div><input type="text" inputmode="decimal" class="val" data-email="${escapeHtml(a.email)}" placeholder="+/− 0,00"><input type="text" class="lbl" data-email="${escapeHtml(a.email)}" maxlength="20" placeholder="motivo (1 palavra)"></div>`).join('');
+}
+function coletarMercadoPago(){
+  const out=[];
+  document.querySelectorAll('#mpTable .mp-row input.val').forEach(inp=>{ const v=parseNum(inp.value); if(v) out.push({email:inp.dataset.email,valorBRL:v}); });
+  return out;
+}
+function coletarDiversos(){
+  const out=[];
+  document.querySelectorAll('#divTable .div-row').forEach(row=>{
+    const vi=row.querySelector('input.val'), li=row.querySelector('input.lbl');
+    const v=parseNum(vi.value), lb=(li.value||'').trim();
+    if(v||lb) out.push({email:vi.dataset.email,valorBRL:v,label:lb});
+  });
+  return out;
+}
+// composição da entrada (PIX · MP · diversas) p/ mostrar na revisão
+function compoHtml(a){
+  if(!(a.mercadoPagoBRL>0 || a.diversoBRL)) return '';
+  const pix=(a.pixBRL!=null?a.pixBRL:a.entradaBRL);
+  const parts=[`PIX <b>${fmtBRL(pix)}</b>`];
+  if(a.mercadoPagoBRL>0) parts.push(`MP <b>${fmtBRL(a.mercadoPagoBRL)}</b>`);
+  if(a.diversoBRL) parts.push(`${escapeHtml(a.diversoLabel||'diversas')} <b>${a.diversoBRL<0?'− ':'+ '}${fmtBRL(Math.abs(a.diversoBRL))}</b>`);
+  return `<span class="compo">${parts.join(' · ')}</span>`;
 }
 
 // helpers
@@ -450,9 +513,10 @@ async function organizar(){
   if(!data){ toast('Escolha a data.','error'); return; }
   const anuncioUSD=parseNum(document.getElementById('inAnuncioUSD').value);
   const percentuais=(pctState||[]).filter(p=>p.email).map(p=>({email:p.email,percent:p.percent}));
+  const mercadoPago=coletarMercadoPago(), diversos=coletarDiversos();
   const btn=document.getElementById('btnOrganizar'); btn.disabled=true; btn.textContent='Organizando…';
   try{
-    const r=await window.__luxFetch(WORKER_URL+'/financeiro/preview',{method:'POST',body:JSON.stringify({data,anuncioUSD,percentuais,creditos:parsed.creditos,debitos:parsed.debitos})});
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/preview',{method:'POST',body:JSON.stringify({data,anuncioUSD,percentuais,creditos:parsed.creditos,debitos:parsed.debitos,mercadoPago,diversos})});
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     preview=d; renderRevisao();
@@ -486,7 +550,7 @@ function renderRevisao(){
     row.className='rev-row'+(a.entradaBRL<=0?' zero':'');
     const tag=a.temPix===false?'<span class="tag nopix">sem PIX</span>':'';
     row.innerHTML=`
-      <div class="nome"><span class="pos">${i+1}.</span>${escapeHtml(a.nome)}${tag}</div>
+      <div class="nome"><span class="pos">${i+1}.</span>${escapeHtml(a.nome)}${tag}${compoHtml(a)}</div>
       <div class="cell" data-l="Entrada"><input class="edit" inputmode="decimal" data-i="${i}" data-f="entradaBRL" value="${(a.entradaBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Imposto"><input class="edit" inputmode="decimal" data-i="${i}" data-f="impostoBRL" value="${(a.impostoBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Anúncio"><input class="edit" inputmode="decimal" data-i="${i}" data-f="anuncioBRL" value="${(a.anuncioBRL||0).toFixed(2)}"></div>
@@ -498,7 +562,7 @@ function renderRevisao(){
     const i=Number(e.target.dataset.i), f=e.target.dataset.f;
     preview.atendentes[i][f]=parseNum(e.target.value);
     // se mexeu na Entrada, sugere o imposto (6%) mas mantém editável
-    if(f==='entradaBRL'){ const a=preview.atendentes[i]; a.impostoBRL=Math.round(a.entradaBRL*IMPOSTO_PCT*100)/100; const ii=tb.querySelector(`input[data-i="${i}"][data-f="impostoBRL"]`); if(ii && document.activeElement!==ii) ii.value=a.impostoBRL.toFixed(2); }
+    if(f==='entradaBRL'){ const a=preview.atendentes[i]; a.impostoBRL=Math.round(a.entradaBRL*IMPOSTO_PCT*100)/100; a.pixBRL=Math.round((a.entradaBRL-(a.mercadoPagoBRL||0)-(a.diversoBRL||0))*100)/100; const ii=tb.querySelector(`input[data-i="${i}"][data-f="impostoBRL"]`); if(ii && document.activeElement!==ii) ii.value=a.impostoBRL.toFixed(2); }
     recalcLinha(i);
   }));
   recalcTotais();
@@ -541,14 +605,14 @@ async function enviar(){
   try{
     const payload={
       data:preview.data, cotacao:preview.cotacao, anuncioUSD:preview.anuncioUSD, anuncioBRL:preview.anuncioBRL,
-      atendentes:preview.atendentes.map(a=>({email:a.email,nome:a.nome,entradaBRL:a.entradaBRL,impostoBRL:a.impostoBRL,anuncioBRL:a.anuncioBRL,custoIaBRL:a.custoIaBRL})),
+      atendentes:preview.atendentes.map(a=>({email:a.email,nome:a.nome,pixBRL:a.pixBRL,mercadoPagoBRL:a.mercadoPagoBRL,diversoBRL:a.diversoBRL,diversoLabel:a.diversoLabel,entradaBRL:a.entradaBRL,impostoBRL:a.impostoBRL,anuncioBRL:a.anuncioBRL,custoIaBRL:a.custoIaBRL})),
       todasEntradas:preview.todasEntradas||[], debitos:preview.debitos||[], naoIdentificadas:preview.naoIdentificadas||[]
     };
     const r=await window.__luxFetch(WORKER_URL+'/financeiro/enviar',{method:'POST',body:JSON.stringify(payload)});
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
-    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; },1300);
+    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; renderMpDiv(); },1300);
   }catch(err){ toast('Erro: '+err.message,'error'); }
   finally{ btn.disabled=false; btn.textContent='✓ Enviar pros atendentes'; }
 }
@@ -639,7 +703,7 @@ function renderGeral(d){
   html+='<div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto</span><span>Anúncio</span><span>Plataforma</span><span>Líquido</span></div>';
   atts.forEach((a,i)=>{
     html+=`<div class="att-row2 att-toggle" data-i="${i}">
-      <div class="nome">${i+1}. ${escapeHtml(a.nome)}</div>
+      <div class="nome">${i+1}. ${escapeHtml(a.nome)}${compoHtml(a)}</div>
       <div class="num" data-l="Entrada">${fmtBRL(a.entradaBRL)}</div>
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>

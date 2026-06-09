@@ -55,6 +55,10 @@ body{
 .bd-row.neg .v{color:var(--danger)}
 .bd-row.sub{background:rgba(255,255,255,.04)}
 .bd-row.sub .k,.bd-row.sub .v{color:var(--text)}
+.bd-row.inc{padding:9px 16px 9px 28px;font-size:14px;background:transparent;border-style:dashed}
+.bd-row.inc .k{color:var(--text-dim)}
+.bd-row.inc .k small{font-size:12px;color:var(--text-dim)}
+.bd-row.inc .v{color:var(--text-mid);font-weight:600}
 .bd-note{text-align:center;font-size:13px;color:var(--text-dim);padding:4px 0}
 .bd-row.final{background:rgba(201,168,76,.1);border-color:var(--border-bright);margin-top:4px}
 .bd-row.final .k{color:var(--gold);font-weight:600}
@@ -226,10 +230,16 @@ function renderConta(me){
   const cont=document.getElementById('contaContainer');
   const dias=(me.dias||[]).filter(x=>x.entradaBRL>0||x.liquidoBRL!==0);
   const resultado=(me.entradaBRL||0)-(me.impostoBRL||0)-(me.anuncioBRL||0)-(me.custoIaBRL||0);
+  const mp=me.mercadoPagoBRL||0, diverso=me.diversoBRL||0, dLabel=me.diversoLabel||'diversas';
+  const pix=(me.pixBRL!=null?me.pixBRL:((me.entradaBRL||0)-mp-diverso));
+  const showCompo=(mp>0||diverso!==0);
   let html=`
     <div class="card"><div class="card-title">Sua conta</div>
       <div class="breakdown">
         <div class="bd-row"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(me.entradaBRL)}</span></div>
+        ${showCompo?`<div class="bd-row inc"><span class="k">↳ PIX</span><span class="v">${fmtBRL(pix)}</span></div>`:''}
+        ${mp>0?`<div class="bd-row inc"><span class="k">↳ 💳 Mercado Pago <small>(já somado)</small></span><span class="v">${fmtBRL(mp)}</span></div>`:''}
+        ${diverso!==0?`<div class="bd-row inc"><span class="k">↳ ${escapeHtml(dLabel)} <small>(já somado)</small></span><span class="v">${diverso<0?'− ':'+ '}${fmtBRL(Math.abs(diverso))}</span></div>`:''}
         <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(me.impostoBRL)}</span></div>
         <div class="bd-row neg"><span class="k">➖ Anúncio</span><span class="v">- ${fmtBRL(me.anuncioBRL)}</span></div>
         <div class="bd-row neg"><span class="k">➖ Plataforma</span><span class="v">- ${fmtBRL(me.custoIaBRL)}</span></div>
