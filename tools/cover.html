@@ -452,9 +452,10 @@
     <div class="card" style="margin-top:14px">
       <h2>🎚 Força da descaracterização</h2>
       <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
-        Combina <strong>tom + andamento + equalização</strong> pra quebrar a impressão digital da música
-        (dificultar a identificação automática), mantendo os instrumentos naturais. Quanto mais forte, mais
-        difícil de detectar — e mais perceptível a mudança. <strong>Forte</strong> costuma ser o equilíbrio ideal.
+        Combina <strong>tom + andamento + equalização + um leve wobble</strong> (vibrato que move os picos no tempo)
+        pra quebrar a impressão digital da música — é o wobble que mais atrapalha a identificação automática,
+        mantendo os instrumentos reconhecíveis. Mais forte = mais difícil de detectar e mais perceptível.
+        Se o <strong>Forte</strong> ainda for identificado, suba pra <strong>Máxima</strong>.
       </p>
       <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
         <option value="leve">Leve — disfarce sutil</option>
@@ -912,12 +913,13 @@ function mixAudioBuffers(buffers) {
 // Juntos, quebram a impressão digital mantendo os instrumentos naturais.
 // label = texto curto mostrado no passo "Finalizando".
 
+// chorus = wobble/vibrato que move os picos no tempo (rate Hz, depth ms, mix 0..1) — é o que mais quebra a detecção.
 const DISTORT_PRESETS = {
-  leve:   { semitones:-2, tempoPct:+3, eq:{ low:+2, mid:+1.5, high:-2 }, label:'Leve (tom −2 · ritmo +3% · EQ)' },
-  media:  { semitones:-3, tempoPct:+4, eq:{ low:+3, mid:+2,   high:-3 }, label:'Média (tom −3 · ritmo +4% · EQ)' },
-  forte:  { semitones:-4, tempoPct:-5, eq:{ low:+4, mid:+2.5, high:-4 }, label:'Forte (tom −4 · ritmo −5% · EQ)' },
-  maxima: { semitones:-5, tempoPct:+6, eq:{ low:+5, mid:+3,   high:-4 }, label:'Máxima (tom −5 · ritmo +6% · EQ)' },
-  sotom:  { semitones:-3, tempoPct:0,  eq:null,                          label:'Só tom −3 (ritmo intacto)' }
+  leve:   { semitones:-2, tempoPct:+3, eq:{ low:+2, mid:+1.5, high:-2 }, chorus:{ rate:1.0, depth:3,   mix:0.30 }, label:'Leve (tom −2 · ritmo +3% · wobble leve)' },
+  media:  { semitones:-3, tempoPct:+5, eq:{ low:+3, mid:+2,   high:-3 }, chorus:{ rate:1.6, depth:4,   mix:0.42 }, label:'Média (tom −3 · ritmo +5% · wobble)' },
+  forte:  { semitones:-4, tempoPct:-6, eq:{ low:+4, mid:+2.5, high:-4 }, chorus:{ rate:2.2, depth:5,   mix:0.52 }, label:'Forte (tom −4 · ritmo −6% · wobble forte)' },
+  maxima: { semitones:-5, tempoPct:+8, eq:{ low:+5, mid:+3,   high:-4 }, chorus:{ rate:3.0, depth:6.5, mix:0.65 }, label:'Máxima (deformação agressiva)' },
+  sotom:  { semitones:-3, tempoPct:0,  eq:null,                          chorus:null,                              label:'Só tom −3 (ritmo intacto)' }
 };
 
 let __soundtouchMod = null;
@@ -998,10 +1000,50 @@ async function applyEq(buffer, eq) {
   return await offline.startRendering();
 }
 
+// Etapa 3: WOBBLE/VIBRATO (delay modulado por LFO) — move os picos de
+// frequência ao longo do tempo. É o efeito que mais atrapalha o
+// reconhecimento (a impressão digital depende de picos estáveis), e soa
+// como um chorus/vibrato natural. rate=Hz da oscilação, depth=ms, mix=0..1.
+async function applyChorus(buffer, c) {
+  const sampleRate = buffer.sampleRate;
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const offline = new OfflineCtx(buffer.numberOfChannels, buffer.length, sampleRate);
+
+  const src = offline.createBufferSource();
+  src.buffer = buffer;
+
+  const baseDelay = (Number(c.depth) || 4) / 1000;     // segundos
+  const mix = Math.min(0.9, Math.max(0, Number(c.mix) || 0.4));
+
+  const dry = offline.createGain(); dry.gain.value = 1 - mix;
+  const wet = offline.createGain(); wet.gain.value = mix;
+
+  const delay = offline.createDelay(1.0);
+  delay.delayTime.value = baseDelay;
+
+  const lfo = offline.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = Number(c.rate) || 1.5;
+  const lfoGain = offline.createGain();
+  lfoGain.gain.value = baseDelay * 0.9;                // mantém o delayTime sempre > 0
+
+  lfo.connect(lfoGain); lfoGain.connect(delay.delayTime);
+
+  src.connect(dry); dry.connect(offline.destination);
+  src.connect(delay); delay.connect(wet); wet.connect(offline.destination);
+
+  src.start(0); lfo.start(0);
+  return await offline.startRendering();
+}
+
 async function applyDistortion(buffer, preset) {
   let b = await pitchTempo(buffer, preset.semitones, preset.tempoPct);
+  if (preset.chorus) {
+    setProgress(90, 'Deformando...');
+    b = await applyChorus(b, preset.chorus);
+  }
   if (preset.eq) {
-    setProgress(92, 'Equalizando...');
+    setProgress(93, 'Equalizando...');
     b = await applyEq(b, preset.eq);
   }
   return b;
