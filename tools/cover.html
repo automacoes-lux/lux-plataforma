@@ -450,23 +450,19 @@
     </div>
 
     <div class="card" style="margin-top:14px">
-      <h2>🎚 Mudança de tom</h2>
+      <h2>🎚 Força da descaracterização</h2>
       <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
-        Muda o tom da música <strong>sem alterar a velocidade nem o ritmo</strong> — descaracteriza
-        a música mantendo os instrumentos naturais. Negativo = mais grave · positivo = mais agudo.
+        Combina <strong>tom + andamento + equalização</strong> pra quebrar a impressão digital da música
+        (dificultar a identificação automática), mantendo os instrumentos naturais. Quanto mais forte, mais
+        difícil de detectar — e mais perceptível a mudança. <strong>Forte</strong> costuma ser o equilíbrio ideal.
       </p>
       <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
-        <option value="-3">−3 semitons (bem mais grave)</option>
-        <option value="-2.5">−2,5 semitons</option>
-        <option value="-2" selected>−2 semitons (recomendado)</option>
-        <option value="-1.5">−1,5 semitom</option>
-        <option value="-1">−1 semitom (mudança sutil)</option>
-        <option value="1">+1 semitom (mudança sutil)</option>
-        <option value="1.5">+1,5 semitom</option>
-        <option value="2">+2 semitons</option>
-        <option value="2.5">+2,5 semitons</option>
-        <option value="3">+3 semitons (bem mais agudo)</option>
-        <option value="0">0 — sem mudança (teste)</option>
+        <option value="leve">Leve — disfarce sutil</option>
+        <option value="media">Média</option>
+        <option value="forte" selected>Forte — recomendado</option>
+        <option value="maxima">Máxima — disfarce agressivo</option>
+        <option value="sotom">Só tom (−3) — mantém o andamento</option>
+        <option value="0">Nenhuma — original (teste)</option>
       </select>
     </div>
 
@@ -548,10 +544,10 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-// Mudança de TOM sem mudar a velocidade (pitch shift verdadeiro, SoundTouch/WSOLA).
-// O quanto mudar vem do seletor "Mudança de tom" da tela de upload (em semitons;
-// negativo = mais grave, positivo = mais agudo). A duração/ritmo ficam intactos.
-// Biblioteca carregada sob demanda do CDN (1x por sessão, ~15KB).
+// DESCARACTERIZAÇÃO: combina tom + andamento + EQ (presets em DISTORT_PRESETS)
+// pra quebrar a impressão digital da música sem perder os instrumentos.
+// A força vem do seletor da tela de upload. Pitch/tempo via SoundTouch (WSOLA),
+// carregado sob demanda do CDN (1x por sessão, ~15KB); EQ via Web Audio.
 const SOUNDTOUCH_URL = 'https://cdn.jsdelivr.net/npm/soundtouchjs@0.3.0/dist/soundtouch.min.js';
 const POLL_INTERVAL_MS = 5000;   // 5s entre polls do PoYo
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
@@ -793,21 +789,21 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
   ctx.close();
 
-  // 3. Mudança de TOM (pitch shift) — muda o tom SEM mudar a velocidade/ritmo
-  const semitones = parseFloat(($('toneSelect') && $('toneSelect').value) || '-2') || 0;
+  // 3. Descaracterização: tom + andamento + EQ combinados (quebra a impressão digital)
+  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'forte';
+  const preset = DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.forte;
 
   let pitchedBuffer;
   setStep('pitch', 'active', '');
-  setProgress(80, 'Mudando o tom...');
+  setProgress(80, 'Descaracterizando...');
   try {
-    if (semitones === 0) {
+    if (!preset.semitones && !preset.tempoPct && !preset.eq) {
       // Modo teste: entrega o instrumental sem alteração
       pitchedBuffer = mixedBuffer;
-      setStep('pitch', 'done', 'Tom original (sem mudança)');
+      setStep('pitch', 'done', 'Original (sem mudança)');
     } else {
-      pitchedBuffer = await applyPitchShift(mixedBuffer, semitones);
-      const lbl = (semitones > 0 ? '+' : '−') + String(Math.abs(semitones)).replace('.', ',');
-      setStep('pitch', 'done', 'Tom alterado ' + lbl + ' st (ritmo intacto)');
+      pitchedBuffer = await applyDistortion(mixedBuffer, preset);
+      setStep('pitch', 'done', preset.label);
     }
   } catch (err) {
     setStep('pitch', 'error', err.message);
@@ -906,13 +902,23 @@ function mixAudioBuffers(buffers) {
 }
 
 // ============================================================
-// Mudança de TOM sem mudar a velocidade (SoundTouch / WSOLA)
+// Descaracterização: tom + andamento + equalização combinados
 // ============================================================
-// Diferente do varispeed antigo (que acelerava e agudizava junto, como
-// vinil), aqui SÓ o tom muda — a duração e o ritmo ficam EXATAMENTE
-// iguais. semitones: ex. -2 = 2 semitons mais grave; +1.5 = mais agudo.
-// A biblioteca (SoundTouch, mesma tecnologia de DJs/pedais) é importada
-// do CDN na primeira utilização e fica em cache.
+// Mudar só o tom não engana os detectores (a impressão digital é robusta
+// a pitch sozinho). Aqui combinamos 3 alterações em proporções diferentes:
+//  • pitch (semitons) — sobe/desce o tom (SoundTouch, sem virar "vinil")
+//  • tempo (%) — muda o andamento de leve, INDEPENDENTE do tom (não é varispeed)
+//  • EQ — inclina o espectro (shelf grave/agudo + um realce no meio)
+// Juntos, quebram a impressão digital mantendo os instrumentos naturais.
+// label = texto curto mostrado no passo "Finalizando".
+
+const DISTORT_PRESETS = {
+  leve:   { semitones:-2, tempoPct:+3, eq:{ low:+2, mid:+1.5, high:-2 }, label:'Leve (tom −2 · ritmo +3% · EQ)' },
+  media:  { semitones:-3, tempoPct:+4, eq:{ low:+3, mid:+2,   high:-3 }, label:'Média (tom −3 · ritmo +4% · EQ)' },
+  forte:  { semitones:-4, tempoPct:-5, eq:{ low:+4, mid:+2.5, high:-4 }, label:'Forte (tom −4 · ritmo −5% · EQ)' },
+  maxima: { semitones:-5, tempoPct:+6, eq:{ low:+5, mid:+3,   high:-4 }, label:'Máxima (tom −5 · ritmo +6% · EQ)' },
+  sotom:  { semitones:-3, tempoPct:0,  eq:null,                          label:'Só tom −3 (ritmo intacto)' }
+};
 
 let __soundtouchMod = null;
 async function loadSoundTouch() {
@@ -922,48 +928,83 @@ async function loadSoundTouch() {
   return __soundtouchMod;
 }
 
-async function applyPitchShift(buffer, semitones) {
+// Etapa 1: pitch + tempo via SoundTouch (WSOLA) → AudioBuffer estéreo.
+async function pitchTempo(buffer, semitones, tempoPct) {
   const lib = await loadSoundTouch();
   const SoundTouch = lib.SoundTouch, SimpleFilter = lib.SimpleFilter,
         WebAudioBufferSource = lib.WebAudioBufferSource;
 
   const sampleRate  = buffer.sampleRate;
   const totalFrames = buffer.length;
+  const tempoRatio  = 1 + (Number(tempoPct) || 0) / 100;   // >1 acelera (encurta), <1 desacelera
 
   const st = new SoundTouch();
-  st.pitchSemitones = semitones;   // só o tom; tempo continua 1.0 (ritmo intacto)
+  st.pitchSemitones = Number(semitones) || 0;   // tom
+  st.tempo          = tempoRatio;                // andamento — independente do tom
 
-  const source = new WebAudioBufferSource(buffer);
-  const filter = new SimpleFilter(source, st);
+  const filter = new SimpleFilter(new WebAudioBufferSource(buffer), st);
 
-  // saída estéreo com o MESMO tamanho do original (a duração não muda)
-  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  const out = new OfflineCtx(2, totalFrames, sampleRate).createBuffer(2, totalFrames, sampleRate);
-  const outL = out.getChannelData(0);
-  const outR = out.getChannelData(1);
-
+  // a duração muda com o tempo → coletamos os pedaços e juntamos no fim
+  const estFrames = Math.ceil(totalFrames / tempoRatio);
   const CHUNK = 16384;
-  const tmp = new Float32Array(CHUNK * 2);   // interleaved L/R
-  let written = 0, chunks = 0;
+  const tmp = new Float32Array(CHUNK * 2);
+  const chunksL = [], chunksR = [];
+  let written = 0, n = 0;
 
-  while (written < totalFrames) {
+  while (true) {
     const got = filter.extract(tmp, CHUNK);
     if (!got) break;
-    const usable = Math.min(got, totalFrames - written);
-    for (let i = 0; i < usable; i++) {
-      outL[written + i] = tmp[2 * i];
-      outR[written + i] = tmp[2 * i + 1];
+    const l = new Float32Array(got), r = new Float32Array(got);
+    for (let i = 0; i < got; i++) { l[i] = tmp[2 * i]; r[i] = tmp[2 * i + 1]; }
+    chunksL.push(l); chunksR.push(r);
+    written += got; n++;
+    if (n % 8 === 0) {
+      setProgress(80 + Math.min(10, (written / estFrames) * 10), 'Descaracterizando...');
+      await new Promise(res => setTimeout(res, 0));
     }
-    written += usable;
-    chunks++;
-    if (chunks % 8 === 0) {
-      setProgress(80 + Math.min(14, (written / totalFrames) * 14), 'Mudando o tom...');
-      await new Promise(r => setTimeout(r, 0));   // respira: a tela não congela
-    }
+    if (written > totalFrames * 4) break;   // trava de segurança
   }
-  console.log('[pitch] semitones=', semitones, 'frames=', written, '/', totalFrames);
-  if (written === 0) throw new Error('A mudança de tom não produziu áudio.');
+  if (written === 0) throw new Error('O processamento não produziu áudio.');
+
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const out = new OfflineCtx(2, written, sampleRate).createBuffer(2, written, sampleRate);
+  const outL = out.getChannelData(0), outR = out.getChannelData(1);
+  let off = 0;
+  for (let c = 0; c < chunksL.length; c++) {
+    outL.set(chunksL[c], off); outR.set(chunksR[c], off); off += chunksL[c].length;
+  }
+  console.log('[distort] semitones=', semitones, 'tempo%=', tempoPct, 'frames=', written, '/', totalFrames);
   return out;
+}
+
+// Etapa 2: EQ (inclina o espectro) via OfflineAudioContext.
+async function applyEq(buffer, eq) {
+  const sampleRate = buffer.sampleRate;
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const offline = new OfflineCtx(buffer.numberOfChannels, buffer.length, sampleRate);
+
+  const src = offline.createBufferSource();
+  src.buffer = buffer;
+
+  const low = offline.createBiquadFilter();
+  low.type = 'lowshelf'; low.frequency.value = 220; low.gain.value = Number(eq.low) || 0;
+  const mid = offline.createBiquadFilter();
+  mid.type = 'peaking'; mid.frequency.value = 1600; mid.Q.value = 0.9; mid.gain.value = Number(eq.mid) || 0;
+  const high = offline.createBiquadFilter();
+  high.type = 'highshelf'; high.frequency.value = 5500; high.gain.value = Number(eq.high) || 0;
+
+  src.connect(low); low.connect(mid); mid.connect(high); high.connect(offline.destination);
+  src.start(0);
+  return await offline.startRendering();
+}
+
+async function applyDistortion(buffer, preset) {
+  let b = await pitchTempo(buffer, preset.semitones, preset.tempoPct);
+  if (preset.eq) {
+    setProgress(92, 'Equalizando...');
+    b = await applyEq(b, preset.eq);
+  }
+  return b;
 }
 
 // ============================================================
@@ -1238,7 +1279,7 @@ async function boot() {
     return;
   }
   setupTabs();
-  // Mudança de tom configurável no seletor da tela de upload (padrão −2 semitons).
+  // Força da descaracterização configurável no seletor da tela de upload (padrão Forte).
   checkRecovery();
 }
 
