@@ -449,6 +449,27 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:14px">
+      <h2>🎚 Mudança de tom</h2>
+      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
+        Muda o tom da música <strong>sem alterar a velocidade nem o ritmo</strong> — descaracteriza
+        a música mantendo os instrumentos naturais. Negativo = mais grave · positivo = mais agudo.
+      </p>
+      <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
+        <option value="-3">−3 semitons (bem mais grave)</option>
+        <option value="-2.5">−2,5 semitons</option>
+        <option value="-2" selected>−2 semitons (recomendado)</option>
+        <option value="-1.5">−1,5 semitom</option>
+        <option value="-1">−1 semitom (mudança sutil)</option>
+        <option value="1">+1 semitom (mudança sutil)</option>
+        <option value="1.5">+1,5 semitom</option>
+        <option value="2">+2 semitons</option>
+        <option value="2.5">+2,5 semitons</option>
+        <option value="3">+3 semitons (bem mais agudo)</option>
+        <option value="0">0 — sem mudança (teste)</option>
+      </select>
+    </div>
+
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -527,10 +548,11 @@
 // CONFIG
 // ============================================================
 const WORKER_URL = 'https://lux-cover.plataformalux.workers.dev';
-// Velocidade 2x PURA (varispeed): acelera 2x e sobe o tom 1 oitava,
-// igual acelerar um vinil. Resample limpo via OfflineAudioContext,
-// sem granular synthesis (sem o "tropeço" do GrainPlayer).
-const PLAYBACK_RATE = 2;
+// Mudança de TOM sem mudar a velocidade (pitch shift verdadeiro, SoundTouch/WSOLA).
+// O quanto mudar vem do seletor "Mudança de tom" da tela de upload (em semitons;
+// negativo = mais grave, positivo = mais agudo). A duração/ritmo ficam intactos.
+// Biblioteca carregada sob demanda do CDN (1x por sessão, ~15KB).
+const SOUNDTOUCH_URL = 'https://cdn.jsdelivr.net/npm/soundtouchjs@0.3.0/dist/soundtouch.min.js';
 const POLL_INTERVAL_MS = 5000;   // 5s entre polls do PoYo
 const POLL_MAX_ATTEMPTS = 360;   // 360 × 5s = 30 minutos máximo
 
@@ -726,7 +748,7 @@ function sleep(ms) {
 }
 
 // ============================================================
-// Download dos stems + mixagem + speed-up 2x
+// Download dos stems + mixagem + mudança de tom (ritmo intacto)
 // ============================================================
 async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   setStep('download', 'active', '');
@@ -771,26 +793,25 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
   ctx.close();
 
-  // 3. Aceleração 2x PURA (resample/varispeed — acelera + sobe o tom, sem tropeço)
-  const SPEEDUP_ENABLED = true;
+  // 3. Mudança de TOM (pitch shift) — muda o tom SEM mudar a velocidade/ritmo
+  const semitones = parseFloat(($('toneSelect') && $('toneSelect').value) || '-2') || 0;
 
   let pitchedBuffer;
-  if (SPEEDUP_ENABLED) {
-    setStep('pitch', 'active', '');
-    setProgress(80, 'Finalizando...');
-    try {
-      pitchedBuffer = await applySpeedUp(mixedBuffer, PLAYBACK_RATE);
-      setStep('pitch', 'done', 'Velocidade 2x aplicada');
-    } catch (err) {
-      setStep('pitch', 'error', err.message);
-      throw err;
+  setStep('pitch', 'active', '');
+  setProgress(80, 'Mudando o tom...');
+  try {
+    if (semitones === 0) {
+      // Modo teste: entrega o instrumental sem alteração
+      pitchedBuffer = mixedBuffer;
+      setStep('pitch', 'done', 'Tom original (sem mudança)');
+    } else {
+      pitchedBuffer = await applyPitchShift(mixedBuffer, semitones);
+      const lbl = (semitones > 0 ? '+' : '−') + String(Math.abs(semitones)).replace('.', ',');
+      setStep('pitch', 'done', 'Tom alterado ' + lbl + ' st (ritmo intacto)');
     }
-  } else {
-    // Modo teste: entrega o instrumental sem alteração de velocidade
-    setStep('pitch', 'active', '');
-    setProgress(80, 'Finalizando...');
-    pitchedBuffer = mixedBuffer;
-    setStep('pitch', 'done', 'Instrumental original (teste)');
+  } catch (err) {
+    setStep('pitch', 'error', err.message);
+    throw err;
   }
 
   // 4. Encode WAV
@@ -885,34 +906,64 @@ function mixAudioBuffers(buffers) {
 }
 
 // ============================================================
-// Aceleração 2x PURA (resample / varispeed — igual acelerar um vinil)
+// Mudança de TOM sem mudar a velocidade (SoundTouch / WSOLA)
 // ============================================================
-// Toca o áudio com playbackRate=2 dentro de um OfflineAudioContext.
-// Isso acelera 2x E sobe o tom naturalmente (1 oitava) — exatamente
-// como acelerar uma fita ou vinil. SEM granular synthesis, então
-// NÃO tem o "tropeço"/artefato de grão que o GrainPlayer causava.
-// O resultado é limpo e, ao voltar pra 1x num editor, fica perfeito.
+// Diferente do varispeed antigo (que acelerava e agudizava junto, como
+// vinil), aqui SÓ o tom muda — a duração e o ritmo ficam EXATAMENTE
+// iguais. semitones: ex. -2 = 2 semitons mais grave; +1.5 = mais agudo.
+// A biblioteca (SoundTouch, mesma tecnologia de DJs/pedais) é importada
+// do CDN na primeira utilização e fica em cache.
 
-async function applySpeedUp(buffer, rate) {
-  const numChannels = buffer.numberOfChannels;
+let __soundtouchMod = null;
+async function loadSoundTouch() {
+  if (!__soundtouchMod) {
+    __soundtouchMod = await import(SOUNDTOUCH_URL);
+  }
+  return __soundtouchMod;
+}
+
+async function applyPitchShift(buffer, semitones) {
+  const lib = await loadSoundTouch();
+  const SoundTouch = lib.SoundTouch, SimpleFilter = lib.SimpleFilter,
+        WebAudioBufferSource = lib.WebAudioBufferSource;
+
   const sampleRate  = buffer.sampleRate;
-  // Duração e nº de samples finais: tudo dividido pela velocidade
-  const newLength = Math.ceil(buffer.length / rate);
+  const totalFrames = buffer.length;
 
-  console.log('[speedup] resample puro rate=', rate,
-    'newDuration=', (newLength / sampleRate).toFixed(2), 's');
+  const st = new SoundTouch();
+  st.pitchSemitones = semitones;   // só o tom; tempo continua 1.0 (ritmo intacto)
 
+  const source = new WebAudioBufferSource(buffer);
+  const filter = new SimpleFilter(source, st);
+
+  // saída estéreo com o MESMO tamanho do original (a duração não muda)
   const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  const offline = new OfflineCtx(numChannels, newLength, sampleRate);
+  const out = new OfflineCtx(2, totalFrames, sampleRate).createBuffer(2, totalFrames, sampleRate);
+  const outL = out.getChannelData(0);
+  const outR = out.getChannelData(1);
 
-  const source = offline.createBufferSource();
-  source.buffer = buffer;
-  source.playbackRate.value = rate;   // 2 = acelera 2x + sobe o tom (varispeed)
-  source.connect(offline.destination);
-  source.start(0);
+  const CHUNK = 16384;
+  const tmp = new Float32Array(CHUNK * 2);   // interleaved L/R
+  let written = 0, chunks = 0;
 
-  const rendered = await offline.startRendering();
-  return rendered;
+  while (written < totalFrames) {
+    const got = filter.extract(tmp, CHUNK);
+    if (!got) break;
+    const usable = Math.min(got, totalFrames - written);
+    for (let i = 0; i < usable; i++) {
+      outL[written + i] = tmp[2 * i];
+      outR[written + i] = tmp[2 * i + 1];
+    }
+    written += usable;
+    chunks++;
+    if (chunks % 8 === 0) {
+      setProgress(80 + Math.min(14, (written / totalFrames) * 14), 'Mudando o tom...');
+      await new Promise(r => setTimeout(r, 0));   // respira: a tela não congela
+    }
+  }
+  console.log('[pitch] semitones=', semitones, 'frames=', written, '/', totalFrames);
+  if (written === 0) throw new Error('A mudança de tom não produziu áudio.');
+  return out;
 }
 
 // ============================================================
@@ -1187,7 +1238,7 @@ async function boot() {
     return;
   }
   setupTabs();
-  // Velocidade 2x fixa (mantém o tom). Sem seletores — atendente não precisa configurar.
+  // Mudança de tom configurável no seletor da tela de upload (padrão −2 semitons).
   checkRecovery();
 }
 
