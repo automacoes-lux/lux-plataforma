@@ -449,24 +449,6 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <h2>🎚 Força da descaracterização</h2>
-      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
-        Combina <strong>tom + andamento + equalização + um leve wobble</strong> (vibrato que move os picos no tempo)
-        pra quebrar a impressão digital da música — é o wobble que mais atrapalha a identificação automática,
-        mantendo os instrumentos reconhecíveis. Mais forte = mais difícil de detectar e mais perceptível.
-        Se o <strong>Forte</strong> ainda for identificado, suba pra <strong>Máxima</strong>.
-      </p>
-      <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
-        <option value="leve">Leve — disfarce sutil</option>
-        <option value="media">Média</option>
-        <option value="forte" selected>Forte — recomendado</option>
-        <option value="maxima">Máxima — disfarce agressivo</option>
-        <option value="sotom">Só tom (−3) — mantém o andamento</option>
-        <option value="0">Nenhuma — original (teste)</option>
-      </select>
-    </div>
-
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -791,9 +773,10 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   ctx.close();
 
   // 3. Descaracterização: tom + andamento + vibrato + reverb + EQ (quebra a impressão digital)
-  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'forte';
-  // "0" = Nenhuma (teste) → não aplica nada; qualquer outro valor desconhecido cai no Forte
-  const preset = (presetKey === '0') ? null : (DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.forte);
+  // FIXO no preset Máxima (seletor removido a pedido — disfarce sempre no máximo).
+  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'maxima';
+  // "0" = Nenhuma (teste) → não aplica nada; qualquer outro valor desconhecido cai na Máxima
+  const preset = (presetKey === '0') ? null : (DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.maxima);
 
   let pitchedBuffer;
   setStep('pitch', 'active', '');
