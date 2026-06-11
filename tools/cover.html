@@ -449,6 +449,23 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:14px">
+      <h2>🎚 Nível de disfarce</h2>
+      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
+        De cima pra baixo: <strong>mais disfarce → menos parecida</strong> (Nível 5) até
+        <strong>menos disfarce → mais parecida</strong> (Nível 1). O <strong>Nível 5</strong> já passou no teste —
+        vá descendo até achar o ponto que ainda passa e soa mais parecido com a original.
+      </p>
+      <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
+        <option value="v5" selected>Nível 5 — Máxima (a que passou)</option>
+        <option value="v4">Nível 4 — Muito forte</option>
+        <option value="v3">Nível 3 — Forte</option>
+        <option value="v2">Nível 2 — Médio</option>
+        <option value="v1">Nível 1 — Suave (mais parecida)</option>
+        <option value="0">Original — sem efeito (teste)</option>
+      </select>
+    </div>
+
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -773,10 +790,10 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   ctx.close();
 
   // 3. Descaracterização: tom + andamento + vibrato + reverb + EQ (quebra a impressão digital)
-  // FIXO no preset Máxima (seletor removido a pedido — disfarce sempre no máximo).
-  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'maxima';
-  // "0" = Nenhuma (teste) → não aplica nada; qualquer outro valor desconhecido cai na Máxima
-  const preset = (presetKey === '0') ? null : (DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.maxima);
+  // Nível escolhido no seletor (v5 = Máxima que passou … v1 = mais suave/parecida). Padrão v5.
+  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'v5';
+  // "0" = Original (teste) → não aplica nada; qualquer valor desconhecido cai no Nível 5
+  const preset = (presetKey === '0') ? null : (DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.v5);
 
   let pitchedBuffer;
   setStep('pitch', 'active', '');
@@ -899,12 +916,14 @@ function mixAudioBuffers(buffers) {
 
 // chorus = vibrato que move os picos no tempo (rate Hz, depth ms, mix 0..1). mix ALTO = quase todo o
 //   áudio passa pelo vibrato (não sobra "limpo" pro detector casar). reverb = cauda que borra o espectro.
+// ESCADA: v5 = a Máxima que passou no teste (mais forte, menos parecida). v4→v1 = cada vez mais suaves
+//   e mais parecidas com a original. Desça até achar o ponto que ainda passa e soa melhor.
 const DISTORT_PRESETS = {
-  leve:   { semitones:-2, tempoPct:+3, eq:{ low:+2, mid:+1.5, high:-2 }, chorus:{ rate:1.2, depth:4,  mix:0.45 }, reverb:null,                       label:'Leve (tom −2 · ritmo +3% · vibrato leve)' },
-  media:  { semitones:-3, tempoPct:+5, eq:{ low:+3, mid:+2,   high:-3 }, chorus:{ rate:2.0, depth:6,  mix:0.70 }, reverb:{ seconds:1.0, decay:3, mix:0.12 }, label:'Média (tom −3 · ritmo +5% · vibrato)' },
-  forte:  { semitones:-4, tempoPct:-6, eq:{ low:+4, mid:+2.5, high:-4 }, chorus:{ rate:2.6, depth:8,  mix:0.88 }, reverb:{ seconds:1.3, decay:3, mix:0.18 }, label:'Forte (tom −4 · ritmo −6% · vibrato forte)' },
-  maxima: { semitones:-5, tempoPct:+8, eq:{ low:+5, mid:+3,   high:-4 }, chorus:{ rate:3.4, depth:11, mix:1.00 }, reverb:{ seconds:1.6, decay:2.6, mix:0.26 }, label:'Máxima (deformação agressiva)' },
-  sotom:  { semitones:-3, tempoPct:0,  eq:null,                          chorus:null,                            reverb:null,                       label:'Só tom −3 (ritmo intacto)' }
+  v5: { semitones:-5, tempoPct:+8, eq:{ low:+5, mid:+3,   high:-4 }, chorus:{ rate:3.4, depth:11, mix:1.00 }, reverb:{ seconds:1.6, decay:2.6, mix:0.26 }, label:'Nível 5 · Máxima (a que passou)' },
+  v4: { semitones:-4, tempoPct:+7, eq:{ low:+4, mid:+2.5, high:-4 }, chorus:{ rate:3.0, depth:9,  mix:0.88 }, reverb:{ seconds:1.4, decay:2.8, mix:0.21 }, label:'Nível 4 · Muito forte' },
+  v3: { semitones:-4, tempoPct:-6, eq:{ low:+4, mid:+2.5, high:-3 }, chorus:{ rate:2.6, depth:8,  mix:0.76 }, reverb:{ seconds:1.3, decay:3,   mix:0.17 }, label:'Nível 3 · Forte' },
+  v2: { semitones:-3, tempoPct:+5, eq:{ low:+3, mid:+2,   high:-3 }, chorus:{ rate:2.2, depth:6,  mix:0.62 }, reverb:{ seconds:1.1, decay:3,   mix:0.12 }, label:'Nível 2 · Médio' },
+  v1: { semitones:-3, tempoPct:+4, eq:{ low:+2, mid:+1.5, high:-2 }, chorus:{ rate:1.8, depth:5,  mix:0.50 }, reverb:{ seconds:0.9, decay:3,   mix:0.09 }, label:'Nível 1 · Suave (mais parecida)' }
 };
 
 let __soundtouchMod = null;
