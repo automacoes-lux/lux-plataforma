@@ -449,38 +449,9 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <h2>🎚 Nível de disfarce (opcional)</h2>
-      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
-        Efeito antigo (tom+vibrato+reverb). <strong>Recomendado deixar em "Original"</strong> e usar só a
-        <strong>Frequência</strong> abaixo (foi o que passou no Suno). Mas se quiser combinar, dá pra ligar um nível aqui.
-      </p>
-      <select id="toneSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
-        <option value="0" selected>Original — sem efeito (recomendado: use só a Frequência abaixo)</option>
-        <option value="v5">Nível 5 — Máxima</option>
-        <option value="v4">Nível 4 — Muito forte</option>
-        <option value="v3">Nível 3 — Forte</option>
-        <option value="v2">Nível 2 — Médio</option>
-        <option value="v1">Nível 1 — Suave (mais parecida)</option>
-      </select>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <h2>🎛 Frequência (tom grave — igual ao Filmora)</h2>
-      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
-        Baixa o tom da música mantendo o ritmo — igual ao "Frequência" do Filmora (<strong>−12 = 1 oitava abaixo</strong>).
-        O <strong>−24</strong> (2 oitavas) é o que passou no Suno. Pode usar sozinho (disfarce em "Original") ou junto com o disfarce.
-      </p>
-      <select id="freqSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
-        <option value="0">Desligado</option>
-        <option value="-12">−12 semitons (1 oitava)</option>
-        <option value="-18">−18 semitons</option>
-        <option value="-24" selected>−24 semitons (2 oitavas · passou no Suno)</option>
-        <option value="-30">−30 semitons</option>
-        <option value="-36">−36 semitons (3 oitavas · extremo)</option>
-      </select>
-    </div>
-
+    <p style="font-size:13px;color:#8a857c;text-align:center;margin:14px 0 2px;line-height:1.5">
+      O cover é processado automaticamente: sem vocal + tom grave (−30 semitons).
+    </p>
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -805,8 +776,8 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   ctx.close();
 
   // 3. Descaracterização: tom + andamento + vibrato + reverb + EQ (quebra a impressão digital)
-  // Nível escolhido no seletor (v5 = Máxima que passou … v1 = mais suave/parecida). Padrão v5.
-  const presetKey = ($('toneSelect') && $('toneSelect').value) || 'v5';
+  // Seletor de disfarce REMOVIDO — fixo em "Original" (sem o efeito antigo). O disfarce real é a Frequência −30 abaixo.
+  const presetKey = ($('toneSelect') && $('toneSelect').value) || '0';
   // "0" = Original (teste) → não aplica nada; qualquer valor desconhecido cai no Nível 5
   const preset = (presetKey === '0') ? null : (DISTORT_PRESETS[presetKey] || DISTORT_PRESETS.v5);
 
@@ -827,8 +798,9 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
     throw err;
   }
 
-  // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto. Pode usar junto ou sozinho.
-  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '0');
+  // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto.
+  // Seletor REMOVIDO — fixo em −30 semitons (o que passou no Suno).
+  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-30');
   if (freqSemi < 0) {
     setProgress(82, 'Baixando a frequência...');
     try {
