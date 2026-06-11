@@ -466,6 +466,23 @@
       </select>
     </div>
 
+    <div class="card" style="margin-top:14px">
+      <h2>🎛 Frequência (grave / embolado)</h2>
+      <p style="font-size:13.5px;color:#9a948a;margin:0 0 10px;line-height:1.55">
+        Efeito <strong>diferente do nível de disfarce</strong>: empurra todas as frequências pra baixo, deixando a
+        música <strong>mais grave e "embolada"</strong> (desafina os harmônicos), <strong>mantendo o mesmo ritmo</strong>.
+        Pode usar <strong>junto</strong> com o disfarce acima, ou sozinho (deixando o disfarce em "Original").
+      </p>
+      <select id="freqSelect" style="width:100%;padding:12px 14px;font-size:16px;background:#1C1C1C;color:#ECE8E0;border:1px solid #333;border-radius:8px;font-family:inherit">
+        <option value="0" selected>Desligado</option>
+        <option value="1">Nível 1 — leve</option>
+        <option value="2">Nível 2</option>
+        <option value="3">Nível 3</option>
+        <option value="4">Nível 4</option>
+        <option value="5">Nível 5 — máximo (mais grave/embolado)</option>
+      </select>
+    </div>
+
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
 
@@ -812,6 +829,19 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
     throw err;
   }
 
+  // 3b. Frequência (opcional) — deixa grave/embolado, ritmo intacto. Pode usar junto ou sozinho.
+  const freqLevel = parseInt(($('freqSelect') && $('freqSelect').value) || '0', 10);
+  if (freqLevel > 0 && FREQ_HZ[freqLevel]) {
+    setProgress(82, 'Deslocando frequências...');
+    try {
+      pitchedBuffer = await applyFreqShift(pitchedBuffer, FREQ_HZ[freqLevel]);
+      setStep('pitch', 'done', (preset ? preset.label + ' + ' : '') + 'Frequência nível ' + freqLevel);
+    } catch (err) {
+      setStep('pitch', 'error', 'Frequência: ' + err.message);
+      throw err;
+    }
+  }
+
   // 4. Encode WAV
   setProgress(95, 'Finalizando...');
   processedBlob = audioBufferToWav(pitchedBuffer);
@@ -1085,6 +1115,106 @@ async function applyDistortion(buffer, preset) {
     b = await applyEq(b, preset.eq);
   }
   return b;
+}
+
+// ============================================================
+// FREQUÊNCIA — deslocamento de frequência (frequency shift / SSB)
+// ============================================================
+// Empurra TODAS as frequências pra baixo um valor FIXO em Hz (não é tom!):
+// os harmônicos viram inarmônicos → som "grave e embolado", ritmo intacto.
+// Hz negativo. Níveis 1..5 em FREQ_HZ. Feito por STFT (janela Hann, 75%
+// de sobreposição) deslocando o espectro analítico e somando de volta.
+const FREQ_HZ = { 1:-25, 2:-45, 3:-70, 4:-100, 5:-145 };
+
+// FFT radix-2 in-place (inverse divide por N). re/im: Float32Array de tamanho potência de 2.
+function fftRadix2(re, im, inverse) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { const tr = re[i]; re[i] = re[j]; re[j] = tr; const ti = im[i]; im[i] = im[j]; im[j] = ti; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = (inverse ? 2 : -2) * Math.PI / len;
+    const wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      const half = len >> 1;
+      for (let k = 0; k < half; k++) {
+        const a = i + k, b = i + k + half;
+        const vr = re[b] * cr - im[b] * ci;
+        const vi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - vr; im[b] = im[a] - vi;
+        re[a] = re[a] + vr; im[a] = im[a] + vi;
+        const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+      }
+    }
+  }
+  if (inverse) { for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; } }
+}
+
+async function applyFreqShift(buffer, hz) {
+  const sr = buffer.sampleRate;
+  const N = 2048, hop = 512;
+  const shiftBins = Math.round((Number(hz) || 0) * N / sr);
+  if (shiftBins === 0) return buffer;
+
+  const win = new Float32Array(N);
+  for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+
+  const ch = buffer.numberOfChannels, len = buffer.length;
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const out = new OfflineCtx(ch, len, sr).createBuffer(ch, len, sr);
+
+  const re = new Float32Array(N), im = new Float32Array(N);
+  const re2 = new Float32Array(N), im2 = new Float32Array(N);
+  const half = N >> 1;
+
+  for (let c = 0; c < ch; c++) {
+    const x = buffer.getChannelData(c);
+    const y = new Float32Array(len);
+    const norm = new Float32Array(len);
+    let frame = 0;
+
+    for (let pos = 0; pos < len; pos += hop) {
+      for (let i = 0; i < N; i++) { const idx = pos + i; re[i] = (idx < len ? x[idx] : 0) * win[i]; im[i] = 0; }
+      fftRadix2(re, im, false);
+
+      // monta o espectro ANALÍTICO já DESLOCADO em shiftBins
+      re2.fill(0); im2.fill(0);
+      for (let k = 0; k <= half; k++) {
+        const dst = k + shiftBins;
+        if (dst < 0 || dst >= N) continue;
+        let ar = re[k], ai = im[k];
+        if (k > 0 && k < half) { ar *= 2; ai *= 2; }     // dobra as freqs positivas (sinal analítico)
+        re2[dst] = ar; im2[dst] = ai;
+      }
+      fftRadix2(re2, im2, true);                          // volta pro tempo (sinal complexo)
+
+      // correção de fase por quadro (senão os quadros não somam coerentes → amplitude
+      // oscila e o deslocamento sai errado). theta = 2π · shiftBins · (início do quadro) / N.
+      const theta = 2 * Math.PI * shiftBins * pos / N;
+      const cosT = Math.cos(theta), sinT = Math.sin(theta);
+      for (let i = 0; i < N; i++) {
+        const idx = pos + i; if (idx >= len) break;
+        const realShifted = re2[i] * cosT - im2[i] * sinT;  // Re{ a · e^{jθ} }
+        y[idx] += realShifted * win[i];
+        norm[idx] += win[i] * win[i];
+      }
+
+      if ((++frame & 63) === 0) {
+        const pct = 80 + ((c + pos / len) / ch) * 17;
+        setProgress(Math.min(97, pct), 'Deslocando frequências...');
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    const od = out.getChannelData(c);
+    for (let i = 0; i < len; i++) od[i] = norm[i] > 1e-6 ? y[i] / norm[i] : 0;
+  }
+  console.log('[freqshift] hz=', hz, 'bins=', shiftBins);
+  return out;
 }
 
 // ============================================================
