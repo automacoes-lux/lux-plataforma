@@ -567,26 +567,10 @@
       </div>
 
       <button class="btn-play" id="btnTrimPreview">▶ Pré-visualizar o trecho</button>
-
-      <div style="margin-top:12px">
-        <div class="control-row">
-          <span class="label">📈 Fade-in</span>
-          <input type="range" class="slider" id="trimFadeIn" min="0" max="100" step="1" value="0">
-          <span class="val" id="valFadeIn">0.0s</span>
-        </div>
-        <div class="control-row">
-          <span class="label">📉 Fade-out</span>
-          <input type="range" class="slider" id="trimFadeOut" min="0" max="100" step="1" value="0">
-          <span class="val" id="valFadeOut">0.0s</span>
-        </div>
-      </div>
-      <div style="text-align:center">
-        <button class="btn-trim-reset" id="btnTrimReset">↺ Usar a música inteira</button>
-      </div>
     </div>
 
     <p style="font-size:13px;color:#8a857c;text-align:center;margin:14px 0 2px;line-height:1.5">
-      O cover é processado automaticamente: sem vocal + tom grave (−12 semitons).<br>
+      O cover é processado automaticamente: sem vocal + tom grave (−20 semitons).<br>
       <span style="font-size:12px;color:#6f6a62">Sem mexer no trecho, usamos a música inteira.</span>
     </p>
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
@@ -979,8 +963,8 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
 
   // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto.
-  // Seletor REMOVIDO — fixo em −12 semitons (1 oitava abaixo, uma passada só).
-  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-12');
+  // Seletor REMOVIDO — fixo em −20 semitons.
+  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-20');
   if (freqSemi < 0) {
     setProgress(82, 'Baixando a frequência...');
     try {
@@ -1368,11 +1352,8 @@ async function openTrimEditor(file) {
   computeTrimPeaks();
   $('cutStart').value = 0;
   $('cutEnd').value = 1000;
-  $('trimFadeIn').value = 0;
-  $('trimFadeOut').value = 0;
   $('trimEditor').classList.add('visible');
   updateTrimRanges();
-  updateTrimFades();
   // espera o layout aplicar (editor virou visível) pra o canvas ter largura
   requestAnimationFrame(drawTrimWave);
 }
@@ -1389,16 +1370,15 @@ function getTrimValues() {
   return {
     startSec: (parseInt($('cutStart').value, 10) / 1000) * dur,
     endSec:   (parseInt($('cutEnd').value, 10) / 1000) * dur,
-    fadeIn:   parseInt($('trimFadeIn').value, 10) / 10,
-    fadeOut:  parseInt($('trimFadeOut').value, 10) / 10
+    fadeIn:   0,
+    fadeOut:  0
   };
 }
 
 // "Mexeu no trecho?" — se não, a música inteira é enviada sem reprocessar.
 function isTrimmed() {
   const s = parseInt($('cutStart').value, 10), e = parseInt($('cutEnd').value, 10);
-  const fi = parseInt($('trimFadeIn').value, 10), fo = parseInt($('trimFadeOut').value, 10);
-  return !(s === 0 && e === 1000 && fi === 0 && fo === 0);
+  return !(s === 0 && e === 1000);
 }
 
 function updateTrimRanges() {
@@ -1410,13 +1390,6 @@ function updateTrimRanges() {
   const fill = $('trimFill');
   fill.style.left = (sp * 100) + '%';
   fill.style.width = ((ep - sp) * 100) + '%';
-}
-
-function updateTrimFades() {
-  const fi = parseInt($('trimFadeIn').value, 10) / 10;
-  const fo = parseInt($('trimFadeOut').value, 10) / 10;
-  $('valFadeIn').textContent = fi.toFixed(1) + 's';
-  $('valFadeOut').textContent = fo.toFixed(1) + 's';
 }
 
 // Pré-calcula min/max por coluna (rápido de redesenhar durante o arraste)
@@ -1646,15 +1619,7 @@ function setupTrim() {
     stopTrimPreview(); stopTrimFree();
     updateTrimRanges(); drawTrimWave();
   });
-  $('trimFadeIn').addEventListener('input', updateTrimFades);
-  $('trimFadeOut').addEventListener('input', updateTrimFades);
   $('btnTrimPreview').addEventListener('click', toggleTrimPreview);
-  $('btnTrimReset').addEventListener('click', () => {
-    $('cutStart').value = 0; $('cutEnd').value = 1000;
-    $('trimFadeIn').value = 0; $('trimFadeOut').value = 0;
-    stopTrimPreview(); stopTrimFree();
-    updateTrimRanges(); updateTrimFades(); drawTrimWave();
-  });
 
   const canvas = $('trimCanvas');
   canvas.addEventListener('click', (e) => onTrimWaveClick(e.clientX));
