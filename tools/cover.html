@@ -119,6 +119,105 @@
   .file-info .row .label { color: var(--text-dim); }
   .file-info .row .value { color: var(--text); font-weight: 500; }
 
+  /* ─── Editor de trecho (waveform + slider duplo + fades) ─── */
+  .trim-editor { display: none; margin-top: 14px; }
+  .trim-editor.visible { display: block; }
+  .wave-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  #trimCanvas {
+    display: block;
+    width: 100%;
+    height: 110px;
+    background: var(--bg);
+    border-radius: 6px;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .wave-hint {
+    font-size: 12px; color: var(--text-dim);
+    text-align: center; margin-top: 8px;
+  }
+  .wave-times {
+    display: flex; justify-content: space-between;
+    margin-top: 8px; font-size: 14px;
+    color: var(--gold-bright); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .range-wrap { position: relative; height: 32px; margin-top: 10px; }
+  .range-wrap .track {
+    position: absolute; top: 14px; left: 0; right: 0;
+    height: 4px; background: var(--bg4); border-radius: 2px;
+  }
+  .range-wrap .range-fill {
+    position: absolute; top: 14px; height: 4px;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 100%);
+    border-radius: 2px;
+  }
+  .range-wrap input[type=range] {
+    position: absolute; top: 4px; left: 0; width: 100%; height: 24px;
+    background: transparent; pointer-events: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .range-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; pointer-events: auto;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--gold-bright); border: 2px solid var(--bg2);
+    cursor: grab; box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .range-wrap input[type=range]::-moz-range-thumb {
+    pointer-events: auto; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--gold-bright); border: 2px solid var(--bg2);
+    cursor: grab; box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .control-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: var(--bg3);
+    border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;
+  }
+  .control-row .label {
+    font-size: 13px; color: var(--text); flex: 0 0 110px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .control-row .slider {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+    background: linear-gradient(90deg, var(--gold-dim) 0%, var(--gold) 100%);
+  }
+  .control-row .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold-bright); border: 2px solid var(--bg2);
+    cursor: pointer; box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .control-row .slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold-bright); border: 2px solid var(--bg2);
+    cursor: pointer; box-shadow: 0 2px 6px rgba(201,168,76,.4);
+  }
+  .control-row .val {
+    flex: 0 0 56px; text-align: right; color: var(--gold-bright);
+    font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .btn-play {
+    width: 100%; padding: 11px 16px;
+    background: rgba(201,168,76,.08); border: 1px solid var(--border);
+    color: var(--gold); border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    margin-top: 12px; transition: all .15s;
+  }
+  .btn-play:hover { background: rgba(201,168,76,.16); }
+  .btn-play.playing { background: var(--gold); color: #1A1A1A; }
+  .btn-trim-reset {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 12px; cursor: pointer; text-decoration: underline;
+    padding: 4px; margin-top: 6px;
+  }
+  .btn-trim-reset:hover { color: var(--gold); }
+
   /* ─── Opções (visuais, fixas) ─── */
   .options { display: flex; flex-direction: column; gap: 10px; }
   .option-row {
@@ -449,8 +548,46 @@
       </div>
     </div>
 
+    <!-- Editor de trecho (opcional): aparece depois de escolher a música -->
+    <div class="card trim-editor" id="trimEditor">
+      <h2>✂ Escolher um trecho <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></h2>
+      <div class="wave-wrap">
+        <canvas id="trimCanvas"></canvas>
+        <div class="wave-hint">🔊 Clique na onda pra ouvir dali · arraste as bolinhas pra marcar início e fim</div>
+        <div class="wave-times">
+          <span id="trimStartLabel">0:00 (início)</span>
+          <span id="trimEndLabel">0:00 (fim)</span>
+        </div>
+        <div class="range-wrap">
+          <div class="track"></div>
+          <div class="range-fill" id="trimFill"></div>
+          <input type="range" id="cutStart" min="0" max="1000" value="0">
+          <input type="range" id="cutEnd"   min="0" max="1000" value="1000">
+        </div>
+      </div>
+
+      <button class="btn-play" id="btnTrimPreview">▶ Pré-visualizar o trecho</button>
+
+      <div style="margin-top:12px">
+        <div class="control-row">
+          <span class="label">📈 Fade-in</span>
+          <input type="range" class="slider" id="trimFadeIn" min="0" max="100" step="1" value="0">
+          <span class="val" id="valFadeIn">0.0s</span>
+        </div>
+        <div class="control-row">
+          <span class="label">📉 Fade-out</span>
+          <input type="range" class="slider" id="trimFadeOut" min="0" max="100" step="1" value="0">
+          <span class="val" id="valFadeOut">0.0s</span>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <button class="btn-trim-reset" id="btnTrimReset">↺ Usar a música inteira</button>
+      </div>
+    </div>
+
     <p style="font-size:13px;color:#8a857c;text-align:center;margin:14px 0 2px;line-height:1.5">
-      O cover é processado automaticamente: sem vocal + tom grave (−30 semitons).
+      O cover é processado automaticamente: sem vocal + tom grave (−12 semitons).<br>
+      <span style="font-size:12px;color:#6f6a62">Sem mexer no trecho, usamos a música inteira.</span>
     </p>
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
   </div>
@@ -546,6 +683,16 @@ let currentTaskId = null;
 let pollAbortController = null;
 let processedBlob = null;
 
+// ── Editor de trecho (opcional) ──
+let trimBuffer = null;        // AudioBuffer decodificado pra escolher o trecho
+let trimPeaks = null;         // picos pré-calculados pra desenhar a onda
+let trimPlayheadPct = null;   // cursor de reprodução (0..1) ou null
+// preview do trecho cortado (com fades)
+let trimPrevCtx = null, trimPrevSrc = null, trimPlaying = false, trimPrevRAF = null;
+// play livre (clica na onda e ouve dali em diante)
+let trimFreeCtx = null, trimFreeSrc = null, trimFreePlaying = false, trimFreeRAF = null;
+let trimFreeStartCtxTime = 0, trimFreeStartOffset = 0;
+
 // ============================================================
 // UI helpers
 // ============================================================
@@ -627,7 +774,13 @@ function handleFile(file) {
   if (file.size > 50 * 1024 * 1024) {
     showError('Arquivo muito grande (máximo 50MB).');
     $('btnProcess').disabled = true;
+    hideTrimEditor();
+    return;
   }
+
+  // Abre o editor de trecho (decodifica o áudio no navegador).
+  // Se falhar, segue normal usando a música inteira.
+  openTrimEditor(file);
 }
 
 // ============================================================
@@ -636,10 +789,36 @@ function handleFile(file) {
 $('btnProcess').addEventListener('click', async () => {
   if (!originalFile) return;
   $('btnProcess').disabled = true;
-  await startProcessing(originalFile);
+  stopTrimPreview();
+  stopTrimFree();
+
+  // Se o usuário escolheu um trecho, corta aqui e envia só ele (WAV).
+  // Sem mexer (trecho inteiro, sem fade) → envia a música original como está.
+  let payload = originalFile;
+  let payloadName = originalFile.name;
+  if (trimBuffer && isTrimmed()) {
+    try {
+      const { startSec, endSec, fadeIn, fadeOut } = getTrimValues();
+      const cut = processAudio(trimBuffer, startSec, endSec, fadeIn, fadeOut);
+      const base = originalFile.name.replace(/\.[^.]+$/, '');
+      payload = audioBufferToWav(cut);
+      payloadName = base + '.wav';
+    } catch (err) {
+      showError('Não consegui cortar o trecho: ' + err.message);
+      $('btnProcess').disabled = false;
+      return;
+    }
+    if (payload.size > 50 * 1024 * 1024) {
+      showError('O trecho ficou grande demais (máx 50MB). Escolha um trecho menor.');
+      $('btnProcess').disabled = false;
+      return;
+    }
+  }
+
+  await startProcessing(payload, payloadName);
 });
 
-async function startProcessing(file) {
+async function startProcessing(file, filename) {
   showScreen('progress');
   setStep('upload', 'active', '');
   setStep('process', '', '');
@@ -650,7 +829,8 @@ async function startProcessing(file) {
   try {
     // 1. Upload pro Worker (que sobe no R2 e repassa pro PoYo)
     const form = new FormData();
-    form.append('file', file);
+    if (filename) form.append('file', file, filename);
+    else form.append('file', file);
 
     const resp = await window.__luxFetch(WORKER_URL + '/process', {
       method: 'POST',
@@ -799,8 +979,8 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
 
   // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto.
-  // Seletor REMOVIDO — fixo em −30 semitons (o que passou no Suno).
-  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-30');
+  // Seletor REMOVIDO — fixo em −12 semitons (1 oitava abaixo, uma passada só).
+  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-12');
   if (freqSemi < 0) {
     setProgress(82, 'Baixando a frequência...');
     try {
@@ -1159,6 +1339,334 @@ function writeString(view, offset, s) {
 }
 
 // ============================================================
+// EDITOR DE TRECHO (opcional) — escolher início/fim antes do cover
+// ============================================================
+// Igual à ferramenta Corte: waveform + 2 marcadores (início/fim) + fades.
+// O áudio é decodificado no navegador; ao processar, se o usuário escolheu
+// um trecho, cortamos só ele (com fades) e enviamos esse pedaço pro cover.
+
+function fmtMSS(s) {
+  s = Math.max(0, Math.round(Number(s) || 0));
+  const m = Math.floor(s / 60), r = s % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+
+async function openTrimEditor(file) {
+  hideTrimEditor();
+  trimBuffer = null;
+  trimPeaks = null;
+  try {
+    const arr = await file.arrayBuffer();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    trimBuffer = await ctx.decodeAudioData(arr.slice(0));
+    ctx.close();
+  } catch (err) {
+    console.warn('[trim] não consegui abrir o editor de trecho:', err);
+    trimBuffer = null;
+    return; // segue sem editor — usa a música inteira
+  }
+  computeTrimPeaks();
+  $('cutStart').value = 0;
+  $('cutEnd').value = 1000;
+  $('trimFadeIn').value = 0;
+  $('trimFadeOut').value = 0;
+  $('trimEditor').classList.add('visible');
+  updateTrimRanges();
+  updateTrimFades();
+  // espera o layout aplicar (editor virou visível) pra o canvas ter largura
+  requestAnimationFrame(drawTrimWave);
+}
+
+function hideTrimEditor() {
+  stopTrimPreview();
+  stopTrimFree();
+  trimPlayheadPct = null;
+  $('trimEditor').classList.remove('visible');
+}
+
+function getTrimValues() {
+  const dur = trimBuffer ? trimBuffer.duration : 0;
+  return {
+    startSec: (parseInt($('cutStart').value, 10) / 1000) * dur,
+    endSec:   (parseInt($('cutEnd').value, 10) / 1000) * dur,
+    fadeIn:   parseInt($('trimFadeIn').value, 10) / 10,
+    fadeOut:  parseInt($('trimFadeOut').value, 10) / 10
+  };
+}
+
+// "Mexeu no trecho?" — se não, a música inteira é enviada sem reprocessar.
+function isTrimmed() {
+  const s = parseInt($('cutStart').value, 10), e = parseInt($('cutEnd').value, 10);
+  const fi = parseInt($('trimFadeIn').value, 10), fo = parseInt($('trimFadeOut').value, 10);
+  return !(s === 0 && e === 1000 && fi === 0 && fo === 0);
+}
+
+function updateTrimRanges() {
+  const dur = trimBuffer ? trimBuffer.duration : 0;
+  const sp = parseInt($('cutStart').value, 10) / 1000;
+  const ep = parseInt($('cutEnd').value, 10) / 1000;
+  $('trimStartLabel').textContent = fmtMSS(sp * dur) + ' (início)';
+  $('trimEndLabel').textContent = fmtMSS(ep * dur) + ' (fim)';
+  const fill = $('trimFill');
+  fill.style.left = (sp * 100) + '%';
+  fill.style.width = ((ep - sp) * 100) + '%';
+}
+
+function updateTrimFades() {
+  const fi = parseInt($('trimFadeIn').value, 10) / 10;
+  const fo = parseInt($('trimFadeOut').value, 10) / 10;
+  $('valFadeIn').textContent = fi.toFixed(1) + 's';
+  $('valFadeOut').textContent = fo.toFixed(1) + 's';
+}
+
+// Pré-calcula min/max por coluna (rápido de redesenhar durante o arraste)
+function computeTrimPeaks() {
+  const data = trimBuffer.getChannelData(0);
+  const cols = 800;
+  const block = Math.max(1, Math.floor(data.length / cols));
+  trimPeaks = new Array(cols);
+  for (let c = 0; c < cols; c++) {
+    let min = 1, max = -1;
+    const s0 = c * block, s1 = Math.min(data.length, s0 + block);
+    for (let i = s0; i < s1; i += 8) {
+      const v = data[i];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    if (min > max) { min = 0; max = 0; }
+    trimPeaks[c] = [min, max];
+  }
+}
+
+function drawTrimWave() {
+  const canvas = $('trimCanvas');
+  if (!canvas || !trimPeaks || !trimBuffer) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 600, h = canvas.clientHeight || 110;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const sp = parseInt($('cutStart').value, 10) / 1000;
+  const ep = parseInt($('cutEnd').value, 10) / 1000;
+  const startX = sp * w, endX = ep * w, mid = h / 2;
+
+  // fundo da área selecionada
+  ctx.fillStyle = 'rgba(201,168,76,.06)';
+  ctx.fillRect(startX, 0, endX - startX, h);
+
+  // barras da onda
+  const cols = trimPeaks.length;
+  for (let x = 0; x < w; x++) {
+    const c = Math.min(cols - 1, Math.floor((x / w) * cols));
+    const mn = trimPeaks[c][0], mx = trimPeaks[c][1];
+    const inSel = (x >= startX && x <= endX);
+    ctx.fillStyle = inSel ? 'rgba(201,168,76,.7)' : 'rgba(138,134,128,.4)';
+    const y1 = mid + mn * (h * 0.45), y2 = mid + mx * (h * 0.45);
+    ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+  }
+
+  // marcadores de início e fim
+  ctx.lineWidth = 4; ctx.strokeStyle = '#E2BA5F';
+  ctx.shadowColor = 'rgba(226,186,95,.9)'; ctx.shadowBlur = 6;
+  ctx.beginPath(); ctx.moveTo(startX, 0); ctx.lineTo(startX, h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(endX, 0); ctx.lineTo(endX, h); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // playhead (cursor de reprodução)
+  if (trimPlayheadPct !== null) {
+    const px = trimPlayheadPct * w;
+    ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255,255,255,.8)'; ctx.shadowBlur = 5;
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(px, 5, 4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// Corta o trecho [startSec,endSec] aplicando fade-in/out (curva x²).
+function processAudio(srcBuffer, startSec, endSec, fadeIn, fadeOut) {
+  const sampleRate = srcBuffer.sampleRate;
+  const numChannels = srcBuffer.numberOfChannels;
+  const startSample = Math.floor(startSec * sampleRate);
+  const endSample = Math.min(srcBuffer.length, Math.floor(endSec * sampleRate));
+  const length = endSample - startSample;
+  if (length <= 0) throw new Error('Seleção inválida (fim antes do início).');
+
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const outBuffer = new OfflineCtx(numChannels, length, sampleRate)
+    .createBuffer(numChannels, length, sampleRate);
+  const fadeInSamples = Math.min(length, Math.floor(fadeIn * sampleRate));
+  const fadeOutSamples = Math.min(length - fadeInSamples, Math.floor(fadeOut * sampleRate));
+
+  for (let ch = 0; ch < numChannels; ch++) {
+    const src = srcBuffer.getChannelData(ch);
+    const out = outBuffer.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      let sample = src[startSample + i] || 0;
+      if (i < fadeInSamples) { const t = i / fadeInSamples; sample *= t * t; }
+      const foStart = length - fadeOutSamples;
+      if (i >= foStart && fadeOutSamples > 0) { const t = (length - i) / fadeOutSamples; sample *= t * t; }
+      out[i] = sample;
+    }
+  }
+  return outBuffer;
+}
+
+// ── Preview do trecho cortado (com fades) ──
+function toggleTrimPreview() {
+  if (!trimBuffer) return;
+  if (trimPlaying) { stopTrimPreview(); return; }
+  stopTrimFree();
+  const { startSec, endSec, fadeIn, fadeOut } = getTrimValues();
+  try {
+    const buf = processAudio(trimBuffer, startSec, endSec, fadeIn, fadeOut);
+    trimPrevCtx = new (window.AudioContext || window.webkitAudioContext)();
+    trimPrevSrc = trimPrevCtx.createBufferSource();
+    trimPrevSrc.buffer = buf;
+    trimPrevSrc.connect(trimPrevCtx.destination);
+    trimPrevSrc.onended = () => stopTrimPreview();
+    trimPrevSrc.start(0);
+    trimPlaying = true;
+    $('btnTrimPreview').textContent = '⏹ Parar';
+    $('btnTrimPreview').classList.add('playing');
+
+    const dur = trimBuffer.duration, t0 = trimPrevCtx.currentTime;
+    const tick = () => {
+      if (!trimPlaying || !trimPrevCtx) return;
+      const posSec = startSec + (trimPrevCtx.currentTime - t0);
+      trimPlayheadPct = Math.min(endSec / dur, posSec / dur);
+      drawTrimWave();
+      if (posSec >= endSec) return;
+      trimPrevRAF = requestAnimationFrame(tick);
+    };
+    trimPrevRAF = requestAnimationFrame(tick);
+  } catch (err) { showError(err.message); }
+}
+
+function stopTrimPreview() {
+  try { if (trimPrevSrc) trimPrevSrc.stop(); } catch (e) {}
+  try { if (trimPrevCtx) trimPrevCtx.close(); } catch (e) {}
+  trimPrevSrc = null; trimPrevCtx = null; trimPlaying = false;
+  if (trimPrevRAF) { cancelAnimationFrame(trimPrevRAF); trimPrevRAF = null; }
+  const b = $('btnTrimPreview');
+  if (b) { b.textContent = '▶ Pré-visualizar o trecho'; b.classList.remove('playing'); }
+  trimPlayheadPct = null;
+  if (trimBuffer && $('trimEditor').classList.contains('visible')) drawTrimWave();
+}
+
+// ── Play livre: clica na onda e ouve dali (termina no marcador de fim) ──
+function stopTrimFree() {
+  try { if (trimFreeSrc) trimFreeSrc.stop(); } catch (e) {}
+  try { if (trimFreeCtx) trimFreeCtx.close(); } catch (e) {}
+  trimFreeSrc = null; trimFreeCtx = null; trimFreePlaying = false;
+  if (trimFreeRAF) { cancelAnimationFrame(trimFreeRAF); trimFreeRAF = null; }
+}
+
+function onTrimWaveClick(clientX) {
+  if (!trimBuffer) return;
+  const canvas = $('trimCanvas');
+  const rect = canvas.getBoundingClientRect();
+  let pct = (clientX - rect.left) / rect.width;
+  pct = Math.max(0, Math.min(1, pct));
+  if (trimPlaying) stopTrimPreview();
+  tocarTrimDe(pct * trimBuffer.duration);
+}
+
+function tocarTrimDe(offsetSec) {
+  if (!trimBuffer) return;
+  stopTrimFree();
+  const dur = trimBuffer.duration;
+  const { endSec, fadeOut } = getTrimValues();
+  offsetSec = Math.max(0, Math.min(offsetSec, dur - 0.05));
+  if (offsetSec >= endSec) { trimPlayheadPct = offsetSec / dur; drawTrimWave(); return; }
+
+  trimFreeCtx = new (window.AudioContext || window.webkitAudioContext)();
+  trimFreeSrc = trimFreeCtx.createBufferSource();
+  trimFreeSrc.buffer = trimBuffer;
+  const gain = trimFreeCtx.createGain();
+  trimFreeSrc.connect(gain); gain.connect(trimFreeCtx.destination);
+  trimFreeSrc.onended = () => {
+    if (trimFreePlaying) {
+      trimFreePlaying = false; trimPlayheadPct = null;
+      if (trimFreeRAF) { cancelAnimationFrame(trimFreeRAF); trimFreeRAF = null; }
+      drawTrimWave();
+    }
+  };
+
+  const now = trimFreeCtx.currentTime;
+  const playDuration = Math.max(0.05, endSec - offsetSec);
+  if (fadeOut > 0) {
+    const fadeOutStartSec = endSec - fadeOut;
+    if (offsetSec >= fadeOutStartSec) {
+      const prog = (offsetSec - fadeOutStartSec) / fadeOut;
+      gain.gain.setValueAtTime(Math.max(0, (1 - prog) * (1 - prog)), now);
+      gain.gain.linearRampToValueAtTime(0.0001, now + (endSec - offsetSec));
+    } else {
+      const tempoAteFade = fadeOutStartSec - offsetSec;
+      gain.gain.setValueAtTime(1, now);
+      gain.gain.setValueAtTime(1, now + tempoAteFade);
+      gain.gain.linearRampToValueAtTime(0.0001, now + tempoAteFade + fadeOut);
+    }
+  }
+
+  trimFreeSrc.start(0, offsetSec, playDuration);
+  trimFreeStartCtxTime = trimFreeCtx.currentTime;
+  trimFreeStartOffset = offsetSec;
+  trimFreePlaying = true;
+
+  const tick = () => {
+    if (!trimFreePlaying || !trimFreeCtx) return;
+    const posSec = trimFreeStartOffset + (trimFreeCtx.currentTime - trimFreeStartCtxTime);
+    trimPlayheadPct = Math.min(1, posSec / dur);
+    drawTrimWave();
+    if (posSec >= endSec) {
+      stopTrimFree(); trimPlayheadPct = endSec / dur; drawTrimWave(); return;
+    }
+    trimFreeRAF = requestAnimationFrame(tick);
+  };
+  trimFreeRAF = requestAnimationFrame(tick);
+}
+
+function setupTrim() {
+  const cs = $('cutStart'), ce = $('cutEnd');
+  cs.addEventListener('input', () => {
+    let s = parseInt(cs.value, 10), e = parseInt(ce.value, 10);
+    if (s >= e - 10) s = e - 10;
+    cs.value = s;
+    stopTrimPreview(); stopTrimFree();
+    updateTrimRanges(); drawTrimWave();
+  });
+  ce.addEventListener('input', () => {
+    let e = parseInt(ce.value, 10), s = parseInt(cs.value, 10);
+    if (e <= s + 10) e = s + 10;
+    ce.value = e;
+    stopTrimPreview(); stopTrimFree();
+    updateTrimRanges(); drawTrimWave();
+  });
+  $('trimFadeIn').addEventListener('input', updateTrimFades);
+  $('trimFadeOut').addEventListener('input', updateTrimFades);
+  $('btnTrimPreview').addEventListener('click', toggleTrimPreview);
+  $('btnTrimReset').addEventListener('click', () => {
+    $('cutStart').value = 0; $('cutEnd').value = 1000;
+    $('trimFadeIn').value = 0; $('trimFadeOut').value = 0;
+    stopTrimPreview(); stopTrimFree();
+    updateTrimRanges(); updateTrimFades(); drawTrimWave();
+  });
+
+  const canvas = $('trimCanvas');
+  canvas.addEventListener('click', (e) => onTrimWaveClick(e.clientX));
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) { e.preventDefault(); onTrimWaveClick(e.touches[0].clientX); }
+  }, { passive: false });
+  window.addEventListener('resize', () => {
+    if (trimBuffer && $('trimEditor').classList.contains('visible')) drawTrimWave();
+  });
+}
+
+// ============================================================
 // Botões finais
 // ============================================================
 $('btnDownload').addEventListener('click', () => {
@@ -1174,6 +1682,9 @@ $('btnNew').addEventListener('click', () => {
   originalFile = null;
   processedBlob = null;
   currentTaskId = null;
+  trimBuffer = null;
+  trimPeaks = null;
+  hideTrimEditor();
   $('fileInfo').classList.remove('visible');
   $('fileInput').value = '';
   $('btnProcess').disabled = true;
@@ -1384,7 +1895,7 @@ async function boot() {
     return;
   }
   setupTabs();
-  // Força da descaracterização configurável no seletor da tela de upload (padrão Forte).
+  setupTrim();
   checkRecovery();
 }
 
