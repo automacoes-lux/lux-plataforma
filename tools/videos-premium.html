@@ -279,6 +279,69 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* FUNDOS (imagem/vídeo) — miniaturas maiores + ações */
+.bg-thumb{
+  position:relative;width:104px;height:185px;border-radius:8px;overflow:hidden;
+  border:.5px solid var(--border-bright);background:#000;flex-shrink:0;
+}
+.bg-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.bg-thumb .num{
+  position:absolute;top:4px;left:4px;background:rgba(0,0,0,.72);color:var(--gold);
+  font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px;
+  font-family:'Cinzel',serif;letter-spacing:.04em;
+}
+.bg-thumb .kind{
+  position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);
+  color:#cfcfcf;font-size:10px;text-align:center;padding:3px 2px;letter-spacing:.04em;
+}
+.bg-thumb .kind .play{color:#8fd0ff}
+.bg-thumb .rm{
+  position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.75);color:#ff8c8c;border:.5px solid rgba(255,140,140,.5);
+  font-size:12px;line-height:1;cursor:pointer;
+}
+.bg-thumb .edit{
+  position:absolute;bottom:24px;right:4px;width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.78);color:var(--gold);border:.5px solid var(--border-bright);
+  font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.bg-thumb .edit:hover{border-color:var(--gold)}
+.add-bg{
+  width:104px;height:185px;border:1.5px dashed var(--border-bright);border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  color:var(--text-dim);cursor:pointer;font-size:11.5px;background:var(--bg-input);flex-shrink:0;text-align:center;padding:6px;
+}
+.add-bg:hover{border-color:var(--gold);color:var(--gold)}
+.add-bg .big{font-size:22px}
+
+/* EDITOR 9:16 (modal) */
+.editor-overlay{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(2px);
+  align-items:center;justify-content:center;padding:18px;
+}
+.editor-overlay.show{display:flex}
+.editor-box{
+  background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);
+  padding:18px;max-width:360px;width:100%;
+}
+.editor-box h3{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;font-weight:600;margin-bottom:4px}
+.editor-box .hint{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:12px}
+#editorCanvas{
+  width:240px;height:427px;max-width:100%;display:block;margin:0 auto 12px;
+  border-radius:8px;background:#000;border:.5px solid var(--border);cursor:grab;touch-action:none;
+}
+#editorCanvas:active{cursor:grabbing}
+.editor-zoom-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.editor-zoom-row span{font-size:16px}
+.editor-actions{display:flex;gap:10px}
+.editor-actions button{flex:1;padding:11px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-weight:600}
+.btn-ed-cancel{background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid)}
+.btn-ed-save{
+  border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;
+  font-family:'Cinzel',serif;letter-spacing:.05em;
+}
 </style>
 </head>
 <body>
@@ -287,7 +350,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="page-head">
     <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Vídeos com IA</span></div>
-    <div class="page-sub">O cliente vira o cantor do próprio clipe de 1 minuto: 6 cenas do comércio, o avatar dele cantando em cada uma.</div>
+    <div class="page-sub">O cliente vira o cantor do próprio clipe de 1 minuto: o avatar dele cantando sobre as cenas do comércio (de 1 a 20 fotos ou vídeos de fundo).</div>
   </div>
 
   <!-- banner de pedido em andamento -->
@@ -312,7 +375,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
       <div class="card-title">Quem vai cantar</div>
-      <div class="card-hint">Foto nítida do cliente, de preferência de corpo inteiro ou da cintura pra cima. O avatar preserva o rosto, a roupa e o uniforme exatamente como estão na foto.</div>
+      <div class="card-hint">Mande uma foto nítida <b style="color:var(--text-mid)">de corpo inteiro</b> do cliente. É assim que o avatar preserva a <b style="color:var(--text-mid)">roupa, o uniforme e a logomarca</b> reais. ⚠️ Se a foto for só do rosto, o avatar inventa o corpo e a roupa de baixo.</div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
@@ -329,10 +392,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <!-- PASSO 2 -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
-      <div class="card-title">As 6 cenas do clipe <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">Exatamente <b style="color:var(--text-mid)">6 fotos do comércio</b> (produtos, fachada, ambiente...). Cada foto vira uma cena de 10 segundos com o avatar cantando dentro dela. A ordem das fotos é a ordem do clipe.</div>
-      <div class="thumb-row" id="scenesRow"></div>
-      <input type="file" id="scenesInput" accept="image/*" multiple hidden/>
+      <div class="card-title">Os fundos do clipe <span id="bgCount" style="color:var(--gold);font-size:13px"></span></div>
+      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20 fundos</b> do comércio (fotos ou vídeos: produtos, fachada, ambiente...). Eles passam atrás do avatar cantando, na ordem que você colocar. O tempo é dividido igual entre eles. Em cada <b>foto</b> dá pra <b style="color:var(--text-mid)">✏️ enquadrar</b> no formato do clipe (9:16).</div>
+      <div class="thumb-row" id="bgRow"></div>
+      <input type="file" id="bgInput" accept="image/*,video/*" multiple hidden/>
+      <div class="card-hint" style="margin:8px 0 0;font-size:11.5px">Vídeos: até 60s e 50&nbsp;MB cada.</div>
     </div>
 
     <!-- PASSO 3 -->
@@ -395,16 +459,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <!-- LINHA DO CLIPE -->
     <div class="card storyboard-card">
       <div class="step-eyebrow"><span class="dot"></span>Linha do clipe</div>
-      <div class="card-hint" style="margin-bottom:.4rem">6 cenas de 10 segundos — é assim que o clipe vai ser cortado:</div>
+      <div class="card-hint" style="margin-bottom:.4rem">É assim que o clipe de 1 minuto vai ser montado:</div>
       <div class="storyboard" id="storyboard"></div>
       <div class="sb-meta">
-        <span class="sb-total">Duração: <b>1:00</b> · cena 1 = entrada do cantor 🎤</span>
+        <span class="sb-total" id="sbTotal">Duração: <b>1:00</b></span>
         <span class="sb-cost" id="sbCost"></span>
       </div>
     </div>
 
     <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">🎬 Gerar o clipe</button>
-    <div class="gerar-note">A produção leva ~15 a 20 minutos e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
+    <div class="gerar-note">A produção leva ~25 a 40 minutos e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
 
   </div>
 
@@ -431,6 +495,23 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
 </div>
 
+<!-- EDITOR 9:16 (enquadrar foto) -->
+<div class="editor-overlay" id="editorOverlay">
+  <div class="editor-box">
+    <h3>✏️ Enquadrar no clipe (9:16)</h3>
+    <div class="hint">Arraste pra posicionar e use o controle pra dar zoom. O que ficar dentro do quadro é o que aparece atrás do avatar.</div>
+    <canvas id="editorCanvas" width="288" height="512"></canvas>
+    <div class="editor-zoom-row">
+      <span>🔍</span>
+      <input type="range" id="editorZoom" min="100" max="400" step="1" value="100"/>
+    </div>
+    <div class="editor-actions">
+      <button class="btn-ed-cancel" onclick="closeEditor()">Cancelar</button>
+      <button class="btn-ed-save" onclick="saveEditor()">Usar este enquadramento</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- LameJS: encoder MP3 no navegador (mesmo da ferramenta Corte) -->
@@ -445,26 +526,33 @@ const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536;   // redimensiona no navegador (custo/upload)
 const IMAGE_QUALITY = 0.85;
 
-const NUM_SCENES    = 6;            // FIXO: 6 fotos = 6 cenas
 const VIDEO_SECONDS = 60;           // FIXO: clipe de 1 minuto
-const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
+const MIN_BG = 1, MAX_BG = 20;      // de 1 a 20 fundos (imagem ou vídeo)
 const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
+const MAX_CLIP_SECONDS = 60;        // vídeo de fundo: até 60s
+const MAX_CLIP_BYTES = 50 * 1024 * 1024;   // e até 50 MB
+
+// Editor de enquadramento 9:16 (mesmo do Vídeo Padrão)
+const OUT_W = 1080, OUT_H = 1920;
 
 // Estimativa de custo (números reais no cost.js do Worker)
-const EST_USD_CENA   = 0.15;
-const EST_USD_LIPSEC = 0.06;
-const EST_USD_J2VSEC = 0.00416;
-const EST_CAMBIO     = 5.18;
+const EST_USD_CARTOON   = 0.15;     // 1 cartoon (gpt-image)
+const EST_USD_LIPSEC    = 0.06;     // lip-sync por segundo (InfiniteTalk 720p)
+const EST_USD_SHOTSTACK = 0.20;     // render Shotstack por minuto ($0.20/min)
+const EST_CAMBIO        = 5.18;
 
 const POLL_INTERVAL_MS = 8000;
 const PENDING_KEY = 'lux_avatar_pending';
 
 // Estado
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
-let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
+let backgrounds = [];              // [{ id, kind:'image'|'video', base64, name, mimeType, thumbUrl, origBase64? , duration? }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let logo = null;
 let pollTimer = null;
+
+// Editor 9:16 (foto) — estado
+let ed = null;                     // { i, img, minScale, maxScale, scale, offX, offY, dragging, lastX, lastY }
 
 // Editor de corte
 let rawAudioBuffer = null;         // AudioBuffer da música original (> 1:00)
@@ -579,40 +667,165 @@ function renderClientPhoto() {
 function removeClientPhoto() { clientPhoto = null; renderClientPhoto(); }
 
 // ───────────────────────────────────────────────
-// PASSO 2 — as 6 cenas
+// PASSO 2 — fundos (1 a 20: imagem OU vídeo) + editor 9:16
 // ───────────────────────────────────────────────
-document.getElementById('scenesInput').addEventListener('change', async (e) => {
+function bgId() { return 'bg' + Date.now() + Math.random().toString(36).slice(2, 6); }
+
+document.getElementById('bgInput').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   e.target.value = '';
   for (const file of files) {
-    if (scenes.length >= NUM_SCENES) { toast('O clipe usa exatamente ' + NUM_SCENES + ' fotos.'); break; }
+    if (backgrounds.length >= MAX_BG) { toast('O máximo é ' + MAX_BG + ' fundos.'); break; }
+    const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|webm|m4v)$/i.test(file.name);
     try {
-      const opt = await fileToOptimizedImage(file, false);
-      scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), ...opt, name: file.name });
+      if (isVideo) {
+        if (file.size > MAX_CLIP_BYTES) { toast('⚠️ ' + file.name + ': vídeo acima de 50 MB.'); continue; }
+        const meta = await getVideoMeta(file);
+        if (meta.duration > MAX_CLIP_SECONDS + 0.5) { toast('⚠️ ' + file.name + ': vídeo acima de 60s.'); continue; }
+        const base64 = await blobToBase64(file);
+        backgrounds.push({ id: bgId(), kind: 'video', base64, name: file.name, mimeType: file.type || 'video/mp4', thumbUrl: meta.thumb, duration: meta.duration });
+      } else {
+        const opt = await fileToOptimizedImage(file, false);
+        backgrounds.push({ id: bgId(), kind: 'image', ...opt, name: file.name, origBase64: opt.base64 });
+      }
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
   }
-  renderScenes();
+  renderBackgrounds();
   renderStoryboard();
 });
 
-function renderScenes() {
-  const row = document.getElementById('scenesRow');
+function renderBackgrounds() {
+  const row = document.getElementById('bgRow');
   let html = '';
-  scenes.forEach((s, i) => {
-    html += '<div class="thumb"><img src="' + s.thumbUrl + '" alt="Cena ' + (i + 1) + '"/>' +
-      '<div class="tag">Cena ' + (i + 1) + '</div>' +
-      '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button></div>';
+  backgrounds.forEach((b, i) => {
+    const kindLabel = b.kind === 'video'
+      ? '<span class="play">▶</span> vídeo ' + (b.duration ? Math.round(b.duration) + 's' : '')
+      : 'foto';
+    const editBtn = b.kind === 'image'
+      ? '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + b.id + '\')">✏️</button>'
+      : '';
+    html += '<div class="bg-thumb">' +
+      '<img src="' + b.thumbUrl + '" alt="Fundo ' + (i + 1) + '"/>' +
+      '<div class="num">' + (i + 1) + '</div>' + editBtn +
+      '<button class="rm" title="Remover" onclick="removeBg(\'' + b.id + '\')">✕</button>' +
+      '<div class="kind">' + kindLabel + '</div></div>';
   });
-  if (scenes.length < NUM_SCENES) {
-    html += '<div class="add-tile" role="button" tabindex="0" onclick="document.getElementById(\'scenesInput\').click()"><span class="big">＋</span><span>' + (scenes.length ? 'Faltam ' + (NUM_SCENES - scenes.length) : 'Adicionar as fotos') + '</span></div>';
+  if (backgrounds.length < MAX_BG) {
+    html += '<div class="add-bg" role="button" tabindex="0" onclick="document.getElementById(\'bgInput\').click()">' +
+      '<span class="big">＋</span><span>' + (backgrounds.length ? 'Adicionar mais' : 'Adicionar fotos ou vídeos') + '</span></div>';
   }
   row.innerHTML = html;
-  document.getElementById('sceneCount').textContent = '· ' + scenes.length + ' de ' + NUM_SCENES;
+  document.getElementById('bgCount').textContent = '· ' + backgrounds.length + ' de ' + MAX_BG;
 }
-function removeScene(id) {
-  scenes = scenes.filter(s => s.id !== id);
-  renderScenes();
+function removeBg(id) {
+  backgrounds = backgrounds.filter(b => b.id !== id);
+  renderBackgrounds();
   renderStoryboard();
+}
+
+// Metadados do vídeo de fundo (duração + thumbnail) — portado do Vídeo Padrão
+function getVideoMeta(file) {
+  return new Promise((resolve, reject) => {
+    const v = document.createElement('video');
+    v.preload = 'metadata'; v.muted = true; v.playsInline = true;
+    const url = URL.createObjectURL(file);
+    let dur = 0;
+    v.onloadedmetadata = () => { dur = v.duration || 0; try { v.currentTime = Math.min(0.1, (dur / 2) || 0.1); } catch (e) {} };
+    v.onseeked = () => {
+      try {
+        const w = 160, h = Math.round(w * (v.videoHeight || 16) / (v.videoWidth || 9)) || 284;
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(v, 0, 0, w, h);
+        const thumb = c.toDataURL('image/jpeg', 0.7);
+        URL.revokeObjectURL(url); resolve({ duration: dur, thumb });
+      } catch (e) { URL.revokeObjectURL(url); resolve({ duration: dur, thumb: '' }); }
+    };
+    v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('vídeo inválido')); };
+    v.src = url;
+  });
+}
+
+// ── Editor de enquadramento 9:16 (zoom/arrastar) — mesmo do Vídeo Padrão ──
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('imagem inválida'));
+    i.src = src;
+  });
+}
+async function openEditor(id) {
+  const i = backgrounds.findIndex(b => b.id === id);
+  if (i < 0 || backgrounds[i].kind !== 'image') return;
+  const b = backgrounds[i];
+  const src = 'data:' + (b.mimeType || 'image/jpeg') + ';base64,' + (b.origBase64 || b.base64);
+  const img = await loadImg(src);
+  const minScale = Math.max(OUT_W / img.naturalWidth, OUT_H / img.naturalHeight);
+  ed = { i, img, minScale, maxScale: minScale * 4, scale: minScale, offX: 0, offY: 0, dragging: false, lastX: 0, lastY: 0 };
+  ed.offX = (OUT_W - img.naturalWidth * ed.scale) / 2;
+  ed.offY = (OUT_H - img.naturalHeight * ed.scale) / 2;
+  document.getElementById('editorZoom').value = 100;
+  document.getElementById('editorOverlay').classList.add('show');
+  drawEditor();
+}
+function clampEditor() {
+  const w = ed.img.naturalWidth * ed.scale, h = ed.img.naturalHeight * ed.scale;
+  ed.offX = Math.min(0, Math.max(OUT_W - w, ed.offX));
+  ed.offY = Math.min(0, Math.max(OUT_H - h, ed.offY));
+}
+function drawEditor() {
+  if (!ed) return;
+  clampEditor();
+  const cv = document.getElementById('editorCanvas');
+  const ctx = cv.getContext('2d');
+  const ds = cv.width / OUT_W;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(ed.img, ed.offX * ds, ed.offY * ds, ed.img.naturalWidth * ed.scale * ds, ed.img.naturalHeight * ed.scale * ds);
+}
+document.getElementById('editorZoom').addEventListener('input', (e) => {
+  if (!ed) return;
+  const cx = OUT_W / 2, cy = OUT_H / 2, prev = ed.scale;
+  ed.scale = Math.max(ed.minScale, Math.min(ed.maxScale, ed.minScale * (parseFloat(e.target.value) / 100)));
+  const k = ed.scale / prev;
+  ed.offX = cx - (cx - ed.offX) * k;
+  ed.offY = cy - (cy - ed.offY) * k;
+  drawEditor();
+});
+(function bindEditorDrag() {
+  const cv = document.getElementById('editorCanvas');
+  const ds = () => cv.width / OUT_W;
+  const start = (x, y) => { if (!ed) return; ed.dragging = true; ed.lastX = x; ed.lastY = y; };
+  const move = (x, y) => {
+    if (!ed || !ed.dragging) return;
+    ed.offX += (x - ed.lastX) / ds();
+    ed.offY += (y - ed.lastY) / ds();
+    ed.lastX = x; ed.lastY = y; drawEditor();
+  };
+  const end = () => { if (ed) ed.dragging = false; };
+  cv.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  window.addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', e => { const t = e.touches[0]; start(t.clientX, t.clientY); }, { passive: true });
+  cv.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+  cv.addEventListener('touchend', end);
+})();
+function closeEditor() {
+  document.getElementById('editorOverlay').classList.remove('show');
+  ed = null;
+}
+async function saveEditor() {
+  if (!ed) return;
+  clampEditor();
+  const cv = document.createElement('canvas'); cv.width = OUT_W; cv.height = OUT_H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
+  ctx.drawImage(ed.img, ed.offX, ed.offY, ed.img.naturalWidth * ed.scale, ed.img.naturalHeight * ed.scale);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+  const b = backgrounds[ed.i];
+  if (b) { b.base64 = dataUrl.split(',')[1]; b.mimeType = 'image/jpeg'; b.thumbUrl = dataUrl; }
+  closeEditor();
+  renderBackgrounds();
+  toast('✅ Enquadramento aplicado.');
 }
 
 // ───────────────────────────────────────────────
@@ -918,21 +1131,29 @@ function removeLogo() { logo = null; renderLogo(); }
 // ───────────────────────────────────────────────
 function renderStoryboard() {
   const sb = document.getElementById('storyboard');
+  const n = backgrounds.length;
   let html = '';
-  for (let i = 0; i < NUM_SCENES; i++) {
-    const s = scenes[i];
-    if (s) {
-      html += '<div class="sb-cell"><div class="sb-frame"><img src="' + s.thumbUrl + '" alt="Cena ' + (i + 1) + '"/></div>' +
-        '<div class="sb-secs gold">🎤 ' + SCENE_SECONDS + 's</div></div>';
-    } else {
-      html += '<div class="sb-cell"><div class="sb-frame empty">' + (i + 1) + '</div>' +
-        '<div class="sb-secs">' + SCENE_SECONDS + 's</div></div>';
-    }
-    if (i < NUM_SCENES - 1) html += '<div class="sb-arrow">›</div>';
+  if (!n) {
+    html = '<div class="sb-cell"><div class="sb-frame empty">＋</div><div class="sb-secs">—</div></div>';
+  } else {
+    const per = VIDEO_SECONDS / n;
+    backgrounds.forEach((b, i) => {
+      const secs = (i === n - 1) ? (VIDEO_SECONDS - per * (n - 1)) : per;
+      const lbl = (Math.round(secs * 10) / 10).toString().replace('.', ',') + 's';
+      const badge = b.kind === 'video' ? '<span style="position:absolute;left:3px;bottom:3px;font-size:11px;color:#8fd0ff">▶</span>' : '';
+      html += '<div class="sb-cell"><div class="sb-frame" style="position:relative"><img src="' + b.thumbUrl + '" alt="Fundo ' + (i + 1) + '"/>' + badge + '</div>' +
+        '<div class="sb-secs gold">🎤 ' + lbl + '</div></div>';
+      if (i < n - 1) html += '<div class="sb-arrow">›</div>';
+    });
   }
   sb.innerHTML = html;
 
-  const usd = NUM_SCENES * EST_USD_CENA + VIDEO_SECONDS * EST_USD_LIPSEC + VIDEO_SECONDS * EST_USD_J2VSEC;
+  const each = n ? (VIDEO_SECONDS / n) : 0;
+  document.getElementById('sbTotal').innerHTML = n
+    ? 'Duração: <b>1:00</b> · ' + n + ' fundo(s) · ~' + (Math.round(each * 10) / 10).toString().replace('.', ',') + 's cada'
+    : 'Duração: <b>1:00</b>';
+
+  const usd = EST_USD_CARTOON + VIDEO_SECONDS * EST_USD_LIPSEC + EST_USD_SHOTSTACK;
   const brl = usd * EST_CAMBIO;
   document.getElementById('sbCost').innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
 }
@@ -944,9 +1165,8 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
-  if (scenes.length !== NUM_SCENES) {
-    return 'O clipe usa exatamente ' + NUM_SCENES + ' fotos do comércio — você colocou ' + scenes.length + ' (Passo 2).';
-  }
+  if (backgrounds.length < MIN_BG) return 'Envie pelo menos ' + MIN_BG + ' fundo do comércio (Passo 2).';
+  if (backgrounds.length > MAX_BG) return 'O máximo é ' + MAX_BG + ' fundos (Passo 2).';
   if (!music) return 'Envie a música e deixe ela com 1:00 (Passo 3).';
   return null;
 }
@@ -963,7 +1183,7 @@ async function gerarClipe() {
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
-      photos: scenes.map(s => ({ base64: s.base64, name: s.name, mimeType: s.mimeType })),
+      backgrounds: backgrounds.map(b => ({ base64: b.base64, name: b.name, mimeType: b.mimeType, kind: b.kind })),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
@@ -1056,7 +1276,7 @@ async function loadOrders() {
     orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
     let html = '';
     for (const o of orders) {
-      const numCenas = o.numScenes || o.photoCount || '—';
+      const numFundos = o.bgCount || (Array.isArray(o.backgrounds) ? o.backgrounds.length : null) || '—';
       let chip, side = '';
       if (o.status === 'COMPLETED' && o.videoUrl) {
         chip = '<span class="st-chip st-ok">Pronto</span>';
@@ -1069,7 +1289,7 @@ async function loadOrders() {
       const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
       html += '<div class="order-item">' +
         '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + '</div>' +
-        '<div class="order-meta">' + (o.createdAt || '') + ' · ' + numCenas + ' cena(s)' + custo +
+        '<div class="order-meta">' + (o.createdAt || '') + ' · ' + numFundos + ' fundo(s)' + custo +
         (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') +
         '</div></div>' +
         '<div class="order-side">' + chip + side + '</div></div>';
@@ -1109,7 +1329,7 @@ function resumePending() {
 // INICIALIZAÇÃO
 // ───────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  renderScenes();
+  renderBackgrounds();
   renderStoryboard();
   checkPending();
 });
