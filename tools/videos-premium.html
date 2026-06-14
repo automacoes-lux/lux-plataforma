@@ -279,6 +279,37 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Miniaturas de cena: botões de editar / mover */
+.thumb .edit{
+  position:absolute;bottom:22px;right:4px;width:24px;height:24px;border-radius:50%;
+  background:rgba(0,0,0,.78);color:var(--gold);border:.5px solid var(--border-bright);
+  font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.thumb .edit:hover{border-color:var(--gold)}
+.thumb .mv{
+  position:absolute;width:22px;height:22px;border-radius:50%;bottom:22px;
+  background:rgba(0,0,0,.78);color:#cfcfcf;border:.5px solid var(--border-bright);
+  font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.thumb .mv.l{left:4px}
+.thumb .mv.r{left:30px}
+.thumb .mv:hover{border-color:var(--gold);color:var(--gold)}
+
+/* EDITOR 9:16 (modal) */
+.editor-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:18px}
+.editor-overlay.show{display:flex}
+.editor-box{background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);padding:18px;max-width:340px;width:100%}
+.editor-box h3{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;font-weight:600;margin-bottom:4px}
+.editor-box .hint{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:12px}
+#editorCanvas{width:230px;height:409px;max-width:100%;display:block;margin:0 auto 12px;border-radius:8px;background:#000;border:.5px solid var(--border);cursor:grab;touch-action:none}
+#editorCanvas:active{cursor:grabbing}
+.editor-zoom-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.editor-zoom-row span{font-size:16px}
+.editor-actions{display:flex;gap:10px}
+.editor-actions button{flex:1;padding:11px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-weight:600}
+.btn-ed-cancel{background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid)}
+.btn-ed-save{border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;letter-spacing:.05em}
 </style>
 </head>
 <body>
@@ -432,6 +463,23 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
 </div>
 
+<!-- EDITOR 9:16 (enquadrar a foto da cena) -->
+<div class="editor-overlay" id="editorOverlay">
+  <div class="editor-box">
+    <h3>✏️ Enquadrar a cena (9:16)</h3>
+    <div class="hint">Arraste pra posicionar e use o controle pra dar zoom. O que ficar no quadro é o que aparece atrás do avatar.</div>
+    <canvas id="editorCanvas" width="270" height="480"></canvas>
+    <div class="editor-zoom-row">
+      <span>🔍</span>
+      <input type="range" id="editorZoom" min="100" max="400" step="1" value="100"/>
+    </div>
+    <div class="editor-actions">
+      <button class="btn-ed-cancel" onclick="closeEditor()">Cancelar</button>
+      <button class="btn-ed-save" onclick="saveEditor()">Usar este enquadramento</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- LameJS: encoder MP3 no navegador (mesmo da ferramenta Corte) -->
@@ -448,6 +496,7 @@ const IMAGE_QUALITY = 0.85;
 
 const NUM_SCENES    = 6;            // FIXO: 6 fotos = 6 cenas
 const VIDEO_SECONDS = 60;           // FIXO: clipe de 1 minuto
+const OUT_W = 1080, OUT_H = 1920;   // editor de enquadramento 9:16
 const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
 const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
 
@@ -466,6 +515,7 @@ let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let logo = null;
 let pollTimer = null;
+let ed = null;                     // editor 9:16: { i, img, minScale, maxScale, scale, offX, offY, dragging, lastX, lastY }
 
 // Corte por VOCAL (respiros): o vocal é separado no servidor, decodificado aqui
 // e a energia define onde as 6 cenas trocam. sceneBounds = [{start,dur}] (6) ou null.
@@ -480,6 +530,7 @@ let rawAudioBuffer = null;         // AudioBuffer da música original (> 1:00)
 let rawAudioName = '';
 let wavePeaks = null;
 let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
+let playheadFrac = -1, playheadRAF = 0;   // marcador branco tocando na waveform
 
 // Wrapper de fetch — usa __luxFetch (token do shell) se existir
 function api(path, opts) {
@@ -597,7 +648,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
     if (scenes.length >= NUM_SCENES) { toast('O clipe usa exatamente ' + NUM_SCENES + ' fotos.'); break; }
     try {
       const opt = await fileToOptimizedImage(file, false);
-      scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), ...opt, name: file.name });
+      scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), ...opt, name: file.name, origBase64: opt.base64 });
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
   }
   renderScenes();
@@ -608,9 +659,13 @@ function renderScenes() {
   const row = document.getElementById('scenesRow');
   let html = '';
   scenes.forEach((s, i) => {
+    const moveL = i > 0 ? '<button class="mv l" title="Mover p/ esquerda" onclick="moveScene(\'' + s.id + '\',-1)">‹</button>' : '';
+    const moveR = i < scenes.length - 1 ? '<button class="mv r" title="Mover p/ direita" onclick="moveScene(\'' + s.id + '\',1)">›</button>' : '';
     html += '<div class="thumb"><img src="' + s.thumbUrl + '" alt="Cena ' + (i + 1) + '"/>' +
       '<div class="tag">Cena ' + (i + 1) + '</div>' +
-      '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button></div>';
+      '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button>' +
+      '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>' +
+      moveL + moveR + '</div>';
   });
   if (scenes.length < NUM_SCENES) {
     html += '<div class="add-tile" role="button" tabindex="0" onclick="document.getElementById(\'scenesInput\').click()"><span class="big">＋</span><span>' + (scenes.length ? 'Faltam ' + (NUM_SCENES - scenes.length) : 'Adicionar as fotos') + '</span></div>';
@@ -622,6 +677,79 @@ function removeScene(id) {
   scenes = scenes.filter(s => s.id !== id);
   renderScenes();
   renderStoryboard();
+}
+function moveScene(id, dir) {
+  const i = scenes.findIndex(s => s.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= scenes.length) return;
+  const tmp = scenes[i]; scenes[i] = scenes[j]; scenes[j] = tmp;
+  renderScenes();
+  renderStoryboard();
+}
+
+// ── Editor de enquadramento 9:16 (zoom/arrastar) — igual ao do Vídeo Padrão ──
+function loadImg(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('imagem inválida')); i.src = src; });
+}
+async function openEditor(id) {
+  const i = scenes.findIndex(s => s.id === id);
+  if (i < 0) return;
+  const s = scenes[i];
+  const src = 'data:' + (s.mimeType || 'image/jpeg') + ';base64,' + (s.origBase64 || s.base64);
+  const img = await loadImg(src);
+  const minScale = Math.max(OUT_W / img.naturalWidth, OUT_H / img.naturalHeight);
+  ed = { i, img, minScale, maxScale: minScale * 4, scale: minScale, offX: 0, offY: 0, dragging: false, lastX: 0, lastY: 0 };
+  ed.offX = (OUT_W - img.naturalWidth * ed.scale) / 2;
+  ed.offY = (OUT_H - img.naturalHeight * ed.scale) / 2;
+  document.getElementById('editorZoom').value = 100;
+  document.getElementById('editorOverlay').classList.add('show');
+  drawEditor();
+}
+function clampEditor() {
+  const w = ed.img.naturalWidth * ed.scale, h = ed.img.naturalHeight * ed.scale;
+  ed.offX = Math.min(0, Math.max(OUT_W - w, ed.offX));
+  ed.offY = Math.min(0, Math.max(OUT_H - h, ed.offY));
+}
+function drawEditor() {
+  if (!ed) return;
+  clampEditor();
+  const cv = document.getElementById('editorCanvas'), ctx = cv.getContext('2d'), ds = cv.width / OUT_W;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(ed.img, ed.offX * ds, ed.offY * ds, ed.img.naturalWidth * ed.scale * ds, ed.img.naturalHeight * ed.scale * ds);
+}
+document.getElementById('editorZoom').addEventListener('input', (e) => {
+  if (!ed) return;
+  const cx = OUT_W / 2, cy = OUT_H / 2, prev = ed.scale;
+  ed.scale = Math.max(ed.minScale, Math.min(ed.maxScale, ed.minScale * (parseFloat(e.target.value) / 100)));
+  const k = ed.scale / prev;
+  ed.offX = cx - (cx - ed.offX) * k; ed.offY = cy - (cy - ed.offY) * k;
+  drawEditor();
+});
+(function bindEditorDrag() {
+  const cv = document.getElementById('editorCanvas'), ds = () => cv.width / OUT_W;
+  const start = (x, y) => { if (!ed) return; ed.dragging = true; ed.lastX = x; ed.lastY = y; };
+  const move = (x, y) => { if (!ed || !ed.dragging) return; ed.offX += (x - ed.lastX) / ds(); ed.offY += (y - ed.lastY) / ds(); ed.lastX = x; ed.lastY = y; drawEditor(); };
+  const end = () => { if (ed) ed.dragging = false; };
+  cv.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  window.addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', e => { const t = e.touches[0]; start(t.clientX, t.clientY); }, { passive: true });
+  cv.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+  cv.addEventListener('touchend', end);
+})();
+function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); ed = null; }
+async function saveEditor() {
+  if (!ed) return;
+  clampEditor();
+  const cv = document.createElement('canvas'); cv.width = OUT_W; cv.height = OUT_H;
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
+  ctx.drawImage(ed.img, ed.offX, ed.offY, ed.img.naturalWidth * ed.scale, ed.img.naturalHeight * ed.scale);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+  const s = scenes[ed.i];
+  if (s) { s.base64 = dataUrl.split(',')[1]; s.mimeType = 'image/jpeg'; s.thumbUrl = dataUrl; }
+  closeEditor();
+  renderScenes();
+  toast('✅ Enquadramento aplicado.');
 }
 
 // ───────────────────────────────────────────────
@@ -865,6 +993,13 @@ function drawWave() {
   ctx.fillStyle = '#D9BC6E';
   ctx.fillRect(selA, 0, 2, H);
   ctx.fillRect(selB - 2, 0, 2, H);
+
+  // marcador branco da posição tocando (durante o preview)
+  if (playheadFrac >= 0) {
+    const px = selA + playheadFrac * (selB - selA);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(px - 1, 0, 2, H);
+  }
 }
 
 // Corte + fades (curva x² — mesma da ferramenta Corte)
@@ -909,6 +1044,15 @@ function previewCorte() {
     previewSrc.start(0);
     previewPlaying = true;
     document.getElementById('btnCutPreview').textContent = '⏹ Parar';
+    // anima o marcador branco enquanto toca
+    const t0 = previewCtxAudio.currentTime;
+    const tick = () => {
+      if (!previewPlaying || !previewCtxAudio) return;
+      playheadFrac = Math.min(1, (previewCtxAudio.currentTime - t0) / VIDEO_SECONDS);
+      drawWave();
+      if (playheadFrac < 1) playheadRAF = requestAnimationFrame(tick);
+    };
+    playheadRAF = requestAnimationFrame(tick);
   } catch (err) { toast('⚠️ ' + err.message); }
 }
 
@@ -916,6 +1060,9 @@ function stopPreviewCorte() {
   try { if (previewSrc) previewSrc.stop(); } catch (e) {}
   try { if (previewCtxAudio) previewCtxAudio.close(); } catch (e) {}
   previewSrc = null; previewCtxAudio = null; previewPlaying = false;
+  if (playheadRAF) { cancelAnimationFrame(playheadRAF); playheadRAF = 0; }
+  playheadFrac = -1;
+  drawWave();
   const b = document.getElementById('btnCutPreview');
   if (b) b.textContent = '▶ Ouvir o resultado';
 }
@@ -1070,6 +1217,18 @@ async function gerarClipe() {
 
   const btn = document.getElementById('btnGerar');
   btn.disabled = true;
+
+  // Se a música mudou e a análise do vocal ainda não rodou, dispara agora.
+  if (music && vocalState === 'idle') startVocalAnalysis();
+  // ESPERA a análise do vocal terminar (senão o vídeo sairia com cortes de 10s).
+  if (vocalState === 'working') {
+    btn.textContent = '🎚️ Achando os respiros da música…';
+    const t0 = Date.now();
+    while (vocalState === 'working' && (Date.now() - t0) < 90000) {
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+
   btn.textContent = 'Enviando os arquivos…';
 
   try {
