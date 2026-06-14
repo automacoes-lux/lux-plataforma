@@ -570,7 +570,7 @@
     </div>
 
     <p style="font-size:13px;color:#8a857c;text-align:center;margin:14px 0 2px;line-height:1.5">
-      O cover é processado automaticamente: sem vocal + tom grave (−22 semitons).<br>
+      O cover é processado automaticamente: sem vocal + tom grave (−12 e depois −6 semitons).<br>
       <span style="font-size:12px;color:#6f6a62">Sem mexer no trecho, usamos a música inteira.</span>
     </p>
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
@@ -963,8 +963,9 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
 
   // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto.
-  // Seletor REMOVIDO — fixo em −22 semitons.
-  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-22');
+  // Seletor REMOVIDO — fixo em −18 semitons. applyDeepPitch aplica em passadas de
+  // no máx −12, então −18 = uma passada de −12 e DEPOIS uma de −6 sobre o resultado.
+  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-18');
   if (freqSemi < 0) {
     setProgress(82, 'Baixando a frequência...');
     try {
