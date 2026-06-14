@@ -570,7 +570,7 @@
     </div>
 
     <p style="font-size:13px;color:#8a857c;text-align:center;margin:14px 0 2px;line-height:1.5">
-      O cover é processado automaticamente: sem vocal + tom grave (−12 e depois −6 semitons).<br>
+      O cover é processado automaticamente: sem vocal + tom grave (−6 e depois −6 semitons).<br>
       <span style="font-size:12px;color:#6f6a62">Sem mexer no trecho, usamos a música inteira.</span>
     </p>
     <button class="btn-primary" id="btnProcess" disabled>▶ Processar cover</button>
@@ -963,13 +963,14 @@ async function downloadAndProcess(taskId, baseName, instrumentalStems) {
   }
 
   // 3b. Frequência (tom grave, estilo Filmora) — pitch pra baixo, ritmo intacto.
-  // Seletor REMOVIDO — fixo em −18 semitons. applyDeepPitch aplica em passadas de
-  // no máx −12, então −18 = uma passada de −12 e DEPOIS uma de −6 sobre o resultado.
-  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-18');
+  // Seletor REMOVIDO — fixo em −12 semitons aplicado em passadas de −6,
+  // ou seja: uma passada de −6 e DEPOIS outra de −6 sobre o resultado.
+  const freqSemi = parseFloat(($('freqSelect') && $('freqSelect').value) || '-12');
+  const freqStep = 6;   // tamanho de cada passada (semitons)
   if (freqSemi < 0) {
     setProgress(82, 'Baixando a frequência...');
     try {
-      pitchedBuffer = await applyDeepPitch(pitchedBuffer, freqSemi);
+      pitchedBuffer = await applyDeepPitch(pitchedBuffer, freqSemi, freqStep);
       setStep('pitch', 'done', (preset ? preset.label + ' + ' : '') + 'Frequência ' + freqSemi + ' semitons');
     } catch (err) {
       setStep('pitch', 'error', 'Frequência: ' + err.message);
@@ -1260,20 +1261,21 @@ async function applyDistortion(buffer, preset) {
 // (2 oitavas, freq cai pra 1/4) e passou no Suno. Replicamos APLICANDO −12
 // POR PASSADA (cada oitava separada mantém a qualidade do SoundTouch),
 // somando até o total escolhido. Ex.: −24 = duas passadas de −12.
-async function applyDeepPitch(buffer, semitones) {
+async function applyDeepPitch(buffer, semitones, maxStep) {
   let remaining = Number(semitones) || 0;     // negativo
   if (remaining >= -0.01) return buffer;
+  const cap = -Math.abs(Number(maxStep) || 12);   // tamanho máx. de cada passada (negativo)
   let b = buffer;
-  const totalPasses = Math.ceil(Math.abs(remaining) / 12);
+  const totalPasses = Math.ceil(Math.abs(remaining) / Math.abs(cap));
   let pass = 0;
   while (remaining < -0.01) {
-    const step = Math.max(remaining, -12);     // no máximo −12 (1 oitava) por passada
+    const step = Math.max(remaining, cap);     // no máximo `cap` por passada
     pass++;
     setProgress(82 + (pass / totalPasses) * 12, 'Baixando a frequência (' + pass + '/' + totalPasses + ')...');
     b = await pitchTempo(b, step, 0);          // pitch puro, ritmo intacto
     remaining -= step;                         // step é negativo → aproxima de 0
   }
-  console.log('[deeppitch] total semitones=', semitones, 'passadas=', totalPasses);
+  console.log('[deeppitch] total semitones=', semitones, 'cap=', cap, 'passadas=', totalPasses);
   return b;
 }
 
