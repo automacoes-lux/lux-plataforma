@@ -175,6 +175,21 @@ input[type="file"]{display:none}
 .sticker-btn-download:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,.35)}
 .sticker-btn-download:disabled{opacity:.3;cursor:not-allowed;background:rgba(255,255,255,.04);color:var(--text-dim);box-shadow:none}
 
+/* BOTÃO REFAZER (azul, canto inferior esquerdo) */
+.sticker-btn-redo{
+  background:#2563EB;border:.5px solid #1D4ED8;color:#fff;
+  height:36px;padding:0 14px;border-radius:6px;cursor:pointer;
+  font-size:12px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.05em;
+  display:inline-flex;align-items:center;gap:6px;line-height:1;transition:all .15s;
+  box-shadow:0 2px 10px rgba(37,99,235,.3);
+}
+.sticker-btn-redo:hover:not(:disabled){background:#1D4ED8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.45)}
+.sticker-btn-redo:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+
+/* Overlay enquanto refaz UMA figurinha */
+.sticker-redoing{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:rgba(8,8,8,.72);z-index:2}
+.sticker-redoing span{font-size:11px;color:#7FA8F5;font-family:'Cinzel',serif;letter-spacing:.08em}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card);border:.5px solid var(--border);padding:12px 20px;border-radius:var(--radius);font-size:13px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{border-color:rgba(127,184,122,.5)}
@@ -371,7 +386,7 @@ input[type="file"]{display:none}
             <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="resOrderMeta">—</div>
           </div>
           <div class="results-actions">
-            <button class="btn-action" id="resEditBtn" onclick="editCurrentOrder()">✏️ Editar</button>
+            <button class="btn-action" id="resEditBtn" onclick="editCurrentOrder()">✏️ Editar dados</button>
             <button class="btn-action" onclick="downloadAll()">⬇ Baixar todas</button>
             <button class="btn-action secondary" onclick="goNewOrder()">+ Novo pedido</button>
           </div>
@@ -961,8 +976,11 @@ function renderResults() {
         ${!okFlag ? `<div class="sticker-error-overlay show"><span class="err-icon">⚠</span><span>${truncate(errMsg, 60)}</span></div>` : ''}
       </div>
       <div class="sticker-info">
-        <span class="sticker-label">#${String(num).padStart(2,'0')}</span>
-        <button class="sticker-btn-download" title="Baixar" onclick="downloadOne(${num})" ${okFlag ? '' : 'disabled'}>⬇</button>
+        <button class="sticker-btn-redo" title="Refazer esta figurinha" onclick="redoSticker(${num})">🔄 Refazer</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="sticker-label">#${String(num).padStart(2,'0')}</span>
+          <button class="sticker-btn-download" title="Baixar" onclick="downloadOne(${num})" ${okFlag ? '' : 'disabled'}>⬇</button>
+        </div>
       </div>
     `;
 
@@ -1006,6 +1024,45 @@ async function downloadOne(num) {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   } catch (err) {
     toast('Erro ao baixar: ' + err.message, 'error');
+  }
+}
+
+// Refaz UMA figurinha (corrige a que saiu errada). Usa /correctSticker.
+async function redoSticker(num) {
+  if (!state.currentOrderId) return;
+  const card = document.querySelector(`.sticker-card[data-idx="${num}"]`);
+  const redoBtn = card && card.querySelector('.sticker-btn-redo');
+  const thumbWrap = card && card.querySelector('.sticker-thumb-wrap');
+
+  if (redoBtn) { redoBtn.disabled = true; }
+  if (thumbWrap) {
+    const ov = document.createElement('div');
+    ov.className = 'sticker-redoing';
+    ov.innerHTML = '<div class="spinner"></div><span>Refazendo…</span>';
+    thumbWrap.appendChild(ov);
+  }
+
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/correctSticker', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: state.currentOrderId, stickerNumber: num })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Erro ao refazer');
+
+    // Atualiza o resultado local dessa figurinha pra OK.
+    const r = (state.currentResults || []).find(x => x.index === num);
+    if (r) { r.ok = true; delete r.error; }
+    else { state.currentResults.push({ index: num, ok: true }); }
+    if (data.costBRL != null) state.currentCostBRL = data.costBRL;
+
+    if (card) card.dataset.ok = '0';   // força reconstruir o card + recarregar a imagem nova
+    renderResults();
+    toast(`Figurinha #${num} refeita ✓`, 'success');
+  } catch (err) {
+    if (card) card.dataset.ok = '0';
+    renderResults();
+    toast(`Erro ao refazer #${num}: ${err.message}`, 'error');
   }
 }
 
@@ -1071,14 +1128,11 @@ async function loadHistory() {
             <span class="badge ${statusClass} badge-sm">${statusLabel}</span>
           </div>
           ${custoTxt}
-          <div style="display:flex;gap:6px">
-            <button class="history-btn-view" data-act="edit" style="background:transparent;color:var(--text-dim);border-color:var(--border)">✏️ Editar</button>
-            <button class="history-btn-view" data-act="view">Ver →</button>
-          </div>
+          <button class="history-btn-view" data-act="edit">✏️ Editar</button>
         </div>
       `;
-      item.querySelector('[data-act="view"]').addEventListener('click', () => openHistoryOrder(order));
-      item.querySelector('[data-act="edit"]').addEventListener('click', () => editOrder(order.orderId));
+      // "Editar" abre a aba de resultados (ver todas + Refazer cada uma).
+      item.querySelector('[data-act="edit"]').addEventListener('click', () => openHistoryOrder(order));
       list.appendChild(item);
     });
     container.innerHTML = '';
@@ -1145,6 +1199,7 @@ window.selectKind = selectKind;
 window.selectFormat = selectFormat;
 window.generateStickers = generateStickers;
 window.downloadOne = downloadOne;
+window.redoSticker = redoSticker;
 window.downloadAll = downloadAll;
 window.goNewOrder = goNewOrder;
 window.loadHistory = loadHistory;
