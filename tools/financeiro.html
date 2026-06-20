@@ -197,6 +197,87 @@ input[type="file"]{display:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{border-color:#5EAD7E;color:#A9D9BD}
 .toast.error{border-color:var(--danger);color:#FFB0B0}
+/* ── Entradas e saídas adicionais (adder) ── */
+.add-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.add-row select,.add-row input{background:var(--bg);border:.5px solid var(--border);border-radius:6px;color:var(--text);padding:9px 10px;font-size:14px;font-family:'DM Sans',sans-serif}
+.add-row select{flex:1 1 130px;cursor:pointer}
+.add-row .add-val{flex:0 1 110px;text-align:right}
+.add-row .add-motivo{flex:1 1 140px}
+.add-btn{flex:0 0 auto;background:rgba(201,168,76,.12);border:.5px solid var(--border-bright);color:var(--gold);border-radius:6px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.add-btn:hover{background:rgba(201,168,76,.22)}
+.add-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:14px}
+.add-item .ai-info{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.add-item .ai-info small{color:var(--text-dim);font-size:12px;margin-left:4px}
+.add-item .ai-val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;color:var(--ok)}
+.add-item .ai-val.neg{color:var(--danger)}
+.add-item .ai-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;padding:0 4px}
+.add-item .ai-del:hover{color:var(--danger)}
+
+/* ── caixa branca — lucro diário por sócio (mês atual) ── */
+.month-card{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.5);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.1rem;box-shadow:0 8px 28px rgba(255,255,255,.08)}
+.month-label{font-size:13px;color:#f0f0f0;letter-spacing:.06em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.month-value{font-family:'Cinzel',serif;font-size:34px;font-weight:700;color:#fff;margin:4px 0 12px;text-shadow:0 2px 12px rgba(255,255,255,.18)}
+.month-value .mv-sub{font-size:14px;color:var(--text-dim);font-weight:400;letter-spacing:0}
+
+/* ── destaque do ranking na visão geral (top 3 + último) ── */
+.att-row2.t1{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.03));border-color:rgba(201,168,76,.6)}
+.att-row2.t2{background:linear-gradient(135deg,rgba(200,200,210,.11),rgba(200,200,210,.02));border-color:rgba(200,200,210,.45)}
+.att-row2.t3{background:linear-gradient(135deg,rgba(205,127,50,.12),rgba(205,127,50,.02));border-color:rgba(205,127,50,.45)}
+.att-row2.last{background:linear-gradient(135deg,rgba(232,122,122,.08),transparent);border-color:rgba(232,122,122,.38)}
+.att-row2 .nome .medal{margin-right:4px}
+
+/* ── ver atendente (espelho exato da tela do atendente) ── */
+.av-select{width:100%;padding:11px 13px;font-size:16px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:var(--radius);outline:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.breakdown{display:flex;flex-direction:column;gap:3px}
+.bd-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);font-size:16px}
+.bd-row .k{color:var(--text-mid);display:flex;align-items:center;gap:8px}
+.bd-row .v{font-variant-numeric:tabular-nums;font-weight:600}
+.bd-row.neg .v{color:var(--danger)}
+.bd-row.sub{background:rgba(255,255,255,.04)}
+.bd-row.sub .k,.bd-row.sub .v{color:var(--text)}
+.bd-row.inc{padding:9px 16px 9px 28px;font-size:14px;background:transparent;border-style:dashed}
+.bd-row.inc .k{color:var(--text-dim)}
+.bd-row.inc .k small{font-size:12px;color:var(--text-dim)}
+.bd-row.inc .v{color:var(--text-mid);font-weight:600}
+.bd-note{text-align:center;font-size:13px;color:var(--text-dim);padding:4px 0}
+.bd-row.final{background:rgba(201,168,76,.1);border-color:var(--border-bright);margin-top:4px}
+.bd-row.final .k{color:var(--gold);font-weight:600}
+.bd-row.final .v{color:var(--gold);font-family:'Cinzel',serif;font-size:22px}
+.day-toggle{margin-top:12px;text-align:center}
+.day-toggle button{background:none;border:none;color:var(--gold-dim);font-size:14px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.04em}
+.day-list{margin-top:10px;display:none}
+.day-list.show{display:block;animation:fadeIn .2s ease both}
+.day-item{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:10px 12px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:14px;color:var(--text-dim)}
+.day-item .liq{color:var(--gold);font-weight:600;text-align:right;min-width:90px}
+.day-item .ent{text-align:right;min-width:90px}
+.rec-box{max-height:380px;overflow-y:auto;border:.5px solid var(--border);border-radius:var(--radius);margin-top:6px}
+.rec-item{display:grid;grid-template-columns:1.6fr 1fr .8fr auto;gap:10px;padding:10px 13px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:14px;align-items:center}
+.rec-item:last-child{border-bottom:none}
+.rec-item.head{position:sticky;top:0;background:#161616;font-size:12px;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.04em}
+.rec-item .rn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.rec-item .rd,.rec-item .rh{color:var(--text-dim);text-align:right;font-variant-numeric:tabular-nums}
+.rec-item .rv{color:var(--ok);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.trophy-card{border-radius:var(--radius-lg);padding:1.5rem 1.2rem;text-align:center;margin-bottom:1rem;border:1px solid var(--border-bright)}
+.trophy-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.05));border-color:rgba(201,168,76,.7)}
+.trophy-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.16),rgba(200,200,210,.03));border-color:rgba(200,200,210,.5)}
+.trophy-card.t3{background:linear-gradient(135deg,rgba(205,127,50,.16),rgba(205,127,50,.03));border-color:rgba(205,127,50,.5)}
+.trophy-card.last{background:linear-gradient(135deg,rgba(232,122,122,.1),rgba(232,122,122,.02));border-color:rgba(232,122,122,.4)}
+.trophy-emoji{font-size:52px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.trophy-pos{font-family:'Cinzel',serif;font-size:15px;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:6px}
+.trophy-card.t2 .trophy-pos{color:#C8C8D2}.trophy-card.t3 .trophy-pos{color:#E2A86A}.trophy-card.last .trophy-pos{color:var(--danger)}
+.trophy-msg{font-size:16px;color:var(--text);line-height:1.6;max-width:540px;margin:0 auto}
+.trophy-val{margin-top:10px;font-family:'Cinzel',serif;font-size:22px;color:var(--gold);font-weight:700}
+.rank-list{display:flex;flex-direction:column;gap:7px;margin-top:1rem}
+.rank-row{display:flex;align-items:center;gap:12px;padding:12px 15px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius)}
+.rank-row.me{background:rgba(201,168,76,.1);border-color:var(--border-bright);box-shadow:0 0 0 1px rgba(201,168,76,.2)}
+.rank-pos{width:32px;height:32px;border-radius:50%;background:rgba(201,168,76,.12);color:var(--gold);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Cinzel',serif}
+.rank-row.me .rank-pos{background:var(--gold);color:#1A1A1A}
+.rank-name{flex:1;min-width:0;font-size:16px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-name .you{font-size:11px;color:var(--gold-dim);margin-left:6px}
+.dupla-tag{font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(127,184,122,.15);color:#7FB87A;border:.5px solid rgba(127,184,122,.4);margin-left:6px;vertical-align:middle}
+.rank-val small{color:var(--text-dim);font-weight:500;font-size:12px}
+.rank-medal{font-size:20px;flex-shrink:0}
+.rank-val{font-variant-numeric:tabular-nums;color:var(--gold-dim);font-size:15px;font-weight:600;flex-shrink:0}
 .hidden{display:none !important}
 </style>
 </head>
@@ -208,6 +289,7 @@ input[type="file"]{display:none}
   <div class="subtabs">
     <button class="subtab active" data-sub="fechar">📥 Fechamento do dia</button>
     <button class="subtab" data-sub="geral">📈 Visão geral</button>
+    <button class="subtab" data-sub="atend">👁 Ver atendente</button>
   </div>
 
   <!-- ═══════════ FECHAMENTO ═══════════ -->
@@ -215,7 +297,7 @@ input[type="file"]{display:none}
 
     <!-- 1. Extrato -->
     <div class="card" id="cardUpload">
-      <div class="card-title">1 · Extrato do Sicredi (.xlsx)</div>
+      <div class="card-title">1 · Extrato bancário</div>
       <div class="upload-area" id="uploadArea" onclick="document.getElementById('xlsxInput').click()">
         <input id="xlsxInput" type="file" accept=".xlsx,.xls"/>
         <span class="icon">📄</span>
@@ -224,9 +306,9 @@ input[type="file"]{display:none}
       </div>
       <div id="parseResult" class="hidden">
         <div class="parse-summary">
-          <div class="mini-stat"><div class="v" id="psCred">0</div><div class="l">Créditos</div></div>
+          <div class="mini-stat"><div class="v" id="psCred">0</div><div class="l">Vendas</div></div>
           <div class="mini-stat"><div class="v" id="psDeb">0</div><div class="l">Débitos</div></div>
-          <div class="mini-stat"><div class="v" id="psTot">R$ 0,00</div><div class="l">Total créditos</div></div>
+          <div class="mini-stat"><div class="v" id="psTot">R$ 0,00</div><div class="l">Valor total</div></div>
         </div>
         <div class="field-row">
           <div class="field">
@@ -240,15 +322,24 @@ input[type="file"]{display:none}
           </div>
         </div>
 
-        <!-- Mercado Pago (por atendente) -->
-        <div class="section-sub">💳 Mercado Pago — vendas fora do extrato</div>
-        <div class="hint" style="margin:-2px 0 8px">Vendas recebidas no Mercado Pago (conta separada — não aparecem no extrato do Sicredi). Entram como venda: somam na Entrada, com 6% e divididas ÷2.</div>
-        <div id="mpTable"></div>
-
-        <!-- Entradas e Saídas diversas (por atendente) -->
-        <div class="section-sub">↔ Entradas e Saídas diversas</div>
-        <div class="hint" style="margin:-2px 0 8px">Some (+) ou tire (−) um valor por atendente e diga o motivo numa palavra (ex.: <b>devolução</b>, <b>entrada</b>). Ajusta a Entrada (com 6% e ÷2).</div>
-        <div id="divTable"></div>
+        <!-- Entradas e saídas adicionais (Mercado Pago / Outros, por atendente) -->
+        <div class="section-sub">↔ Entradas e saídas adicionais</div>
+        <div class="hint" style="margin:-2px 0 8px">Vendas do <b>Mercado Pago</b> (fora do extrato) ou <b>outros</b> ajustes por atendente. Tudo entra na Entrada (com 6% e ÷2). Só aparecem aqui atendentes com chave PIX cadastrada.</div>
+        <div class="add-row">
+          <select id="addAtend"><option value="">Atendente…</option></select>
+          <select id="addTipo" onchange="addTipoChanged()">
+            <option value="mp">Mercado Pago</option>
+            <option value="outros">Outros</option>
+          </select>
+          <select id="addSinal">
+            <option value="1">+ adicionar</option>
+            <option value="-1">− reduzir</option>
+          </select>
+          <input id="addValor" class="add-val" type="text" inputmode="decimal" placeholder="0,00"/>
+          <input id="addMotivo" class="add-motivo hidden" type="text" maxlength="20" placeholder="motivo (1 palavra)"/>
+          <button class="add-btn" type="button" onclick="addAdicional()">+ Adicionar</button>
+        </div>
+        <div id="addList"></div>
       </div>
     </div>
 
@@ -258,7 +349,7 @@ input[type="file"]{display:none}
       <div class="upload-area" id="pctArea" onclick="document.getElementById('pctInput').click()">
         <input id="pctInput" type="file" accept="image/*"/>
         <span class="icon">🖼️</span>
-        <p>Suba a imagem com o % de cada atendente</p>
+        <p>Suba <b>ou cole (Ctrl+V)</b> a imagem com o % de cada atendente</p>
         <span>A IA lê os percentuais — você revisa antes de aplicar. Sem imagem, o anúncio é dividido igualmente entre quem vendeu.</span>
       </div>
       <div id="pctResult" class="hidden">
@@ -274,21 +365,16 @@ input[type="file"]{display:none}
     <!-- 3. Revisão -->
     <div class="card hidden" id="cardRevisao">
       <div class="card-title">3 · Revisar e enviar <span id="revData" style="color:var(--gold-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none;margin-left:auto;font-size:13px"></span></div>
-      <div class="fin-total">
-        <div class="label">Líquido total a distribuir</div>
-        <div class="value" id="revLiquido">R$ 0,00</div>
-        <div class="sub" id="revSub">—</div>
-      </div>
       <div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto 6%</span><span>Anúncio ✎</span><span>Plataforma</span><span>Líquido</span></div>
       <div id="revTable"></div>
       <div class="hint-box">✎ Todas as colunas <b>Entrada, Imposto, Anúncio e Plataforma</b> são editáveis — o líquido recalcula na hora.</div>
-
-      <div id="revNaoId"></div>
-      <div id="revDebitos"></div>
+      <button class="btn-secondary" style="margin-top:10px" onclick="zerarPlataforma()">⌫ Zerar custos de Plataforma</button>
 
       <div class="section-sub">Conferência do extrato</div>
       <div class="confer" id="revConfer"></div>
       <div id="revConferStatus"></div>
+      <div id="revNaoId"></div>
+      <div id="revDebitos"></div>
 
       <!-- relatório de transações -->
       <div class="section-sub" style="margin-top:1.4rem">Relatório de transações PIX</div>
@@ -309,7 +395,8 @@ input[type="file"]{display:none}
       <div class="fin-mode-toggle">
         <button class="fin-mode-btn active" data-mode="hoje" onclick="setMode('hoje')">Hoje</button>
         <button class="fin-mode-btn" data-mode="ontem" onclick="setMode('ontem')">Ontem</button>
-        <button class="fin-mode-btn" data-mode="semana" onclick="setMode('semana')">Semana</button>
+        <button class="fin-mode-btn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
+        <button class="fin-mode-btn" data-mode="semanaAnt" onclick="setMode('semanaAnt')">Semana anterior</button>
         <button class="fin-mode-btn" data-mode="mes" onclick="setMode('mes')">Mês</button>
         <button class="fin-mode-btn" data-mode="ano" onclick="setMode('ano')">Ano</button>
         <button class="fin-mode-btn" data-mode="custom" onclick="setMode('custom')">Período</button>
@@ -328,6 +415,39 @@ input[type="file"]{display:none}
         <button class="btn-danger" onclick="apagarTudo()">🗑 Apagar TODOS (limpar teste)</button>
       </div>
     </div>
+  </div>
+
+  <!-- ═══════════ VER ATENDENTE (espelho da tela do atendente) ═══════════ -->
+  <div class="subpanel" id="sub-atend">
+    <div class="card">
+      <div class="card-title">👁 Ver como o atendente vê</div>
+      <div class="field" style="margin-bottom:0">
+        <label>Atendente</label>
+        <select id="avSelect" class="av-select" onchange="avOnSelect()"><option value="">Escolha um atendente…</option></select>
+        <div class="hint" style="margin-top:8px">Mostra exatamente o que esse atendente vê no Financeiro dele (conta, ranking e recebimentos). Só leitura.</div>
+      </div>
+      <div id="avTools" class="hidden" style="margin-top:1.1rem">
+        <div class="fin-mode-toggle">
+          <button class="fin-mode-btn active" data-mode="dia" onclick="avSetMode('dia')">Hoje</button>
+          <button class="fin-mode-btn" data-mode="ontem" onclick="avSetMode('ontem')">Ontem</button>
+          <button class="fin-mode-btn" data-mode="semana" onclick="avSetMode('semana')">Semana</button>
+          <button class="fin-mode-btn" data-mode="mes" onclick="avSetMode('mes')">Mês</button>
+          <button class="fin-mode-btn" data-mode="ano" onclick="avSetMode('ano')">Ano</button>
+          <button class="fin-mode-btn" data-mode="custom" onclick="avSetMode('custom')">Período</button>
+        </div>
+        <div class="fin-nav" id="avNavBox"><button id="avPrev">‹</button><span class="lbl" id="avNavLabel">—</span><button id="avNext">›</button></div>
+        <div class="fin-date-row hidden" id="avCustomBox">
+          <div class="f field"><label>De</label><input type="date" id="avFrom"/></div>
+          <div class="f field"><label>Até</label><input type="date" id="avTo"/></div>
+          <button class="btn-secondary" onclick="avLoadTudo()">Ver</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="avWeekBox"></div>
+    <div id="avConta"></div>
+    <div class="card hidden" id="avRankCard"><div class="card-title">🏆 Ranking da equipe</div><div id="avRank"></div></div>
+    <div id="avRec"></div>
   </div>
 </div>
 
@@ -350,37 +470,68 @@ async function init(){
     document.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
+    if(b.dataset.sub==='atend') avInit();
   }));
   setupUpload(); loadCambio(); loadAtendentes();
 }
 
-// ── lista de atendentes (p/ Mercado Pago e Diversas) ──
+// ── lista de atendentes (p/ Entradas e saídas adicionais + Ver atendente) ──
+let adicionais=[];
 async function loadAtendentes(){
   try{
     const r=await window.__luxFetch(WORKER_URL+'/financeiro/atendentes'); const d=await r.json();
-    if(d.ok){ atendentesList=d.atendentes||[]; renderMpDiv(); }
+    if(d.ok){ atendentesList=d.atendentes||[]; popularAtendentes(); }
   }catch(e){ /* silencioso */ }
 }
-function renderMpDiv(){
-  const mp=document.getElementById('mpTable'), dv=document.getElementById('divTable');
-  if(!mp||!dv) return;
-  if(!atendentesList.length){ mp.innerHTML='<div class="hint">Nenhum atendente cadastrado.</div>'; dv.innerHTML=''; return; }
-  mp.innerHTML=atendentesList.map(a=>`<div class="mp-row"><div class="nm">${escapeHtml(a.nome)}</div><input type="text" inputmode="decimal" class="val" data-email="${escapeHtml(a.email)}" placeholder="0,00"></div>`).join('');
-  dv.innerHTML=atendentesList.map(a=>`<div class="div-row"><div class="nm">${escapeHtml(a.nome)}</div><input type="text" inputmode="decimal" class="val" data-email="${escapeHtml(a.email)}" placeholder="+/− 0,00"><input type="text" class="lbl" data-email="${escapeHtml(a.email)}" maxlength="20" placeholder="motivo (1 palavra)"></div>`).join('');
+function popularAtendentes(){
+  // adder: só atendentes COM chave PIX cadastrada
+  const sel=document.getElementById('addAtend');
+  if(sel){
+    const comPix=atendentesList.filter(a=>a.temPix);
+    sel.innerHTML='<option value="">Atendente…</option>'+comPix.map(a=>`<option value="${escapeHtml(a.email)}">${escapeHtml(a.nome)}</option>`).join('');
+  }
+  // ver atendente: todos (mostra "(sem PIX)" pra quem não tem)
+  const av=document.getElementById('avSelect');
+  if(av){
+    const cur=av.value;
+    av.innerHTML='<option value="">Escolha um atendente…</option>'+atendentesList.map(a=>`<option value="${escapeHtml(a.email)}">${escapeHtml(a.nome)}${a.temPix?'':' (sem PIX)'}</option>`).join('');
+    if(cur) av.value=cur;
+  }
 }
+function nomePorEmail(em){ const a=atendentesList.find(x=>x.email===em); return a?a.nome:em; }
+function addTipoChanged(){
+  document.getElementById('addMotivo').classList.toggle('hidden', document.getElementById('addTipo').value!=='outros');
+}
+function addAdicional(){
+  const email=document.getElementById('addAtend').value;
+  const tipo=document.getElementById('addTipo').value;
+  const sinal=Number(document.getElementById('addSinal').value)||1;
+  const valor=parseNum(document.getElementById('addValor').value);
+  const motivo=(document.getElementById('addMotivo').value||'').trim();
+  if(!email){ toast('Escolha o atendente.','error'); return; }
+  if(!valor){ toast('Digite um valor.','error'); return; }
+  adicionais.push({ email, nome:nomePorEmail(email), tipo, sinal, valorBRL:valor, motivo: tipo==='outros'?motivo:'' });
+  document.getElementById('addValor').value='';
+  document.getElementById('addMotivo').value='';
+  document.getElementById('addAtend').focus();
+  renderAddList();
+}
+function removeAdicional(i){ adicionais.splice(i,1); renderAddList(); }
+function renderAddList(){
+  const box=document.getElementById('addList'); if(!box) return;
+  if(!adicionais.length){ box.innerHTML=''; return; }
+  box.innerHTML=adicionais.map((x,i)=>{
+    const tipoLbl=x.tipo==='mp'?'💳 Mercado Pago':('↔ '+(x.motivo||'Outros'));
+    const sig=x.sinal<0?'−':'+';
+    return `<div class="add-item"><div class="ai-info">${escapeHtml(x.nome)} <small>· ${escapeHtml(tipoLbl)}</small></div><div class="ai-val${x.sinal<0?' neg':''}">${sig} ${fmtBRL(x.valorBRL)}</div><button class="ai-del" title="Remover" onclick="removeAdicional(${i})">✕</button></div>`;
+  }).join('');
+}
+// p/ o backend: MP e Outros saem nas mesmas duas listas que o preview já entende
 function coletarMercadoPago(){
-  const out=[];
-  document.querySelectorAll('#mpTable .mp-row input.val').forEach(inp=>{ const v=parseNum(inp.value); if(v) out.push({email:inp.dataset.email,valorBRL:v}); });
-  return out;
+  return adicionais.filter(x=>x.tipo==='mp').map(x=>({ email:x.email, valorBRL: x.sinal*x.valorBRL }));
 }
 function coletarDiversos(){
-  const out=[];
-  document.querySelectorAll('#divTable .div-row').forEach(row=>{
-    const vi=row.querySelector('input.val'), li=row.querySelector('input.lbl');
-    const v=parseNum(vi.value), lb=(li.value||'').trim();
-    if(v||lb) out.push({email:vi.dataset.email,valorBRL:v,label:lb});
-  });
-  return out;
+  return adicionais.filter(x=>x.tipo==='outros').map(x=>({ email:x.email, valorBRL: x.sinal*x.valorBRL, label: x.motivo||'' }));
 }
 // composição da entrada (PIX · MP · diversas) p/ mostrar na revisão
 function compoHtml(a){
@@ -426,6 +577,18 @@ function setupUpload(){
   ['dragover','dragenter'].forEach(ev=>pa.addEventListener(ev,e=>{e.preventDefault();pa.classList.add('dragover');}));
   ['dragleave','drop'].forEach(ev=>pa.addEventListener(ev,e=>{e.preventDefault();pa.classList.remove('dragover');}));
   pa.addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) lerImagemPct(e.dataTransfer.files[0]); });
+  // colar imagem dos % (Ctrl+V) — só quando o card de % estiver visível
+  document.addEventListener('paste', e=>{
+    const card=document.getElementById('cardPct');
+    if(!card || card.classList.contains('hidden')) return;
+    const items=(e.clipboardData||{}).items||[];
+    for(const it of items){
+      if(it.type && it.type.indexOf('image')===0){
+        const blob=it.getAsFile();
+        if(blob){ e.preventDefault(); lerImagemPct(blob); break; }
+      }
+    }
+  });
 }
 function cellToYMD(v){
   if(v instanceof Date && !isNaN(v)) return ymd(v);
@@ -535,22 +698,30 @@ function recalcLinha(i){
   const el=document.getElementById('liq-'+i); if(el) el.textContent=fmtBRL(a.liquidoBRL);
   recalcTotais();
 }
-function recalcTotais(){
-  const tl=preview.atendentes.reduce((s,a)=>s+(a.liquidoBRL||0),0);
-  const te=preview.atendentes.reduce((s,a)=>s+(a.entradaBRL||0),0);
-  document.getElementById('revLiquido').textContent=fmtBRL(tl);
-  document.getElementById('revSub').textContent=`Entrada ${fmtBRL(te)} · anúncio ${fmtBRL(preview.anuncioBRL)} (US$ ${Number(preview.anuncioUSD||0).toFixed(2)} · ${preview.distribuicao==='percentual'?'proporcional':'dividido igual'})`;
+function recalcTotais(){ /* a caixa "Líquido total a distribuir" foi removida — nada a atualizar aqui */ }
+function zerarPlataforma(){
+  if(!preview||!preview.atendentes||!preview.atendentes.length) return;
+  if(!confirm('Zerar a coluna Plataforma de TODOS os atendentes desta revisão?\n\n(Só mexe nesta tela, antes de enviar — não altera dias já enviados.)')) return;
+  preview.atendentes.forEach((a,i)=>{
+    a.custoIaBRL=0;
+    const inp=document.querySelector(`#revTable input[data-i="${i}"][data-f="custoIaBRL"]`);
+    if(inp) inp.value='0.00';
+    recalcLinha(i);
+  });
+  toast('Custos de plataforma zerados nesta revisão ✓','success');
 }
 function renderRevisao(){
   const p=preview;
   document.getElementById('revData').textContent='Data: '+fmtDBR(p.data);
   const tb=document.getElementById('revTable'); tb.innerHTML='';
+  let pos=0;
   p.atendentes.forEach((a,i)=>{
+    if(a.temPix===false) return;   // sem chave PIX cadastrada não aparece na revisão
+    pos++;
     const row=document.createElement('div');
     row.className='rev-row'+(a.entradaBRL<=0?' zero':'');
-    const tag=a.temPix===false?'<span class="tag nopix">sem PIX</span>':'';
     row.innerHTML=`
-      <div class="nome"><span class="pos">${i+1}.</span>${escapeHtml(a.nome)}${tag}${compoHtml(a)}</div>
+      <div class="nome"><span class="pos">${pos}.</span>${escapeHtml(a.nome)}${compoHtml(a)}</div>
       <div class="cell" data-l="Entrada"><input class="edit" inputmode="decimal" data-i="${i}" data-f="entradaBRL" value="${(a.entradaBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Imposto"><input class="edit" inputmode="decimal" data-i="${i}" data-f="impostoBRL" value="${(a.impostoBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Anúncio"><input class="edit" inputmode="decimal" data-i="${i}" data-f="anuncioBRL" value="${(a.anuncioBRL||0).toFixed(2)}"></div>
@@ -612,7 +783,7 @@ async function enviar(){
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
-    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; renderMpDiv(); },1300);
+    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); },1300);
   }catch(err){ toast('Erro: '+err.message,'error'); }
   finally{ btn.disabled=false; btn.textContent='✓ Enviar pros atendentes'; }
 }
@@ -621,24 +792,25 @@ async function enviar(){
 let geralLoadedOnce=false, geralMode='hoje', geralRef=new Date();
 function setMode(m){
   geralMode=m;
-  document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  document.querySelectorAll('#sub-geral .fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
   document.getElementById('customBox').classList.toggle('hidden',m!=='custom');
   document.getElementById('navBox').classList.toggle('hidden',m==='custom');
   if(m!=='custom'){
     geralRef=new Date();
     if(m==='ontem') geralRef.setDate(geralRef.getDate()-1);
+    if(m==='semanaAnt') geralRef.setDate(geralRef.getDate()-7);
     loadGeral();
   }
 }
 function semanaSabSex(r){ const d=new Date(r),dow=d.getDay(),dd=(dow+1)%7; const s=new Date(d); s.setDate(d.getDate()-dd); const e=new Date(s); e.setDate(s.getDate()+6); return [s,e]; }
 function rangeFor(m,r){
   if(m==='hoje'||m==='ontem') return [ymd(r),ymd(r),fmtDBR(ymd(r))];
-  if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='semana'||m==='semanaAnt'){ const x=semanaSabSex(r); const pre=m==='semanaAnt'?'Semana anterior · ':''; return [ymd(x[0]),ymd(x[1]),`${pre}${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
   if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
   if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
   return [document.getElementById('cFrom').value,document.getElementById('cTo').value,''];
 }
-function stepRef(dir){ if(geralMode==='hoje'||geralMode==='ontem')geralRef.setDate(geralRef.getDate()+dir); else if(geralMode==='semana')geralRef.setDate(geralRef.getDate()+7*dir); else if(geralMode==='mes')geralRef.setMonth(geralRef.getMonth()+dir); else if(geralMode==='ano')geralRef.setFullYear(geralRef.getFullYear()+dir); loadGeral(); }
+function stepRef(dir){ if(geralMode==='hoje'||geralMode==='ontem')geralRef.setDate(geralRef.getDate()+dir); else if(geralMode==='semana'||geralMode==='semanaAnt')geralRef.setDate(geralRef.getDate()+7*dir); else if(geralMode==='mes')geralRef.setMonth(geralRef.getMonth()+dir); else if(geralMode==='ano')geralRef.setFullYear(geralRef.getFullYear()+dir); loadGeral(); }
 document.getElementById('navPrev').addEventListener('click',()=>stepRef(-1));
 document.getElementById('navNext').addEventListener('click',()=>stepRef(1));
 // ── caixa verde: entradas acumuladas da semana atual (sáb→sex) ──
@@ -679,31 +851,73 @@ function weekAdminHtml(){
   </div>`;
 }
 
+// ── caixa branca: lucro diário por sócio (sempre o mês atual) ──
+let monthSocioData=null;
+async function ensureMonthSocio(){
+  if(monthSocioData) return;
+  const now=new Date();
+  const s=new Date(now.getFullYear(),now.getMonth(),1);
+  const e=new Date(now.getFullYear(),now.getMonth()+1,0);
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/admin/range?from=${ymd(s)}&to=${ymd(e)}`);
+    const d=await r.json();
+    if(d.ok) monthSocioData={ d, start:s, end:e };
+  }catch(_){}
+}
+function monthSocioHtml(){
+  if(!monthSocioData) return '';
+  const M=monthSocioData;
+  const nDays=M.end.getDate();
+  const datas=[]; for(let i=1;i<=nDays;i++){ datas.push(ymd(new Date(M.start.getFullYear(),M.start.getMonth(),i))); }
+  const mapa={}; (M.d.atendentes||[]).forEach(a=>(a.dias||[]).forEach(x=>{ mapa[x.data]=(mapa[x.data]||0)+(x.liquidoBRL||0); }));
+  // lucro do sócio no dia = (soma dos líquidos dos atendentes naquele dia) ÷ 2
+  const diarios=datas.map(dt=>(mapa[dt]||0)/2);
+  const total=diarios.reduce((s,v)=>s+v,0);
+  const CW=320,CH=96,P=12, maxV=Math.max(...diarios,1);
+  const xs=i=> nDays>1 ? P+i*(CW-2*P)/(nDays-1) : CW/2;
+  const ys=v=>CH-P-(v/maxV)*(CH-2*P);
+  const pts=diarios.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const area=`${xs(0).toFixed(1)},${CH-P} ${pts} ${xs(nDays-1).toFixed(1)},${CH-P}`;
+  const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][M.start.getMonth()];
+  const labels=[]; const stepL=Math.max(1,Math.ceil(nDays/6));
+  for(let i=0;i<nDays;i+=stepL) labels.push(i+1);
+  if(labels[labels.length-1]!==nDays) labels.push(nDays);
+  return `<div class="month-card">
+    <div class="month-label">Lucro diário por sócio · ${MES} ${M.start.getFullYear()}</div>
+    <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
+    <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">
+      <defs><linearGradient id="mgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(255,255,255,.45)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></linearGradient></defs>
+      <polygon points="${area}" fill="url(#mgA)"/>
+      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".92"/>
+    </svg>
+    <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+  </div>`;
+}
+
 async function loadGeral(){
   const rg=rangeFor(geralMode,geralRef); const from=rg[0],to=rg[1],label=rg[2];
   if(!from||!to){ toast('Escolha as datas.','error'); return; }
   document.getElementById('navLabel').textContent=label||`${fmtDBR(from)} a ${fmtDBR(to)}`;
   const cont=document.getElementById('geralContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
-  await ensureWeekAdmin();
+  await Promise.all([ensureWeekAdmin(), ensureMonthSocio()]);
   try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/admin/range?from=${from}&to=${to}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderGeral(d); }
   catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
 }
 function renderGeral(d){
   const cont=document.getElementById('geralContainer'); const t=d.total||{};
-  const atts=(d.atendentes||[]);
+  const atts=(d.atendentes||[]).filter(a=>a.temPix!==false);   // sem chave PIX cadastrada não aparece
   let html=`
     <div class="fin-total"><div class="label">Lucro por sócio</div><div class="value">${fmtBRL(t.lucroSocioBRL)}</div>
       <div class="sub big">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)}</div></div>
-    ${weekAdminHtml()}
-    <div class="lucros">
-      <div class="lucro-card hl"><div class="lv">${fmtBRL(t.lucroTotalBRL)}</div><div class="ll">Lucro total</div></div>
-      <div class="lucro-card"><div class="lv">${fmtBRL(t.lucroEquipeBRL)}</div><div class="ll">Lucro equipe</div></div>
-    </div>`;
+    ${monthSocioHtml()}
+    ${weekAdminHtml()}`;
   if(!atts.length){ html+='<div class="state-msg"><div>Nenhum fechamento enviado neste período ainda.</div></div>'; cont.innerHTML=html; return; }
   html+='<div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto</span><span>Anúncio</span><span>Plataforma</span><span>Líquido</span></div>';
   atts.forEach((a,i)=>{
-    html+=`<div class="att-row2 att-toggle" data-i="${i}">
-      <div class="nome">${i+1}. ${escapeHtml(a.nome)}${compoHtml(a)}</div>
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const rowCls = i===0?' t1':i===1?' t2':i===2?' t3':((i===atts.length-1&&atts.length>1)?' last':'');
+    html+=`<div class="att-row2 att-toggle${rowCls}" data-i="${i}">
+      <div class="nome">${medal?`<span class="medal">${medal}</span>`:''}${i+1}. ${escapeHtml(a.nome)}${compoHtml(a)}</div>
       <div class="num" data-l="Entrada">${fmtBRL(a.entradaBRL)}</div>
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>
@@ -745,6 +959,138 @@ async function apagarTudo(){
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
     toast(`✓ Tudo limpo (${d.apagados} fechamento(s) apagado(s)).`,'success'); loadGeral();
   }catch(err){ toast('Erro: '+err.message,'error'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// VER ATENDENTE — espelho EXATO da tela do atendente (admin usa ?as=email)
+// Reaproveita os helpers do topo (fmtBRL, ymd, fmtDBR, escapeHtml, semanaSabSex, toast).
+// ════════════════════════════════════════════════════════════
+let avMode='dia', avRef=new Date(), avFromCur='', avToCur='', avEmail='', avInited=false;
+const AV_FRASES={1:'🏆 Você é o nº 1! Performance espetacular — a equipe inteira se inspira em você. Obrigado por puxar o time pra cima!',2:'🥈 Quase lá! Você está voando — falta pouquíssimo pro topo. Orgulho da equipe!',3:'🥉 Pódio merecido! Sua consistência faz diferença. Bora subir mais um degrau!'};
+const AV_FRASE_ULTIMO='Essa rodada foi mais dura, mas é só uma fase. Você tem talento de sobra — bora virar esse jogo juntos. Conte com a gente! 💪';
+const AV_MEDALHA={1:'🥇',2:'🥈',3:'🥉'};
+
+function avInit(){
+  if(!avInited){
+    avInited=true;
+    document.getElementById('avPrev').addEventListener('click',()=>avStep(-1));
+    document.getElementById('avNext').addEventListener('click',()=>avStep(1));
+  }
+  popularAtendentes();   // garante o dropdown preenchido
+}
+function avOnSelect(){
+  avEmail=document.getElementById('avSelect').value;
+  const tools=document.getElementById('avTools'), rank=document.getElementById('avRankCard');
+  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; return; }
+  tools.classList.remove('hidden'); rank.classList.remove('hidden');
+  avLoadWeek();
+  avSetMode('dia');
+}
+function avSetMode(m){
+  avMode=m;
+  document.querySelectorAll('#sub-atend .fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  document.getElementById('avCustomBox').classList.toggle('hidden',m!=='custom');
+  document.getElementById('avNavBox').classList.toggle('hidden',m==='custom');
+  if(m!=='custom'){ avRef=new Date(); if(m==='ontem') avRef.setDate(avRef.getDate()-1); avLoadTudo(); }
+}
+function avRangeFor(m,r){
+  if(m==='dia') return [ymd(r),ymd(r),'Hoje · '+fmtDBR(ymd(r))];
+  if(m==='ontem') return [ymd(r),ymd(r),'Ontem · '+fmtDBR(ymd(r))];
+  if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
+  if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
+  return [document.getElementById('avFrom').value,document.getElementById('avTo').value,''];
+}
+function avStep(dir){ if(avMode==='dia'||avMode==='ontem')avRef.setDate(avRef.getDate()+dir); else if(avMode==='semana')avRef.setDate(avRef.getDate()+7*dir); else if(avMode==='mes')avRef.setMonth(avRef.getMonth()+dir); else if(avMode==='ano')avRef.setFullYear(avRef.getFullYear()+dir); avLoadTudo(); }
+async function avLoadTudo(){ const rg=avRangeFor(avMode,avRef); avFromCur=rg[0]; avToCur=rg[1]; if(!avFromCur||!avToCur){ toast('Escolha as datas.','error'); return; } document.getElementById('avNavLabel').textContent=rg[2]||`${fmtDBR(avFromCur)} a ${fmtDBR(avToCur)}`; await Promise.all([avLoadMe(),avLoadRanking()]); }
+function avQS(){ return `from=${avFromCur}&to=${avToCur}&as=${encodeURIComponent(avEmail)}`; }
+
+async function avLoadWeek(){
+  try{
+    const wk=semanaSabSex(new Date());
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${ymd(wk[0])}&to=${ymd(wk[1])}&as=${encodeURIComponent(avEmail)}`);
+    const d=await r.json(); if(d.ok) avRenderWeek(d.me, wk[0], wk[1]);
+  }catch(_){}
+}
+function avRenderWeek(me, sab, sex){
+  const box=document.getElementById('avWeekBox');
+  const datas=[]; let dd=new Date(sab); for(let i=0;i<7;i++){ datas.push(ymd(dd)); dd.setDate(dd.getDate()+1); }
+  const mapa={}; (me.dias||[]).forEach(x=>mapa[x.data]=x.liquidoBRL||0);
+  const diarios=datas.map(dt=>mapa[dt]||0);
+  let cum=0; const acum=diarios.map(v=>{ cum+=v; return cum; });
+  const total=cum;
+  const W=320,H=96,P=12, maxV=Math.max(...acum,1);
+  const xs=i=>P+i*(W-2*P)/6, ys=v=>H-P-(v/maxV)*(H-2*P);
+  const pts=acum.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const area=`${xs(0).toFixed(1)},${H-P} ${pts} ${xs(6).toFixed(1)},${H-P}`;
+  const dots=acum.map((v,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.2" fill="#eafaea" stroke="#7FB87A" stroke-width="1.5"/>`).join('');
+  const L=['Sáb','Dom','Seg','Ter','Qua','Qui','Sex'];
+  box.innerHTML=`<div class="week-card"><div class="week-label">Acumulado da semana · ${fmtDBR(ymd(sab))} a ${fmtDBR(ymd(sex))}</div><div class="week-value">${fmtBRL(total)}</div><svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="avwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(127,184,122,.45)"/><stop offset="100%" stop-color="rgba(127,184,122,0)"/></linearGradient></defs><polygon points="${area}" fill="url(#avwg)"/><polyline points="${pts}" fill="none" stroke="#9be79a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg><div class="week-days">${L.map(l=>`<span>${l}</span>`).join('')}</div></div>`;
+}
+async function avLoadMe(){
+  const cont=document.getElementById('avConta'); cont.innerHTML='<div class="card"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>';
+  document.getElementById('avRec').innerHTML='';
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?${avQS()}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); avRenderConta(d.me); avRenderRec(d.recebimentos||[]); }
+  catch(err){ cont.innerHTML=`<div class="card"><div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div></div>`; }
+}
+function avRenderConta(me){
+  const cont=document.getElementById('avConta');
+  const dias=(me.dias||[]).filter(x=>x.entradaBRL>0||x.liquidoBRL!==0);
+  const resultado=(me.entradaBRL||0)-(me.impostoBRL||0)-(me.anuncioBRL||0)-(me.custoIaBRL||0);
+  const mp=me.mercadoPagoBRL||0, diverso=me.diversoBRL||0, dLabel=me.diversoLabel||'diversas';
+  const pix=(me.pixBRL!=null?me.pixBRL:((me.entradaBRL||0)-mp-diverso));
+  const showCompo=(mp>0||diverso!==0);
+  let html=`<div class="card"><div class="card-title">Conta de ${escapeHtml(me.nome||'')}</div><div class="breakdown">
+      <div class="bd-row"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(me.entradaBRL)}</span></div>
+      ${showCompo?`<div class="bd-row inc"><span class="k">↳ PIX</span><span class="v">${fmtBRL(pix)}</span></div>`:''}
+      ${mp>0?`<div class="bd-row inc"><span class="k">↳ 💳 Mercado Pago <small>(já somado)</small></span><span class="v">${fmtBRL(mp)}</span></div>`:''}
+      ${diverso!==0?`<div class="bd-row inc"><span class="k">↳ ${escapeHtml(dLabel)} <small>(já somado)</small></span><span class="v">${diverso<0?'− ':'+ '}${fmtBRL(Math.abs(diverso))}</span></div>`:''}
+      <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(me.impostoBRL)}</span></div>
+      <div class="bd-row neg"><span class="k">➖ Anúncio</span><span class="v">- ${fmtBRL(me.anuncioBRL)}</span></div>
+      <div class="bd-row neg"><span class="k">➖ Plataforma</span><span class="v">- ${fmtBRL(me.custoIaBRL)}</span></div>
+      <div class="bd-row sub"><span class="k">= Resultado</span><span class="v">${fmtBRL(resultado)}</span></div>
+      <div class="bd-note">➗ parte dele (metade)</div>
+      <div class="bd-row final"><span class="k">Lucro líquido</span><span class="v">${fmtBRL(me.liquidoBRL)}</span></div></div>`;
+  if(dias.length){
+    html+=`<div class="day-toggle"><button onclick="document.getElementById('avDayList').classList.toggle('show')">▾ ver dia a dia (${dias.length})</button></div><div class="day-list" id="avDayList">${dias.map(x=>`<div class="day-item"><span class="d">${fmtDBR(x.data)}</span><span class="ent">vendas ${fmtBRL(x.entradaBRL)}</span><span class="liq">${fmtBRL(x.liquidoBRL)}</span></div>`).join('')}</div>`;
+  }
+  html+=`</div>`;
+  cont.innerHTML=html;
+}
+function avRenderRec(recebimentos){
+  const cont=document.getElementById('avRec');
+  let html=`<div class="card"><div class="card-title">🧾 Recebimentos (${recebimentos.length})</div>`;
+  if(recebimentos.length){
+    html+=`<div class="rec-box"><div class="rec-item head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>`;
+    html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=`</div>`;
+  } else { html+=`<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum recebimento neste período.</div></div>`; }
+  html+=`</div>`;
+  cont.innerHTML=html;
+}
+async function avLoadRanking(){
+  const cont=document.getElementById('avRank'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/ranking?${avQS()}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); avRenderRanking(d); }
+  catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
+}
+function avRenderRanking(d){
+  const cont=document.getElementById('avRank'); const rk=d.ranking||[];
+  if(!rk.length){ cont.innerHTML='<div class="state-msg"><div>Ainda não há vendas neste período.</div></div>'; return; }
+  const eu=d.eu; let html='';
+  if(eu){
+    if(eu.top) html+=`<div class="trophy-card t${eu.top}"><div class="trophy-emoji">${AV_MEDALHA[eu.top]}</div><div class="trophy-pos">${eu.top}º lugar</div><div class="trophy-msg">${AV_FRASES[eu.top]}</div>${eu.valorBRL!=null?`<div class="trophy-val">Lucro de ${fmtBRL(eu.valorBRL)}${eu.dupla&&eu.valorTotalBRL!=null?` <span style="font-size:15px;opacity:.85">(total ${fmtBRL(eu.valorTotalBRL)})</span>`:''}</div>`:''}</div>`;
+    else if(eu.ehUltimo) html+=`<div class="trophy-card last"><div class="trophy-emoji">🌱</div><div class="trophy-pos">Está em ${eu.pos}º</div><div class="trophy-msg">${AV_FRASE_ULTIMO}</div></div>`;
+    else html+=`<div class="trophy-card"><div class="trophy-emoji">🎯</div><div class="trophy-pos">Está em ${eu.pos}º de ${d.total}</div><div class="trophy-msg">Tá no caminho! Cada venda aproxima do pódio. Bora pra cima! 🚀</div></div>`;
+  }
+  html+='<div class="rank-list">';
+  rk.forEach(x=>{
+    const medal=x.top?`<span class="rank-medal">${AV_MEDALHA[x.top]}</span>`:'';
+    const val=(x.valorBRL!=null)?`<span class="rank-val">${fmtBRL(x.valorBRL)}${x.dupla&&x.valorTotalBRL!=null?` <small>(total ${fmtBRL(x.valorTotalBRL)})</small>`:''}</span>`:'';
+    const tag=x.dupla?'<span class="dupla-tag">dupla</span>':'';
+    html+=`<div class="rank-row${x.ehMeu?' me':''}"><div class="rank-pos">${x.pos}</div><div class="rank-name">${escapeHtml(x.nome)}${tag}${x.ehMeu?'<span class="you">(este)</span>':''}</div>${medal}${val}</div>`;
+  });
+  html+='</div>';
+  cont.innerHTML=html;
 }
 </script>
 </body>
