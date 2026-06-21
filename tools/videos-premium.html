@@ -167,6 +167,12 @@ audio{width:100%;margin:4px 0 6px;height:40px}
   background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);cursor:pointer;
 }
 .btn-mini:hover{border-color:var(--gold);color:var(--gold)}
+.btn-letra{
+  display:block;width:100%;margin-top:12px;padding:13px 16px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;letter-spacing:.2px;cursor:pointer;
+  background:rgba(201,168,76,.14);border:1px solid var(--gold);color:var(--gold);
+}
+.btn-letra:hover{background:rgba(201,168,76,.22)}
 
 /* EDITOR DE CORTE (1:00) */
 .cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:4px}
@@ -401,7 +407,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="thumb-row" id="scenesRow"></div>
       <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
       <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
-      <button class="btn-mini" id="btnCasarLetra" onclick="abrirCasarLetra()" style="margin-top:10px">🎵 Casar imagens com a letra da música <span style="color:var(--text-dim)">(beta)</span></button>
+      <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
       <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
     </div>
 
