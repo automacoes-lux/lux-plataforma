@@ -379,6 +379,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="avatarPreview" style="display:none;margin-top:12px">
         <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b>.</div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
+        <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
           <label for="avatarNote">O que ajustar? (opcional)</label>
           <input type="text" id="avatarNote" maxlength="120" placeholder='ex: "boné azul", "sorriso menor" — vazio = só tenta de novo'/>
@@ -389,7 +390,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
       </div>
       <!-- Avatar aprovado -->
-      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="reabrirAvatar()" style="margin-left:8px;font-weight:400">trocar</button></div>
+      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="baixarAvatar()" style="margin-left:8px;font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
     </div>
 
     <!-- PASSO 2 -->
@@ -519,20 +520,19 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="editor-overlay" id="videoEditorOverlay">
   <div class="editor-box">
     <h3>🎬 Editar o vídeo</h3>
-    <div class="hint">Arraste pra posicionar e use o zoom pra enquadrar no 9:16. Embaixo, escolha o <b style="color:var(--text-mid)">trecho</b> do vídeo que vai aparecer.</div>
-    <div id="veFrame" style="position:relative;width:200px;height:356px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;cursor:grab;touch-action:none">
+    <div class="hint">Use o <b style="color:var(--text-mid)">zoom</b> pra enquadrar no 9:16. Na linha do tempo embaixo, arraste as <b style="color:var(--text-mid)">alças</b> pra escolher o trecho (início e fim) que vai aparecer.</div>
+    <div id="veFrame" style="position:relative;width:200px;height:356px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;touch-action:none">
       <video id="veVideo" muted playsinline preload="metadata" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></video>
     </div>
     <div class="editor-zoom-row"><span>🔍</span><input type="range" id="veZoom" min="100" max="300" step="1" value="100"/></div>
-    <div style="margin-top:10px;font-size:12.5px;color:var(--text-mid)">Trecho: <b id="veRange" style="color:var(--gold)">0s → 5s</b></div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-      <span style="font-size:11px;color:var(--text-dim);min-width:46px">início</span>
-      <input type="range" id="veStart" min="0" max="100" step="0.5" value="0" style="flex:1"/>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-      <span style="font-size:11px;color:var(--text-dim);min-width:46px">duração</span>
-      <input type="range" id="veLen" min="1" max="60" step="1" value="5" style="flex:1"/>
-      <b id="veLenLbl" style="font-size:12px;min-width:30px">5s</b>
+    <div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>0s</span><span id="veTotLbl">0s</span></div>
+      <div id="veTrack" style="position:relative;height:30px;background:#1c1c1c;border:1px solid rgba(255,255,255,.12);border-radius:8px;touch-action:none">
+        <div id="veSel" style="position:absolute;top:0;bottom:0;left:0;width:0;background:rgba(212,175,55,.28);border-left:2px solid var(--gold);border-right:2px solid var(--gold)"></div>
+        <div id="veHa" style="position:absolute;top:-4px;left:0;width:13px;height:38px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
+        <div id="veHb" style="position:absolute;top:-4px;left:0;width:13px;height:38px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
+      </div>
+      <div style="text-align:center;margin-top:9px;font-size:14px"><span id="veSelLbl" style="color:var(--gold)"><b>0s</b> selecionados</span></div>
     </div>
     <button class="btn-mini" onclick="vePreview()" style="margin-top:8px">▶ Ver o trecho</button>
     <div class="editor-actions" style="margin-top:10px">
@@ -766,6 +766,14 @@ function reabrirAvatar() {
   refreshAvatarUI();
   renderStoryboard();
 }
+function baixarAvatar() {
+  if (!avatarPreview || !avatarPreview.cartoonBase64) { toast('Gere o avatar primeiro.'); return; }
+  const a = document.createElement('a');
+  a.href = 'data:image/png;base64,' + avatarPreview.cartoonBase64;
+  const nm = ((document.getElementById('clientName') || {}).value || 'avatar').trim().replace(/[^a-zA-Z0-9_-]/g, '_') || 'avatar';
+  a.download = 'avatar-' + nm + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
 
 // ───────────────────────────────────────────────
 // PASSO 2 — as 6 cenas
@@ -900,64 +908,61 @@ function computeTiming() {
 }
 
 // ── Editor de VÍDEO: corte do trecho + enquadramento 9:16 (arrastar) + zoom ──
-let vee = null;   // { id, scale, offX, offY (px no preview), drag, lastX, lastY }
+let vee = null;   // { id, scale, dur, tStart, tEnd, dragH }
+function veFmt(x) { return (Math.round(x * 10) / 10).toString().replace('.', ',') + 's'; }
 function openVideoEditor(id) {
   const s = scenes.find(x => x.id === id);
   if (!s || s.kind !== 'video') return;
   if (!s.localUrl) { toast('Esse vídeo não pode ser editado nesta sessão — recarregue a página e reenvie.'); return; }
-  vee = { id, scale: s.scale || 1, offX: s._editOffX || 0, offY: s._editOffY || 0, drag: false, lastX: 0, lastY: 0 };
+  vee = { id, scale: s.scale || 1, dur: s.origDur || 5, tStart: 0, tEnd: 5, dragH: null };
   const v = document.getElementById('veVideo');
   document.getElementById('videoEditorOverlay').classList.add('show');
   v.onloadedmetadata = () => {
     const frame = document.getElementById('veFrame');
     const boxW = frame.clientWidth || 200, boxH = frame.clientHeight || 356;
     const vw = v.videoWidth || 16, vh = v.videoHeight || 9;
-    // dimensiona o vídeo pra COBRIR o box 9:16 (sobra na dimensão maior → dá pra arrastar)
+    // dimensiona o vídeo pra COBRIR o box 9:16 (o zoom amplia a partir do centro)
     if (vw / vh > boxW / boxH) { v.style.height = boxH + 'px'; v.style.width = Math.round(boxH * vw / vh) + 'px'; }
     else { v.style.width = boxW + 'px'; v.style.height = Math.round(boxW * vh / vw) + 'px'; }
     const dur = v.duration || s.origDur || 5;
-    const startEl = document.getElementById('veStart'), lenEl = document.getElementById('veLen');
-    startEl.max = Math.max(0.5, Math.floor((dur - 1) * 2) / 2); startEl.value = Math.min(s.trimStart || 0, startEl.max);
-    lenEl.max = Math.min(60, Math.max(1, Math.round(dur))); lenEl.value = Math.min(s.dur || Math.min(5, Math.round(dur)), lenEl.max);
+    vee.dur = dur;
+    vee.tStart = Math.max(0, Math.min(s.trimStart || 0, dur - 1));
+    vee.tEnd = Math.min(dur, vee.tStart + (s.dur || Math.min(5, dur)));
     document.getElementById('veZoom').value = Math.round((s.scale || 1) * 100);
-    veTransform(); veTrimLabels();
-    try { v.currentTime = parseFloat(startEl.value) || 0; } catch (e) {}
+    document.getElementById('veTotLbl').textContent = veFmt(dur);
+    veTransform(); veUpdate();
+    try { v.currentTime = vee.tStart; } catch (e) {}
   };
   v.src = s.localUrl;
 }
 function veTransform() {
   if (!vee) return;
-  document.getElementById('veVideo').style.transform =
-    'translate(-50%,-50%) translate(' + vee.offX + 'px,' + vee.offY + 'px) scale(' + vee.scale + ')';
+  document.getElementById('veVideo').style.transform = 'translate(-50%,-50%) scale(' + vee.scale + ')';
 }
-function veTrimLabels() {
-  const start = parseFloat(document.getElementById('veStart').value) || 0;
-  const len = parseFloat(document.getElementById('veLen').value) || 1;
-  const fmt = x => (Math.round(x * 10) / 10).toString().replace('.', ',') + 's';
-  document.getElementById('veRange').textContent = fmt(start) + ' → ' + fmt(start + len);
-  document.getElementById('veLenLbl').textContent = Math.round(len) + 's';
+function veUpdate() {   // reposiciona as alças + a seleção + o rótulo a partir de tStart/tEnd
+  if (!vee) return;
+  const a = (vee.tStart / vee.dur) * 100, b = (vee.tEnd / vee.dur) * 100;
+  document.getElementById('veHa').style.left = a + '%';
+  document.getElementById('veHb').style.left = b + '%';
+  const sel = document.getElementById('veSel');
+  sel.style.left = a + '%'; sel.style.width = (b - a) + '%';
+  const len = vee.tEnd - vee.tStart;
+  document.getElementById('veSelLbl').innerHTML = '<b>' + Math.round(len) + 's</b> selecionados <span style="color:var(--text-dim);font-weight:400">(' + veFmt(vee.tStart) + ' → ' + veFmt(vee.tEnd) + ')</span>';
 }
-function vePreview() {
+function vePreview() {   // toca SÓ a seleção (tStart → tEnd)
   const v = document.getElementById('veVideo');
-  const start = parseFloat(document.getElementById('veStart').value) || 0;
-  const len = parseFloat(document.getElementById('veLen').value) || 1;
-  try { v.currentTime = start; v.play(); } catch (e) {}
-  clearTimeout(v._t); v._t = setTimeout(() => { try { v.pause(); v.currentTime = start; } catch (e) {} }, len * 1000);
+  if (!vee) return;
+  try { v.currentTime = vee.tStart; v.play(); } catch (e) {}
+  clearTimeout(v._t); v._t = setTimeout(() => { try { v.pause(); v.currentTime = vee.tStart; } catch (e) {} }, (vee.tEnd - vee.tStart) * 1000);
 }
 function saveVideoEditor() {
   if (!vee) { closeVideoEditor(); return; }
   const s = scenes.find(x => x.id === vee.id);
   if (!s) { closeVideoEditor(); return; }
-  const start = parseFloat(document.getElementById('veStart').value) || 0;
-  const len = parseFloat(document.getElementById('veLen').value) || 1;
-  const frame = document.getElementById('veFrame');
-  const boxW = frame.clientWidth || 200, boxH = frame.clientHeight || 356;
-  s.trimStart = start;
-  s.dur = Math.round(len);
+  s.trimStart = vee.tStart;
+  s.dur = Math.max(1, Math.round(vee.tEnd - vee.tStart));
   s.scale = vee.scale;
-  s.offsetX = Math.max(-1, Math.min(1, vee.offX / boxW));        // px → fração do frame (+ = direita)
-  s.offsetY = Math.max(-1, Math.min(1, -(vee.offY / boxH)));     // Shotstack y+ = CIMA (CSS y+ = baixo) → nega
-  s._editOffX = vee.offX; s._editOffY = vee.offY;                // guarda os px pra reabrir igual
+  s.offsetX = 0; s.offsetY = 0;   // sem mover (mãozinha removida) → vídeo centralizado, só zoom
   closeVideoEditor();
   renderScenes(); renderStoryboard();
 }
@@ -967,24 +972,31 @@ function closeVideoEditor() {
   document.getElementById('videoEditorOverlay').classList.remove('show');
   vee = null;
 }
-// listeners do editor de vídeo (arrastar + zoom + corte)
+// listeners do editor de vídeo: alças do corte (linha do tempo) + zoom
 (function veSetup() {
-  const frame = document.getElementById('veFrame');
-  if (!frame) return;
-  const down = (x, y) => { if (vee) { vee.drag = true; vee.lastX = x; vee.lastY = y; } };
-  const move = (x, y) => { if (vee && vee.drag) { vee.offX += (x - vee.lastX); vee.offY += (y - vee.lastY); vee.lastX = x; vee.lastY = y; veTransform(); } };
-  const up = () => { if (vee) vee.drag = false; };
-  frame.addEventListener('mousedown', e => down(e.clientX, e.clientY));
-  window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
-  window.addEventListener('mouseup', up);
-  frame.addEventListener('touchstart', e => { const t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
-  frame.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
-  frame.addEventListener('touchend', up);
+  const track = document.getElementById('veTrack');
+  if (!track) return;
+  const MIN = 1;   // seleção mínima de 1s
+  const timeAt = (cx) => { const r = track.getBoundingClientRect(); return Math.max(0, Math.min(vee.dur, ((cx - r.left) / r.width) * vee.dur)); };
+  const moveH = (cx) => {
+    if (!vee || !vee.dragH) return;
+    const t = timeAt(cx);
+    if (vee.dragH === 'a') vee.tStart = Math.max(0, Math.min(t, vee.tEnd - MIN));
+    else vee.tEnd = Math.min(vee.dur, Math.max(t, vee.tStart + MIN));
+    veUpdate();
+    const v = document.getElementById('veVideo'); try { v.currentTime = (vee.dragH === 'a' ? vee.tStart : vee.tEnd); } catch (e) {}
+  };
+  const endH = () => { if (vee) vee.dragH = null; };
+  document.getElementById('veHa').addEventListener('mousedown', e => { if (vee) { vee.dragH = 'a'; e.preventDefault(); } });
+  document.getElementById('veHb').addEventListener('mousedown', e => { if (vee) { vee.dragH = 'b'; e.preventDefault(); } });
+  window.addEventListener('mousemove', e => moveH(e.clientX));
+  window.addEventListener('mouseup', endH);
+  document.getElementById('veHa').addEventListener('touchstart', e => { if (vee) vee.dragH = 'a'; }, { passive: true });
+  document.getElementById('veHb').addEventListener('touchstart', e => { if (vee) vee.dragH = 'b'; }, { passive: true });
+  window.addEventListener('touchmove', e => { if (vee && vee.dragH) { moveH(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+  window.addEventListener('touchend', endH);
   const zoom = document.getElementById('veZoom');
   if (zoom) zoom.addEventListener('input', () => { if (vee) { vee.scale = (parseFloat(zoom.value) || 100) / 100; veTransform(); } });
-  const startEl = document.getElementById('veStart'), lenEl = document.getElementById('veLen');
-  if (startEl) startEl.addEventListener('input', () => { veTrimLabels(); const v = document.getElementById('veVideo'); try { v.currentTime = parseFloat(startEl.value) || 0; } catch (e) {} });
-  if (lenEl) lenEl.addEventListener('input', veTrimLabels);
 })();
 function removeScene(id) {
   const s = scenes.find(x => x.id === id);
