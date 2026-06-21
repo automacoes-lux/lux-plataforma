@@ -36,6 +36,15 @@ body{
 .week-days{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--text-dim)}
 .week-days span{flex:1;text-align:center}
 
+/* caixa branca — lucro diário do mês (igual ao admin) */
+.month-card{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.5);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.1rem;box-shadow:0 8px 28px rgba(255,255,255,.08)}
+.month-label{font-size:13px;color:#f0f0f0;letter-spacing:.06em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
+.month-value{font-family:'Cinzel',serif;font-size:32px;font-weight:700;color:#fff;margin:4px 0 12px;text-shadow:0 2px 12px rgba(255,255,255,.18)}
+.month-value .mv-sub{font-size:14px;color:var(--text-dim);font-weight:400;letter-spacing:0}
+/* botão "Semana atual" no verde do gráfico */
+.fin-mode-btn.greenbtn{border-color:rgba(127,184,122,.5);color:#9be79a}
+.fin-mode-btn.greenbtn.active{background:rgba(127,184,122,.18);border-color:rgba(127,184,122,.75);color:#cdeccb}
+
 .fin-mode-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
 .fin-mode-btn{background:transparent;border:.5px solid var(--border);color:var(--text-dim);padding:10px 16px;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
 .fin-mode-btn.active{background:rgba(201,168,76,.12);border-color:var(--border-bright);color:var(--gold)}
@@ -125,7 +134,8 @@ body{
     <div class="fin-mode-toggle">
       <button class="fin-mode-btn active" data-mode="dia" onclick="setMode('dia')">Hoje</button>
       <button class="fin-mode-btn" data-mode="ontem" onclick="setMode('ontem')">Ontem</button>
-      <button class="fin-mode-btn" data-mode="semana" onclick="setMode('semana')">Semana</button>
+      <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
+      <button class="fin-mode-btn" data-mode="semanaAnt" onclick="setMode('semanaAnt')">Semana anterior</button>
       <button class="fin-mode-btn" data-mode="mes" onclick="setMode('mes')">Mês</button>
       <button class="fin-mode-btn" data-mode="ano" onclick="setMode('ano')">Ano</button>
       <button class="fin-mode-btn" data-mode="custom" onclick="setMode('custom')">Período</button>
@@ -138,7 +148,8 @@ body{
     </div>
   </div>
 
-  <!-- Acumulado da semana (sáb→sex) -->
+  <!-- Lucro diário do mês (caixa branca) + Acumulado da semana (caixa verde) -->
+  <div id="monthBox"></div>
   <div id="weekBox"></div>
 
   <!-- 1) Sua conta -->
@@ -162,7 +173,8 @@ async function init(){
   try{ const r=await window.__luxFetch(WORKER_URL+'/admin/me'); const d=await r.json(); if(d.ok){ meuNome=d.user.name||d.user.email; document.getElementById('pgSub').textContent='Olá, '+meuNome+' — aqui está quanto você vendeu e recebeu.'; } }catch(e){}
   document.getElementById('navPrev').addEventListener('click',()=>step(-1));
   document.getElementById('navNext').addEventListener('click',()=>step(1));
-  loadWeek();   // caixa verde da semana (sempre a semana atual sáb→sex)
+  loadWeek();        // caixa verde da semana (sempre a semana atual sáb→sex)
+  loadMonthWhite();  // caixa branca do mês (lucro diário, sempre o mês atual)
   setMode('dia');
 }
 
@@ -203,23 +215,57 @@ function renderWeek(me, sab, sex){
     <div class="week-days">${L.map(l=>`<span>${l}</span>`).join('')}</div>
   </div>`;
 }
+// ── caixa branca: lucro diário do mês (sempre o mês atual, igual ao admin — gráfico de linha) ──
+async function loadMonthWhite(){
+  try{
+    const now=new Date();
+    const s=new Date(now.getFullYear(),now.getMonth(),1), e=new Date(now.getFullYear(),now.getMonth()+1,0);
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${ymd(s)}&to=${ymd(e)}`);
+    const d=await r.json();
+    if(d.ok) renderMonthWhite(d.me, s, e);
+  }catch(_){}
+}
+function renderMonthWhite(me, start, end){
+  const box=document.getElementById('monthBox'); if(!box) return;
+  const nDays=end.getDate();
+  const datas=[]; for(let i=1;i<=nDays;i++){ datas.push(ymd(new Date(start.getFullYear(),start.getMonth(),i))); }
+  const mapa={}; (me.dias||[]).forEach(x=>mapa[x.data]=x.liquidoBRL||0);
+  const diarios=datas.map(dt=>mapa[dt]||0);
+  const total=diarios.reduce((s,v)=>s+v,0);
+  const W=320,H=96,P=12, maxV=Math.max(...diarios,1);
+  const xs=i=> nDays>1 ? P+i*(W-2*P)/(nDays-1) : W/2;
+  const ys=v=>H-P-(v/maxV)*(H-2*P);
+  const pts=diarios.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][start.getMonth()];
+  const labels=[]; const stepL=Math.max(1,Math.ceil(nDays/6));
+  for(let i=0;i<nDays;i+=stepL) labels.push(i+1);
+  if(labels[labels.length-1]!==nDays) labels.push(nDays);
+  box.innerHTML=`<div class="month-card">
+    <div class="month-label">Lucro diário · ${MES} ${start.getFullYear()}</div>
+    <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
+    <svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>
+    </svg>
+    <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+  </div>`;
+}
 function fmtBRL(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDBR(s){ return s ? s.split('-').reverse().join('/') : '—'; }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toast(msg,type='info'){ const el=document.getElementById('toast'); el.className='toast show '+type; el.textContent=msg; clearTimeout(window.__tt); window.__tt=setTimeout(()=>el.classList.remove('show'),3200); }
 
-function setMode(m){ mode=m; document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); document.getElementById('customBox').classList.toggle('hidden',m!=='custom'); document.getElementById('navBox').classList.toggle('hidden',m==='custom'); if(m!=='custom'){ ref=new Date(); if(m==='ontem') ref.setDate(ref.getDate()-1); loadTudo(); } }
+function setMode(m){ mode=m; document.querySelectorAll('.fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); document.getElementById('customBox').classList.toggle('hidden',m!=='custom'); document.getElementById('navBox').classList.toggle('hidden',m==='custom'); if(m!=='custom'){ ref=new Date(); if(m==='ontem') ref.setDate(ref.getDate()-1); if(m==='semanaAnt') ref.setDate(ref.getDate()-7); loadTudo(); } }
 function semanaSabSex(r){ const d=new Date(r),dow=d.getDay(),dd=(dow+1)%7; const s=new Date(d); s.setDate(d.getDate()-dd); const e=new Date(s); e.setDate(s.getDate()+6); return [s,e]; }
 function rangeFor(m,r){
   if(m==='dia') return [ymd(r),ymd(r),'Hoje · '+fmtDBR(ymd(r))];
   if(m==='ontem') return [ymd(r),ymd(r),'Ontem · '+fmtDBR(ymd(r))];
-  if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='semana'||m==='semanaAnt'){ const x=semanaSabSex(r); const pre=m==='semanaAnt'?'Semana anterior · ':'Semana atual · '; return [ymd(x[0]),ymd(x[1]),`${pre}${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
   if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
   if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
   return [document.getElementById('cFrom').value,document.getElementById('cTo').value,''];
 }
-function step(dir){ if(mode==='dia'||mode==='ontem')ref.setDate(ref.getDate()+dir); else if(mode==='semana')ref.setDate(ref.getDate()+7*dir); else if(mode==='mes')ref.setMonth(ref.getMonth()+dir); else if(mode==='ano')ref.setFullYear(ref.getFullYear()+dir); loadTudo(); }
+function step(dir){ if(mode==='dia'||mode==='ontem')ref.setDate(ref.getDate()+dir); else if(mode==='semana'||mode==='semanaAnt')ref.setDate(ref.getDate()+7*dir); else if(mode==='mes')ref.setMonth(ref.getMonth()+dir); else if(mode==='ano')ref.setFullYear(ref.getFullYear()+dir); loadTudo(); }
 async function loadTudo(){ const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[1]; if(!curFrom||!curTo){ toast('Escolha as datas.','error'); return; } document.getElementById('navLabel').textContent=rg[2]||`${fmtDBR(curFrom)} a ${fmtDBR(curTo)}`; await Promise.all([loadMe(),loadRanking()]); }
 
 async function loadMe(){

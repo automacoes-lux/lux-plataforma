@@ -278,6 +278,11 @@ input[type="file"]{display:none}
 .rank-val small{color:var(--text-dim);font-weight:500;font-size:12px}
 .rank-medal{font-size:20px;flex-shrink:0}
 .rank-val{font-variant-numeric:tabular-nums;color:var(--gold-dim);font-size:15px;font-weight:600;flex-shrink:0}
+/* botão "Semana atual" no verde do gráfico + botão Zerar à direita do título da revisão */
+.fin-mode-btn.greenbtn{border-color:rgba(127,184,122,.5);color:#9be79a}
+.fin-mode-btn.greenbtn.active{background:rgba(127,184,122,.18);border-color:rgba(127,184,122,.75);color:#cdeccb}
+.card-title.rev-title::after{display:none}
+.rev-zerar{margin-left:auto;flex-shrink:0;padding:8px 13px;font-size:13px;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif}
 .hidden{display:none !important}
 </style>
 </head>
@@ -364,22 +369,16 @@ input[type="file"]{display:none}
 
     <!-- 3. Revisão -->
     <div class="card hidden" id="cardRevisao">
-      <div class="card-title">3 · Revisar e enviar <span id="revData" style="color:var(--gold-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none;margin-left:auto;font-size:13px"></span></div>
+      <div class="card-title rev-title">3 · Revisar e enviar <span id="revData" style="color:var(--gold-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:13px"></span><button class="btn-secondary rev-zerar" onclick="zerarPlataforma()">⌫ Zerar custos de Plataforma</button></div>
       <div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto 6%</span><span>Anúncio ✎</span><span>Plataforma</span><span>Líquido</span></div>
       <div id="revTable"></div>
       <div class="hint-box">✎ Todas as colunas <b>Entrada, Imposto, Anúncio e Plataforma</b> são editáveis — o líquido recalcula na hora.</div>
-      <button class="btn-secondary" style="margin-top:10px" onclick="zerarPlataforma()">⌫ Zerar custos de Plataforma</button>
 
       <div class="section-sub">Conferência do extrato</div>
       <div class="confer" id="revConfer"></div>
       <div id="revConferStatus"></div>
       <div id="revNaoId"></div>
       <div id="revDebitos"></div>
-
-      <!-- relatório de transações -->
-      <div class="section-sub" style="margin-top:1.4rem">Relatório de transações PIX</div>
-      <button class="tx-toggle" id="txToggle" onclick="document.getElementById('txBox').classList.toggle('hidden')">▾ ver todas as entradas e saídas</button>
-      <div id="txBox" class="hidden"></div>
 
       <div class="actions">
         <button class="btn-secondary" onclick="voltarUpload()">← Recomeçar</button>
@@ -395,7 +394,7 @@ input[type="file"]{display:none}
       <div class="fin-mode-toggle">
         <button class="fin-mode-btn active" data-mode="hoje" onclick="setMode('hoje')">Hoje</button>
         <button class="fin-mode-btn" data-mode="ontem" onclick="setMode('ontem')">Ontem</button>
-        <button class="fin-mode-btn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
+        <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
         <button class="fin-mode-btn" data-mode="semanaAnt" onclick="setMode('semanaAnt')">Semana anterior</button>
         <button class="fin-mode-btn" data-mode="mes" onclick="setMode('mes')">Mês</button>
         <button class="fin-mode-btn" data-mode="ano" onclick="setMode('ano')">Ano</button>
@@ -755,18 +754,6 @@ function renderRevisao(){
     ? '<div class="confer-status ok">✓ Bate: processado + não identificadas = total de recebimentos</div>'
     : '<div class="confer-status diff">⚠ Diferença — confira as chaves não identificadas</div>';
 
-  // relatório de transações
-  renderTx();
-}
-function renderTx(){
-  const box=document.getElementById('txBox');
-  const entradas=(preview.todasEntradas||[]).slice().sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));
-  const debs=(preview.debitos||[]);
-  let html='<div class="tx-item tx-head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>';
-  entradas.forEach(t=>{ html+=`<div class="tx-item"><div class="tn">${escapeHtml(t.nome||'(sem nome)')}${t.atendente?`<small>→ ${escapeHtml(t.atendente)}</small>`:(t.email?'':'<small style="color:#E87A7A">não identificado</small>')}</div><div class="td">${fmtDBR(t.data)}</div><div class="th">${escapeHtml(t.hora||'')}</div><div class="tv">${fmtBRL(t.valorBRL)}</div></div>`; });
-  debs.forEach(t=>{ html+=`<div class="tx-item deb"><div class="tn">${escapeHtml(t.nome||'(sem nome)')}<small>débito</small></div><div class="td">${fmtDBR(t.data)}</div><div class="th">${escapeHtml(t.hora||'')}</div><div class="tv">- ${fmtBRL(t.valorBRL)}</div></div>`; });
-  box.innerHTML=html;
-  document.getElementById('txToggle').textContent=`▾ ver todas as entradas e saídas (${entradas.length+debs.length})`;
 }
 
 async function enviar(){
@@ -886,9 +873,7 @@ function monthSocioHtml(){
     <div class="month-label">Lucro diário por sócio · ${MES} ${M.start.getFullYear()}</div>
     <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
     <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">
-      <defs><linearGradient id="mgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(255,255,255,.45)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></linearGradient></defs>
-      <polygon points="${area}" fill="url(#mgA)"/>
-      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".92"/>
+      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>
     </svg>
     <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
   </div>`;
