@@ -445,20 +445,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <!-- PASSO 4 -->
-    <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Passo 4</div>
-      <div class="card-title">Logo do comércio <span style="color:var(--text-dim);font-size:12px;font-weight:400">(opcional)</span></div>
-      <div class="card-hint">Entra caindo do topo no início e fica fixa no canto inferior esquerdo até o fim do clipe. PNG com fundo transparente fica melhor.</div>
-      <div class="thumb-row" id="logoRow">
-        <div class="upload-tile" id="logoTile" role="button" tabindex="0" onclick="document.getElementById('logoInput').click()">
-          <span class="big">⭐</span>
-          <span>Enviar a logo</span>
-        </div>
-      </div>
-      <input type="file" id="logoInput" accept="image/*" hidden/>
-    </div>
-
     <!-- LINHA DO CLIPE -->
     <div class="card storyboard-card">
       <div class="step-eyebrow"><span class="dot"></span>Linha do clipe</div>
@@ -528,6 +514,33 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   </div>
 </div>
 <input type="file" id="esSwapInput" accept="image/*" hidden/>
+
+<!-- EDITOR DE VÍDEO (corte do trecho + enquadramento 9:16 + zoom) -->
+<div class="editor-overlay" id="videoEditorOverlay">
+  <div class="editor-box">
+    <h3>🎬 Editar o vídeo</h3>
+    <div class="hint">Arraste pra posicionar e use o zoom pra enquadrar no 9:16. Embaixo, escolha o <b style="color:var(--text-mid)">trecho</b> do vídeo que vai aparecer.</div>
+    <div id="veFrame" style="position:relative;width:200px;height:356px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;cursor:grab;touch-action:none">
+      <video id="veVideo" muted playsinline preload="metadata" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></video>
+    </div>
+    <div class="editor-zoom-row"><span>🔍</span><input type="range" id="veZoom" min="100" max="300" step="1" value="100"/></div>
+    <div style="margin-top:10px;font-size:12.5px;color:var(--text-mid)">Trecho: <b id="veRange" style="color:var(--gold)">0s → 5s</b></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+      <span style="font-size:11px;color:var(--text-dim);min-width:46px">início</span>
+      <input type="range" id="veStart" min="0" max="100" step="0.5" value="0" style="flex:1"/>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+      <span style="font-size:11px;color:var(--text-dim);min-width:46px">duração</span>
+      <input type="range" id="veLen" min="1" max="60" step="1" value="5" style="flex:1"/>
+      <b id="veLenLbl" style="font-size:12px;min-width:30px">5s</b>
+    </div>
+    <button class="btn-mini" onclick="vePreview()" style="margin-top:8px">▶ Ver o trecho</button>
+    <div class="editor-actions" style="margin-top:10px">
+      <button class="btn-ed-cancel" onclick="closeVideoEditor()">Cancelar</button>
+      <button class="btn-ed-save" onclick="saveVideoEditor()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -770,7 +783,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
         const meta = await getVideoMeta(file);
         const clipKey = await uploadClip(file);
         const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(meta.duration || 5)));
-        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: meta.duration || dur, thumbUrl: meta.thumbUrl || '', name: file.name });
+        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: meta.duration || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: meta.thumbUrl || '', name: file.name, localUrl: URL.createObjectURL(file) });
       } else {
         const opt = await fileToOptimizedImage(file, false);
         scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'photo', ...opt, name: file.name, origBase64: opt.base64 });
@@ -789,6 +802,7 @@ function getVideoMeta(file) {
     let done = false;
     const finish = () => {
       if (done) return; done = true;
+      const dur = v.duration || 0;
       let thumbUrl = '';
       try {
         const c = document.createElement('canvas');
@@ -798,8 +812,9 @@ function getVideoMeta(file) {
         c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
         thumbUrl = c.toDataURL('image/jpeg', 0.7);
       } catch (e) {}
+      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}   // solta o blob ANTES de revogar (evita ERR_FILE_NOT_FOUND no console)
       URL.revokeObjectURL(url);
-      res({ duration: v.duration || 0, thumbUrl });
+      res({ duration: dur, thumbUrl });
     };
     v.onloadedmetadata = () => { try { v.currentTime = Math.min(0.1, (v.duration || 1) / 2); } catch (e) { finish(); } };
     v.onseeked = finish;
@@ -826,7 +841,9 @@ function renderScenes() {
     const moveR = i < scenes.length - 1 ? '<button class="mv r" title="Mover p/ direita" onclick="moveScene(\'' + s.id + '\',1)">›</button>' : '';
     const isVid = s.kind === 'video';
     const tag = isVid ? '🎬 Vídeo' : 'Foto ' + (i + 1);
-    const editBtn = isVid ? '' : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
+    const editBtn = isVid
+      ? '<button class="edit" title="Editar vídeo (corte + 9:16)" onclick="openVideoEditor(\'' + s.id + '\')">✏️</button>'
+      : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
     const photoLbl = (Math.round(t.photoDur * 10) / 10).toString().replace('.', ',') + 's';
     const durBar = isVid
       ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="60" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
@@ -846,8 +863,8 @@ function renderScenes() {
   const note = document.getElementById('timingNote');
   if (note) {
     if (!scenes.length) note.innerHTML = '';
-    else if (!t.ok)     note.innerHTML = '<b style="color:#ff6b6b">⚠️ ' + t.msg + '</b>';
-    else                note.innerHTML = '<span style="color:var(--text-dim)">' + t.msg + '</span>';
+    else if (!t.ok)     note.innerHTML = '<div style="background:rgba(255,80,80,.12);border:1px solid rgba(255,80,80,.55);border-radius:10px;padding:10px 12px;color:#ff8a8a;font-weight:600">⚠️ ' + t.msg + '</div>';
+    else                note.innerHTML = '<div style="background:rgba(212,175,55,.13);border:1px solid var(--gold);border-radius:10px;padding:10px 12px;color:var(--gold);font-weight:700;font-size:14.5px;text-align:center">⏱ ' + t.msg + '</div>';
   }
 }
 
@@ -881,8 +898,98 @@ function computeTiming() {
   parts.push(photos.length + ' foto(s) × ' + (Math.round(photoDur * 10) / 10).toString().replace('.', ',') + 's');
   return { ok: true, photoDur, msg: parts.join(' + ') + ' ≈ 60s' };
 }
+
+// ── Editor de VÍDEO: corte do trecho + enquadramento 9:16 (arrastar) + zoom ──
+let vee = null;   // { id, scale, offX, offY (px no preview), drag, lastX, lastY }
+function openVideoEditor(id) {
+  const s = scenes.find(x => x.id === id);
+  if (!s || s.kind !== 'video') return;
+  if (!s.localUrl) { toast('Esse vídeo não pode ser editado nesta sessão — recarregue a página e reenvie.'); return; }
+  vee = { id, scale: s.scale || 1, offX: s._editOffX || 0, offY: s._editOffY || 0, drag: false, lastX: 0, lastY: 0 };
+  const v = document.getElementById('veVideo');
+  document.getElementById('videoEditorOverlay').classList.add('show');
+  v.onloadedmetadata = () => {
+    const frame = document.getElementById('veFrame');
+    const boxW = frame.clientWidth || 200, boxH = frame.clientHeight || 356;
+    const vw = v.videoWidth || 16, vh = v.videoHeight || 9;
+    // dimensiona o vídeo pra COBRIR o box 9:16 (sobra na dimensão maior → dá pra arrastar)
+    if (vw / vh > boxW / boxH) { v.style.height = boxH + 'px'; v.style.width = Math.round(boxH * vw / vh) + 'px'; }
+    else { v.style.width = boxW + 'px'; v.style.height = Math.round(boxW * vh / vw) + 'px'; }
+    const dur = v.duration || s.origDur || 5;
+    const startEl = document.getElementById('veStart'), lenEl = document.getElementById('veLen');
+    startEl.max = Math.max(0.5, Math.floor((dur - 1) * 2) / 2); startEl.value = Math.min(s.trimStart || 0, startEl.max);
+    lenEl.max = Math.min(60, Math.max(1, Math.round(dur))); lenEl.value = Math.min(s.dur || Math.min(5, Math.round(dur)), lenEl.max);
+    document.getElementById('veZoom').value = Math.round((s.scale || 1) * 100);
+    veTransform(); veTrimLabels();
+    try { v.currentTime = parseFloat(startEl.value) || 0; } catch (e) {}
+  };
+  v.src = s.localUrl;
+}
+function veTransform() {
+  if (!vee) return;
+  document.getElementById('veVideo').style.transform =
+    'translate(-50%,-50%) translate(' + vee.offX + 'px,' + vee.offY + 'px) scale(' + vee.scale + ')';
+}
+function veTrimLabels() {
+  const start = parseFloat(document.getElementById('veStart').value) || 0;
+  const len = parseFloat(document.getElementById('veLen').value) || 1;
+  const fmt = x => (Math.round(x * 10) / 10).toString().replace('.', ',') + 's';
+  document.getElementById('veRange').textContent = fmt(start) + ' → ' + fmt(start + len);
+  document.getElementById('veLenLbl').textContent = Math.round(len) + 's';
+}
+function vePreview() {
+  const v = document.getElementById('veVideo');
+  const start = parseFloat(document.getElementById('veStart').value) || 0;
+  const len = parseFloat(document.getElementById('veLen').value) || 1;
+  try { v.currentTime = start; v.play(); } catch (e) {}
+  clearTimeout(v._t); v._t = setTimeout(() => { try { v.pause(); v.currentTime = start; } catch (e) {} }, len * 1000);
+}
+function saveVideoEditor() {
+  if (!vee) { closeVideoEditor(); return; }
+  const s = scenes.find(x => x.id === vee.id);
+  if (!s) { closeVideoEditor(); return; }
+  const start = parseFloat(document.getElementById('veStart').value) || 0;
+  const len = parseFloat(document.getElementById('veLen').value) || 1;
+  const frame = document.getElementById('veFrame');
+  const boxW = frame.clientWidth || 200, boxH = frame.clientHeight || 356;
+  s.trimStart = start;
+  s.dur = Math.round(len);
+  s.scale = vee.scale;
+  s.offsetX = Math.max(-1, Math.min(1, vee.offX / boxW));        // px → fração do frame (+ = direita)
+  s.offsetY = Math.max(-1, Math.min(1, -(vee.offY / boxH)));     // Shotstack y+ = CIMA (CSS y+ = baixo) → nega
+  s._editOffX = vee.offX; s._editOffY = vee.offY;                // guarda os px pra reabrir igual
+  closeVideoEditor();
+  renderScenes(); renderStoryboard();
+}
+function closeVideoEditor() {
+  const v = document.getElementById('veVideo');
+  try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+  document.getElementById('videoEditorOverlay').classList.remove('show');
+  vee = null;
+}
+// listeners do editor de vídeo (arrastar + zoom + corte)
+(function veSetup() {
+  const frame = document.getElementById('veFrame');
+  if (!frame) return;
+  const down = (x, y) => { if (vee) { vee.drag = true; vee.lastX = x; vee.lastY = y; } };
+  const move = (x, y) => { if (vee && vee.drag) { vee.offX += (x - vee.lastX); vee.offY += (y - vee.lastY); vee.lastX = x; vee.lastY = y; veTransform(); } };
+  const up = () => { if (vee) vee.drag = false; };
+  frame.addEventListener('mousedown', e => down(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  window.addEventListener('mouseup', up);
+  frame.addEventListener('touchstart', e => { const t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
+  frame.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+  frame.addEventListener('touchend', up);
+  const zoom = document.getElementById('veZoom');
+  if (zoom) zoom.addEventListener('input', () => { if (vee) { vee.scale = (parseFloat(zoom.value) || 100) / 100; veTransform(); } });
+  const startEl = document.getElementById('veStart'), lenEl = document.getElementById('veLen');
+  if (startEl) startEl.addEventListener('input', () => { veTrimLabels(); const v = document.getElementById('veVideo'); try { v.currentTime = parseFloat(startEl.value) || 0; } catch (e) {} });
+  if (lenEl) lenEl.addEventListener('input', veTrimLabels);
+})();
 function removeScene(id) {
-  scenes = scenes.filter(s => s.id !== id);
+  const s = scenes.find(x => x.id === id);
+  if (s && s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} }
+  scenes = scenes.filter(x => x.id !== id);
   renderScenes();
   renderStoryboard();
 }
@@ -1339,32 +1446,7 @@ async function aplicarCorte() {
   }
 }
 
-// ───────────────────────────────────────────────
-// PASSO 4 — logo
-// ───────────────────────────────────────────────
-document.getElementById('logoInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (!file) return;
-  try {
-    const opt = await fileToOptimizedImage(file, true);
-    logo = { ...opt, name: file.name };
-    renderLogo();
-  } catch (err) { toast('⚠️ ' + err.message); }
-});
-
-function renderLogo() {
-  const row = document.getElementById('logoRow');
-  if (!logo) {
-    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'logoInput\').click()"><span class="big">⭐</span><span>Enviar a logo</span></div>';
-    return;
-  }
-  row.innerHTML =
-    '<div class="thumb" style="background:#181818"><img src="' + logo.thumbUrl + '" alt="Logo" style="object-fit:contain"/>' +
-    '<div class="tag">Logo</div>' +
-    '<button class="rm" title="Remover" onclick="removeLogo()">✕</button></div>';
-}
-function removeLogo() { logo = null; renderLogo(); }
+// (Passo 4 "Logo do comércio" REMOVIDO a pedido — o clipe não usa mais logo.)
 
 // ───────────────────────────────────────────────
 // LINHA DO CLIPE (6 slots fixos)
@@ -1428,12 +1510,11 @@ async function gerarClipe() {
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       backgrounds: scenes.map(s => s.kind === 'video'
-        ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, name: s.name }
+        ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name }
         : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType }),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
-    if (logo) payload.logo = { base64: logo.base64, name: logo.name, mimeType: logo.mimeType };
 
     const r1 = await api('/createAvatarOrder', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -1522,12 +1603,11 @@ async function loadOrders() {
     orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
     let html = '';
     for (const o of orders) {
-      const numCenas = o.numScenes || o.photoCount || '—';
+      const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
       let chip, side = '';
       if (o.status === 'COMPLETED' && o.videoUrl) {
         chip = '<span class="st-chip st-ok">Pronto</span>';
-        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
-               '<button class="btn-editar" onclick="openEditScenes(\'' + o.orderId + '\')">✏️ Editar cena</button>';
+        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>';
       } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
         chip = '<span class="st-chip st-err" title="' + (o.genError || '') + '">Falhou</span>';
       } else {
