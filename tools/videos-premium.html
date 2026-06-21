@@ -401,6 +401,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="thumb-row" id="scenesRow"></div>
       <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
       <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+      <button class="btn-mini" id="btnCasarLetra" onclick="abrirCasarLetra()" style="margin-top:10px">🎵 Casar imagens com a letra da música <span style="color:var(--text-dim)">(beta)</span></button>
+      <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
     </div>
 
     <!-- PASSO 3 -->
@@ -538,6 +540,21 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="editor-actions" style="margin-top:10px">
       <button class="btn-ed-cancel" onclick="closeVideoEditor()">Cancelar</button>
       <button class="btn-ed-save" onclick="saveVideoEditor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CASAR IMAGENS COM A LETRA (beta) -->
+<div class="editor-overlay" id="lyricOverlay">
+  <div class="editor-box" style="max-width:540px">
+    <h3>🎵 Casar imagens com a letra</h3>
+    <div class="hint">Clique numa <b style="color:var(--text-mid)">frase</b> da música e depois na <b style="color:var(--text-mid)">imagem</b> que combina com ela. A imagem aparece no momento em que a música canta essa parte. As frases sem imagem repetem a anterior.</div>
+    <div id="lyricRows" style="max-height:240px;overflow:auto;margin:10px 0"></div>
+    <div style="font-size:12px;color:var(--text-dim)">Suas imagens — clique pra encaixar na frase selecionada:</div>
+    <div id="lyricMedia" class="thumb-row" style="margin-top:6px"></div>
+    <div class="editor-actions" style="margin-top:12px">
+      <button class="btn-ed-cancel" onclick="closeCasarLetra()">Cancelar</button>
+      <button class="btn-ed-save" onclick="salvarCasarLetra()">Salvar e usar</button>
     </div>
   </div>
 </div>
@@ -773,6 +790,94 @@ function baixarAvatar() {
   const nm = ((document.getElementById('clientName') || {}).value || 'avatar').trim().replace(/[^a-zA-Z0-9_-]/g, '_') || 'avatar';
   a.download = 'avatar-' + nm + '.png';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ── Casar imagens com a letra (beta): transcreve a música e mapeia mídia → frase ──
+let lyricBlocks = null;   // [{ start, text, mediaId }]
+let lyricSelIdx = -1;
+let lyricOn = false;
+async function abrirCasarLetra() {
+  if (!scenes.length) { toast('Adicione fotos/vídeos no Passo 2 primeiro.'); return; }
+  if (!music || !music.base64) { toast('Envie a música no Passo 3 primeiro.'); return; }
+  const btn = document.getElementById('btnCasarLetra');
+  if (!lyricBlocks) {
+    const t0 = btn.innerHTML; btn.disabled = true; btn.textContent = '⏳ Transcrevendo a música…';
+    try {
+      const r = await api('/transcribeMusic', { method: 'POST', body: JSON.stringify({ music: { base64: music.base64 }, lang: 'pt' }) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'falha na transcrição');
+      if (!j.blocks || !j.blocks.length) { toast('Não achei letra cantada nessa música.'); return; }
+      lyricBlocks = j.blocks.map(b => ({ start: b.start, text: b.text, mediaId: null }));
+      lyricSelIdx = 0;
+    } catch (err) { toast('⚠️ ' + err.message); return; }
+    finally { btn.disabled = false; btn.innerHTML = t0; }
+  }
+  renderLyric();
+  document.getElementById('lyricOverlay').classList.add('show');
+}
+function renderLyric() {
+  if (!lyricBlocks) return;
+  document.getElementById('lyricRows').innerHTML = lyricBlocks.map((b, i) => {
+    const m = b.mediaId ? scenes.find(s => s.id === b.mediaId) : null;
+    const thumb = m ? '<img src="' + (m.thumbUrl || '') + '" style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-left:auto" alt=""/>' : '<span style="margin-left:auto;color:var(--text-dim);font-size:11.5px">+ imagem</span>';
+    const sel = (i === lyricSelIdx);
+    return '<div onclick="lyricSelectBlock(' + i + ')" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;margin-bottom:5px;cursor:pointer;border:1px solid ' + (sel ? 'var(--gold)' : 'rgba(255,255,255,.1)') + ';background:' + (sel ? 'rgba(212,175,55,.12)' : 'transparent') + '">' +
+      '<b style="color:var(--gold);font-size:11.5px;min-width:34px">' + fmtTime(b.start) + '</b>' +
+      '<span style="font-size:13px;flex:1">' + escapeHtml(b.text) + '</span>' + thumb + '</div>';
+  }).join('');
+  document.getElementById('lyricMedia').innerHTML = scenes.map(s =>
+    '<div class="thumb" style="width:62px;height:62px;cursor:pointer" onclick="lyricAssign(\'' + s.id + '\')">' +
+    (s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt=""/>' : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:22px">🎬</div>') +
+    (s.kind === 'video' ? '<div class="tag">🎬</div>' : '') + '</div>').join('');
+}
+function lyricSelectBlock(i) { lyricSelIdx = i; renderLyric(); }
+function lyricAssign(mediaId) {
+  if (lyricSelIdx < 0) { toast('Clique numa frase primeiro.'); return; }
+  lyricBlocks[lyricSelIdx].mediaId = mediaId;
+  let nx = lyricSelIdx + 1;
+  while (nx < lyricBlocks.length && lyricBlocks[nx].mediaId) nx++;
+  if (nx < lyricBlocks.length) lyricSelIdx = nx;
+  renderLyric();
+}
+function salvarCasarLetra() {
+  if (!lyricBlocks || !lyricBlocks.some(b => b.mediaId)) { toast('Encaixe pelo menos 1 imagem numa frase.'); return; }
+  lyricOn = true;
+  closeCasarLetra();
+  updateLyricStatus();
+}
+function closeCasarLetra() { document.getElementById('lyricOverlay').classList.remove('show'); }
+function desligarLetra() { lyricOn = false; updateLyricStatus(); }
+function updateLyricStatus() {
+  const el = document.getElementById('lyricStatus');
+  if (!el) return;
+  if (lyricOn) {
+    el.style.display = 'block';
+    el.innerHTML = '<span style="color:var(--gold)">✓ Imagens casadas com a letra</span> <button class="btn-mini" onclick="abrirCasarLetra()" style="margin-left:6px">editar</button> <button class="btn-mini" onclick="desligarLetra()">desfazer</button>';
+  } else { el.style.display = 'none'; }
+}
+// monta os "backgrounds" do payload: modo letra (com 'at') OU normal (ordem + auto)
+function buildBackgrounds() {
+  const mk = (s, at) => {
+    const o = s.kind === 'video'
+      ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name }
+      : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType };
+    if (at != null) o.at = at;
+    return o;
+  };
+  if (lyricOn && lyricBlocks && lyricBlocks.some(b => b.mediaId)) {
+    const firstM = (lyricBlocks.find(b => b.mediaId) || {}).mediaId;
+    let last = firstM, lastMid = null;
+    const out = [];
+    lyricBlocks.forEach(b => {
+      const mid = b.mediaId || last; last = mid;
+      if (mid === lastMid) return;   // colapsa frases seguidas com a mesma imagem
+      const s = scenes.find(x => x.id === mid);
+      if (!s) return;
+      out.push(mk(s, b.start)); lastMid = mid;
+    });
+    return out;
+  }
+  return scenes.map(s => mk(s));
 }
 
 // ───────────────────────────────────────────────
@@ -1132,6 +1237,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
 
 function setMusicReady(m) {
   music = { base64: m.base64, name: m.name, mimeType: 'audio/mpeg', duration: m.duration };
+  lyricBlocks = null; lyricOn = false; if (typeof updateLyricStatus === 'function') updateLyricStatus();   // música nova → a letra recomeça
   document.getElementById('musicTile').style.display = 'none';
   document.getElementById('cutEditor').classList.remove('show');
   const loaded = document.getElementById('musicLoaded');
@@ -1502,8 +1608,7 @@ function validar() {
   if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
   if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 2).';
   if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 2).';
-  const t = computeTiming();
-  if (!t.ok) return t.msg + ' (Passo 2).';
+  if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 2).'; }   // modo letra define o tempo pela música
   if (!music) return 'Envie a música e deixe ela com 1:00 (Passo 3).';
   return null;
 }
@@ -1521,9 +1626,7 @@ async function gerarClipe() {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
-      backgrounds: scenes.map(s => s.kind === 'video'
-        ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name }
-        : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType }),
+      backgrounds: buildBackgrounds(),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
