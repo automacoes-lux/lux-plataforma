@@ -394,8 +394,8 @@ input[type="file"]{display:none}
       <div class="fin-mode-toggle">
         <button class="fin-mode-btn active" data-mode="hoje" onclick="setMode('hoje')">Hoje</button>
         <button class="fin-mode-btn" data-mode="ontem" onclick="setMode('ontem')">Ontem</button>
-        <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
         <button class="fin-mode-btn" data-mode="semanaAnt" onclick="setMode('semanaAnt')">Semana anterior</button>
+        <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="setMode('semana')">Semana atual</button>
         <button class="fin-mode-btn" data-mode="mes" onclick="setMode('mes')">Mês</button>
         <button class="fin-mode-btn" data-mode="ano" onclick="setMode('ano')">Ano</button>
         <button class="fin-mode-btn" data-mode="custom" onclick="setMode('custom')">Período</button>
@@ -429,8 +429,8 @@ input[type="file"]{display:none}
         <div class="fin-mode-toggle">
           <button class="fin-mode-btn active" data-mode="dia" onclick="avSetMode('dia')">Hoje</button>
           <button class="fin-mode-btn" data-mode="ontem" onclick="avSetMode('ontem')">Ontem</button>
-          <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="avSetMode('semana')">Semana atual</button>
           <button class="fin-mode-btn" data-mode="semanaAnt" onclick="avSetMode('semanaAnt')">Semana anterior</button>
+          <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="avSetMode('semana')">Semana atual</button>
           <button class="fin-mode-btn" data-mode="mes" onclick="avSetMode('mes')">Mês</button>
           <button class="fin-mode-btn" data-mode="ano" onclick="avSetMode('ano')">Ano</button>
           <button class="fin-mode-btn" data-mode="custom" onclick="avSetMode('custom')">Período</button>
@@ -863,10 +863,8 @@ function monthSocioHtml(){
   const diarios=datas.map(dt=>(mapa[dt]||0)/2);
   const total=diarios.reduce((s,v)=>s+v,0);
   const CW=320,CH=96,P=12, maxV=Math.max(...diarios,1);
-  const xs=i=> nDays>1 ? P+i*(CW-2*P)/(nDays-1) : CW/2;
-  const ys=v=>CH-P-(v/maxV)*(CH-2*P);
-  const pts=diarios.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
-  const area=`${xs(0).toFixed(1)},${CH-P} ${pts} ${xs(nDays-1).toFixed(1)},${CH-P}`;
+  const slotW=(CW-2*P)/nDays, barW=Math.max(1.5, slotW*0.62), chartH=CH-2*P;
+  const bars=diarios.map((v,i)=>{ const h=Math.max(0,(v/maxV)*chartH); const x=P+i*slotW+(slotW-barW)/2; return `<rect x="${x.toFixed(1)}" y="${(CH-P-h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#ffffff" opacity=".9"/>`; }).join('');
   const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][M.start.getMonth()];
   const labels=[]; const stepL=Math.max(1,Math.ceil(nDays/6));
   for(let i=0;i<nDays;i+=stepL) labels.push(i+1);
@@ -874,9 +872,7 @@ function monthSocioHtml(){
   return `<div class="month-card">
     <div class="month-label">Lucro diário por sócio · ${MES} ${M.start.getFullYear()}</div>
     <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
-    <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">
-      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>
-    </svg>
+    <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">${bars}</svg>
     <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
   </div>`;
 }
@@ -1031,9 +1027,8 @@ function avRenderMonth(me, start, end){
   const diarios=datas.map(dt=>mapa[dt]||0);
   const total=diarios.reduce((s,v)=>s+v,0);
   const W=320,H=96,P=12, maxV=Math.max(...diarios,1);
-  const xs=i=> nDays>1 ? P+i*(W-2*P)/(nDays-1) : W/2;
-  const ys=v=>H-P-(v/maxV)*(H-2*P);
-  const pts=diarios.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const slotW=(W-2*P)/nDays, barW=Math.max(1.5, slotW*0.62), chartH=H-2*P;
+  const bars=diarios.map((v,i)=>{ const h=Math.max(0,(v/maxV)*chartH); const x=P+i*slotW+(slotW-barW)/2; return `<rect x="${x.toFixed(1)}" y="${(H-P-h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#ffffff" opacity=".9"/>`; }).join('');
   const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][start.getMonth()];
   const labels=[]; const stepL=Math.max(1,Math.ceil(nDays/6));
   for(let i=0;i<nDays;i+=stepL) labels.push(i+1);
@@ -1041,9 +1036,7 @@ function avRenderMonth(me, start, end){
   box.innerHTML=`<div class="month-card">
     <div class="month-label">Lucro diário · ${MES} ${start.getFullYear()}</div>
     <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
-    <svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>
-    </svg>
+    <svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>
     <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
   </div>`;
 }
