@@ -338,7 +338,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="page-head">
     <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Vídeos com IA</span></div>
-    <div class="page-sub">O cliente vira o cantor do próprio clipe de 1 minuto: 6 cenas do comércio, o avatar dele cantando em cada uma.</div>
+    <div class="page-sub">O cliente vira o cantor do próprio clipe (até 1 minuto): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
   </div>
 
   <!-- banner de pedido em andamento -->
@@ -399,32 +399,20 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="baixarAvatar()" style="margin-left:8px;font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
     </div>
 
-    <!-- PASSO 2 -->
+    <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
-      <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar dos 60s (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
-      <div class="thumb-row" id="scenesRow"></div>
-      <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
-      <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
-      <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
-      <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
-    </div>
-
-    <!-- PASSO 3 -->
-    <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
-      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(1 minuto)</span></div>
-      <div class="card-hint">Envie em <b style="color:var(--text-mid)">MP3</b>. O clipe usa exatamente <b style="color:var(--text-mid)">1 minuto</b> de música: se o arquivo for maior, o editor de corte abre aqui mesmo pra você escolher o minuto certo (com fade in/out profissional).</div>
+      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 1 minuto)</span></div>
+      <div class="card-hint">Envie em <b style="color:var(--text-mid)">MP3</b>. A <b style="color:var(--text-mid)">duração da música é a duração do clipe</b> (no máximo 1 minuto): se for maior, o editor de corte abre pra você escolher o trecho; se for menor, usa a música inteira.</div>
       <div class="upload-tile" id="musicTile" role="button" tabindex="0" onclick="document.getElementById('musicInput').click()">
         <span class="big">🎵</span>
         <span>Enviar a música (MP3)</span>
       </div>
       <input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden/>
 
-      <!-- música pronta (1:00) -->
+      <!-- música pronta -->
       <div class="music-loaded" id="musicLoaded">
-        <div class="music-name">🎵 <b id="musicName"></b> · <span id="musicDur"></span><span class="music-ok-chip">1:00 ✓</span></div>
+        <div class="music-name">🎵 <b id="musicName"></b> · <span id="musicDur"></span><span class="music-ok-chip">✓</span></div>
         <audio id="player" controls preload="metadata"></audio>
         <button class="btn-mini" onclick="document.getElementById('musicInput').click()">trocar a música</button>
         <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">refazer o corte</button>
@@ -454,14 +442,26 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
+    <!-- PASSO 3 — FOTOS E VÍDEOS (calculados pela duração da música) -->
+    <div class="card">
+      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
+      <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
+      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar da <b style="color:var(--text-mid)">duração da música</b> (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
+      <div class="thumb-row" id="scenesRow"></div>
+      <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
+      <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+      <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
+      <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
+    </div>
+
     <!-- LINHA DO CLIPE -->
     <div class="card storyboard-card">
       <div class="step-eyebrow"><span class="dot"></span>Linha do clipe</div>
-      <div class="card-hint" style="margin-bottom:.4rem">6 cenas de 10 segundos — é assim que o clipe vai ser cortado:</div>
+      <div class="card-hint" style="margin-bottom:.4rem">É assim que as mídias vão passar atrás do avatar, na ordem:</div>
       <div class="storyboard" id="storyboard"></div>
       <div id="cutNote" style="font-size:11.5px;color:var(--text-dim);margin:8px 0 2px;min-height:16px"></div>
       <div class="sb-meta">
-        <span class="sb-total">Duração: <b>1:00</b> · cena 1 = entrada do cantor 🎤</span>
+        <span class="sb-total">Duração: <b id="sbDur">1:00</b> · cena 1 = entrada do cantor 🎤</span>
         <span class="sb-cost" id="sbCost"></span>
       </div>
     </div>
@@ -803,8 +803,8 @@ let lyricBlocks = null;   // [{ start, text, mediaId }]
 let lyricSelIdx = -1;
 let lyricOn = false;
 async function abrirCasarLetra() {
-  if (!scenes.length) { toast('Adicione fotos/vídeos no Passo 2 primeiro.'); return; }
-  if (!music || !music.base64) { toast('Envie a música no Passo 3 primeiro.'); return; }
+  if (!music || !music.base64) { toast('Envie a música no Passo 2 primeiro.'); return; }
+  if (!scenes.length) { toast('Adicione fotos/vídeos no Passo 3 primeiro.'); return; }
   const btn = document.getElementById('btnCasarLetra');
   if (!lyricBlocks) {
     const t0 = btn.innerHTML; btn.disabled = true; btn.textContent = '⏳ Transcrevendo a música…';
@@ -887,7 +887,7 @@ function buildBackgrounds() {
 }
 
 // ───────────────────────────────────────────────
-// PASSO 2 — as 6 cenas
+// PASSO 3 — fotos e vídeos do comércio (passam atrás do avatar)
 // ───────────────────────────────────────────────
 document.getElementById('scenesInput').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
@@ -965,7 +965,7 @@ function renderScenes() {
       : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
     const photoLbl = (Math.round(t.photoDur * 10) / 10).toString().replace('.', ',') + 's';
     const durBar = isVid
-      ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="60" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
+      ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="' + (videoDur() || VIDEO_SECONDS) + '" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
       : '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);font-size:11px;text-align:center;padding:2px;color:var(--gold)">🎤 ' + photoLbl + '</div>';
     const media = s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt="' + tag + '"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:#181818">🎬</div>';
     html += '<div class="thumb">' + media +
@@ -992,30 +992,37 @@ function setClipDur(id, val) {
   const s = scenes.find(x => x.id === id);
   if (!s) return;
   let d = Math.round(parseFloat(val) || 1);
-  d = Math.max(1, Math.min(VIDEO_SECONDS, d));
-  if (s.origDur) d = Math.min(d, Math.max(1, Math.round(s.origDur)));   // não passa da duração real do clipe
+  d = Math.max(1, Math.min(videoDur() || VIDEO_SECONDS, d));   // não passa da duração da música
+  if (s.origDur) d = Math.min(d, Math.max(1, Math.round(s.origDur)));   // nem da duração real do clipe
   s.dur = d;
   renderScenes(); renderStoryboard();
 }
 
 // tempo das fotos = (60 − soma dos vídeos) ÷ nº de fotos; valida o mínimo de 3s/foto
+function videoDur() { return (music && music.duration) ? Math.round(music.duration) : 0; }   // duração do clipe = duração da música
 function computeTiming() {
+  const D = videoDur();
+  if (!D) return { ok: false, photoDur: 0, msg: 'Envie a música no Passo 2 primeiro — ela define a duração do clipe.' };
   const vids = scenes.filter(s => s.kind === 'video');
   const photos = scenes.filter(s => s.kind !== 'video');
   const vidSum = vids.reduce((a, s) => a + (parseFloat(s.dur) || 0), 0);
+  // TRAVA: os vídeos NÃO podem passar da duração da música
+  if (vidSum > D + 0.5) {
+    return { ok: false, photoDur: 0, msg: 'Os vídeos somam ' + Math.round(vidSum) + 's, mais que a música (' + D + 's). Diminua a duração de um vídeo ou remova vídeos.' };
+  }
   if (!photos.length) {
     if (!vids.length) return { ok: false, photoDur: 0, msg: 'Adicione fotos ou vídeos.' };
-    if (vidSum < VIDEO_SECONDS - 0.5) return { ok: false, photoDur: 0, msg: 'Os vídeos somam ' + Math.round(vidSum) + 's de 60s. Adicione fotos ou aumente a duração dos vídeos.' };
-    return { ok: true, photoDur: 0, msg: vids.length + ' vídeo(s) preenchendo os 60s.' };
+    if (vidSum < D - 0.5) return { ok: false, photoDur: 0, msg: 'Os vídeos somam ' + Math.round(vidSum) + 's de ' + D + 's. Adicione fotos ou aumente a duração dos vídeos.' };
+    return { ok: true, photoDur: 0, msg: vids.length + ' vídeo(s) preenchendo os ' + D + 's.' };
   }
-  const photoDur = (VIDEO_SECONDS - vidSum) / photos.length;
+  const photoDur = (D - vidSum) / photos.length;
   if (photoDur < MIN_PHOTO_SEC) {
     return { ok: false, photoDur, msg: 'Os vídeos ocuparam ' + Math.round(vidSum) + 's, sobrando ' + (Math.round(photoDur * 10) / 10).toString().replace('.', ',') + 's por foto (mínimo ' + MIN_PHOTO_SEC + 's). Diminua a duração de um vídeo ou remova fotos.' };
   }
   const parts = [];
   if (vids.length) parts.push(vids.length + ' vídeo(s) = ' + Math.round(vidSum) + 's');
   parts.push(photos.length + ' foto(s) × ' + (Math.round(photoDur * 10) / 10).toString().replace('.', ',') + 's');
-  return { ok: true, photoDur, msg: parts.join(' + ') + ' ≈ 60s' };
+  return { ok: true, photoDur, msg: parts.join(' + ') + ' ≈ ' + D + 's' };
 }
 
 // ── Editor de VÍDEO: corte do trecho + enquadramento 9:16 (arrastar) + zoom ──
@@ -1191,7 +1198,7 @@ async function saveEditor() {
 }
 
 // ───────────────────────────────────────────────
-// PASSO 3 — música travada em 1:00 (corte embutido)
+// PASSO 2 — a música (define a duração do clipe; corte embutido se passar de 1:00)
 // ───────────────────────────────────────────────
 document.getElementById('musicInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -1214,13 +1221,9 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     try { ctx.close(); } catch (e2) {}
     const dur = audioBuf.duration;
 
-    if (dur < VIDEO_SECONDS - DUR_TOLERANCE) {
-      toast('⚠️ A música tem só ' + fmtTime(dur) + ' — precisa ter pelo menos 1 minuto.');
-      return;
-    }
-
+    // SEM mínimo: aceita qualquer duração até ~1:00; só acima disso abre o editor de corte.
     if (dur <= VIDEO_SECONDS + DUR_TOLERANCE) {
-      // já é ~1:00 → usa o arquivo original direto
+      // ≤ ~1:00 → usa a música INTEIRA (a duração dela = a duração do clipe)
       const dataUrl = await readFileAsDataURL(file);
       setMusicReady({
         base64: dataUrl.split(',')[1],
@@ -1252,7 +1255,7 @@ function setMusicReady(m) {
   document.getElementById('musicDur').textContent = fmtTime(m.duration);
   document.getElementById('player').src = m.playerSrc;
   document.getElementById('btnReabrirCorte').style.display = m.wasCut ? '' : 'none';
-  renderStoryboard();
+  renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
 }
 
 // ───────────────────────────────────────────────
@@ -1581,7 +1584,7 @@ function renderStoryboard() {
   const t = computeTiming();
   let html = '';
   if (!scenes.length) {
-    html = '<div style="color:var(--text-dim);font-size:12.5px;padding:6px 0">Adicione fotos/vídeos do comércio no Passo 2 — eles passam atrás do avatar.</div>';
+    html = '<div style="color:var(--text-dim);font-size:12.5px;padding:6px 0">Adicione fotos/vídeos do comércio no Passo 3 — eles passam atrás do avatar.</div>';
   } else {
     scenes.forEach((s, i) => {
       const isVid = s.kind === 'video';
@@ -1595,10 +1598,13 @@ function renderStoryboard() {
   }
   sb.innerHTML = html;
 
+  const D = videoDur() || VIDEO_SECONDS;
   const note = document.getElementById('cutNote');
-  if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar 1:00).' : '';
+  if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar ' + fmtTime(D) + ').' : '';
+  const durEl = document.getElementById('sbDur');
+  if (durEl) durEl.textContent = fmtTime(D);
 
-  const usd = EST_USD_CENA + VIDEO_SECONDS * (EST_USD_LIPSEC + 0.02 + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
+  const usd = EST_USD_CENA + D * (EST_USD_LIPSEC + 0.02 + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
   const brl = usd * EST_CAMBIO;
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
@@ -1612,10 +1618,10 @@ function validar() {
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
   if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
-  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 2).';
-  if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 2).';
-  if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 2).'; }   // modo letra define o tempo pela música
-  if (!music) return 'Envie a música e deixe ela com 1:00 (Passo 3).';
+  if (!music) return 'Envie a música (Passo 2).';
+  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 3).';
+  if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
+  if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).'; }   // modo letra define o tempo pela música
   return null;
 }
 
