@@ -429,7 +429,8 @@ input[type="file"]{display:none}
         <div class="fin-mode-toggle">
           <button class="fin-mode-btn active" data-mode="dia" onclick="avSetMode('dia')">Hoje</button>
           <button class="fin-mode-btn" data-mode="ontem" onclick="avSetMode('ontem')">Ontem</button>
-          <button class="fin-mode-btn" data-mode="semana" onclick="avSetMode('semana')">Semana</button>
+          <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="avSetMode('semana')">Semana atual</button>
+          <button class="fin-mode-btn" data-mode="semanaAnt" onclick="avSetMode('semanaAnt')">Semana anterior</button>
           <button class="fin-mode-btn" data-mode="mes" onclick="avSetMode('mes')">Mês</button>
           <button class="fin-mode-btn" data-mode="ano" onclick="avSetMode('ano')">Ano</button>
           <button class="fin-mode-btn" data-mode="custom" onclick="avSetMode('custom')">Período</button>
@@ -443,6 +444,7 @@ input[type="file"]{display:none}
       </div>
     </div>
 
+    <div id="avMonthBox"></div>
     <div id="avWeekBox"></div>
     <div id="avConta"></div>
     <div class="card hidden" id="avRankCard"><div class="card-title">🏆 Ranking da equipe</div><div id="avRank"></div></div>
@@ -966,8 +968,9 @@ function avInit(){
 function avOnSelect(){
   avEmail=document.getElementById('avSelect').value;
   const tools=document.getElementById('avTools'), rank=document.getElementById('avRankCard');
-  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; return; }
+  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avMonthBox').innerHTML=''; document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; return; }
   tools.classList.remove('hidden'); rank.classList.remove('hidden');
+  avLoadMonth();
   avLoadWeek();
   avSetMode('dia');
 }
@@ -976,17 +979,17 @@ function avSetMode(m){
   document.querySelectorAll('#sub-atend .fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
   document.getElementById('avCustomBox').classList.toggle('hidden',m!=='custom');
   document.getElementById('avNavBox').classList.toggle('hidden',m==='custom');
-  if(m!=='custom'){ avRef=new Date(); if(m==='ontem') avRef.setDate(avRef.getDate()-1); avLoadTudo(); }
+  if(m!=='custom'){ avRef=new Date(); if(m==='ontem') avRef.setDate(avRef.getDate()-1); if(m==='semanaAnt') avRef.setDate(avRef.getDate()-7); avLoadTudo(); }
 }
 function avRangeFor(m,r){
   if(m==='dia') return [ymd(r),ymd(r),'Hoje · '+fmtDBR(ymd(r))];
   if(m==='ontem') return [ymd(r),ymd(r),'Ontem · '+fmtDBR(ymd(r))];
-  if(m==='semana'){ const x=semanaSabSex(r); return [ymd(x[0]),ymd(x[1]),`${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='semana'||m==='semanaAnt'){ const x=semanaSabSex(r); const pre=m==='semanaAnt'?'Semana anterior · ':'Semana atual · '; return [ymd(x[0]),ymd(x[1]),`${pre}${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
   if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
   if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
   return [document.getElementById('avFrom').value,document.getElementById('avTo').value,''];
 }
-function avStep(dir){ if(avMode==='dia'||avMode==='ontem')avRef.setDate(avRef.getDate()+dir); else if(avMode==='semana')avRef.setDate(avRef.getDate()+7*dir); else if(avMode==='mes')avRef.setMonth(avRef.getMonth()+dir); else if(avMode==='ano')avRef.setFullYear(avRef.getFullYear()+dir); avLoadTudo(); }
+function avStep(dir){ if(avMode==='dia'||avMode==='ontem')avRef.setDate(avRef.getDate()+dir); else if(avMode==='semana'||avMode==='semanaAnt')avRef.setDate(avRef.getDate()+7*dir); else if(avMode==='mes')avRef.setMonth(avRef.getMonth()+dir); else if(avMode==='ano')avRef.setFullYear(avRef.getFullYear()+dir); avLoadTudo(); }
 async function avLoadTudo(){ const rg=avRangeFor(avMode,avRef); avFromCur=rg[0]; avToCur=rg[1]; if(!avFromCur||!avToCur){ toast('Escolha as datas.','error'); return; } document.getElementById('avNavLabel').textContent=rg[2]||`${fmtDBR(avFromCur)} a ${fmtDBR(avToCur)}`; await Promise.all([avLoadMe(),avLoadRanking()]); }
 function avQS(){ return `from=${avFromCur}&to=${avToCur}&as=${encodeURIComponent(avEmail)}`; }
 
@@ -1011,6 +1014,38 @@ function avRenderWeek(me, sab, sex){
   const dots=acum.map((v,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.2" fill="#eafaea" stroke="#7FB87A" stroke-width="1.5"/>`).join('');
   const L=['Sáb','Dom','Seg','Ter','Qua','Qui','Sex'];
   box.innerHTML=`<div class="week-card"><div class="week-label">Acumulado da semana · ${fmtDBR(ymd(sab))} a ${fmtDBR(ymd(sex))}</div><div class="week-value">${fmtBRL(total)}</div><svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="avwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(127,184,122,.45)"/><stop offset="100%" stop-color="rgba(127,184,122,0)"/></linearGradient></defs><polygon points="${area}" fill="url(#avwg)"/><polyline points="${pts}" fill="none" stroke="#9be79a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg><div class="week-days">${L.map(l=>`<span>${l}</span>`).join('')}</div></div>`;
+}
+async function avLoadMonth(){
+  try{
+    const now=new Date();
+    const s=new Date(now.getFullYear(),now.getMonth(),1), e=new Date(now.getFullYear(),now.getMonth()+1,0);
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${ymd(s)}&to=${ymd(e)}&as=${encodeURIComponent(avEmail)}`);
+    const d=await r.json(); if(d.ok) avRenderMonth(d.me, s, e);
+  }catch(_){}
+}
+function avRenderMonth(me, start, end){
+  const box=document.getElementById('avMonthBox'); if(!box) return;
+  const nDays=end.getDate();
+  const datas=[]; for(let i=1;i<=nDays;i++){ datas.push(ymd(new Date(start.getFullYear(),start.getMonth(),i))); }
+  const mapa={}; (me.dias||[]).forEach(x=>mapa[x.data]=x.liquidoBRL||0);
+  const diarios=datas.map(dt=>mapa[dt]||0);
+  const total=diarios.reduce((s,v)=>s+v,0);
+  const W=320,H=96,P=12, maxV=Math.max(...diarios,1);
+  const xs=i=> nDays>1 ? P+i*(W-2*P)/(nDays-1) : W/2;
+  const ys=v=>H-P-(v/maxV)*(H-2*P);
+  const pts=diarios.map((v,i)=>`${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+  const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][start.getMonth()];
+  const labels=[]; const stepL=Math.max(1,Math.ceil(nDays/6));
+  for(let i=0;i<nDays;i+=stepL) labels.push(i+1);
+  if(labels[labels.length-1]!==nDays) labels.push(nDays);
+  box.innerHTML=`<div class="month-card">
+    <div class="month-label">Lucro diário · ${MES} ${start.getFullYear()}</div>
+    <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
+    <svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline points="${pts}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>
+    </svg>
+    <div class="week-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+  </div>`;
 }
 async function avLoadMe(){
   const cont=document.getElementById('avConta'); cont.innerHTML='<div class="card"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>';
