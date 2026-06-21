@@ -357,7 +357,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
       <div class="card-title">Quem vai cantar</div>
-      <div class="card-hint">Foto nítida do cliente, de preferência de corpo inteiro ou da cintura pra cima. O avatar preserva o rosto, a roupa e o uniforme exatamente como estão na foto.</div>
+      <div class="card-hint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
@@ -365,19 +365,41 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
           <span class="big">🧑‍🎤</span>
-          <span>Enviar a foto do cliente</span>
+          <span>Enviar ou colar a foto</span>
         </div>
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*" hidden/>
+
+      <!-- Gerar o avatar (preview) -->
+      <div id="avatarGenRow" style="display:none;margin-top:12px">
+        <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
+        <div class="gerar-note" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
+      </div>
+      <!-- Preview do avatar (aprovar / regerar) -->
+      <div id="avatarPreview" style="display:none;margin-top:12px">
+        <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b>.</div>
+        <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
+        <div class="field" style="margin-top:10px">
+          <label for="avatarNote">O que ajustar? (opcional)</label>
+          <input type="text" id="avatarNote" maxlength="120" placeholder='ex: "boné azul", "sorriso menor" — vazio = só tenta de novo'/>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-mini" id="btnRegenAvatar" onclick="gerarAvatar()" style="flex:1">🔄 Gerar de novo</button>
+          <button class="btn-gold" onclick="aprovarAvatar()" style="flex:2">✓ Aprovar avatar</button>
+        </div>
+      </div>
+      <!-- Avatar aprovado -->
+      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="reabrirAvatar()" style="margin-left:8px;font-weight:400">trocar</button></div>
     </div>
 
     <!-- PASSO 2 -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
-      <div class="card-title">As 6 cenas do clipe <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">Exatamente <b style="color:var(--text-mid)">6 fotos do comércio</b> (produtos, fachada, ambiente...). Cada foto vira uma cena de 10 segundos com o avatar cantando dentro dela. A ordem das fotos é a ordem do clipe.</div>
+      <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
+      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar dos 60s (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
       <div class="thumb-row" id="scenesRow"></div>
-      <input type="file" id="scenesInput" accept="image/*" multiple hidden/>
+      <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
+      <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
     </div>
 
     <!-- PASSO 3 -->
@@ -526,6 +548,9 @@ const VIDEO_SECONDS = 60;           // FIXO: clipe de 1 minuto
 const OUT_W = 1080, OUT_H = 1920;   // editor de enquadramento 9:16
 const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
 const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
+const MAX_MEDIA      = 20;          // até 20 fundos (fotos + vídeos) atrás do avatar
+const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
+const CLIP_MAX_MB    = 60;          // limite por vídeo de b-roll
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA   = 0.15;
@@ -538,6 +563,7 @@ const PENDING_KEY = 'lux_avatar_pending';
 
 // Estado
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
+let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let logo = null;
@@ -644,18 +670,33 @@ async function fileToOptimizedImage(file, keepPng) {
 document.getElementById('clientPhotoInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   e.target.value = '';
-  if (!file) return;
+  if (file) await setClientPhotoFromFile(file);
+});
+
+// Colar a foto (Ctrl+V) — pega a 1ª imagem da área de transferência
+window.addEventListener('paste', async (e) => {
+  if (!e.clipboardData) return;
+  const item = Array.from(e.clipboardData.items || []).find(it => it.type && it.type.indexOf('image') === 0);
+  if (!item) return;
+  const file = item.getAsFile();
+  if (file) { e.preventDefault(); await setClientPhotoFromFile(file); }
+});
+
+async function setClientPhotoFromFile(file) {
   try {
     const opt = await fileToOptimizedImage(file, false);
-    clientPhoto = { ...opt, name: file.name };
+    clientPhoto = { ...opt, name: file.name || 'colado.png' };
+    avatarPreview = null;                 // foto nova → o avatar antigo não vale mais
     renderClientPhoto();
+    refreshAvatarUI();
+    renderStoryboard();
   } catch (err) { toast('⚠️ ' + err.message); }
-});
+}
 
 function renderClientPhoto() {
   const row = document.getElementById('clientPhotoRow');
   if (!clientPhoto) {
-    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>Enviar a foto do cliente</span></div>';
+    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>Enviar ou colar a foto</span></div>';
     return;
   }
   row.innerHTML =
@@ -663,7 +704,55 @@ function renderClientPhoto() {
     '<div class="tag">Cantor(a)</div>' +
     '<button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
 }
-function removeClientPhoto() { clientPhoto = null; renderClientPhoto(); }
+function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
+
+// ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
+// Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
+// com avatar não aprovado → preview; aprovado → selo.
+function refreshAvatarUI() {
+  const genRow  = document.getElementById('avatarGenRow');
+  const preview = document.getElementById('avatarPreview');
+  const okBadge = document.getElementById('avatarApproved');
+  if (!genRow || !preview || !okBadge) return;
+  const hasPhoto = !!clientPhoto, hasPrev = !!avatarPreview;
+  const approved = hasPrev && avatarPreview.approved;
+  genRow.style.display  = (hasPhoto && !hasPrev) ? 'block' : 'none';
+  preview.style.display = (hasPrev && !approved) ? 'block' : 'none';
+  okBadge.style.display = approved ? 'block' : 'none';
+}
+
+async function gerarAvatar() {
+  if (!clientPhoto) { toast('Envie a foto do cliente primeiro.'); return; }
+  const noteEl = document.getElementById('avatarNote');
+  const note = (noteEl && noteEl.value || '').trim();
+  const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
+  btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
+  try {
+    const r = await api('/avatarCartoon', {
+      method: 'POST',
+      body: JSON.stringify({ clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
+    avatarPreview = { cartoonBase64: j.cartoonBase64, approved: false };
+    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + j.cartoonBase64;
+    refreshAvatarUI();
+  } catch (err) { toast('⚠️ ' + err.message); }
+  finally { btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+}
+
+function aprovarAvatar() {
+  if (!avatarPreview) return;
+  avatarPreview.approved = true;
+  refreshAvatarUI();
+  renderStoryboard();
+}
+function reabrirAvatar() {
+  if (!avatarPreview) return;
+  avatarPreview.approved = false;
+  refreshAvatarUI();
+  renderStoryboard();
+}
 
 // ───────────────────────────────────────────────
 // PASSO 2 — as 6 cenas
@@ -672,33 +761,125 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   e.target.value = '';
   for (const file of files) {
-    if (scenes.length >= NUM_SCENES) { toast('O clipe usa exatamente ' + NUM_SCENES + ' fotos.'); break; }
+    if (scenes.length >= MAX_MEDIA) { toast('Máximo de ' + MAX_MEDIA + ' mídias.'); break; }
+    const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|webm|m4v|avi)$/i.test(file.name);
     try {
-      const opt = await fileToOptimizedImage(file, false);
-      scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), ...opt, name: file.name, origBase64: opt.base64 });
+      if (isVideo) {
+        if (file.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': vídeo acima de ' + CLIP_MAX_MB + 'MB.'); continue; }
+        toast('⏳ Enviando ' + file.name + '…');
+        const meta = await getVideoMeta(file);
+        const clipKey = await uploadClip(file);
+        const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(meta.duration || 5)));
+        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: meta.duration || dur, thumbUrl: meta.thumbUrl || '', name: file.name });
+      } else {
+        const opt = await fileToOptimizedImage(file, false);
+        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'photo', ...opt, name: file.name, origBase64: opt.base64 });
+      }
+      renderScenes(); renderStoryboard();
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
   }
-  renderScenes();
-  renderStoryboard();
 });
+
+// vídeo: extrai duração + thumbnail do 1º frame (tudo no navegador)
+function getVideoMeta(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata'; v.muted = true; v.playsInline = true; v.src = url;
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      let thumbUrl = '';
+      try {
+        const c = document.createElement('canvas');
+        const vw = v.videoWidth || 240, vh = v.videoHeight || 426;
+        const sc = Math.min(1, 240 / Math.max(vw, 1));
+        c.width = Math.round(vw * sc); c.height = Math.round(vh * sc);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        thumbUrl = c.toDataURL('image/jpeg', 0.7);
+      } catch (e) {}
+      URL.revokeObjectURL(url);
+      res({ duration: v.duration || 0, thumbUrl });
+    };
+    v.onloadedmetadata = () => { try { v.currentTime = Math.min(0.1, (v.duration || 1) / 2); } catch (e) { finish(); } };
+    v.onseeked = finish;
+    v.onerror = () => { URL.revokeObjectURL(url); rej(new Error('vídeo inválido')); };
+    setTimeout(finish, 4000);   // fallback se onseeked não disparar
+  });
+}
+
+// vídeo: upload BINÁRIO → /uploadClip → devolve a key no R2 (base64 estoura)
+async function uploadClip(file) {
+  const buf = await readFileAsArrayBuffer(file);
+  const r = await api('/uploadClip', { method: 'POST', headers: { 'Content-Type': file.type || 'video/mp4' }, body: buf });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Falha no upload do vídeo.');
+  return j.key;
+}
 
 function renderScenes() {
   const row = document.getElementById('scenesRow');
+  const t = computeTiming();
   let html = '';
   scenes.forEach((s, i) => {
     const moveL = i > 0 ? '<button class="mv l" title="Mover p/ esquerda" onclick="moveScene(\'' + s.id + '\',-1)">‹</button>' : '';
     const moveR = i < scenes.length - 1 ? '<button class="mv r" title="Mover p/ direita" onclick="moveScene(\'' + s.id + '\',1)">›</button>' : '';
-    html += '<div class="thumb"><img src="' + s.thumbUrl + '" alt="Cena ' + (i + 1) + '"/>' +
-      '<div class="tag">Cena ' + (i + 1) + '</div>' +
+    const isVid = s.kind === 'video';
+    const tag = isVid ? '🎬 Vídeo' : 'Foto ' + (i + 1);
+    const editBtn = isVid ? '' : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
+    const photoLbl = (Math.round(t.photoDur * 10) / 10).toString().replace('.', ',') + 's';
+    const durBar = isVid
+      ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="60" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
+      : '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);font-size:11px;text-align:center;padding:2px;color:var(--gold)">🎤 ' + photoLbl + '</div>';
+    const media = s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt="' + tag + '"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:#181818">🎬</div>';
+    html += '<div class="thumb">' + media +
+      '<div class="tag">' + tag + '</div>' +
       '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button>' +
-      '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>' +
-      moveL + moveR + '</div>';
+      editBtn + moveL + moveR + durBar + '</div>';
   });
-  if (scenes.length < NUM_SCENES) {
-    html += '<div class="add-tile" role="button" tabindex="0" onclick="document.getElementById(\'scenesInput\').click()"><span class="big">＋</span><span>' + (scenes.length ? 'Faltam ' + (NUM_SCENES - scenes.length) : 'Adicionar as fotos') + '</span></div>';
+  if (scenes.length < MAX_MEDIA) {
+    html += '<div class="add-tile" role="button" tabindex="0" onclick="document.getElementById(\'scenesInput\').click()"><span class="big">＋</span><span>' + (scenes.length ? 'Adicionar' : 'Adicionar fotos/vídeos') + '</span></div>';
   }
   row.innerHTML = html;
-  document.getElementById('sceneCount').textContent = '· ' + scenes.length + ' de ' + NUM_SCENES;
+  document.getElementById('sceneCount').textContent = '· ' + scenes.length + ' de ' + MAX_MEDIA;
+
+  const note = document.getElementById('timingNote');
+  if (note) {
+    if (!scenes.length) note.innerHTML = '';
+    else if (!t.ok)     note.innerHTML = '<b style="color:#ff6b6b">⚠️ ' + t.msg + '</b>';
+    else                note.innerHTML = '<span style="color:var(--text-dim)">' + t.msg + '</span>';
+  }
+}
+
+// duração de um clipe (input) — limita ao próprio vídeo e a 60s
+function setClipDur(id, val) {
+  const s = scenes.find(x => x.id === id);
+  if (!s) return;
+  let d = Math.round(parseFloat(val) || 1);
+  d = Math.max(1, Math.min(VIDEO_SECONDS, d));
+  if (s.origDur) d = Math.min(d, Math.max(1, Math.round(s.origDur)));   // não passa da duração real do clipe
+  s.dur = d;
+  renderScenes(); renderStoryboard();
+}
+
+// tempo das fotos = (60 − soma dos vídeos) ÷ nº de fotos; valida o mínimo de 3s/foto
+function computeTiming() {
+  const vids = scenes.filter(s => s.kind === 'video');
+  const photos = scenes.filter(s => s.kind !== 'video');
+  const vidSum = vids.reduce((a, s) => a + (parseFloat(s.dur) || 0), 0);
+  if (!photos.length) {
+    if (!vids.length) return { ok: false, photoDur: 0, msg: 'Adicione fotos ou vídeos.' };
+    if (vidSum < VIDEO_SECONDS - 0.5) return { ok: false, photoDur: 0, msg: 'Os vídeos somam ' + Math.round(vidSum) + 's de 60s. Adicione fotos ou aumente a duração dos vídeos.' };
+    return { ok: true, photoDur: 0, msg: vids.length + ' vídeo(s) preenchendo os 60s.' };
+  }
+  const photoDur = (VIDEO_SECONDS - vidSum) / photos.length;
+  if (photoDur < MIN_PHOTO_SEC) {
+    return { ok: false, photoDur, msg: 'Os vídeos ocuparam ' + Math.round(vidSum) + 's, sobrando ' + (Math.round(photoDur * 10) / 10).toString().replace('.', ',') + 's por foto (mínimo ' + MIN_PHOTO_SEC + 's). Diminua a duração de um vídeo ou remova fotos.' };
+  }
+  const parts = [];
+  if (vids.length) parts.push(vids.length + ' vídeo(s) = ' + Math.round(vidSum) + 's');
+  parts.push(photos.length + ' foto(s) × ' + (Math.round(photoDur * 10) / 10).toString().replace('.', ',') + 's');
+  return { ok: true, photoDur, msg: parts.join(' + ') + ' ≈ 60s' };
 }
 function removeScene(id) {
   scenes = scenes.filter(s => s.id !== id);
@@ -1188,39 +1369,33 @@ function removeLogo() { logo = null; renderLogo(); }
 // ───────────────────────────────────────────────
 // LINHA DO CLIPE (6 slots fixos)
 // ───────────────────────────────────────────────
-function sceneDur(i) {
-  if (sceneBounds && sceneBounds[i]) return sceneBounds[i].dur;
-  return SCENE_SECONDS;
-}
 function renderStoryboard() {
   const sb = document.getElementById('storyboard');
+  if (!sb) return;
+  const t = computeTiming();
   let html = '';
-  for (let i = 0; i < NUM_SCENES; i++) {
-    const s = scenes[i];
-    const lbl = (Math.round(sceneDur(i) * 10) / 10).toString().replace('.', ',') + 's';
-    if (s) {
-      html += '<div class="sb-cell"><div class="sb-frame"><img src="' + s.thumbUrl + '" alt="Cena ' + (i + 1) + '"/></div>' +
-        '<div class="sb-secs gold">🎤 ' + lbl + '</div></div>';
-    } else {
-      html += '<div class="sb-cell"><div class="sb-frame empty">' + (i + 1) + '</div>' +
-        '<div class="sb-secs">' + lbl + '</div></div>';
-    }
-    if (i < NUM_SCENES - 1) html += '<div class="sb-arrow">›</div>';
+  if (!scenes.length) {
+    html = '<div style="color:var(--text-dim);font-size:12.5px;padding:6px 0">Adicione fotos/vídeos do comércio no Passo 2 — eles passam atrás do avatar.</div>';
+  } else {
+    scenes.forEach((s, i) => {
+      const isVid = s.kind === 'video';
+      const secs = isVid ? (parseFloat(s.dur) || 0) : t.photoDur;
+      const lbl = (Math.round(secs * 10) / 10).toString().replace('.', ',') + 's';
+      const frame = s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt="' + (i + 1) + '"/>' : '<span style="font-size:22px">🎬</span>';
+      html += '<div class="sb-cell"><div class="sb-frame">' + frame + '</div>' +
+        '<div class="sb-secs ' + (isVid ? '' : 'gold') + '">' + (isVid ? '🎬 ' : '🎤 ') + lbl + '</div></div>';
+      if (i < scenes.length - 1) html += '<div class="sb-arrow">›</div>';
+    });
   }
   sb.innerHTML = html;
 
-  // nota sobre os cortes (respiros do canto)
   const note = document.getElementById('cutNote');
-  if (note) {
-    if (vocalState === 'working')      note.innerHTML = '🎚️ Ajustando as trocas de cena ao ritmo da música…';
-    else if (vocalState === 'done')    note.innerHTML = '✓ As cenas trocam no <b style="color:var(--text-mid)">respiro do canto</b> (corte natural).';
-    else if (vocalState === 'failed')  note.innerHTML = 'As cenas trocam a cada 10s (não consegui analisar o canto desta vez).';
-    else                               note.innerHTML = '';
-  }
+  if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar 1:00).' : '';
 
-  const usd = NUM_SCENES * EST_USD_CENA + VIDEO_SECONDS * EST_USD_LIPSEC + VIDEO_SECONDS * EST_USD_J2VSEC;
+  const usd = EST_USD_CENA + VIDEO_SECONDS * (EST_USD_LIPSEC + 0.02 + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
   const brl = usd * EST_CAMBIO;
-  document.getElementById('sbCost').innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
+  const costEl = document.getElementById('sbCost');
+  if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
 }
 
 // ───────────────────────────────────────────────
@@ -1230,9 +1405,11 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
-  if (scenes.length !== NUM_SCENES) {
-    return 'O clipe usa exatamente ' + NUM_SCENES + ' fotos do comércio — você colocou ' + scenes.length + ' (Passo 2).';
-  }
+  if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
+  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 2).';
+  if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 2).';
+  const t = computeTiming();
+  if (!t.ok) return t.msg + ' (Passo 2).';
   if (!music) return 'Envie a música e deixe ela com 1:00 (Passo 3).';
   return null;
 }
@@ -1249,7 +1426,10 @@ async function gerarClipe() {
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
-      photos: scenes.map(s => ({ base64: s.base64, name: s.name, mimeType: s.mimeType })),
+      cartoonApproved: { base64: avatarPreview.cartoonBase64 },
+      backgrounds: scenes.map(s => s.kind === 'video'
+        ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, name: s.name }
+        : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType }),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
