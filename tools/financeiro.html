@@ -218,8 +218,9 @@ input[type="file"]{display:none}
 .month-label{font-size:13px;color:#f0f0f0;letter-spacing:.06em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600}
 .month-value{font-family:'Cinzel',serif;font-size:34px;font-weight:700;color:#fff;margin:4px 0 12px;text-shadow:0 2px 12px rgba(255,255,255,.18)}
 .month-value .mv-sub{font-size:14px;color:var(--text-dim);font-weight:400;letter-spacing:0}
-.month-days{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-dim);line-height:1}
-.month-days span{flex:1;text-align:center;min-width:0}
+.month-days{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-dim);line-height:1.1}
+.month-days span{flex:1;text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center}
+.month-days span i{font-style:normal;font-size:7px;opacity:.6;margin-top:1px;text-transform:lowercase}
 
 /* ── destaque do ranking na visão geral (top 3 + último) ── */
 .att-row2.t1{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.03));border-color:rgba(201,168,76,.6)}
@@ -382,6 +383,13 @@ input[type="file"]{display:none}
       <div id="revNaoId"></div>
       <div id="revDebitos"></div>
 
+      <div class="section-sub">Aviso no grupo do WhatsApp</div>
+      <textarea id="grupoMsg" rows="3" placeholder="Ex.: 📊 O fechamento de hoje foi enviado! Confiram seus valores na plataforma." style="width:100%;padding:12px 14px;font-size:15px;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none;resize:vertical"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <button class="btn-secondary" type="button" onclick="salvarGrupoMsg()" style="padding:9px 16px;font-size:12px">💾 Salvar texto</button>
+        <small style="color:var(--gold-dim)">Esse texto cai no grupo <b>Avisos Lux</b> ao clicar em Enviar. Deixe vazio pra não avisar.</small>
+      </div>
+
       <div class="actions">
         <button class="btn-secondary" onclick="voltarUpload()">← Recomeçar</button>
         <button class="btn-primary" id="btnEnviar" onclick="enviar()">✓ Enviar pros atendentes</button>
@@ -475,7 +483,23 @@ async function init(){
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
     if(b.dataset.sub==='atend') avInit();
   }));
-  setupUpload(); loadCambio(); loadAtendentes();
+  setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
+}
+
+// ── aviso no grupo do WhatsApp (texto editável) ──
+async function loadGrupoMsg(){
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/grupo-msg'); const d=await r.json();
+    if(d.ok){ const el=document.getElementById('grupoMsg'); if(el) el.value=d.text||''; }
+  }catch(e){ /* silencioso */ }
+}
+async function salvarGrupoMsg(){
+  const el=document.getElementById('grupoMsg'); if(!el) return;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/grupo-msg',{method:'POST',body:JSON.stringify({text:el.value})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    toast('Texto do aviso salvo.','success');
+  }catch(e){ toast('Erro ao salvar texto: '+e.message,'error'); }
 }
 
 // ── lista de atendentes (p/ Entradas e saídas adicionais + Ver atendente) ──
@@ -765,15 +789,24 @@ async function enviar(){
   if(!confirm('Enviar o fechamento de '+fmtDBR(preview.data)+' pros atendentes?\n\nCada atendente vai ver os dados dele desse dia.')) return;
   const btn=document.getElementById('btnEnviar'); btn.disabled=true; btn.textContent='Enviando…';
   try{
+    const grupoMsg=(document.getElementById('grupoMsg')||{}).value||'';
     const payload={
       data:preview.data, cotacao:preview.cotacao, anuncioUSD:preview.anuncioUSD, anuncioBRL:preview.anuncioBRL,
       atendentes:preview.atendentes.map(a=>({email:a.email,nome:a.nome,pixBRL:a.pixBRL,mercadoPagoBRL:a.mercadoPagoBRL,diversoBRL:a.diversoBRL,diversoLabel:a.diversoLabel,entradaBRL:a.entradaBRL,impostoBRL:a.impostoBRL,anuncioBRL:a.anuncioBRL,custoIaBRL:a.custoIaBRL})),
-      todasEntradas:preview.todasEntradas||[], debitos:preview.debitos||[], naoIdentificadas:preview.naoIdentificadas||[]
+      todasEntradas:preview.todasEntradas||[], debitos:preview.debitos||[], naoIdentificadas:preview.naoIdentificadas||[],
+      grupoMsg
     };
     const r=await window.__luxFetch(WORKER_URL+'/financeiro/enviar',{method:'POST',body:JSON.stringify(payload)});
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
-    toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
+    // fechamento salvou; avisa também o resultado do aviso no grupo (se houve texto)
+    if(grupoMsg.trim() && d.whatsapp && !d.whatsapp.sent){
+      toast('Fechamento enviado ('+d.atendentes+' atendentes), mas o aviso no grupo NÃO foi: '+(d.whatsapp.reason||'falhou'),'error');
+    } else if(grupoMsg.trim() && d.whatsapp && d.whatsapp.sent){
+      toast('✓ Enviado! '+d.atendentes+' atendentes + aviso postado no grupo. ✅','success');
+    } else {
+      toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
+    }
     setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); },1300);
   }catch(err){ toast('Erro: '+err.message,'error'); }
   finally{ btn.disabled=false; btn.textContent='✓ Enviar pros atendentes'; }
@@ -868,13 +901,14 @@ function monthSocioHtml(){
   const slotW=(CW-2*P)/nDays, barW=Math.max(1.5, slotW*0.62), chartH=CH-2*P;
   const bars=diarios.map((v,i)=>{ const h=Math.max(0,(v/maxV)*chartH); const x=P+i*slotW+(slotW-barW)/2; return `<rect x="${x.toFixed(1)}" y="${(CH-P-h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#ffffff" opacity=".9"/>`; }).join('');
   const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][M.start.getMonth()];
-  const labels=[]; for(let i=1;i<=nDays;i++) labels.push(i);
-  const grid=[0,.25,.5,.75,1].map(f=>{ const y=(CH-P-f*chartH).toFixed(1); return `<line x1="${P}" y1="${y}" x2="${CW-P}" y2="${y}" stroke="rgba(255,255,255,.16)" stroke-width="0.5"/>`; }).join('');
+  const WD=['dom','seg','ter','qua','qui','sex','sáb'];
+  let dayLabels=''; for(let i=1;i<=nDays;i++){ const wd=WD[new Date(M.start.getFullYear(),M.start.getMonth(),i).getDay()]; dayLabels+=`<span>${i}<i>${wd}</i></span>`; }
+  const grid=[0,.25,.5,.75,1].map(f=>{ const y=(CH-P-f*chartH).toFixed(1); return `<line x1="${P}" y1="${y}" x2="${CW-P}" y2="${y}" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>`; }).join('');
   return `<div class="month-card">
     <div class="month-label">Lucro Mensal por sócio · ${MES} ${M.start.getFullYear()}</div>
     <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
     <svg class="week-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none">${grid}${bars}</svg>
-    <div class="month-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+    <div class="month-days">${dayLabels}</div>
   </div>`;
 }
 
@@ -1031,13 +1065,14 @@ function avRenderMonth(me, start, end){
   const slotW=(W-2*P)/nDays, barW=Math.max(1.5, slotW*0.62), chartH=H-2*P;
   const bars=diarios.map((v,i)=>{ const h=Math.max(0,(v/maxV)*chartH); const x=P+i*slotW+(slotW-barW)/2; return `<rect x="${x.toFixed(1)}" y="${(H-P-h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#ffffff" opacity=".9"/>`; }).join('');
   const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][start.getMonth()];
-  const labels=[]; for(let i=1;i<=nDays;i++) labels.push(i);
-  const grid=[0,.25,.5,.75,1].map(f=>{ const y=(H-P-f*chartH).toFixed(1); return `<line x1="${P}" y1="${y}" x2="${W-P}" y2="${y}" stroke="rgba(255,255,255,.16)" stroke-width="0.5"/>`; }).join('');
+  const WD=['dom','seg','ter','qua','qui','sex','sáb'];
+  let dayLabels=''; for(let i=1;i<=nDays;i++){ const wd=WD[new Date(start.getFullYear(),start.getMonth(),i).getDay()]; dayLabels+=`<span>${i}<i>${wd}</i></span>`; }
+  const grid=[0,.25,.5,.75,1].map(f=>{ const y=(H-P-f*chartH).toFixed(1); return `<line x1="${P}" y1="${y}" x2="${W-P}" y2="${y}" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>`; }).join('');
   box.innerHTML=`<div class="month-card">
     <div class="month-label">Lucro Mensal · ${MES} ${start.getFullYear()}</div>
     <div class="month-value">${fmtBRL(total)} <span class="mv-sub">no mês</span></div>
     <svg class="week-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${grid}${bars}</svg>
-    <div class="month-days">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+    <div class="month-days">${dayLabels}</div>
   </div>`;
 }
 async function avLoadMe(){
