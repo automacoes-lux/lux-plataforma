@@ -130,8 +130,11 @@ body{
 .thumb-row{display:flex;gap:10px;flex-wrap:wrap}
 .thumb{
   position:relative;width:92px;height:122px;border-radius:8px;overflow:hidden;
-  border:.5px solid var(--border-bright);background:#000;flex-shrink:0;
+  border:.5px solid var(--border-bright);background:#000;flex-shrink:0;cursor:grab;
 }
+.thumb:active{cursor:grabbing}
+.sortable-ghost{opacity:.35;border:1px dashed var(--gold)}
+.sortable-chosen{box-shadow:0 0 0 2px var(--gold)}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb .tag{
   position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);
@@ -569,6 +572,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
 <!-- LameJS: encoder MP3 no navegador (mesmo da ferramenta Corte) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script src="../js/auth-iframe.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -758,6 +762,57 @@ function refreshAvatarUI() {
   okBadge.style.display = approved ? 'block' : 'none';
 }
 
+// Normaliza a posição do avatar: mede onde estão os PÉS (ignorando braços esticados) e
+// recompõe a imagem pra o avatar ficar SEMPRE centralizado e do mesmo tamanho → cai sempre
+// no centro do palco. Se a medição falhar, devolve a imagem original (à prova de erro).
+const NORM_FOOT_Y = 0.97;   // posição vertical dos pés (fração da altura) — calibrável
+const NORM_HEIGHT = 0.92;   // altura do avatar (fração da imagem) — calibrável
+function normalizarAvatarPes(b64) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const W = img.width, H = img.height;
+        const mc = document.createElement('canvas'); mc.width = W; mc.height = H;
+        const mx = mc.getContext('2d'); mx.drawImage(img, 0, 0);
+        const data = mx.getImageData(0, 0, W, H).data;
+        const corner = (x, y) => { const i = (y * W + x) * 4; return [data[i], data[i + 1], data[i + 2]]; };
+        const cs = [corner(2, 2), corner(W - 3, 2), corner(2, H - 3), corner(W - 3, H - 3)];
+        const bg = [0, 1, 2].map(c => Math.round(cs.reduce((s, k) => s + k[c], 0) / cs.length));
+        const TH = 60;
+        let minX = W, maxX = 0, minY = H, maxY = 0;
+        const rc = new Array(H).fill(0), cc = new Array(W).fill(0);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const i = (y * W + x) * 4;
+          const d = Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]);
+          if (d > TH) { rc[y]++; cc[x]++; }
+        }
+        const minRow = Math.max(3, W * 0.004), minCol = Math.max(3, H * 0.004);
+        for (let y = 0; y < H; y++) if (rc[y] >= minRow) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
+        for (let x = 0; x < W; x++) if (cc[x] >= minCol) { if (x < minX) minX = x; if (x > maxX) maxX = x; }
+        if (maxY - minY < H * 0.4 || maxX - minX < W * 0.05) { resolve(b64); return; }   // medição duvidosa → original
+        const fb = Math.round(H * 0.05); let fsx = 0, fsn = 0;   // centro dos PÉS (faixa perto da base)
+        for (let y = Math.max(0, maxY - fb); y <= maxY; y++) for (let x = 0; x < W; x++) {
+          const i = (y * W + x) * 4;
+          const d = Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]);
+          if (d > TH) { fsx += x; fsn++; }
+        }
+        const footCX = fsn ? fsx / fsn : (minX + maxX) / 2;
+        const s = (NORM_HEIGHT * H) / (maxY - minY);   // escala p/ altura padrão
+        const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
+        const ox = oc.getContext('2d');
+        ox.fillStyle = 'rgb(' + bg[0] + ',' + bg[1] + ',' + bg[2] + ')'; ox.fillRect(0, 0, W, H);   // fundo igual
+        const dx = W / 2 - footCX * s;                 // pés centralizados na horizontal
+        const dy = NORM_FOOT_Y * H - maxY * s;          // pés na altura padrão
+        ox.drawImage(img, 0, 0, W, H, dx, dy, W * s, H * s);
+        resolve(oc.toDataURL('image/png').split(',')[1]);
+      } catch (e) { resolve(b64); }
+    };
+    img.onerror = () => resolve(b64);
+    img.src = 'data:image/png;base64,' + b64;
+  });
+}
+
 async function gerarAvatar() {
   if (!clientPhoto) { toast('Envie a foto do cliente primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
@@ -771,8 +826,9 @@ async function gerarAvatar() {
     });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
-    avatarPreview = { cartoonBase64: j.cartoonBase64, approved: false };
-    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + j.cartoonBase64;
+    const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
+    avatarPreview = { cartoonBase64: normB64, approved: false };
+    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
   finally { btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
@@ -957,8 +1013,6 @@ function renderScenes() {
   const t = computeTiming();
   let html = '';
   scenes.forEach((s, i) => {
-    const moveL = i > 0 ? '<button class="mv l" title="Mover p/ esquerda" onclick="moveScene(\'' + s.id + '\',-1)">‹</button>' : '';
-    const moveR = i < scenes.length - 1 ? '<button class="mv r" title="Mover p/ direita" onclick="moveScene(\'' + s.id + '\',1)">›</button>' : '';
     const isVid = s.kind === 'video';
     const tag = isVid ? '🎬 Vídeo' : 'Foto ' + (i + 1);
     const editBtn = isVid
@@ -969,15 +1023,16 @@ function renderScenes() {
       ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="' + (videoDur() || VIDEO_SECONDS) + '" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
       : '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);font-size:11px;text-align:center;padding:2px;color:var(--gold)">🎤 ' + photoLbl + '</div>';
     const media = s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt="' + tag + '"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:#181818">🎬</div>';
-    html += '<div class="thumb">' + media +
+    html += '<div class="thumb" data-id="' + s.id + '" title="Arraste para reordenar">' + media +
       '<div class="tag">' + tag + '</div>' +
       '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button>' +
-      editBtn + moveL + moveR + durBar + '</div>';
+      editBtn + durBar + '</div>';
   });
   if (scenes.length < MAX_MEDIA) {
     html += '<div class="add-tile" role="button" tabindex="0" onclick="document.getElementById(\'scenesInput\').click()"><span class="big">＋</span><span>' + (scenes.length ? 'Adicionar' : 'Adicionar fotos/vídeos') + '</span></div>';
   }
   row.innerHTML = html;
+  initSceneDrag();
   document.getElementById('sceneCount').textContent = '· ' + scenes.length + ' de ' + MAX_MEDIA;
 
   const note = document.getElementById('timingNote');
@@ -1124,13 +1179,25 @@ function removeScene(id) {
   renderScenes();
   renderStoryboard();
 }
-function moveScene(id, dir) {
-  const i = scenes.findIndex(s => s.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= scenes.length) return;
-  const tmp = scenes[i]; scenes[i] = scenes[j]; scenes[j] = tmp;
-  renderScenes();
-  renderStoryboard();
+// arrastar-e-soltar pra reordenar as cenas (SortableJS — funciona no toque e no mouse)
+let sceneSortable = null;
+function initSceneDrag() {
+  const row = document.getElementById('scenesRow');
+  if (!row || typeof Sortable === 'undefined') return;
+  if (sceneSortable) { try { sceneSortable.destroy(); } catch (e) {} sceneSortable = null; }
+  sceneSortable = Sortable.create(row, {
+    animation: 150,
+    draggable: '.thumb',                       // só as mídias arrastam (não o "+ Adicionar")
+    filter: '.rm, .edit, input, .add-tile',    // tocar nesses botões NÃO inicia o arraste
+    preventOnFilter: false,
+    delay: 120, delayOnTouchOnly: true,        // no celular: segura um instante p/ arrastar (não atrapalha o rolar)
+    onEnd: function () {
+      const ids = Array.from(row.querySelectorAll('.thumb')).map(el => el.getAttribute('data-id'));
+      scenes.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));   // reordena conforme a nova ordem na tela
+      renderScenes();
+      renderStoryboard();
+    }
+  });
 }
 
 // ── Editor de enquadramento 9:16 (zoom/arrastar) — igual ao do Vídeo Padrão ──
