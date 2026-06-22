@@ -1026,11 +1026,12 @@ async function apagarTudo(){
 // ════════════════════════════════════════════════════════════
 let svMode='hoje', svRef=new Date(), svFromCur='', svToCur='', svInited=false;
 const SV_SERVICOS=[
-  {key:'logo3d',         label:'Animação de logo', emoji:'🖼️'},
+  {key:'figurinhas',     label:'Figurinhas',       emoji:'🧩'},
   {key:'musica',         label:'Letra de música',  emoji:'🎵'},
+  {key:'logo3d',         label:'Logo 3D',          emoji:'💎'},
+  {key:'cover',          label:'Cover',            emoji:'🎤'},
   {key:'videos',         label:'Vídeo padrão',     emoji:'🎬'},
-  {key:'videos_premium', label:'Vídeo com IA',     emoji:'✨'},
-  {key:'figurinhas',     label:'Figurinhas',       emoji:'🧩'}
+  {key:'videos_premium', label:'Vídeo com IA',     emoji:'✨'}
 ];
 function svInit(){
   if(svInited) return; svInited=true;
