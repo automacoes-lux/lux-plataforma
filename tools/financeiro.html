@@ -30,8 +30,8 @@ body{
 .card-title{font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:#FFF;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card-title::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
 
-.subtabs{display:flex;gap:6px;margin-bottom:1.2rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:5px}
-.subtab{flex:1;padding:12px;text-align:center;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--text-dim);transition:all .2s;border:none;background:transparent}
+.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.2rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:5px}
+.subtab{flex:1 1 110px;padding:12px;text-align:center;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--text-dim);transition:all .2s;border:none;background:transparent}
 .subtab.active{background:rgba(201,168,76,.12);color:var(--gold);border:.5px solid var(--border-bright);font-family:'Cinzel',serif;letter-spacing:.04em}
 .subpanel{display:none;animation:fadeIn .25s ease both}
 .subpanel.active{display:block}
@@ -286,6 +286,22 @@ input[type="file"]{display:none}
 .fin-mode-btn.greenbtn.active{background:rgba(127,184,122,.18);border-color:rgba(127,184,122,.75);color:#cdeccb}
 .card-title.rev-title::after{display:none}
 .rev-zerar{margin-left:auto;flex-shrink:0;padding:8px 13px;font-size:13px;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif}
+/* ── aba Serviço (uso por atendente, ranqueado por valor) ── */
+.sv-card{background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:.95rem 1.05rem;margin-bottom:8px}
+.sv-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.13),rgba(201,168,76,.03));border-color:rgba(201,168,76,.55)}
+.sv-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.10),rgba(200,200,210,.02));border-color:rgba(200,200,210,.4)}
+.sv-card.t3{background:linear-gradient(135deg,rgba(205,127,50,.10),rgba(205,127,50,.02));border-color:rgba(205,127,50,.4)}
+.sv-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.sv-name{font-weight:600;color:var(--text);font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-name .pos{color:var(--gold-dim);margin-right:5px}
+.sv-name .medal{margin-right:4px}
+.sv-total{color:var(--gold);font-weight:700;font-family:'Cinzel',serif;font-size:17px;white-space:nowrap;flex-shrink:0}
+.sv-grid{display:flex;flex-direction:column}
+.sv-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;font-size:14px;padding:6px 0;border-top:.5px solid rgba(255,255,255,.05)}
+.sv-row .sl{color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-row .sq{color:var(--text);text-align:right;font-variant-numeric:tabular-nums;min-width:48px}
+.sv-row .sval{color:var(--gold-dim);text-align:right;font-variant-numeric:tabular-nums;min-width:92px;font-weight:600}
+.sv-row.zero{opacity:.38}
 .hidden{display:none !important}
 </style>
 </head>
@@ -297,6 +313,7 @@ input[type="file"]{display:none}
   <div class="subtabs">
     <button class="subtab active" data-sub="fechar">📥 Fechamento do dia</button>
     <button class="subtab" data-sub="geral">📈 Visão geral</button>
+    <button class="subtab" data-sub="servico">📊 Serviço</button>
     <button class="subtab" data-sub="atend">👁 Ver atendente</button>
   </div>
 
@@ -426,6 +443,30 @@ input[type="file"]{display:none}
     </div>
   </div>
 
+  <!-- ═══════════ SERVIÇO (uso por atendente, ranqueado por valor) ═══════════ -->
+  <div class="subpanel" id="sub-servico">
+    <div class="card">
+      <div class="card-title">📊 Serviços por atendente</div>
+      <div class="fin-mode-toggle">
+        <button class="fin-mode-btn active" data-mode="hoje" onclick="svSetMode('hoje')">Hoje</button>
+        <button class="fin-mode-btn" data-mode="ontem" onclick="svSetMode('ontem')">Ontem</button>
+        <button class="fin-mode-btn" data-mode="semanaAnt" onclick="svSetMode('semanaAnt')">Semana anterior</button>
+        <button class="fin-mode-btn greenbtn" data-mode="semana" onclick="svSetMode('semana')">Semana atual</button>
+        <button class="fin-mode-btn" data-mode="mes" onclick="svSetMode('mes')">Mês</button>
+        <button class="fin-mode-btn" data-mode="ano" onclick="svSetMode('ano')">Ano</button>
+        <button class="fin-mode-btn" data-mode="custom" onclick="svSetMode('custom')">Período</button>
+      </div>
+      <div class="fin-nav" id="svNavBox"><button id="svPrev">‹</button><span class="lbl" id="svNavLabel">—</span><button id="svNext">›</button></div>
+      <div class="fin-date-row hidden" id="svCustomBox">
+        <div class="f field"><label>De</label><input type="date" id="svFrom"/></div>
+        <div class="f field"><label>Até</label><input type="date" id="svTo"/></div>
+        <button class="btn-secondary" onclick="svLoad()">Ver</button>
+      </div>
+      <div class="hint" style="margin:2px 0 10px">Quantos serviços cada atendente fez (nº de vezes) e quanto gastou. Ordenado do que mais gasta para o que menos gasta. Mostra todos os atendentes (com e sem chave PIX).</div>
+      <div id="svContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
+    </div>
+  </div>
+
   <!-- ═══════════ VER ATENDENTE (espelho da tela do atendente) ═══════════ -->
   <div class="subpanel" id="sub-atend">
     <div class="card">
@@ -482,6 +523,7 @@ async function init(){
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
     if(b.dataset.sub==='atend') avInit();
+    if(b.dataset.sub==='servico') svInit();
   }));
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
 }
@@ -977,6 +1019,67 @@ async function apagarTudo(){
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
     toast(`✓ Tudo limpo (${d.apagados} fechamento(s) apagado(s)).`,'success'); loadGeral();
   }catch(err){ toast('Erro: '+err.message,'error'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// SERVIÇO — uso por atendente (nº de vezes + valor), ranqueado por valor gasto
+// ════════════════════════════════════════════════════════════
+let svMode='hoje', svRef=new Date(), svFromCur='', svToCur='', svInited=false;
+const SV_SERVICOS=[
+  {key:'logo3d',         label:'Animação de logo', emoji:'🖼️'},
+  {key:'musica',         label:'Letra de música',  emoji:'🎵'},
+  {key:'videos',         label:'Vídeo padrão',     emoji:'🎬'},
+  {key:'videos_premium', label:'Vídeo com IA',     emoji:'✨'},
+  {key:'figurinhas',     label:'Figurinhas',       emoji:'🧩'}
+];
+function svInit(){
+  if(svInited) return; svInited=true;
+  document.getElementById('svPrev').addEventListener('click',()=>svStep(-1));
+  document.getElementById('svNext').addEventListener('click',()=>svStep(1));
+  svSetMode('hoje');
+}
+function svSetMode(m){
+  svMode=m;
+  document.querySelectorAll('#sub-servico .fin-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  document.getElementById('svCustomBox').classList.toggle('hidden',m!=='custom');
+  document.getElementById('svNavBox').classList.toggle('hidden',m==='custom');
+  if(m!=='custom'){ svRef=new Date(); if(m==='ontem') svRef.setDate(svRef.getDate()-1); if(m==='semanaAnt') svRef.setDate(svRef.getDate()-7); svLoad(); }
+}
+function svRangeFor(m,r){
+  if(m==='hoje'||m==='ontem') return [ymd(r),ymd(r),fmtDBR(ymd(r))];
+  if(m==='semana'||m==='semanaAnt'){ const x=semanaSabSex(r); const pre=m==='semanaAnt'?'Semana anterior · ':''; return [ymd(x[0]),ymd(x[1]),`${pre}${fmtDBR(ymd(x[0]))} a ${fmtDBR(ymd(x[1]))}`]; }
+  if(m==='mes'){ const s=new Date(r.getFullYear(),r.getMonth(),1),e=new Date(r.getFullYear(),r.getMonth()+1,0); const M=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return [ymd(s),ymd(e),`${M[r.getMonth()]} ${r.getFullYear()}`]; }
+  if(m==='ano') return [`${r.getFullYear()}-01-01`,`${r.getFullYear()}-12-31`,`Ano ${r.getFullYear()}`];
+  return [document.getElementById('svFrom').value,document.getElementById('svTo').value,''];
+}
+function svStep(dir){ if(svMode==='hoje'||svMode==='ontem')svRef.setDate(svRef.getDate()+dir); else if(svMode==='semana'||svMode==='semanaAnt')svRef.setDate(svRef.getDate()+7*dir); else if(svMode==='mes')svRef.setMonth(svRef.getMonth()+dir); else if(svMode==='ano')svRef.setFullYear(svRef.getFullYear()+dir); svLoad(); }
+async function svLoad(){
+  const rg=svRangeFor(svMode,svRef); svFromCur=rg[0]; svToCur=rg[1];
+  if(!svFromCur||!svToCur){ toast('Escolha as datas.','error'); return; }
+  document.getElementById('svNavLabel').textContent=rg[2]||`${fmtDBR(svFromCur)} a ${fmtDBR(svToCur)}`;
+  const cont=document.getElementById('svContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/servicos?from=${svFromCur}&to=${svToCur}`);
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); svRender(d.servicos||[]);
+  }catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
+}
+function svRender(linhas){
+  const cont=document.getElementById('svContainer');
+  if(!linhas.length){ cont.innerHTML='<div class="state-msg"><div>Nenhum atendente cadastrado.</div></div>'; return; }
+  let html='';
+  linhas.forEach((a,i)=>{
+    const rowCls = i===0?' t1':i===1?' t2':i===2?' t3':'';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const rows=SV_SERVICOS.map(s=>{
+      const b=a.buckets[s.key]||{req:0,brl:0};
+      return `<div class="sv-row${b.req===0?' zero':''}"><span class="sl">${s.emoji} ${s.label}</span><span class="sq">${b.req}×</span><span class="sval">${fmtBRL(b.brl)}</span></div>`;
+    }).join('');
+    html+=`<div class="sv-card${rowCls}">
+      <div class="sv-head"><div class="sv-name">${medal?`<span class="medal">${medal}</span>`:''}<span class="pos">${i+1}.</span>${escapeHtml(a.nome)}</div><div class="sv-total">${fmtBRL(a.totalBRL)}</div></div>
+      <div class="sv-grid">${rows}</div>
+    </div>`;
+  });
+  cont.innerHTML=html;
 }
 
 // ════════════════════════════════════════════════════════════
