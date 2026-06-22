@@ -396,8 +396,18 @@ const LOGOANIM_EMAIL = 'thiagocosta.personal@gmail.com';
 const LOGOANIM_SENHA = 'LuxMarketing10$';
 const LOGOANIM_URL   = 'https://www.renderforest.com';
 
+function registrarAcesso(tool) {
+  try {
+    if (window.__luxFetch) {
+      window.__luxFetch('https://lux-figurinhas.plataformalux.workers.dev/financeiro/acesso', {
+        method: 'POST', body: JSON.stringify({ tool })
+      }).catch(() => {});
+    }
+  } catch (_) {}
+}
 function openLogoAnim(event) {
   if (event) event.preventDefault();
+  registrarAcesso('logoanim');   // conta o acesso (custo 0) na aba Serviço
   let ov = document.getElementById('logoanim-modal');
   if (!ov) {
     ov = document.createElement('div');
