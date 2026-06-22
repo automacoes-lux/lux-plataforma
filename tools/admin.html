@@ -262,9 +262,9 @@ body{
         <input type="checkbox" id="newDupla" style="width:auto;margin:0;transform:scale(1.2)" onchange="toggleDupla()"/> É uma dupla (dois atendentes na mesma equipe)
       </label>
       <div id="parceiroWrap" style="display:none;margin-top:8px">
-        <input id="newParceiro" type="text" placeholder="Nome da parceira (ex: Maria)" autocomplete="off"/>
+        <select id="newParceiroSel" style="width:100%"><option value="">Escolha o parceiro (atendente)…</option></select>
         <div style="font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.4">
-          A equipe aparece como <strong>"Nome / Parceira"</strong>. No ranking, o valor é dividido por 2 (por pessoa); o pagamento total continua indo pra este atendente.
+          O <strong>parceiro</strong> é o atendente da dupla que <strong>produz mas não recebe</strong> (geralmente sem chave PIX). A equipe aparece como <strong>"Nome / Parceiro"</strong>; os <strong>custos do parceiro entram no fechamento deste titular</strong>; no ranking o valor é dividido por 2 (por pessoa).
         </div>
       </div>
     </div>
@@ -375,7 +375,7 @@ function renderUsers() {
       </div>
       <span class="role-badge ${roleClass}">${roleLabel}</span>
       <div class="user-actions">
-        <button class="btn-icon btn-edit" title="Editar" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || '')}" data-role="${escapeAttr(u.role || 'atendente')}" data-pix="${escapeAttr(u.pixKey || '')}" data-dupla="${u.dupla ? 'true' : 'false'}" data-parceiro="${escapeAttr(u.parceiro || '')}">✎</button>
+        <button class="btn-icon btn-edit" title="Editar" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || '')}" data-role="${escapeAttr(u.role || 'atendente')}" data-pix="${escapeAttr(u.pixKey || '')}" data-dupla="${u.dupla ? 'true' : 'false'}" data-parceiro="${escapeAttr(u.parceiro || '')}" data-parceiro-email="${escapeAttr(u.parceiroEmail || '')}">✎</button>
         ${isYou
           ? '<span class="you-tag">(você)</span>'
           : `<button class="btn-icon" title="Remover" data-email="${escapeAttr(u.email)}" data-name="${escapeAttr(u.name || u.email)}">✕</button>`
@@ -384,7 +384,7 @@ function renderUsers() {
     `;
     row.querySelector('.btn-edit').addEventListener('click', (e) => {
       const b = e.currentTarget;
-      openEditModal(b.dataset.email, b.dataset.name, b.dataset.role, b.dataset.pix, b.dataset.dupla, b.dataset.parceiro);
+      openEditModal(b.dataset.email, b.dataset.name, b.dataset.role, b.dataset.pix, b.dataset.dupla, b.dataset.parceiro, b.dataset.parceiroEmail);
     });
     if (!isYou) {
       row.querySelector('.btn-icon:not(.btn-edit)').addEventListener('click', (e) => {
@@ -413,6 +413,17 @@ function toggleDupla() {
   document.getElementById('parceiroWrap').style.display =
     document.getElementById('newDupla').checked ? 'block' : 'none';
 }
+function popularParceiroSel(currentEmail, selectedEmail) {
+  const sel = document.getElementById('newParceiroSel');
+  if (!sel) return;
+  const cur = String(currentEmail || '').toLowerCase();
+  const selE = String(selectedEmail || '').toLowerCase();
+  const opts = (state.users || [])
+    .filter(u => u.role === 'atendente' && String(u.email || '').toLowerCase() !== cur)
+    .map(u => `<option value="${escapeAttr(u.email)}"${String(u.email||'').toLowerCase()===selE ? ' selected' : ''}>${escapeHtml(u.name || u.email)}${u.pixKey ? '' : ' (sem PIX)'}</option>`)
+    .join('');
+  sel.innerHTML = '<option value="">Escolha o parceiro (atendente)…</option>' + opts;
+}
 function openAddModal() {
   document.querySelector('#addModal .modal-title').textContent = 'Novo Usuário';
   const em = document.getElementById('newEmail');
@@ -421,12 +432,12 @@ function openAddModal() {
   document.getElementById('newRole').value      = 'atendente';
   document.getElementById('newPixKey').value    = '';
   document.getElementById('newDupla').checked   = false;
-  document.getElementById('newParceiro').value  = '';
+  popularParceiroSel('', '');
   toggleDupla();
   document.getElementById('addModal').classList.add('show');
   setTimeout(() => em.focus(), 100);
 }
-function openEditModal(email, name, role, pixKey, dupla, parceiro) {
+function openEditModal(email, name, role, pixKey, dupla, parceiro, parceiroEmail) {
   document.querySelector('#addModal .modal-title').textContent = 'Editar Usuário';
   const em = document.getElementById('newEmail');
   em.value = email; em.setAttribute('readonly', 'readonly'); em.style.opacity = '0.7';
@@ -434,7 +445,7 @@ function openEditModal(email, name, role, pixKey, dupla, parceiro) {
   document.getElementById('newRole').value      = role || 'atendente';
   document.getElementById('newPixKey').value    = pixKey || '';
   document.getElementById('newDupla').checked   = (dupla === true || dupla === 'true');
-  document.getElementById('newParceiro').value  = parceiro || '';
+  popularParceiroSel(email, parceiroEmail || '');
   toggleDupla();
   document.getElementById('addModal').classList.add('show');
   setTimeout(() => document.getElementById('newName').focus(), 100);
@@ -448,19 +459,21 @@ async function saveUser() {
   const role   = document.getElementById('newRole').value;
   const pixKey = document.getElementById('newPixKey').value.trim().toLowerCase();
   const dupla  = document.getElementById('newDupla').checked;
-  const parceiro = document.getElementById('newParceiro').value.trim();
+  const parceiroEmail = (document.getElementById('newParceiroSel').value || '').trim().toLowerCase();
+  const pu = (state.users || []).find(u => String(u.email||'').toLowerCase() === parceiroEmail);
+  const parceiro = pu ? (pu.name || pu.email) : '';
 
   if (!email) return toast('Email é obrigatório.', 'error');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Email inválido.', 'error');
   if (!name) return toast('Nome é obrigatório.', 'error');
-  if (dupla && !parceiro) return toast('Informe o nome da parceira da dupla.', 'error');
+  if (dupla && !parceiroEmail) return toast('Escolha o parceiro da dupla.', 'error');
 
   const btn = document.getElementById('btnSaveUser');
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ email, name, role, pixKey, dupla, parceiro })
+      body: JSON.stringify({ email, name, role, pixKey, dupla, parceiro, parceiroEmail })
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Erro ao salvar');
