@@ -1102,6 +1102,9 @@ async function boot() {
   // a ferramenta funciona offline normalmente.
   if (!window.__luxFetch) {
     console.warn('[corte] auth-iframe.js nao carregou; ferramenta offline-only');
+  } else {
+    // registra o acesso ao Corte (custo 0) pra aparecer na aba Serviço do Financeiro
+    try { window.__luxFetch('https://lux-figurinhas.plataformalux.workers.dev/financeiro/acesso', { method:'POST', body: JSON.stringify({ tool:'corte' }) }).catch(()=>{}); } catch(_){}
   }
 
   // Aguarda lamejs carregar (vem do CDN externo, pode demorar ate 5s).
