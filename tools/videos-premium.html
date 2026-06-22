@@ -589,10 +589,11 @@ const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
 const CLIP_MAX_MB    = 60;          // limite por vídeo de b-roll
 
 // Estimativa de custo (números reais no cost.js do Worker)
-const EST_USD_CENA   = 0.15;
-const EST_USD_LIPSEC = 0.06;
-const EST_USD_J2VSEC = 0.00416;
-const EST_CAMBIO     = 5.18;
+const EST_USD_CENA    = 0.11;      // cartoon (gpt-image medium)
+const EST_USD_LIPSEC  = 0.06;      // lip-sync InfiniteTalk 720p, por segundo
+const EST_USD_MATTESEC = 0.0042;   // recorte BRIA, por segundo
+const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
+const EST_CAMBIO      = 5.18;
 
 const POLL_INTERVAL_MS = 8000;
 const PENDING_KEY = 'lux_avatar_pending';
@@ -1604,7 +1605,7 @@ function renderStoryboard() {
   const durEl = document.getElementById('sbDur');
   if (durEl) durEl.textContent = fmtTime(D);
 
-  const usd = EST_USD_CENA + D * (EST_USD_LIPSEC + 0.02 + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
+  const usd = EST_USD_CENA + D * (EST_USD_LIPSEC + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
   const brl = usd * EST_CAMBIO;
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
