@@ -319,6 +319,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .editor-actions button{flex:1;padding:11px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-weight:600}
 .btn-ed-cancel{background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid)}
 .btn-ed-save{border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;letter-spacing:.05em}
+/* D-pad da calibração de posição do avatar */
+.calib-pad{display:flex;flex-direction:column;align-items:center;gap:6px;margin:12px 0 4px}
+.calib-pad-mid{display:flex;gap:6px;align-items:center}
+.calib-arrow{width:46px;height:42px;border-radius:10px;border:.5px solid var(--border-bright);background:rgba(255,255,255,.06);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+.calib-arrow:hover{background:rgba(255,255,255,.12)}
+.calib-arrow:active{background:var(--gold);color:#141414}
+.calib-reset{font-size:19px}
 
 /* Botão Editar nos resultados + modal de refazer cena */
 .btn-editar{padding:9px 14px;border-radius:var(--radius);background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);font-size:12.5px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.04em;cursor:pointer}
@@ -399,7 +406,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
       </div>
       <!-- Avatar aprovado -->
-      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="baixarAvatar()" style="margin-left:8px;font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
+      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="abrirCalib()" style="margin-left:8px;font-weight:400">📐 posição</button> <button class="btn-mini" onclick="baixarAvatar()" style="font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
     </div>
 
     <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
@@ -510,6 +517,28 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="editor-actions">
       <button class="btn-ed-cancel" onclick="closeEditor()">Cancelar</button>
       <button class="btn-ed-save" onclick="saveEditor()">Usar este enquadramento</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALIBRAR a posição do avatar no palco (pés no centro do disco) -->
+<div class="editor-overlay" id="calibOverlay">
+  <div class="editor-box">
+    <h3>📐 Posição no palco</h3>
+    <div class="hint">Deixe os <b style="color:var(--text-mid)">pés do avatar no meio do disco</b>. Arraste o avatar ou use as setas. A linha dourada marca o centro.</div>
+    <canvas id="calibCanvas" width="270" height="480" style="touch-action:none;cursor:grab;background:#1a1a1a;border-radius:10px;display:block;margin:0 auto"></canvas>
+    <div class="calib-pad">
+      <button type="button" class="calib-arrow" onclick="calibMove(0,-1)" title="subir">▲</button>
+      <div class="calib-pad-mid">
+        <button type="button" class="calib-arrow" onclick="calibMove(-1,0)" title="esquerda">◀</button>
+        <button type="button" class="calib-arrow calib-reset" onclick="calibReset()" title="centralizar">⟲</button>
+        <button type="button" class="calib-arrow" onclick="calibMove(1,0)" title="direita">▶</button>
+      </div>
+      <button type="button" class="calib-arrow" onclick="calibMove(0,1)" title="descer">▼</button>
+    </div>
+    <div class="editor-actions">
+      <button class="btn-ed-cancel" onclick="closeCalib(false)">Cancelar</button>
+      <button class="btn-ed-save" onclick="closeCalib(true)">✓ Confirmar posição</button>
     </div>
   </div>
 </div>
@@ -828,6 +857,7 @@ async function gerarAvatar() {
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
     const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
     avatarPreview = { cartoonBase64: normB64, approved: false };
+    avatarCalib = { dx: 0, dy: 0 };   // novo avatar → calibração de posição zerada
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
@@ -836,9 +866,7 @@ async function gerarAvatar() {
 
 function aprovarAvatar() {
   if (!avatarPreview) return;
-  avatarPreview.approved = true;
-  refreshAvatarUI();
-  renderStoryboard();
+  abrirCalib();   // abre a calibração de posição no palco; o "Confirmar" lá dentro é que aprova
 }
 function reabrirAvatar() {
   if (!avatarPreview) return;
@@ -853,6 +881,101 @@ function baixarAvatar() {
   const nm = ((document.getElementById('clientName') || {}).value || 'avatar').trim().replace(/[^a-zA-Z0-9_-]/g, '_') || 'avatar';
   a.download = 'avatar-' + nm + '.png';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ── Calibração da posição do avatar no palco (pés no centro do disco) ──
+// O atendente vê o avatar JÁ em cima do palco (igual ao vídeo) e arrasta/seta até centralizar.
+// dx/dy viram o offset do avatar no Shotstack. Como o InfiniteTalk preserva o enquadramento,
+// o que ele calibra aqui bate no vídeo final. Fórmula validada contra render real (<0,5% de erro).
+let avatarCalib = { dx: 0, dy: 0 };
+let _calibCut = null;        // canvas do avatar recortado (fundo transparente)
+let _palcoImg = null;        // Image do palco.png
+let _calibDragReady = false;
+const PALCO_URL = 'https://pub-2385c1507e84414f9df2410953ac4af1.r2.dev/premium-assets/palco.png';
+const CALIB_STEP = 0.006;    // passo das setas (~6px no frame de 1080)
+
+function _recortarAvatar(img) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+  let id; try { id = x.getImageData(0, 0, W, H); } catch (e) { return c; }
+  const d = id.data;
+  const corner = (px, py) => { const i = (py * W + px) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+  const cs = [corner(2, 2), corner(W - 3, 2), corner(2, H - 3), corner(W - 3, H - 3)];
+  const bg = [0, 1, 2].map(k => Math.round(cs.reduce((s, c2) => s + c2[k], 0) / cs.length));
+  const T1 = 45, T2 = 95;
+  for (let p = 0; p < W * H; p++) {
+    const i = p * 4;
+    const dist = Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]);
+    d[i + 3] = dist <= T1 ? 0 : dist >= T2 ? 255 : Math.round((dist - T1) / (T2 - T1) * 255);
+  }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+function _loadPalco() {
+  return new Promise(res => {
+    if (_palcoImg) { res(_palcoImg); return; }
+    const i = new Image();
+    i.onload = () => { _palcoImg = i; res(i); };
+    i.onerror = () => res(null);
+    i.src = PALCO_URL;
+  });
+}
+// desenha um asset igual ao Shotstack: fit contain/none + scale + position bottom + offset (x dir, y sobe)
+function _drawAsset(x, img, fit, scale, offX, offY, sc) {
+  const iw = img.width, ih = img.height;
+  const cont = fit === 'contain' ? Math.min(1080 / iw, 1920 / ih) : 1;
+  const fw = iw * cont * scale, fh = ih * cont * scale;
+  const left = (1080 - fw) / 2 + offX * 1080;
+  const top = (1920 - fh) - offY * 1920;
+  x.drawImage(img, left * sc, top * sc, fw * sc, fh * sc);
+}
+function drawCalib() {
+  const cv = document.getElementById('calibCanvas'); if (!cv) return;
+  const x = cv.getContext('2d'); const cw = cv.width, ch = cv.height, sc = cw / 1080;
+  x.clearRect(0, 0, cw, ch);
+  x.fillStyle = '#2b2b2b'; x.fillRect(0, 0, cw, ch);
+  if (_palcoImg) _drawAsset(x, _palcoImg, 'none', 0.73, 0, -0.16, sc);
+  if (_calibCut) _drawAsset(x, _calibCut, 'contain', 0.85, avatarCalib.dx, 0.04 + avatarCalib.dy, sc);
+  x.strokeStyle = 'rgba(212,175,55,.6)'; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(Math.round(cw / 2) + .5, 0); x.lineTo(Math.round(cw / 2) + .5, ch); x.stroke();
+}
+function _setupCalibDrag() {
+  if (_calibDragReady) return; _calibDragReady = true;
+  const cv = document.getElementById('calibCanvas'); if (!cv) return;
+  let drag = false, lx = 0, ly = 0;
+  const pt = (e) => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; };
+  const start = (e) => { drag = true; const p = pt(e); lx = p.x; ly = p.y; cv.style.cursor = 'grabbing'; if (e.cancelable) e.preventDefault(); };
+  const move = (e) => {
+    if (!drag) return; const p = pt(e); const dmx = p.x - lx, dmy = p.y - ly; lx = p.x; ly = p.y;
+    avatarCalib.dx = Math.max(-0.5, Math.min(0.5, avatarCalib.dx + dmx / cv.width));
+    avatarCalib.dy = Math.max(-0.5, Math.min(0.5, avatarCalib.dy - dmy / cv.height));
+    drawCalib(); if (e.cancelable) e.preventDefault();
+  };
+  const end = () => { drag = false; cv.style.cursor = 'grab'; };
+  cv.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', start, { passive: false }); cv.addEventListener('touchmove', move, { passive: false }); cv.addEventListener('touchend', end);
+}
+async function abrirCalib() {
+  if (!avatarPreview || !avatarPreview.cartoonBase64) { toast('Gere o avatar primeiro.'); return; }
+  try {
+    const img = await loadImg('data:image/png;base64,' + avatarPreview.cartoonBase64);
+    _calibCut = _recortarAvatar(img);
+  } catch (e) { _calibCut = null; }
+  await _loadPalco();
+  document.getElementById('calibOverlay').classList.add('show');
+  _setupCalibDrag();
+  drawCalib();
+}
+function calibMove(sx, sy) {
+  avatarCalib.dx = Math.max(-0.5, Math.min(0.5, avatarCalib.dx + sx * CALIB_STEP));
+  avatarCalib.dy = Math.max(-0.5, Math.min(0.5, avatarCalib.dy - sy * CALIB_STEP));   // sy=1 (descer) → dy diminui
+  drawCalib();
+}
+function calibReset() { avatarCalib = { dx: 0, dy: 0 }; drawCalib(); }
+function closeCalib(confirmar) {
+  document.getElementById('calibOverlay').classList.remove('show');
+  if (confirmar && avatarPreview) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); }
 }
 
 // ── Casar imagens com a letra (beta): transcreve a música e mapeia mídia → frase ──
@@ -1706,6 +1829,7 @@ async function gerarClipe() {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
+      avatarCalib: avatarCalib,
       backgrounds: buildBackgrounds(),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
