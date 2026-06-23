@@ -347,7 +347,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="container">
 
   <div class="page-head">
-    <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Vídeos com IA</span></div>
+    <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Vídeo Avatar</span></div>
     <div class="page-sub">O cliente vira o cantor do próprio clipe (até 1 minuto): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
   </div>
 
@@ -368,6 +368,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <!-- ════════════ ABA CRIAR ════════════ -->
   <div class="panel active" id="panel-criar">
+
+    <!-- Banner de EDIÇÃO (aparece ao editar um vídeo pronto) -->
+    <div id="editBanner" style="display:none;align-items:center;gap:12px;background:rgba(212,175,55,.12);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;margin-bottom:14px">
+      <img id="editBannerImg" style="width:46px;height:60px;border-radius:8px;object-fit:cover;background:#222;flex:none" alt="avatar"/>
+      <div style="flex:1;font-size:13px;line-height:1.35"><b style="color:var(--gold)">✏️ Editando</b> <span id="editBannerText" style="color:var(--text-mid)"></span></div>
+      <button class="btn-mini" onclick="sairEdicao()" style="flex:none">✖ Cancelar</button>
+    </div>
 
     <!-- PASSO 1 -->
     <div class="card">
@@ -636,6 +643,7 @@ let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
+let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
 let logo = null;
 let pollTimer = null;
 let ed = null;                     // editor 9:16: { i, img, minScale, maxScale, scale, offX, offY, dragging, lastX, lastY }
@@ -780,6 +788,13 @@ function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderC
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
 // com avatar não aprovado → preview; aprovado → selo.
 function refreshAvatarUI() {
+  if (editState) {   // modo edição: avatar travado (vem do original) — esconde a UI de gerar/aprovar
+    ['clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    return;
+  }
+  const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
   const okBadge = document.getElementById('avatarApproved');
@@ -1044,9 +1059,14 @@ function updateLyricStatus() {
 // monta os "backgrounds" do payload: modo letra (com 'at') OU normal (ordem + auto)
 function buildBackgrounds() {
   const mk = (s, at) => {
-    const o = s.kind === 'video'
-      ? { kind: 'video', clipKey: s.clipKey, dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name }
-      : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType };
+    let o;
+    if (s.kind === 'video') {
+      o = { kind: 'video', dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name };
+      if (s.srcKey) o.srcKey = s.srcKey; else o.clipKey = s.clipKey;   // edição: mantém o vídeo do original
+    } else {
+      o = s.srcKey ? { kind: 'image', srcKey: s.srcKey, name: s.name }   // edição: foto do original (não re-envia)
+                   : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType };
+    }
     if (at != null) o.at = at;
     return o;
   };
@@ -1437,6 +1457,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
 
 function setMusicReady(m) {
   music = { base64: m.base64, name: m.name, mimeType: 'audio/mpeg', duration: m.duration };
+  if (editState) editState.musicChanged = true;   // trocou a música na edição → o canto (lip-sync) é refeito
   lyricBlocks = null; lyricOn = false; if (typeof updateLyricStatus === 'function') updateLyricStatus();   // música nova → a letra recomeça
   document.getElementById('musicTile').style.display = 'none';
   document.getElementById('cutEditor').classList.remove('show');
@@ -1807,6 +1828,11 @@ function renderStoryboard() {
 function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
+  if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
+    if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 3).';
+    if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
+    return '';
+  }
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
   if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
   if (!music) return 'Envie a música (Passo 2).';
@@ -1825,6 +1851,25 @@ async function gerarClipe() {
   btn.textContent = 'Enviando os arquivos…';
 
   try {
+    if (editState) {
+      // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
+      // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
+      const nome = document.getElementById('clientName').value.trim();
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: buildBackgrounds(), avatarCalib: avatarCalib };
+      if (editState.musicChanged && music && music.base64) {
+        payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
+        payloadE.musicDuration = music.duration;
+      }
+      const re = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadE) });
+      const de = await re.json();
+      if (!de.ok) throw new Error(de.error || 'Falha ao salvar a edição.');
+      addPending(de.orderId, nome + ' (edição)');
+      toast('💾 ' + (de.musicaNova ? 'Edição em produção — trocou a música, então o canto é refeito (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).'));
+      sairEdicao();
+      showTab('resultados');
+      startPolling();
+      return;
+    }
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
@@ -1857,7 +1902,7 @@ async function gerarClipe() {
     toast('⚠️ ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '🎬 Gerar o clipe';
+    btn.textContent = editState ? '💾 Salvar edição' : '🎬 Gerar o clipe';
   }
 }
 
@@ -1934,7 +1979,8 @@ async function loadOrders() {
       let chip, side = '';
       if (o.status === 'COMPLETED' && o.videoUrl) {
         chip = '<span class="st-chip st-ok">Pronto</span>';
-        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>';
+        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
+          '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>';
       } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
         chip = '<span class="st-chip st-err" title="' + (o.genError || '') + '">Falhou</span>';
       } else {
@@ -1952,6 +1998,75 @@ async function loadOrders() {
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
+}
+
+// ───────────────────────────────────────────────
+// EDITAR um vídeo pronto — reaproveita o avatar, troca só música/fotos
+// ───────────────────────────────────────────────
+async function editarClipe(orderId) {
+  try {
+    const resp = await api('/getAvatarForEdit?orderId=' + encodeURIComponent(orderId));
+    if (resp.status === 410) { toast('⚠️ Esse vídeo passou de 7 dias e não pode mais ser editado. Gere um novo.'); return; }
+    const d = await resp.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui abrir a edição.')); return; }
+    editState = { sourceOrderId: orderId, musicChanged: false };
+    document.getElementById('clientName').value = d.clientName || '';
+    avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
+    clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
+    avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
+    music = { fromEdit: true, url: d.musicUrl || '', duration: d.videoSec || 60, name: 'Música atual (mantida)' };
+    scenes = (d.backgrounds || []).map((b, i) => ({
+      id: 'ed' + i + Math.random().toString(36).slice(2, 5),
+      kind: b.kind === 'video' ? 'video' : 'photo',
+      srcKey: b.srcKey, thumbUrl: b.url, base64: null, name: 'mídia ' + (i + 1),
+      dur: b.dur, trimStart: b.trimStart, scale: b.scale, offsetX: b.offsetX, offsetY: b.offsetY, at: b.at
+    }));
+    aplicarModoEdicao(d);
+    if (typeof renderScenes === 'function') renderScenes();
+    if (typeof renderStoryboard === 'function') renderStoryboard();
+    showTab('criar');
+    window.scrollTo(0, 0);
+    toast('✏️ Editando "' + (d.clientName || '') + '". Troque a música e/ou as fotos e salve.');
+  } catch (e) { toast('⚠️ Erro ao abrir a edição: ' + e.message); }
+}
+
+function aplicarModoEdicao(d) {
+  const on = !!editState;
+  const banner = document.getElementById('editBanner');
+  if (banner) {
+    banner.style.display = on ? 'flex' : 'none';
+    if (on) {
+      document.getElementById('editBannerText').textContent =
+        '"' + ((d && d.clientName) || '') + '" — o avatar é mantido. Troque a música e/ou as fotos; só a edição é cobrada.';
+      const img = document.getElementById('editBannerImg'); if (img && d) img.src = d.cartoonUrl || '';
+    }
+  }
+  // avatar TRAVADO → esconde upload da foto + geração + preview + badge
+  ['clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = on ? 'none' : '';
+  });
+  // mostra a música atual no player
+  if (on && d) {
+    const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
+    const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.add('show');
+    const nm = document.getElementById('musicName'); if (nm) nm.textContent = 'Música atual (mantida)';
+    const du = document.getElementById('musicDur'); if (du) du.textContent = '';
+    const pl = document.getElementById('player'); if (pl) pl.src = d.musicUrl || '';
+  }
+  const btn = document.getElementById('btnGerar');
+  if (btn) btn.textContent = on ? '💾 Salvar edição' : '🎬 Gerar o clipe';
+}
+
+function sairEdicao() {
+  editState = null;
+  avatarPreview = null; clientPhoto = null; music = null; scenes = [];
+  const cn = document.getElementById('clientName'); if (cn) cn.value = '';
+  aplicarModoEdicao(null);
+  if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
+  const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
+  const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
+  if (typeof renderScenes === 'function') renderScenes();
+  if (typeof renderStoryboard === 'function') renderStoryboard();
 }
 
 // ───────────────────────────────────────────────
