@@ -760,11 +760,19 @@ async function organizar(){
   finally{ btn.disabled=false; btn.textContent='Organizar por atendente →'; }
 }
 
+// líquido na revisão: dupla mostra "total / metade (por pessoa)"
+function liqRevTxt(a){
+  const liq=a.liquidoBRL||0;
+  if(a.dupla && (a.membros||1)>1){
+    return `${fmtBRL(liq)} <small style="color:var(--gold-dim);font-weight:400">/ ${fmtBRL(liq/(a.membros||2))}</small>`;
+  }
+  return fmtBRL(liq);
+}
 function recalcLinha(i){
   const a=preview.atendentes[i];
   // líquido do atendente = metade do resultado (a outra metade é dos sócios)
   a.liquidoBRL=Math.round((((a.entradaBRL||0)-(a.impostoBRL||0)-(a.anuncioBRL||0)-(a.custoIaBRL||0))/2)*100)/100;
-  const el=document.getElementById('liq-'+i); if(el) el.textContent=fmtBRL(a.liquidoBRL);
+  const el=document.getElementById('liq-'+i); if(el) el.innerHTML=liqRevTxt(a);
   recalcTotais();
 }
 function recalcTotais(){ /* a caixa "Líquido total a distribuir" foi removida — nada a atualizar aqui */ }
@@ -783,19 +791,23 @@ function renderRevisao(){
   const p=preview;
   document.getElementById('revData').textContent='Data: '+fmtDBR(p.data);
   const tb=document.getElementById('revTable'); tb.innerHTML='';
+  // ordena por líquido POR PESSOA (dupla = líquido ÷ 2) — ranking justo; mantém o índice original p/ edição
+  const ordem=p.atendentes.map((a,i)=>({a,i}))
+    .filter(x=>x.a.temPix!==false)
+    .sort((x,y)=>((y.a.liquidoBRL||0)/(y.a.membros||1))-((x.a.liquidoBRL||0)/(x.a.membros||1)));
   let pos=0;
-  p.atendentes.forEach((a,i)=>{
-    if(a.temPix===false) return;   // sem chave PIX cadastrada não aparece na revisão
+  ordem.forEach(({a,i})=>{
     pos++;
+    const nomeExib=(a.dupla && a.parceiro) ? `${escapeHtml(a.nome)} / ${escapeHtml(a.parceiro)}` : escapeHtml(a.nome);
     const row=document.createElement('div');
     row.className='rev-row'+(a.entradaBRL<=0?' zero':'');
     row.innerHTML=`
-      <div class="nome"><span class="pos">${pos}.</span>${escapeHtml(a.nome)}${compoHtml(a)}</div>
+      <div class="nome"><span class="pos">${pos}.</span>${nomeExib}${compoHtml(a)}</div>
       <div class="cell" data-l="Entrada"><input class="edit" inputmode="decimal" data-i="${i}" data-f="entradaBRL" value="${(a.entradaBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Imposto"><input class="edit" inputmode="decimal" data-i="${i}" data-f="impostoBRL" value="${(a.impostoBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Anúncio"><input class="edit" inputmode="decimal" data-i="${i}" data-f="anuncioBRL" value="${(a.anuncioBRL||0).toFixed(2)}"></div>
       <div class="cell" data-l="Plataforma"><input class="edit" inputmode="decimal" data-i="${i}" data-f="custoIaBRL" value="${(a.custoIaBRL||0).toFixed(2)}"></div>
-      <div class="cell liquido" data-l="Líquido"><span id="liq-${i}">${fmtBRL(a.liquidoBRL)}</span></div>`;
+      <div class="cell liquido" data-l="Líquido"><span id="liq-${i}">${liqRevTxt(a)}</span></div>`;
     tb.appendChild(row);
   });
   tb.querySelectorAll('input.edit').forEach(inp=>inp.addEventListener('input',e=>{
