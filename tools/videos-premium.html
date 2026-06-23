@@ -1848,15 +1848,11 @@ async function gerarClipe() {
     const d2 = await r2.json();
     if (!d2.ok) throw new Error(d2.error || 'Falha ao iniciar a produção.');
 
-    localStorage.setItem(PENDING_KEY, JSON.stringify({
-      orderId: d1.orderId,
-      clientName: payload.clientName,
-      ts: Date.now()
-    }));
+    addPending(d1.orderId, payload.clientName);
 
-    toast('🎬 Produção iniciada!');
+    toast('🎬 Produção iniciada! Pode gerar outro clipe enquanto este fica pronto.');
     showTab('resultados');
-    startPolling(d1.orderId);
+    startPolling();
   } catch (err) {
     toast('⚠️ ' + err.message);
   } finally {
@@ -1868,38 +1864,50 @@ async function gerarClipe() {
 // ───────────────────────────────────────────────
 // RESULTADOS — status ao vivo + histórico
 // ───────────────────────────────────────────────
-function startPolling(orderId) {
+// ── pendentes = LISTA (suporta VÁRIOS clipes em produção ao mesmo tempo) ──
+function getPending() {
+  try {
+    const v = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+    return Array.isArray(v) ? v : (v && v.orderId ? [v] : []);   // migra formato antigo (objeto único)
+  } catch (e) { return []; }
+}
+function savePending(list) { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }
+function addPending(orderId, clientName) {
+  const list = getPending().filter(p => p.orderId !== orderId);
+  list.push({ orderId, clientName, ts: Date.now() });
+  savePending(list);
+}
+function removePending(orderId) { savePending(getPending().filter(p => p.orderId !== orderId)); }
+function updateLiveBanner() {
+  const live = document.getElementById('statusLive'); if (!live) return;
+  const n = getPending().length;
+  if (n > 0) {
+    live.classList.add('show');
+    document.getElementById('statusStep').textContent =
+      (n === 1) ? 'Produzindo 1 clipe…' : ('Produzindo ' + n + ' clipes ao mesmo tempo…');
+  } else { live.classList.remove('show'); }
+}
+
+// Acompanha TODOS os clipes pendentes ao mesmo tempo (cada um é independente no servidor).
+function startPolling() {
   stopPolling();
-  const live = document.getElementById('statusLive');
-  live.classList.add('show');
-  document.getElementById('statusStep').textContent = 'Preparando a produção…';
-
+  updateLiveBanner();
+  if (!getPending().length) return;
   const tick = async () => {
-    try {
-      const resp = await api('/checkStatus?orderId=' + encodeURIComponent(orderId));
-      const d = await resp.json();
-
-      if (d.status === 'completed' && d.videoUrl) {
-        stopPolling();
-        live.classList.remove('show');
-        localStorage.removeItem(PENDING_KEY);
-        toast('✅ Clipe pronto!');
-        loadOrders();
-        return;
-      }
-      if (d.status === 'error') {
-        stopPolling();
-        live.classList.remove('show');
-        localStorage.removeItem(PENDING_KEY);
-        toast('⚠️ A produção falhou: ' + (d.error || 'erro desconhecido'));
-        loadOrders();
-        return;
-      }
-      let step = 'Produzindo o clipe…';
-      if (d.step) step = d.step.charAt(0).toUpperCase() + d.step.slice(1) + '…';
-      else if (d.status === 'rendering') step = 'Montagem final do vídeo…';
-      document.getElementById('statusStep').textContent = step;
-    } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
+    const list = getPending();
+    if (!list.length) { stopPolling(); updateLiveBanner(); return; }
+    let mudou = false;
+    for (const p of list) {
+      try {
+        const resp = await api('/checkStatus?orderId=' + encodeURIComponent(p.orderId));
+        const d = await resp.json();
+        if (d.status === 'completed' && d.videoUrl) { removePending(p.orderId); toast('✅ Clipe de "' + p.clientName + '" pronto!'); mudou = true; }
+        else if (d.status === 'error') { removePending(p.orderId); toast('⚠️ "' + p.clientName + '" falhou: ' + (d.error || 'erro')); mudou = true; }
+      } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
+    }
+    updateLiveBanner();
+    if (mudou) loadOrders();
+    if (!getPending().length) stopPolling();
   };
   tick();
   pollTimer = setInterval(tick, POLL_INTERVAL_MS);
@@ -1997,8 +2005,8 @@ async function redoScene(idx) {
     if (!d.ok) { toast('⚠️ ' + (d.error || 'falha ao refazer')); return; }
     closeEditScenes();
     toast('🔄 Refazendo a cena ' + (idx + 1) + '…');
-    localStorage.setItem(PENDING_KEY, JSON.stringify({ orderId: esOrderId, clientName: 'refazendo cena ' + (idx + 1), ts: Date.now() }));
-    startPolling(esOrderId);
+    addPending(esOrderId, 'refazendo cena ' + (idx + 1));
+    startPolling();
   } catch (e) { toast('⚠️ Erro ao refazer a cena.'); }
 }
 function closeEditScenes() { document.getElementById('editScenesOverlay').classList.remove('show'); }
@@ -2011,21 +2019,19 @@ function escapeHtml(s) {
 // PEDIDO PENDENTE (retomar ao abrir a página)
 // ───────────────────────────────────────────────
 function checkPending() {
-  let p = null;
-  try { p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch (e) {}
-  if (!p || !p.orderId) return;
-  document.getElementById('pendingText').textContent =
-    'Clipe de "' + p.clientName + '" — toque em Acompanhar pra ver o andamento.';
+  const list = getPending();
+  if (!list.length) return;
+  document.getElementById('pendingText').textContent = (list.length === 1)
+    ? ('Clipe de "' + list[0].clientName + '" — toque em Acompanhar pra ver o andamento.')
+    : (list.length + ' clipes em produção — toque em Acompanhar pra ver o andamento.');
   document.getElementById('pendingBanner').classList.add('show');
 }
 
 function resumePending() {
-  let p = null;
-  try { p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch (e) {}
   document.getElementById('pendingBanner').classList.remove('show');
-  if (!p || !p.orderId) return;
+  if (!getPending().length) return;
   showTab('resultados');
-  startPolling(p.orderId);
+  startPolling();
 }
 
 // ───────────────────────────────────────────────
