@@ -107,6 +107,10 @@ body{
 .step-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7}
 .card-title{font-size:16.5px;font-weight:600;color:var(--text);margin-bottom:4px}
 .card-hint{font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:1rem}
+.avatar-tipo-seg{display:flex;gap:8px;margin-bottom:14px}
+.avatar-tipo-seg .seg-btn{flex:1;padding:11px 8px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:var(--bg-input);border:1px solid var(--border-bright);color:var(--text-dim);transition:border-color .15s,color .15s,background .15s}
+.avatar-tipo-seg .seg-btn:hover{border-color:var(--gold);color:var(--gold)}
+.avatar-tipo-seg .seg-btn.active{background:rgba(201,168,76,.14);border-color:var(--gold);color:var(--gold)}
 
 .field{margin-bottom:1rem}
 .field label{display:block;font-size:12px;font-weight:500;color:var(--text-dim);margin-bottom:7px;letter-spacing:.04em}
@@ -380,15 +384,22 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
       <div class="card-title">Quem vai cantar</div>
-      <div class="card-hint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
+
+      <!-- Tipo do avatar: 2 vias separadas — Pessoa (foto de gente) x Personagem/Produto (mascote do produto) -->
+      <div class="avatar-tipo-seg" id="avatarTipoSeg">
+        <button type="button" class="seg-btn active" data-tipo="pessoa" onclick="setAvatarTipo('pessoa')">🧑 Pessoa</button>
+        <button type="button" class="seg-btn" data-tipo="personagem" onclick="setAvatarTipo('personagem')">🍢 Personagem / Produto</button>
+      </div>
+
+      <div class="card-hint" id="avatarHint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
       </div>
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
-          <span class="big">🧑‍🎤</span>
-          <span>Enviar ou colar a foto</span>
+          <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
+          <span id="clientPhotoLabel">Enviar ou colar a foto</span>
         </div>
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*" hidden/>
@@ -396,7 +407,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
         <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
-        <div class="gerar-note" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
+        <div class="gerar-note" id="avatarGenNote" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
@@ -641,6 +652,7 @@ const PENDING_KEY = 'lux_avatar_pending';
 // Estado
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
+let avatarTipo = 'pessoa';         // via do Passo 1: 'pessoa' (foto de gente) | 'personagem' (produto/mascote: espetinho, fruta, pizza…)
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
@@ -789,11 +801,12 @@ function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderC
 // com avatar não aprovado → preview; aprovado → selo.
 function refreshAvatarUI() {
   if (editState) {   // modo edição: avatar travado (vem do original) — esconde a UI de gerar/aprovar
-    ['clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     return;
   }
+  const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
@@ -857,8 +870,28 @@ function normalizarAvatarPes(b64) {
   });
 }
 
+// ── Passo 1: alterna entre 2 vias — Pessoa (foto de gente) x Personagem/Produto (mascote do produto) ──
+const AVATAR_HINTS = {
+  pessoa: 'Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).',
+  personagem: 'Foto do <b style="color:var(--text-mid)">produto ou personagem</b> que vai cantar (espetinho, fruta, pizza, sorvete…). A IA mantém as características originais — <b style="color:var(--text-mid)">logo, cores, formato e tudo que estiver na imagem</b> — só adiciona rosto, braços, pernas e o microfone, e cria o mascote cantando de corpo inteiro. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).'
+};
+function setAvatarTipo(t) {
+  if (editState) return;   // no modo edição o avatar é travado (vem do original)
+  avatarTipo = (t === 'personagem') ? 'personagem' : 'pessoa';
+  document.querySelectorAll('#avatarTipoSeg .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-tipo') === avatarTipo);
+  });
+  const ehPers = (avatarTipo === 'personagem');
+  const hint = document.getElementById('avatarHint'); if (hint) hint.innerHTML = AVATAR_HINTS[avatarTipo];
+  const ic = document.getElementById('clientPhotoIcon'); if (ic) ic.textContent = ehPers ? '🍢' : '🧑‍🎤';
+  const lb = document.getElementById('clientPhotoLabel'); if (lb) lb.textContent = ehPers ? 'Enviar ou colar a foto do produto' : 'Enviar ou colar a foto';
+  const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = ehPers
+    ? 'A IA transforma o produto num personagem cantando, mantendo as características originais. Você confere antes de continuar.'
+    : 'A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.';
+}
+
 async function gerarAvatar() {
-  if (!clientPhoto) { toast('Envie a foto do cliente primeiro.'); return; }
+  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
@@ -866,7 +899,7 @@ async function gerarAvatar() {
   try {
     const r = await api('/avatarCartoon', {
       method: 'POST',
-      body: JSON.stringify({ clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note })
+      body: JSON.stringify({ clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo })
     });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
@@ -2042,7 +2075,7 @@ function aplicarModoEdicao(d) {
     }
   }
   // avatar TRAVADO → esconde upload da foto + geração + preview + badge
-  ['clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+  ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = on ? 'none' : '';
   });
   // mostra a música atual no player
