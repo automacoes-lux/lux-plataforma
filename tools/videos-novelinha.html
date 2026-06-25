@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Vídeo Novelinha 📝</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="../css/theme.css"/>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-card:#121212;
+  --bg-input:#1C1C1C;
+  --bg-hover:#222;
+  --text-mid:#B0A080;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:16px;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%);
+}
+.container{max-width:760px;margin:0 auto;padding:1.6rem 1.2rem 5rem}
+
+/* CABEÇALHO */
+.page-head{margin-bottom:1.4rem}
+.page-title{
+  font-family:'Cinzel',serif;color:var(--gold);
+  font-size:22px;font-weight:700;letter-spacing:.05em;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.page-sub{color:var(--text-dim);font-size:13.5px;margin-top:.4rem;line-height:1.5}
+
+/* PASSOS / CARDS */
+.step{
+  background:var(--bg-card);
+  border:.5px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:1.2rem 1.2rem;margin-bottom:1.1rem;
+}
+.step-head{
+  display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem;
+}
+.step-num{
+  flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));
+  color:#141414;font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;
+}
+.step-title{font-weight:600;font-size:15.5px;color:var(--text)}
+.step-hint{color:var(--text-dim);font-size:12.5px;margin:-.4rem 0 .8rem 0;line-height:1.45}
+
+label.fld{display:block;font-size:13px;color:var(--text-mid);margin:.7rem 0 .35rem}
+textarea,input[type=text]{
+  width:100%;background:var(--bg-input);color:var(--text);
+  border:.5px solid var(--border);border-radius:var(--radius);
+  padding:.7rem .8rem;font-family:'DM Sans',sans-serif;font-size:14.5px;
+  resize:vertical;
+}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--border-bright)}
+textarea{min-height:96px}
+
+/* CHIPS (perfil) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{
+  background:var(--bg-input);border:.5px solid var(--border);
+  color:var(--text-mid);border-radius:999px;
+  padding:.45rem .9rem;font-size:13.5px;cursor:pointer;
+  transition:all .15s;user-select:none;
+}
+.chip:hover{border-color:var(--border-bright);color:var(--text)}
+.chip.on{
+  background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));
+  color:#141414;border-color:transparent;font-weight:600;
+}
+.chips-row{margin-bottom:.7rem}
+.chips-lbl{font-size:13px;color:var(--text-mid);margin-bottom:.35rem}
+
+/* UPLOAD DE FOTOS */
+.up-cat{margin-bottom:1rem}
+.up-cat-head{font-size:14px;color:var(--text);margin-bottom:.5rem;font-weight:500}
+.up-opt{color:var(--text-dim);font-size:12px;font-weight:400}
+.thumbs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.thumb{
+  position:relative;width:70px;height:90px;border-radius:8px;overflow:hidden;
+  border:.5px solid var(--border);background:var(--bg-input);
+}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .rm{
+  position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;
+  font-size:12px;line-height:20px;text-align:center;padding:0;
+}
+.up-btn{
+  display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;
+  background:var(--bg-input);border:.5px dashed var(--border-bright);
+  color:var(--text-mid);border-radius:var(--radius);
+  padding:.5rem .9rem;font-size:13px;transition:all .15s;
+}
+.up-btn:hover{color:var(--text);border-color:var(--gold)}
+
+/* BOTOES */
+.btn-gold{
+  width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);
+  color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;
+  border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;
+  cursor:pointer;transition:filter .15s;
+}
+.btn-gold:hover{filter:brightness(1.07)}
+.btn-gold:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.3)}
+.btn-ghost{
+  width:100%;background:transparent;color:var(--text-mid);
+  border:.5px solid var(--border);border-radius:var(--radius);
+  padding:.8rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;
+}
+.btn-ghost:hover{color:var(--text);border-color:var(--border-bright)}
+.btn-row{display:flex;gap:.6rem;margin-top:.8rem}
+.btn-row .btn-ghost,.btn-row .btn-gold{margin-top:0}
+
+/* ROTEIRO */
+#roteiroWrap{display:none}
+.rot-title{
+  font-family:'Cinzel',serif;color:var(--gold);font-size:18px;
+  text-align:center;margin-bottom:1rem;
+}
+.cena{
+  background:var(--bg-card);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:.9rem 1rem;margin-bottom:.8rem;
+}
+.cena-top{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;flex-wrap:wrap}
+.cena-badge{
+  flex:0 0 auto;background:var(--bg-input);border:.5px solid var(--border);
+  color:var(--gold);border-radius:6px;padding:.2rem .55rem;font-size:12px;font-weight:700;
+}
+.cena-tit{flex:1;min-width:120px;background:transparent;border:none;color:var(--text);
+  font-size:14.5px;font-weight:600;padding:.2rem 0}
+.cena-tit:focus{outline:none}
+select.falante{
+  background:var(--bg-input);color:var(--text);border:.5px solid var(--border);
+  border-radius:6px;padding:.35rem .5rem;font-size:13px;font-family:'DM Sans',sans-serif;
+}
+.cena .mini{font-size:11.5px;color:var(--text-dim);margin:.5rem 0 .2rem}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1d1d1d;border:.5px solid var(--border-bright);color:var(--text);
+  padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;
+  transition:all .25s;z-index:999;max-width:90vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.soon-note{
+  font-size:12px;color:var(--text-dim);text-align:center;margin-top:.5rem;line-height:1.5
+}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(20,20,20,.35);
+  border-top-color:#141414;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-head">
+    <div class="page-title">📝 Vídeo Novelinha</div>
+    <div class="page-sub">Mini-novela de 30s, 100% IA: o avatar do cliente vive uma jornada de venda.
+      Preencha o briefing + as fotos, gere o roteiro, ajuste e mande pro cliente aprovar.</div>
+  </div>
+
+  <!-- PASSO 1 — BRIEFING -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">Briefing do cliente</div></div>
+    <div class="step-hint">Cole aqui a mensagem do cliente (o que ele quer divulgar, o serviço, a oferta, o contato).
+      Quanto mais contexto, melhor o roteiro.</div>
+    <textarea id="briefing" placeholder="Ex: Sou dono da Body Club, academia em Cabo Frio. Quero divulgar a transformação que a gente entrega, com acompanhamento de personal. Matrículas abertas, WhatsApp (22) 99999-9999."></textarea>
+    <label class="fld" for="nomeNegocio">Nome do negócio</label>
+    <input type="text" id="nomeNegocio" placeholder="Ex: Body Club"/>
+  </div>
+
+  <!-- PASSO 2 — PERFIL -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Perfil do cliente da novela</div></div>
+    <div class="step-hint">Quem é o "cliente final" que vive a história — pra casar com o público do negócio.</div>
+    <div class="chips-row">
+      <div class="chips-lbl">Gênero</div>
+      <div class="chips" id="chipsGenero">
+        <div class="chip" data-k="genero" data-v="homem">🧔 Homem</div>
+        <div class="chip" data-k="genero" data-v="mulher">👩 Mulher</div>
+      </div>
+    </div>
+    <div class="chips-row">
+      <div class="chips-lbl">Idade</div>
+      <div class="chips" id="chipsIdade">
+        <div class="chip" data-k="idade" data-v="crianca">👶 Criança</div>
+        <div class="chip" data-k="idade" data-v="jovem">🧑 Jovem</div>
+        <div class="chip" data-k="idade" data-v="adulto">🧔 Adulto</div>
+        <div class="chip" data-k="idade" data-v="idoso">👴 Idoso</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 3 — FOTOS -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Fotos de referência</div></div>
+    <div class="step-hint">Pra IA deixar o vídeo FIEL ao negócio real (e não inventar cenário). Todas opcionais, mas ajudam muito.</div>
+
+    <div class="up-cat">
+      <div class="up-cat-head">📸 Foto do dono <span class="up-opt">(opcional · 1)</span></div>
+      <div class="thumbs" id="thumbsDono"></div>
+      <label class="up-btn">+ Adicionar foto<input type="file" accept="image/*" hidden onchange="onPick(event,'dono')"/></label>
+    </div>
+
+    <div class="up-cat">
+      <div class="up-cat-head">📦 Fotos do produto / serviço <span class="up-opt">(até 3)</span></div>
+      <div class="thumbs" id="thumbsProdutos"></div>
+      <label class="up-btn">+ Adicionar fotos<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'produtos')"/></label>
+    </div>
+
+    <div class="up-cat">
+      <div class="up-cat-head">🏠 Fotos do ambiente <span class="up-opt">(até 3 · interior ou fachada)</span></div>
+      <div class="thumbs" id="thumbsAmbiente"></div>
+      <label class="up-btn">+ Adicionar fotos<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'ambiente')"/></label>
+    </div>
+  </div>
+
+  <!-- GERAR ROTEIRO -->
+  <button class="btn-gold" id="btnGerar" onclick="gerarRoteiro()">✨ Gerar roteiro</button>
+
+  <!-- ROTEIRO (aparece depois) -->
+  <div id="roteiroWrap" style="margin-top:1.4rem">
+    <div class="rot-title" id="rotTitle">🎬 Roteiro</div>
+    <div id="cenas"></div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="gerarRoteiro()">🔄 Gerar de novo</button>
+      <button class="btn-gold" onclick="copiarRoteiro()">📋 Copiar pra aprovação</button>
+    </div>
+
+    <div style="margin-top:1rem">
+      <button class="btn-gold" id="btnVideo" disabled>🎬 Gerar vídeo</button>
+      <div class="soon-note">Em breve (Fatia 2) — o vídeo será produzido depois do cliente aprovar o roteiro.</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="../js/auth-iframe.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LUX VÍDEO NOVELINHA — Fatia 1 (briefing + fotos → roteiro editável)
+// ═══════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
+const MAX_IMAGE_DIMENSION = 1536;
+const IMAGE_QUALITY = 0.85;
+
+// Wrapper de fetch autenticado (token injetado pelo auth-iframe.js)
+function api(path, opts){
+  const url = WORKER_URL + path;
+  if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
+  return fetch(url, opts);
+}
+
+// ── Estado ──────────────────────────────────────────────────────
+const LIMITS = { dono:1, produtos:3, ambiente:3 };
+let fotos = { dono:[], produtos:[], ambiente:[] };   // cada item: { base64, mimeType, thumbUrl }
+let perfil = { genero:'homem', idade:'adulto' };
+let roteiro = null;
+
+// ── Toast ───────────────────────────────────────────────────────
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 3800);
+}
+
+// ── Perfil (chips) ──────────────────────────────────────────────
+function initChips(){
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      const k = c.dataset.k, v = c.dataset.v;
+      perfil[k] = v;
+      // marca só o selecionado do mesmo grupo
+      c.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on', x===c));
+    });
+  });
+  // defaults visuais
+  document.querySelectorAll('.chip').forEach(c=>{
+    if (perfil[c.dataset.k] === c.dataset.v) c.classList.add('on');
+  });
+}
+
+// ── Upload / otimização de foto ─────────────────────────────────
+function readFileAsDataURL(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+}
+async function fileToOptimizedImage(file){
+  const dataUrl = await readFileAsDataURL(file);
+  const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+  let { width, height } = img;
+  const maxSide = Math.max(width,height);
+  if (maxSide > MAX_IMAGE_DIMENSION){ const f = MAX_IMAGE_DIMENSION/maxSide; width=Math.round(width*f); height=Math.round(height*f); }
+  const canvas = document.createElement('canvas');
+  canvas.width=width; canvas.height=height;
+  canvas.getContext('2d').drawImage(img,0,0,width,height);
+  const out = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+  return { base64: out.split(',')[1], mimeType:'image/jpeg', thumbUrl: out };
+}
+async function onPick(ev, cat){
+  const files = Array.from(ev.target.files || []);
+  ev.target.value = ''; // permite re-selecionar o mesmo arquivo
+  for (const file of files){
+    if (fotos[cat].length >= LIMITS[cat]){ toast('Máximo de '+LIMITS[cat]+' foto(s) em '+cat+'.'); break; }
+    try { fotos[cat].push(await fileToOptimizedImage(file)); }
+    catch(e){ toast('⚠️ Não consegui ler '+(file.name||'a foto')); }
+  }
+  renderThumbs(cat);
+}
+function renderThumbs(cat){
+  const box = document.getElementById('thumbs'+cat[0].toUpperCase()+cat.slice(1));
+  box.innerHTML = '';
+  fotos[cat].forEach((f,idx)=>{
+    const d = document.createElement('div'); d.className='thumb';
+    d.innerHTML = '<img src="'+f.thumbUrl+'"/><button class="rm" title="Remover">✕</button>';
+    d.querySelector('.rm').onclick = ()=>{ fotos[cat].splice(idx,1); renderThumbs(cat); };
+    box.appendChild(d);
+  });
+}
+
+// ── Gerar roteiro ───────────────────────────────────────────────
+async function gerarRoteiro(){
+  const briefing = document.getElementById('briefing').value.trim();
+  const nomeNegocio = document.getElementById('nomeNegocio').value.trim();
+  if (!briefing && !nomeNegocio){ toast('✍️ Escreva o briefing ou ao menos o nome do negócio.'); return; }
+
+  const btn = document.getElementById('btnGerar');
+  const oldTxt = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Gerando roteiro...';
+
+  const payload = {
+    briefing, nomeNegocio, perfil,
+    fotos: {
+      dono: fotos.dono[0] ? { base64: fotos.dono[0].base64, mimeType: fotos.dono[0].mimeType } : null,
+      produtos: fotos.produtos.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
+      ambiente: fotos.ambiente.map(f=>({ base64:f.base64, mimeType:f.mimeType }))
+    }
+  };
+
+  try {
+    const r = await api('/novelaRoteiro', { method:'POST', body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao gerar roteiro')); return; }
+    roteiro = { titulo: d.titulo, cenas: d.cenas };
+    renderRoteiro();
+    const custo = (typeof d.aiCostBRL === 'number') ? ' (IA ~R$'+d.aiCostBRL.toFixed(2)+')' : '';
+    toast('✅ Roteiro gerado!'+custo);
+    document.getElementById('roteiroWrap').scrollIntoView({ behavior:'smooth' });
+  } catch(e){
+    toast('⚠️ '+e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = oldTxt;
+  }
+}
+
+const FALANTE_OPTS = [['cliente','Cliente'],['dono','Dono'],['nenhum','(sem fala)']];
+
+function renderRoteiro(){
+  document.getElementById('rotTitle').textContent = '🎬 ' + (roteiro.titulo || 'Roteiro');
+  const wrap = document.getElementById('cenas');
+  wrap.innerHTML = '';
+  roteiro.cenas.forEach((c, i)=>{
+    const div = document.createElement('div'); div.className='cena';
+    const opts = FALANTE_OPTS.map(([v,l])=>'<option value="'+v+'"'+(c.falante===v?' selected':'')+'>'+l+'</option>').join('');
+    div.innerHTML =
+      '<div class="cena-top">'+
+        '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+        '<input class="cena-tit" data-i="'+i+'" data-f="titulo" value="'+escAttr(c.titulo)+'"/>'+
+        '<select class="falante" data-i="'+i+'" data-f="falante">'+opts+'</select>'+
+      '</div>'+
+      '<div class="mini">🗣️ Fala</div>'+
+      '<textarea data-i="'+i+'" data-f="fala" style="min-height:54px">'+escHtml(c.fala)+'</textarea>'+
+      '<div class="mini">🎨 Cenário / visual</div>'+
+      '<textarea data-i="'+i+'" data-f="visual" style="min-height:64px">'+escHtml(c.visual)+'</textarea>';
+    wrap.appendChild(div);
+  });
+  // bind edits de volta pro objeto
+  wrap.querySelectorAll('[data-f]').forEach(el=>{
+    const ev = (el.tagName==='SELECT') ? 'change' : 'input';
+    el.addEventListener(ev, ()=>{ roteiro.cenas[+el.dataset.i][el.dataset.f] = el.value; });
+  });
+  document.getElementById('roteiroWrap').style.display = 'block';
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return escHtml(s).replace(/"/g,'&quot;'); }
+
+// ── Copiar roteiro formatado pra aprovação ──────────────────────
+function copiarRoteiro(){
+  if (!roteiro){ return; }
+  const FAL = { dono:'Dono', cliente:'Cliente', nenhum:'' };
+  let txt = '🎬 ' + (roteiro.titulo||'Novelinha') + '\n\n';
+  roteiro.cenas.forEach((c,i)=>{
+    txt += 'CENA ' + (i+1) + (c.titulo ? ' — ' + c.titulo : '') + '\n';
+    if (c.falante && c.falante!=='nenhum' && c.fala){
+      txt += '🗣️ ' + (FAL[c.falante]||'') + ': "' + c.fala + '"\n';
+    } else {
+      txt += '🎥 (sem fala)\n';
+    }
+    if (c.visual) txt += '🎨 ' + c.visual + '\n';
+    txt += '\n';
+  });
+  const done = ()=>toast('📋 Roteiro copiado! Cole no WhatsApp do cliente.');
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));
+  } else { fallbackCopy(txt,done); }
+}
+function fallbackCopy(txt, done){
+  const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Não consegui copiar automaticamente.'); }
+  document.body.removeChild(ta);
+}
+
+// ── Init ────────────────────────────────────────────────────────
+initChips();
+</script>
+</body>
+</html>
