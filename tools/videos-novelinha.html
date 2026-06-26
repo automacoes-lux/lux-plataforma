@@ -396,7 +396,8 @@ async function gerarRoteiro(){
   }
 }
 
-const FALANTE_OPTS = [['cliente','Cliente'],['dono','Dono'],['nenhum','(sem fala)']];
+const FALANTE_OPTS = [['cliente','Cliente'],['dono','Dono']];
+const TRILHA_OPTS  = [['baixa','🎵 Baixa'],['media','🎵 Média'],['alta','🎵 Alta']];
 
 function renderRoteiro(){
   document.getElementById('rotTitle').textContent = '🎬 ' + (roteiro.titulo || 'Roteiro');
@@ -405,11 +406,14 @@ function renderRoteiro(){
   roteiro.cenas.forEach((c, i)=>{
     const div = document.createElement('div'); div.className='cena';
     const opts = FALANTE_OPTS.map(([v,l])=>'<option value="'+v+'"'+(c.falante===v?' selected':'')+'>'+l+'</option>').join('');
+    const tval = c.trilha || 'baixa'; c.trilha = tval;
+    const topts = TRILHA_OPTS.map(([v,l])=>'<option value="'+v+'"'+(tval===v?' selected':'')+'>'+l+'</option>').join('');
     div.innerHTML =
       '<div class="cena-top">'+
         '<span class="cena-badge">CENA '+(i+1)+'</span>'+
         '<input class="cena-tit" data-i="'+i+'" data-f="titulo" value="'+escAttr(c.titulo)+'"/>'+
         '<select class="falante" data-i="'+i+'" data-f="falante">'+opts+'</select>'+
+        '<select class="falante" data-i="'+i+'" data-f="trilha" title="Intensidade da trilha sonora">'+topts+'</select>'+
       '</div>'+
       '<div class="mini">🗣️ Fala</div>'+
       '<textarea data-i="'+i+'" data-f="fala" style="min-height:54px">'+escHtml(c.fala)+'</textarea>'+
