@@ -371,8 +371,8 @@ function aovivoRender(d){
     <div class="card-title">💸 Pix de hoje <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">ao vivo · ${p2(now.getHours())}:${p2(now.getMinutes())}</span></div>
     <div class="bd-row final" style="margin-bottom:10px"><span class="k">${qtd} Pix hoje</span><span class="v">${fmtBRL(total)}</span></div>`;
   if(recs.length){
-    html+=`<div class="rec-box"><div class="rec-item head" style="grid-template-columns:1.8fr .8fr auto"><span>Cliente</span><span>Hora</span><span>Valor</span></div>`;
-    html+=recs.map(t=>`<div class="rec-item" style="grid-template-columns:1.8fr .8fr auto"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=`<div class="rec-box"><div class="rec-item head" style="grid-template-columns:1fr auto"><span>Horário</span><span>Valor</span></div>`;
+    html+=recs.map(t=>`<div class="rec-item" style="grid-template-columns:1fr auto"><div class="rh" style="text-align:left">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
     html+=`</div>`;
   } else {
     html+=`<div class="state-msg" style="padding:1.4rem 1rem"><span class="icon">⏳</span><div>Nenhum Pix ainda hoje. Quando cair, aparece aqui sozinho.</div></div>`;

@@ -1309,8 +1309,8 @@ function aovivoRender(d){
   feed.sort((x,y)=>String(y.hora||'').localeCompare(String(x.hora||'')));
   const fe=document.getElementById('avoFeed');
   if(!feed.length){ fe.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Nenhum Pix ainda hoje. Assim que cair, aparece aqui sozinho.</div></div>'; return; }
-  fe.innerHTML='<div class="rec-box"><div class="rec-item head"><span>Cliente</span><span>Atendente</span><span>Hora</span><span>Valor</span></div>'+
-    feed.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}</div><div class="rd" style="text-align:left;color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
+  fe.innerHTML='<div class="rec-box"><div class="rec-item head" style="grid-template-columns:1.6fr .8fr auto"><span>Atendente</span><span>Hora</span><span>Valor</span></div>'+
+    feed.map(t=>`<div class="rec-item" style="grid-template-columns:1.6fr .8fr auto"><div class="rn" style="color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
     '</div>';
 }
 async function aovivoApagar(){
