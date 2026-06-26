@@ -312,6 +312,7 @@ input[type="file"]{display:none}
 
   <div class="subtabs">
     <button class="subtab active" data-sub="fechar">📥 Fechamento do dia</button>
+    <button class="subtab" data-sub="aovivo">💸 Pix ao vivo</button>
     <button class="subtab" data-sub="geral">📈 Visão geral</button>
     <button class="subtab" data-sub="atend">👁 Ver atendente</button>
     <button class="subtab" data-sub="servico">📊 Serviço</button>
@@ -411,6 +412,26 @@ input[type="file"]{display:none}
         <button class="btn-secondary" onclick="voltarUpload()">← Recomeçar</button>
         <button class="btn-primary" id="btnEnviar" onclick="enviar()">✓ Enviar pros atendentes</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PIX AO VIVO ═══════════ -->
+  <div class="subpanel" id="sub-aovivo">
+    <div class="card">
+      <div class="card-title">💸 Pix recebidos hoje <span id="avoUpd" style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">—</span></div>
+      <div class="fin-total">
+        <div class="label">Entradas Pix de hoje</div>
+        <div class="value" id="avoTotal">R$ 0,00</div>
+        <div class="sub" id="avoQtd">aguardando…</div>
+      </div>
+      <div class="section-sub">Por atendente</div>
+      <div id="avoPorAtend"><div class="state-msg" style="padding:1rem"><div>—</div></div></div>
+      <div class="section-sub">Recebimentos (mais recentes primeiro)</div>
+      <div id="avoFeed"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
+      <div class="danger-zone">
+        <button class="btn-danger" onclick="aovivoApagar()">🗑 Apagar todos os Pix de hoje</button>
+      </div>
+      <div class="hint-box" style="margin-top:10px">Os Pix caem aqui automaticamente (atualiza sozinho a cada 15s). No fim do dia, isso já é a sua <b>Entrada</b> — você só põe o anúncio e o % e gera o fechamento. O <b>extrato manual</b> continua disponível na aba “Fechamento” como reserva.</div>
     </div>
   </div>
 
@@ -524,6 +545,7 @@ async function init(){
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
     if(b.dataset.sub==='atend') avInit();
     if(b.dataset.sub==='servico') svInit();
+    if(b.dataset.sub==='aovivo') aovivoStart(); else aovivoStop();
   }));
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
 }
@@ -1257,6 +1279,47 @@ function avRenderRanking(d){
   });
   html+='</div>';
   cont.innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════
+// PIX AO VIVO — recebimentos automáticos do Sicredi (tempo real)
+// ════════════════════════════════════════════════════════════
+let aovivoTimer=null, aovivoLoading=false;
+function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
+function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }
+async function aovivoLoad(){
+  if(aovivoLoading) return; aovivoLoading=true;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/sicredi/aovivo'); const d=await r.json();
+    if(d.ok) aovivoRender(d);
+  }catch(e){ /* silencioso */ }
+  finally{ aovivoLoading=false; }
+}
+function aovivoRender(d){
+  document.getElementById('avoTotal').textContent=fmtBRL(d.totalBRL);
+  document.getElementById('avoQtd').textContent=`${d.qtd||0} Pix hoje · atualiza sozinho a cada 15s`;
+  const p2=n=>String(n).padStart(2,'0'), now=new Date();
+  document.getElementById('avoUpd').textContent='atualizado '+p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
+  const ats=d.atendentes||[];
+  document.getElementById('avoPorAtend').innerHTML = ats.length
+    ? ats.map((a,i)=>`<div class="list-row"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small></div><div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`).join('')
+    : '<div class="bd-note">Nenhum ainda.</div>';
+  const feed=[];
+  ats.forEach(a=>(a.recebimentos||[]).forEach(x=>feed.push({pagador:x.pagador,hora:x.hora,valorBRL:x.valorBRL,atendente:a.atendente})));
+  feed.sort((x,y)=>String(y.hora||'').localeCompare(String(x.hora||'')));
+  const fe=document.getElementById('avoFeed');
+  if(!feed.length){ fe.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Nenhum Pix ainda hoje. Assim que cair, aparece aqui sozinho.</div></div>'; return; }
+  fe.innerHTML='<div class="rec-box"><div class="rec-item head"><span>Cliente</span><span>Atendente</span><span>Hora</span><span>Valor</span></div>'+
+    feed.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}</div><div class="rd" style="text-align:left;color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
+    '</div>';
+}
+async function aovivoApagar(){
+  if(!confirm('Apagar TODOS os Pix de hoje da tela (do admin e dos atendentes)?\n\nLimpa só os recebimentos automáticos de hoje — NÃO mexe nos fechamentos já enviados nem no extrato. Use se entrou algo errado.')) return;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/sicredi/apagar',{method:'POST'}); const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    toast(`✓ ${d.apagados} Pix de hoje apagados.`,'success'); aovivoLoad();
+  }catch(e){ toast('Erro ao apagar: '+e.message,'error'); }
 }
 </script>
 </body>
