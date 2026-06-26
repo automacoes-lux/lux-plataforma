@@ -136,9 +136,10 @@
         <div class="nav-icon">🤖</div> Vídeo Avatar
         <span class="nav-badge badge-live">LIVE</span>
       </a>
-      <a class="nav-item" data-tool="videos-novelinha" href="#">
+      <a class="nav-item soon" data-tool="videos-novelinha" data-soon-unless-admin href="#">
         <div class="nav-icon">📝</div> Vídeo Novelinha
-        <span class="nav-badge badge-live">NOVO</span>
+        <span class="nav-badge badge-live badge-normal" style="display:none">NOVO</span>
+        <span class="nav-badge badge-warning badge-soon">EM BREVE</span>
       </a>
       <a class="nav-item" data-tool="atendimento" href="#">
         <div class="nav-icon">📋</div> Suporte
@@ -283,12 +284,13 @@
           </div>
         </div>
 
-        <div class="tool-card" data-card-tool="videos-novelinha" onclick="loadTool('videos-novelinha')">
+        <div class="tool-card soon" data-card-tool="videos-novelinha" data-soon-unless-admin onclick="loadTool('videos-novelinha')">
           <div class="tool-card-icon">📝</div>
           <div class="tool-card-name">VÍDEO NOVELINHA</div>
           <div class="tool-card-desc">Mini-novela de 30s 100% IA: o avatar do cliente vive uma jornada de venda. Briefing + fotos viram um roteiro pronto pra aprovação.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
+            <span class="status-live status-normal" style="display:none">● Disponível</span>
+            <span class="status-soon-warning status-soon">● Em breve</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
