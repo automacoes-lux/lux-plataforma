@@ -267,9 +267,11 @@ select.falante{
     </div>
 
     <div style="margin-top:1rem">
-      <button class="btn-gold" id="btnVideo" disabled>🎬 Gerar vídeo</button>
-      <div class="soon-note">Em breve (Fatia 2) — o vídeo será produzido depois do cliente aprovar o roteiro.</div>
+      <button class="btn-gold" id="btnVideo" onclick="gerarVideo()">🎬 Gerar vídeo</button>
+      <div class="soon-note">O vídeo é produzido em segundo plano (uns minutos). Pode fechar a aba — ele continua sozinho.</div>
     </div>
+
+    <div id="videoStatus" class="step" style="display:none;margin-top:1rem"></div>
   </div>
 
 </div>
@@ -457,6 +459,80 @@ function fallbackCopy(txt, done){
   ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Não consegui copiar automaticamente.'); }
   document.body.removeChild(ta);
 }
+
+// ── Gerar vídeo (Fatia 2) ───────────────────────────────────────
+const VIDEO_POLL_MS = 8000;
+let videoPollTimer = null;
+
+function fotosPayload(){
+  return {
+    dono:      fotos.dono[0]      ? { base64: fotos.dono[0].base64,      mimeType: fotos.dono[0].mimeType }      : null,
+    cliente:   fotos.cliente[0]   ? { base64: fotos.cliente[0].base64,   mimeType: fotos.cliente[0].mimeType }   : null,
+    logomarca: fotos.logomarca[0] ? { base64: fotos.logomarca[0].base64, mimeType: fotos.logomarca[0].mimeType } : null,
+    produtos: fotos.produtos.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
+    ambiente: fotos.ambiente.map(f=>({ base64:f.base64, mimeType:f.mimeType }))
+  };
+}
+function vstatus(html){ const el=document.getElementById('videoStatus'); el.style.display='block'; el.innerHTML=html; }
+
+async function gerarVideo(){
+  if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('✍️ Gere o roteiro primeiro.'); return; }
+  const btn = document.getElementById('btnVideo');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Enviando...';
+  const payload = { nomeNegocio: document.getElementById('nomeNegocio').value.trim(), perfil, roteiro, fotos: fotosPayload() };
+  try {
+    const r = await api('/createNovelaVideo', { method:'POST', body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao iniciar')); btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo'; return; }
+    try { localStorage.setItem('novelinha_pending', d.orderId); } catch(e){}
+    vstatus('<b>🎬 Produzindo seu vídeo...</b><div class="step-hint" style="margin-top:.4rem">Leva alguns minutos. Pode fechar a aba — o vídeo continua sozinho.</div><div id="vstep" style="margin-top:.5rem;color:var(--gold)">na fila...</div>');
+    document.getElementById('videoStatus').scrollIntoView({ behavior:'smooth' });
+    pollVideo(d.orderId);
+  } catch(e){ toast('⚠️ '+e.message); btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo'; }
+}
+
+function pollVideo(orderId){
+  const btn = document.getElementById('btnVideo');
+  clearInterval(videoPollTimer);
+  const tick = async () => {
+    try {
+      const r = await api('/checkStatus?orderId=' + encodeURIComponent(orderId));
+      const d = await r.json();
+      if (d.status === 'completed' && d.videoUrl){
+        clearInterval(videoPollTimer);
+        try { localStorage.removeItem('novelinha_pending'); } catch(e){}
+        const custo = (typeof d.costBRL === 'number') ? ' · custo ~R$'+d.costBRL.toFixed(2) : '';
+        vstatus('<b>✅ Vídeo pronto!'+custo+'</b><div style="margin-top:.7rem"><a class="btn-gold" style="display:inline-block;text-decoration:none;text-align:center;width:auto;padding:.7rem 1.2rem" href="'+d.videoUrl+'" target="_blank" download>⬇️ Baixar vídeo</a></div>');
+        btn.disabled=false; btn.innerHTML='🎬 Gerar outro';
+        return;
+      }
+      if (d.status === 'error' || d.ok === false){
+        clearInterval(videoPollTimer);
+        try { localStorage.removeItem('novelinha_pending'); } catch(e){}
+        vstatus('<b>⚠️ Algo deu errado</b><div class="step-hint" style="margin-top:.4rem">'+escHtml(d.error||'Tente gerar de novo.')+'</div>');
+        btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo';
+        return;
+      }
+      const step = d.step || (d.status==='rendering' ? 'montando o vídeo' : 'processando...');
+      const stepEl = document.getElementById('vstep'); if (stepEl) stepEl.textContent = '⏳ ' + step;
+    } catch(e){ /* rede instável — tenta no próximo ciclo */ }
+  };
+  tick();
+  videoPollTimer = setInterval(tick, VIDEO_POLL_MS);
+}
+
+// Retoma um vídeo em produção se a aba foi reaberta
+(function resumeVideo(){
+  try {
+    const pend = localStorage.getItem('novelinha_pending');
+    if (pend){
+      document.getElementById('roteiroWrap').style.display = 'block';
+      document.getElementById('btnVideo').disabled = true;
+      vstatus('<b>🎬 Retomando seu vídeo em produção...</b><div id="vstep" style="margin-top:.5rem;color:var(--gold)">verificando...</div>');
+      pollVideo(pend);
+    }
+  } catch(e){}
+})();
 
 // ── Init ────────────────────────────────────────────────────────
 initChips();
