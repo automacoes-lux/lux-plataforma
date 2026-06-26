@@ -86,6 +86,8 @@ textarea{min-height:96px}
 .chips-lbl{font-size:13px;color:var(--text-mid);margin-bottom:.35rem}
 
 /* UPLOAD DE FOTOS */
+.up-row{display:flex;gap:1rem;flex-wrap:wrap}
+.up-row .up-cat{flex:1;min-width:150px}
 .up-cat{margin-bottom:1rem}
 .up-cat-head{font-size:14px;color:var(--text);margin-bottom:.5rem;font-weight:500}
 .up-opt{color:var(--text-dim);font-size:12px;font-weight:400}
@@ -176,20 +178,25 @@ select.falante{
       Preencha o briefing + as fotos, gere o roteiro, ajuste e mande pro cliente aprovar.</div>
   </div>
 
+  <!-- NOME DO NEGÓCIO (topo) -->
+  <div class="step">
+    <label class="fld" for="nomeNegocio" style="margin-top:0;font-size:14px;color:var(--text)">🏢 Nome do negócio</label>
+    <input type="text" id="nomeNegocio" placeholder="Ex: Body Club"/>
+  </div>
+
   <!-- PASSO 1 — BRIEFING -->
   <div class="step">
     <div class="step-head"><div class="step-num">1</div><div class="step-title">Briefing do cliente</div></div>
     <div class="step-hint">Cole aqui a mensagem do cliente (o que ele quer divulgar, o serviço, a oferta, o contato).
       Quanto mais contexto, melhor o roteiro.</div>
     <textarea id="briefing" placeholder="Ex: Sou dono da Body Club, academia em Cabo Frio. Quero divulgar a transformação que a gente entrega, com acompanhamento de personal. Matrículas abertas, WhatsApp (22) 99999-9999."></textarea>
-    <label class="fld" for="nomeNegocio">Nome do negócio</label>
-    <input type="text" id="nomeNegocio" placeholder="Ex: Body Club"/>
   </div>
 
   <!-- PASSO 2 — PERFIL -->
   <div class="step">
-    <div class="step-head"><div class="step-num">2</div><div class="step-title">Perfil do cliente da novela</div></div>
-    <div class="step-hint">Quem é o "cliente final" que vive a história — pra casar com o público do negócio.</div>
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Perfil do personagem sem foto</div></div>
+    <div class="step-hint">Usado só pra <b>gerar quem não tiver foto</b>: se faltar a foto do dono, ele nasce com este perfil;
+      se faltar a do cliente, é o cliente que nasce assim. Se os dois tiverem foto, isto é ignorado.</div>
     <div class="chips-row">
       <div class="chips-lbl">Gênero</div>
       <div class="chips" id="chipsGenero">
@@ -211,12 +218,26 @@ select.falante{
   <!-- PASSO 3 — FOTOS -->
   <div class="step">
     <div class="step-head"><div class="step-num">3</div><div class="step-title">Fotos de referência</div></div>
-    <div class="step-hint">Pra IA deixar o vídeo FIEL ao negócio real (e não inventar cenário). Todas opcionais, mas ajudam muito.</div>
+    <div class="step-hint">A IA usa TODAS pra deixar o vídeo fiel ao negócio real. Todas opcionais: o que faltar
+      (produto, ambiente…) a IA cria a partir do briefing.</div>
+
+    <div class="up-row">
+      <div class="up-cat">
+        <div class="up-cat-head">📸 Foto do dono <span class="up-opt">(1)</span></div>
+        <div class="thumbs" id="thumbsDono"></div>
+        <label class="up-btn">+ Adicionar<input type="file" accept="image/*" hidden onchange="onPick(event,'dono')"/></label>
+      </div>
+      <div class="up-cat">
+        <div class="up-cat-head">🙋 Foto do cliente <span class="up-opt">(1)</span></div>
+        <div class="thumbs" id="thumbsCliente"></div>
+        <label class="up-btn">+ Adicionar<input type="file" accept="image/*" hidden onchange="onPick(event,'cliente')"/></label>
+      </div>
+    </div>
 
     <div class="up-cat">
-      <div class="up-cat-head">📸 Foto do dono <span class="up-opt">(opcional · 1)</span></div>
-      <div class="thumbs" id="thumbsDono"></div>
-      <label class="up-btn">+ Adicionar foto<input type="file" accept="image/*" hidden onchange="onPick(event,'dono')"/></label>
+      <div class="up-cat-head">™️ Logomarca do cliente <span class="up-opt">(1)</span></div>
+      <div class="thumbs" id="thumbsLogomarca"></div>
+      <label class="up-btn">+ Adicionar logomarca<input type="file" accept="image/*" hidden onchange="onPick(event,'logomarca')"/></label>
     </div>
 
     <div class="up-cat">
@@ -226,7 +247,7 @@ select.falante{
     </div>
 
     <div class="up-cat">
-      <div class="up-cat-head">🏠 Fotos do ambiente <span class="up-opt">(até 3 · interior ou fachada)</span></div>
+      <div class="up-cat-head">🏠 Fotos do ambiente <span class="up-opt">(até 6 · interior ou fachada)</span></div>
       <div class="thumbs" id="thumbsAmbiente"></div>
       <label class="up-btn">+ Adicionar fotos<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'ambiente')"/></label>
     </div>
@@ -272,8 +293,8 @@ function api(path, opts){
 }
 
 // ── Estado ──────────────────────────────────────────────────────
-const LIMITS = { dono:1, produtos:3, ambiente:3 };
-let fotos = { dono:[], produtos:[], ambiente:[] };   // cada item: { base64, mimeType, thumbUrl }
+const LIMITS = { dono:1, cliente:1, logomarca:1, produtos:3, ambiente:6 };
+let fotos = { dono:[], cliente:[], logomarca:[], produtos:[], ambiente:[] };   // cada item: { base64, mimeType, thumbUrl }
 let perfil = { genero:'homem', idade:'adulto' };
 let roteiro = null;
 
@@ -351,7 +372,9 @@ async function gerarRoteiro(){
   const payload = {
     briefing, nomeNegocio, perfil,
     fotos: {
-      dono: fotos.dono[0] ? { base64: fotos.dono[0].base64, mimeType: fotos.dono[0].mimeType } : null,
+      dono:      fotos.dono[0]      ? { base64: fotos.dono[0].base64,      mimeType: fotos.dono[0].mimeType }      : null,
+      cliente:   fotos.cliente[0]   ? { base64: fotos.cliente[0].base64,   mimeType: fotos.cliente[0].mimeType }   : null,
+      logomarca: fotos.logomarca[0] ? { base64: fotos.logomarca[0].base64, mimeType: fotos.logomarca[0].mimeType } : null,
       produtos: fotos.produtos.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
       ambiente: fotos.ambiente.map(f=>({ base64:f.base64, mimeType:f.mimeType }))
     }
