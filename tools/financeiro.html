@@ -516,6 +516,7 @@ input[type="file"]{display:none}
       </div>
     </div>
 
+    <div id="avAoVivoBox"></div>
     <div id="avMonthBox"></div>
     <div id="avWeekBox"></div>
     <div id="avConta"></div>
@@ -543,7 +544,7 @@ async function init(){
     document.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
-    if(b.dataset.sub==='atend') avInit();
+    if(b.dataset.sub==='atend') avInit(); else avAoVivoStop();
     if(b.dataset.sub==='servico') svInit();
     if(b.dataset.sub==='aovivo') aovivoStart(); else aovivoStop();
   }));
@@ -1139,11 +1140,37 @@ function avInit(){
 function avOnSelect(){
   avEmail=document.getElementById('avSelect').value;
   const tools=document.getElementById('avTools'), rank=document.getElementById('avRankCard');
-  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avMonthBox').innerHTML=''; document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; return; }
+  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avMonthBox').innerHTML=''; document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; avAoVivoStop(); return; }
   tools.classList.remove('hidden'); rank.classList.remove('hidden');
+  avAoVivoStart();
   avLoadMonth();
   avLoadWeek();
   avSetMode('dia');
+}
+// Pix ao vivo do atendente selecionado (espelho do que ELE vê no login dele)
+let avAoVivoTimer=null;
+function avAoVivoStart(){ avAoVivoLoad(); if(avAoVivoTimer) clearInterval(avAoVivoTimer); avAoVivoTimer=setInterval(avAoVivoLoad,15000); }
+function avAoVivoStop(){ if(avAoVivoTimer){ clearInterval(avAoVivoTimer); avAoVivoTimer=null; } const b=document.getElementById('avAoVivoBox'); if(b) b.innerHTML=''; }
+async function avAoVivoLoad(){
+  if(!avEmail) return;
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/sicredi/aovivo?as=${encodeURIComponent(avEmail)}`); const d=await r.json(); if(d.ok) avAoVivoRender(d); }catch(e){}
+}
+function avAoVivoRender(d){
+  const box=document.getElementById('avAoVivoBox'); if(!box) return;
+  const meu=(d.atendentes||[])[0];
+  const total=meu?meu.totalBRL:0, qtd=meu?meu.qtd:0;
+  const recs=(meu&&meu.recebimentos)?meu.recebimentos.slice().sort((a,b)=>String(b.hora||'').localeCompare(String(a.hora||''))):[];
+  const p2=n=>String(n).padStart(2,'0'), now=new Date();
+  let html=`<div class="card" style="border-color:rgba(127,184,122,.4)">
+    <div class="card-title">💸 Pix de hoje (ao vivo) <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">atualiza sozinho · ${p2(now.getHours())}:${p2(now.getMinutes())}</span></div>
+    <div class="bd-row final" style="margin-bottom:10px"><span class="k">${qtd} Pix hoje</span><span class="v">${fmtBRL(total)}</span></div>`;
+  if(recs.length){
+    html+=`<div class="rec-box"><div class="rec-item head" style="grid-template-columns:1fr auto"><span>Horário</span><span>Valor</span></div>`;
+    html+=recs.map(t=>`<div class="rec-item" style="grid-template-columns:1fr auto"><div class="rh" style="text-align:left">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=`</div>`;
+  } else { html+=`<div class="state-msg" style="padding:1.2rem 1rem"><div>Nenhum Pix de hoje pra esse atendente ainda.</div></div>`; }
+  html+=`</div>`;
+  box.innerHTML=html;
 }
 function avSetMode(m){
   avMode=m;
