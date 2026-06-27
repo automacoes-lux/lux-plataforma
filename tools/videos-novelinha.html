@@ -421,6 +421,20 @@ async function gerarRoteiro(){
 const FALANTE_OPTS = [['cliente','Cliente'],['dono','Dono']];
 const TRILHA_OPTS  = [['baixa','🎵 Baixa'],['media','🎵 Média'],['alta','🎵 Alta']];
 
+// opções de foto de referência por cena (a partir das fotos enviadas)
+function refOptionsHtml(selected){
+  let html='<option value="">🖼️ Cenário automático</option>';
+  (fotos.ambiente||[]).forEach(function(f,i){ html+='<option value="ambiente:'+i+'"'+(selected==='ambiente:'+i?' selected':'')+'>📍 Ambiente '+(i+1)+'</option>'; });
+  (fotos.produtos||[]).forEach(function(f,i){ html+='<option value="produto:'+i+'"'+(selected==='produto:'+i?' selected':'')+'>📦 Produto '+(i+1)+'</option>'; });
+  return html;
+}
+// opções a partir de uma lista vinda do backend (tela de aprovação / resume)
+function refOptionsFromList(list, selected){
+  let html='<option value="">🖼️ Cenário automático</option>';
+  (list||[]).forEach(function(o){ html+='<option value="'+o.value+'"'+(selected===o.value?' selected':'')+'>'+o.label+'</option>'; });
+  return html;
+}
+
 function renderRoteiro(){
   document.getElementById('rotTitle').textContent = '🎬 ' + (roteiro.titulo || 'Roteiro');
   const wrap = document.getElementById('cenas');
@@ -440,7 +454,9 @@ function renderRoteiro(){
       '<div class="mini">🗣️ Fala</div>'+
       '<textarea data-i="'+i+'" data-f="fala" style="min-height:54px">'+escHtml(c.fala)+'</textarea>'+
       '<div class="mini">🎨 Cenário / visual</div>'+
-      '<textarea data-i="'+i+'" data-f="visual" style="min-height:64px">'+escHtml(c.visual)+'</textarea>';
+      '<textarea data-i="'+i+'" data-f="visual" style="min-height:64px">'+escHtml(c.visual)+'</textarea>'+
+      '<div class="mini">🖼️ Foto de referência desta cena</div>'+
+      '<select class="falante" style="width:100%" data-i="'+i+'" data-f="ref">'+refOptionsHtml(c.ref||'')+'</select>';
     wrap.appendChild(div);
   });
   // bind edits de volta pro objeto
@@ -540,7 +556,7 @@ function pollNovela(orderId){
       if (d.status === 'images_ready'){
         clearInterval(videoPollTimer);
         document.getElementById('videoStatus').style.display = 'none';
-        renderAprovacao(d.images || []);
+        renderAprovacao(d.images || [], d.refs || []);
         return;
       }
       if (d.status === 'completed' && d.videoUrl){
@@ -563,6 +579,8 @@ function pollNovela(orderId){
       }
       const step = d.step || 'processando...';
       const stepEl = document.getElementById('vstep'); if (stepEl) stepEl.textContent = '⏳ ' + step;
+      const bv = document.getElementById('btnVideo'); if (bv && d.phase==='video'){ bv.disabled=true; bv.innerHTML='⏳ '+step; }
+      const bi = document.getElementById('btnImagens'); if (bi && d.phase==='img'){ bi.disabled=true; bi.innerHTML='⏳ '+step; }
     } catch(e){ /* rede instável — tenta no próximo ciclo */ }
   };
   tick();
@@ -570,10 +588,11 @@ function pollNovela(orderId){
 }
 
 // Mostra os 6 quadros pra aprovação (cada um editável + refazer)
-function renderAprovacao(images){
+function renderAprovacao(images, refs){
   const wrap = document.getElementById('cards'); wrap.innerHTML='';
   images.forEach(function(im){
     const opts = FALANTE_OPTS.map(function(o){ return '<option value="'+o[0]+'"'+(im.falante===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
+    const refopts = refOptionsFromList(refs, im.ref||'');
     const d = document.createElement('div'); d.className='card';
     d.innerHTML =
       '<div class="card-img"><img src="'+(im.url||'')+'" alt="cena '+(im.idx+1)+'"/></div>'+
@@ -581,6 +600,7 @@ function renderAprovacao(images){
         '<div class="card-top"><span class="cena-badge">CENA '+(im.idx+1)+'</span><select class="falante" data-i="'+im.idx+'" data-f="falante">'+opts+'</select></div>'+
         '<div class="mini">🗣️ Fala</div><textarea data-i="'+im.idx+'" data-f="fala" style="min-height:46px">'+escHtml(im.fala)+'</textarea>'+
         '<div class="mini">🎨 Cenário / visual</div><textarea data-i="'+im.idx+'" data-f="visual" style="min-height:54px">'+escHtml(im.visual)+'</textarea>'+
+        '<div class="mini">🖼️ Foto de referência</div><select class="falante" style="width:100%" data-i="'+im.idx+'" data-f="ref">'+refopts+'</select>'+
         '<button class="btn-ghost" style="margin-top:.5rem" onclick="refazerQuadro(this,'+im.idx+')">🔄 Refazer este quadro</button>'+
       '</div>';
     wrap.appendChild(d);
@@ -594,7 +614,7 @@ async function refazerQuadro(btn, idx){
   const gv = function(f){ const el=document.querySelector('#cards [data-f='+f+'][data-i="'+idx+'"]'); return el?el.value:''; };
   const old = btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Refazendo...';
   try {
-    const r = await api('/novelaEditQuadro', { method:'POST', body: JSON.stringify({ orderId:novelaOrderId, idx:idx, fala:gv('fala'), visual:gv('visual'), falante:gv('falante') }) });
+    const r = await api('/novelaEditQuadro', { method:'POST', body: JSON.stringify({ orderId:novelaOrderId, idx:idx, fala:gv('fala'), visual:gv('visual'), falante:gv('falante'), ref:gv('ref') }) });
     const d = await r.json();
     if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao refazer')); }
     else { const cards=document.querySelectorAll('#cards .card'); const img=cards[idx]?cards[idx].querySelector('img'):null; if(img) img.src=d.url; toast('✅ Quadro '+(idx+1)+' refeito!'); }
