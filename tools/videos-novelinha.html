@@ -130,6 +130,14 @@ textarea{min-height:96px}
 
 /* ROTEIRO */
 #roteiroWrap{display:none}
+/* cards de aprovação das imagens */
+#cards{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+@media(max-width:640px){#cards{grid-template-columns:1fr}}
+.card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.card-img{background:#000;display:flex;align-items:center;justify-content:center;max-height:320px;overflow:hidden}
+.card-img img{width:100%;height:100%;object-fit:contain;display:block}
+.card-body{padding:.7rem .8rem}
+.card-top{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
 .rot-title{
   font-family:'Cinzel',serif;color:var(--gold);font-size:18px;
   text-align:center;margin-bottom:1rem;
@@ -267,11 +275,22 @@ select.falante{
     </div>
 
     <div style="margin-top:1rem">
-      <button class="btn-gold" id="btnVideo" onclick="gerarVideo()">🎬 Gerar vídeo</button>
-      <div class="soon-note">O vídeo é produzido em segundo plano (uns minutos). Pode fechar a aba — ele continua sozinho.</div>
+      <button class="btn-gold" id="btnImagens" onclick="gerarImagens()">🖼️ Gerar imagens (pré-visualizar)</button>
+      <div class="soon-note">Gera as 6 imagens (barato) pro cliente aprovar — o vídeo (caro) só depois. Pode fechar a aba.</div>
     </div>
 
     <div id="videoStatus" class="step" style="display:none;margin-top:1rem"></div>
+
+    <!-- APROVAÇÃO DAS 6 IMAGENS -->
+    <div id="aprovWrap" style="display:none;margin-top:1.3rem">
+      <div class="rot-title">🖼️ Aprove as cenas</div>
+      <div class="step-hint" style="text-align:center;margin:-.3rem 0 1rem">Mostre pro cliente. Não curtiu alguma? Ajuste o texto e clique <b>Refazer este quadro</b> (centavos). Só depois gere o vídeo.</div>
+      <div id="cards"></div>
+      <div style="margin-top:1.1rem">
+        <button class="btn-gold" id="btnVideo" onclick="gerarVideo()">🎬 Aprovar e gerar vídeo</button>
+        <div class="soon-note">Aqui sim entra a parte que custa (~R$15). Produzido em segundo plano — pode fechar a aba.</div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -299,6 +318,7 @@ const LIMITS = { dono:1, cliente:1, logomarca:1, produtos:3, ambiente:6 };
 let fotos = { dono:[], cliente:[], logomarca:[], produtos:[], ambiente:[] };   // cada item: { base64, mimeType, thumbUrl }
 let perfil = { genero:'homem', idade:'adulto' };
 let roteiro = null;
+let novelaOrderId = null;
 
 // ── Toast ───────────────────────────────────────────────────────
 function toast(msg){
@@ -475,45 +495,73 @@ function fotosPayload(){
 }
 function vstatus(html){ const el=document.getElementById('videoStatus'); el.style.display='block'; el.innerHTML=html; }
 
-async function gerarVideo(){
+// ETAPA 1: gerar as 6 imagens (barato) → para na aprovação
+async function gerarImagens(){
   if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('✍️ Gere o roteiro primeiro.'); return; }
-  const btn = document.getElementById('btnVideo');
+  const btn = document.getElementById('btnImagens');
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Enviando...';
   const payload = { nomeNegocio: document.getElementById('nomeNegocio').value.trim(), perfil, roteiro, fotos: fotosPayload() };
   try {
-    const r = await api('/createNovelaVideo', { method:'POST', body: JSON.stringify(payload) });
+    const r = await api('/novelaImagens', { method:'POST', body: JSON.stringify(payload) });
     const d = await r.json();
-    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao iniciar')); btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo'; return; }
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao iniciar')); btn.disabled=false; btn.innerHTML='🖼️ Gerar imagens (pré-visualizar)'; return; }
+    novelaOrderId = d.orderId;
     try { localStorage.setItem('novelinha_pending', d.orderId); } catch(e){}
-    vstatus('<b>🎬 Produzindo seu vídeo...</b><div class="step-hint" style="margin-top:.4rem">Leva alguns minutos. Pode fechar a aba — o vídeo continua sozinho.</div><div id="vstep" style="margin-top:.5rem;color:var(--gold)">na fila...</div>');
+    vstatus('<b>🖼️ Desenhando as 6 cenas...</b><div class="step-hint" style="margin-top:.4rem">Leva alguns minutos. Pode fechar a aba — continua sozinho.</div><div id="vstep" style="margin-top:.5rem;color:var(--gold)">na fila...</div>');
     document.getElementById('videoStatus').scrollIntoView({ behavior:'smooth' });
-    pollVideo(d.orderId);
-  } catch(e){ toast('⚠️ '+e.message); btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo'; }
+    pollNovela(d.orderId);
+  } catch(e){ toast('⚠️ '+e.message); btn.disabled=false; btn.innerHTML='🖼️ Gerar imagens (pré-visualizar)'; }
 }
 
-function pollVideo(orderId){
+// ETAPA 2: aprovar e gerar o vídeo (caro) sobre as imagens aprovadas
+async function gerarVideo(){
+  if (!novelaOrderId){ toast('Gere as imagens primeiro.'); return; }
   const btn = document.getElementById('btnVideo');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Enviando...';
+  try {
+    const r = await api('/novelaGerarVideo', { method:'POST', body: JSON.stringify({ orderId: novelaOrderId }) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao iniciar')); btn.disabled=false; btn.innerHTML='🎬 Aprovar e gerar vídeo'; return; }
+    try { localStorage.setItem('novelinha_pending', novelaOrderId); } catch(e){}
+    vstatus('<b>🎬 Produzindo seu vídeo...</b><div class="step-hint" style="margin-top:.4rem">Leva alguns minutos. Pode fechar a aba — continua sozinho.</div><div id="vstep" style="margin-top:.5rem;color:var(--gold)">na fila...</div>');
+    document.getElementById('videoStatus').scrollIntoView({ behavior:'smooth' });
+    pollNovela(novelaOrderId);
+  } catch(e){ toast('⚠️ '+e.message); btn.disabled=false; btn.innerHTML='🎬 Aprovar e gerar vídeo'; }
+}
+
+// Polling único — entende: imagens prontas (aprovação), processando, vídeo pronto, erro
+function pollNovela(orderId){
+  novelaOrderId = orderId;
   clearInterval(videoPollTimer);
   const tick = async () => {
     try {
       const r = await api('/checkStatus?orderId=' + encodeURIComponent(orderId));
       const d = await r.json();
+      if (d.status === 'images_ready'){
+        clearInterval(videoPollTimer);
+        document.getElementById('videoStatus').style.display = 'none';
+        renderAprovacao(d.images || []);
+        return;
+      }
       if (d.status === 'completed' && d.videoUrl){
         clearInterval(videoPollTimer);
         try { localStorage.removeItem('novelinha_pending'); } catch(e){}
         const custo = (typeof d.costBRL === 'number') ? ' · custo ~R$'+d.costBRL.toFixed(2) : '';
+        document.getElementById('videoStatus').style.display='block';
         vstatus('<b>✅ Vídeo pronto!'+custo+'</b><div style="margin-top:.7rem"><a class="btn-gold" style="display:inline-block;text-decoration:none;text-align:center;width:auto;padding:.7rem 1.2rem" href="'+d.videoUrl+'" target="_blank" download>⬇️ Baixar vídeo</a></div>');
-        btn.disabled=false; btn.innerHTML='🎬 Gerar outro';
+        const bv=document.getElementById('btnVideo'); if(bv){ bv.disabled=false; bv.innerHTML='🎬 Gerar de novo'; }
         return;
       }
       if (d.status === 'error' || d.ok === false){
         clearInterval(videoPollTimer);
         try { localStorage.removeItem('novelinha_pending'); } catch(e){}
-        vstatus('<b>⚠️ Algo deu errado</b><div class="step-hint" style="margin-top:.4rem">'+escHtml(d.error||'Tente gerar de novo.')+'</div>');
-        btn.disabled=false; btn.innerHTML='🎬 Gerar vídeo';
+        document.getElementById('videoStatus').style.display='block';
+        vstatus('<b>⚠️ Algo deu errado</b><div class="step-hint" style="margin-top:.4rem">'+escHtml(d.error||'Tente de novo.')+'</div>');
+        const bi=document.getElementById('btnImagens'); if(bi){ bi.disabled=false; bi.innerHTML='🖼️ Gerar imagens (pré-visualizar)'; }
+        const bv2=document.getElementById('btnVideo'); if(bv2){ bv2.disabled=false; bv2.innerHTML='🎬 Aprovar e gerar vídeo'; }
         return;
       }
-      const step = d.step || (d.status==='rendering' ? 'montando o vídeo' : 'processando...');
+      const step = d.step || 'processando...';
       const stepEl = document.getElementById('vstep'); if (stepEl) stepEl.textContent = '⏳ ' + step;
     } catch(e){ /* rede instável — tenta no próximo ciclo */ }
   };
@@ -521,15 +569,47 @@ function pollVideo(orderId){
   videoPollTimer = setInterval(tick, VIDEO_POLL_MS);
 }
 
-// Retoma um vídeo em produção se a aba foi reaberta
-(function resumeVideo(){
+// Mostra os 6 quadros pra aprovação (cada um editável + refazer)
+function renderAprovacao(images){
+  const wrap = document.getElementById('cards'); wrap.innerHTML='';
+  images.forEach(function(im){
+    const opts = FALANTE_OPTS.map(function(o){ return '<option value="'+o[0]+'"'+(im.falante===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
+    const d = document.createElement('div'); d.className='card';
+    d.innerHTML =
+      '<div class="card-img"><img src="'+(im.url||'')+'" alt="cena '+(im.idx+1)+'"/></div>'+
+      '<div class="card-body">'+
+        '<div class="card-top"><span class="cena-badge">CENA '+(im.idx+1)+'</span><select class="falante" data-i="'+im.idx+'" data-f="falante">'+opts+'</select></div>'+
+        '<div class="mini">🗣️ Fala</div><textarea data-i="'+im.idx+'" data-f="fala" style="min-height:46px">'+escHtml(im.fala)+'</textarea>'+
+        '<div class="mini">🎨 Cenário / visual</div><textarea data-i="'+im.idx+'" data-f="visual" style="min-height:54px">'+escHtml(im.visual)+'</textarea>'+
+        '<button class="btn-ghost" style="margin-top:.5rem" onclick="refazerQuadro(this,'+im.idx+')">🔄 Refazer este quadro</button>'+
+      '</div>';
+    wrap.appendChild(d);
+  });
+  const aw = document.getElementById('aprovWrap'); aw.style.display='block'; aw.scrollIntoView({ behavior:'smooth' });
+}
+
+// Refaz SÓ um quadro (imagem) com o texto editado — barato
+async function refazerQuadro(btn, idx){
+  if (!novelaOrderId) return;
+  const gv = function(f){ const el=document.querySelector('#cards [data-f='+f+'][data-i="'+idx+'"]'); return el?el.value:''; };
+  const old = btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Refazendo...';
+  try {
+    const r = await api('/novelaEditQuadro', { method:'POST', body: JSON.stringify({ orderId:novelaOrderId, idx:idx, fala:gv('fala'), visual:gv('visual'), falante:gv('falante') }) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao refazer')); }
+    else { const cards=document.querySelectorAll('#cards .card'); const img=cards[idx]?cards[idx].querySelector('img'):null; if(img) img.src=d.url; toast('✅ Quadro '+(idx+1)+' refeito!'); }
+  } catch(e){ toast('⚠️ '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML=old; }
+}
+
+// Retoma um pedido em andamento se a aba foi reaberta
+(function resumeNovela(){
   try {
     const pend = localStorage.getItem('novelinha_pending');
     if (pend){
       document.getElementById('roteiroWrap').style.display = 'block';
-      document.getElementById('btnVideo').disabled = true;
-      vstatus('<b>🎬 Retomando seu vídeo em produção...</b><div id="vstep" style="margin-top:.5rem;color:var(--gold)">verificando...</div>');
-      pollVideo(pend);
+      vstatus('<b>🔄 Retomando seu pedido...</b><div id="vstep" style="margin-top:.5rem;color:var(--gold)">verificando...</div>');
+      pollNovela(pend);
     }
   } catch(e){}
 })();

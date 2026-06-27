@@ -155,10 +155,7 @@ body{
   <div id="monthBox"></div>
   <div id="weekBox"></div>
 
-  <!-- Pix recebidos hoje (ao vivo) -->
-  <div id="aovivoBox"></div>
-
-  <!-- 1) Sua conta -->
+  <!-- 1) Sua conta (inclui o "hoje ao vivo" quando o período inclui hoje) -->
   <div id="contaContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
 
   <!-- 2) Ranking -->
@@ -166,6 +163,9 @@ body{
 
   <!-- 3) Meus recebimentos -->
   <div id="recContainer"></div>
+
+  <!-- 4) Meus serviços (custo de plataforma do período) -->
+  <div id="svcContainer"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -181,8 +181,8 @@ async function init(){
   document.getElementById('navNext').addEventListener('click',()=>step(1));
   loadWeek();        // caixa verde da semana (sempre a semana atual sáb→sex)
   loadMonthWhite();  // caixa branca do mês (lucro diário, sempre o mês atual)
-  aovivoStart();     // Pix recebidos hoje, em tempo real
   setMode('dia');
+  setInterval(liveRefresh, 20000);   // hoje entra ao vivo dentro de "Sua conta" + "Recebimentos"
 }
 
 // ── caixa verde: acumulado da semana (sáb→sex) com gráfico ──
@@ -270,13 +270,13 @@ function rangeFor(m,r){
   return [document.getElementById('cFrom').value,document.getElementById('cTo').value,''];
 }
 function step(dir){ if(mode==='dia'||mode==='ontem')ref.setDate(ref.getDate()+dir); else if(mode==='semana'||mode==='semanaAnt')ref.setDate(ref.getDate()+7*dir); else if(mode==='mes')ref.setMonth(ref.getMonth()+dir); else if(mode==='ano')ref.setFullYear(ref.getFullYear()+dir); loadTudo(); }
-async function loadTudo(){ const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[1]; if(!curFrom||!curTo){ toast('Escolha as datas.','error'); return; } document.getElementById('navLabel').textContent=rg[2]||`${fmtDBR(curFrom)} a ${fmtDBR(curTo)}`; await Promise.all([loadMe(),loadRanking()]); }
+async function loadTudo(){ const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[1]; if(!curFrom||!curTo){ toast('Escolha as datas.','error'); return; } document.getElementById('navLabel').textContent=rg[2]||`${fmtDBR(curFrom)} a ${fmtDBR(curTo)}`; await Promise.all([loadMe(),loadRanking(),loadMeusServicos()]); }
 
-async function loadMe(){
-  const cont=document.getElementById('contaContainer'); cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>';
-  document.getElementById('recContainer').innerHTML='';
+async function loadMe(silent){
+  const cont=document.getElementById('contaContainer');
+  if(!silent){ cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>'; document.getElementById('recContainer').innerHTML=''; }
   try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderConta(d.me); renderRecebimentos(d.recebimentos||[]); }
-  catch(err){ cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
+  catch(err){ if(!silent) cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
 }
 function renderConta(me){
   const cont=document.getElementById('contaContainer');
@@ -320,6 +320,26 @@ function renderRecebimentos(recebimentos){
   cont.innerHTML=html;
 }
 
+// ── Meus serviços (o que o atendente usou no período + custo) ──
+async function loadMeusServicos(){
+  const cont=document.getElementById('svcContainer'); if(!cont) return;
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/meus-servicos?from=${curFrom}&to=${curTo}`);
+    const d=await r.json(); if(d.ok) renderMeusServicos(d.servicos||[], d.totalBRL||0);
+  }catch(_){}
+}
+function renderMeusServicos(servicos, total){
+  const cont=document.getElementById('svcContainer'); if(!cont) return;
+  let html=`<div class="card"><div class="card-title">🛠️ Meus serviços <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:13px;color:var(--gold-dim);font-weight:600;margin-left:auto">${fmtBRL(total)}</span></div>`;
+  if(servicos.length){
+    html+='<div class="breakdown">'+servicos.map(x=>`<div class="bd-row"><span class="k">${x.emoji||''} ${escapeHtml(x.label)} <small style="color:var(--text-dim)">· ${x.req}×</small></span><span class="v">${fmtBRL(x.brl)}</span></div>`).join('')+'</div>';
+  } else {
+    html+='<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum serviço usado neste período.</div></div>';
+  }
+  html+='</div>';
+  cont.innerHTML=html;
+}
+
 const FRASES={1:'🏆 Você é o nº 1! Performance espetacular — a equipe inteira se inspira em você. Obrigado por puxar o time pra cima!',2:'🥈 Quase lá! Você está voando — falta pouquíssimo pro topo. Orgulho da equipe!',3:'🥉 Pódio merecido! Sua consistência faz diferença. Bora subir mais um degrau!'};
 const FRASE_ULTIMO='Essa rodada foi mais dura, mas é só uma fase. Você tem talento de sobra — bora virar esse jogo juntos. Conte com a gente! 💪';
 const MEDALHA={1:'🥇',2:'🥈',3:'🥉'};
@@ -350,40 +370,12 @@ function renderRanking(d){
   cont.innerHTML=html;
 }
 
-// ── Pix ao vivo (meus recebimentos de hoje, em tempo real) ──
-let aovivoTimer=null, aovivoLoading=false;
-function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
-async function aovivoLoad(){
-  if(aovivoLoading) return; aovivoLoading=true;
+// ── atualização ao vivo: o "hoje" entra dentro de "Sua conta" + "Recebimentos" (sem card separado) ──
+function liveRefresh(){
   try{
-    const r=await window.__luxFetch(WORKER_URL+'/financeiro/ao-vivo'); const d=await r.json();
-    if(d.ok) aovivoRender(d);
-  }catch(e){ /* silencioso */ }
-  finally{ aovivoLoading=false; }
-}
-function aovivoRender(d){
-  const box=document.getElementById('aovivoBox'); if(!box) return;
-  const itens=(d.plataformaItens||[]).map(x=>`<div class="bd-row inc"><span class="k">↳ ${x.emoji||''} ${escapeHtml(x.label)} <small>${x.req}×</small></span><span class="v">- ${fmtBRL(x.brl)}</span></div>`).join('');
-  const recs=(d.recebimentos||[]);
-  let feed='';
-  if(recs.length){
-    feed=`<div style="margin-top:1rem;font-size:13px;color:var(--gold-dim);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:6px">Pix de hoje (${recs.length})</div><div class="rec-box"><div class="rec-item head" style="grid-template-columns:1fr auto"><span>Horário</span><span>Valor</span></div>`+recs.map(t=>`<div class="rec-item" style="grid-template-columns:1fr auto"><div class="rh" style="text-align:left">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+`</div>`;
-  }
-  const p2=n=>String(n).padStart(2,'0'),now=new Date();
-  box.innerHTML=`<div class="card" style="border-color:rgba(127,184,122,.4)">
-    <div class="card-title">💰 Conta de hoje (ao vivo) <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">${d.qtdPix||0} Pix · ${p2(now.getHours())}:${p2(now.getMinutes())}</span></div>
-    <div class="breakdown">
-      <div class="bd-row"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(d.entradaBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(d.impostoBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Anúncio <small style="color:var(--text-dim)">· definido no fechamento</small></span><span class="v">- ${fmtBRL(d.anuncioBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Plataforma</span><span class="v">- ${fmtBRL(d.plataformaBRL)}</span></div>
-      ${itens}
-      <div class="bd-row sub"><span class="k">= Resultado</span><span class="v">${fmtBRL(d.resultadoBRL)}</span></div>
-      <div class="bd-note">➗ metade (sua parte)</div>
-      <div class="bd-row final"><span class="k">Lucro líquido</span><span class="v">${fmtBRL(d.liquidoBRL)}</span></div>
-    </div>
-    ${feed}
-  </div>`;
+    loadWeek(); loadMonthWhite();
+    if(curTo && curTo >= ymd(new Date())) loadMe(true);   // só re-busca a conta se o período inclui hoje
+  }catch(_){}
 }
 </script>
 </body>

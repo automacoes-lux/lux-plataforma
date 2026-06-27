@@ -312,7 +312,6 @@ input[type="file"]{display:none}
 
   <div class="subtabs">
     <button class="subtab active" data-sub="fechar">📥 Fechamento do dia</button>
-    <button class="subtab" data-sub="aovivo">💸 Pix ao vivo</button>
     <button class="subtab" data-sub="geral">📈 Visão geral</button>
     <button class="subtab" data-sub="atend">👁 Ver atendente</button>
     <button class="subtab" data-sub="servico">📊 Serviço</button>
@@ -320,58 +319,82 @@ input[type="file"]{display:none}
 
   <!-- ═══════════ FECHAMENTO ═══════════ -->
   <div class="subpanel active" id="sub-fechar">
+    <div id="fecharSteps">
 
-    <!-- 1. Extrato -->
-    <div class="card" id="cardUpload">
-      <div class="card-title">1 · Extrato bancário</div>
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('xlsxInput').click()">
-        <input id="xlsxInput" type="file" accept=".xlsx,.xls"/>
-        <span class="icon">📄</span>
-        <p>Clique para enviar o extrato</p>
-        <span>Lido aqui no navegador — nada é enviado antes de você revisar.</span>
+    <!-- Etapa 1: Pix recebidos hoje (automático, Sicredi) -->
+    <div class="card">
+      <div class="card-title">1 · Pix recebidos hoje <span id="avoUpd" style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">—</span></div>
+      <div class="fin-total">
+        <div class="label">Entradas Pix de hoje</div>
+        <div class="value" id="avoTotal">R$ 0,00</div>
+        <div class="sub" id="avoQtd">aguardando…</div>
       </div>
-      <div id="parseResult" class="hidden">
-        <div class="parse-summary">
-          <div class="mini-stat"><div class="v" id="psCred">0</div><div class="l">Vendas</div></div>
-          <div class="mini-stat"><div class="v" id="psDeb">0</div><div class="l">Débitos</div></div>
-          <div class="mini-stat"><div class="v" id="psTot">R$ 0,00</div><div class="l">Valor total</div></div>
+      <div class="section-sub">Por atendente</div>
+      <div id="avoPorAtend"><div class="bd-note">—</div></div>
+      <div class="section-sub">Recebimentos (mais recentes primeiro)</div>
+      <div id="avoFeed"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
+      <div class="danger-zone">
+        <button class="btn-danger" onclick="aovivoApagar()">🗑 Apagar todos os Pix de hoje</button>
+      </div>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;color:var(--gold-dim);font-size:13px;font-weight:600">⚙ Reserva: subir extrato em planilha (.xlsx)</summary>
+        <div class="hint" style="margin:8px 0">Use só se precisar corrigir: <b>apague os Pix de hoje acima primeiro</b>, depois suba a planilha (senão conta em dobro).</div>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('xlsxInput').click()">
+          <input id="xlsxInput" type="file" accept=".xlsx,.xls"/>
+          <span class="icon">📄</span>
+          <p>Clique para enviar o extrato</p>
+          <span>Lido aqui no navegador.</span>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Data do fechamento</label>
-            <input type="date" id="inData"/>
-          </div>
-          <div class="field">
-            <label>Gasto de anúncio do dia (US$)</label>
-            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL()"/>
-            <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
+        <div id="parseResult" class="hidden">
+          <div class="parse-summary">
+            <div class="mini-stat"><div class="v" id="psCred">0</div><div class="l">Vendas</div></div>
+            <div class="mini-stat"><div class="v" id="psDeb">0</div><div class="l">Débitos</div></div>
+            <div class="mini-stat"><div class="v" id="psTot">R$ 0,00</div><div class="l">Valor total</div></div>
           </div>
         </div>
+      </details>
+    </div>
 
-        <!-- Entradas e saídas adicionais (Mercado Pago / Outros, por atendente) -->
-        <div class="section-sub">↔ Entradas e saídas adicionais</div>
-        <div class="hint" style="margin:-2px 0 8px">Vendas do <b>Mercado Pago</b> (fora do extrato) ou <b>outros</b> ajustes por atendente. Tudo entra na Entrada (com 6% e ÷2). Só aparecem aqui atendentes com chave PIX cadastrada.</div>
-        <div class="add-row">
-          <select id="addAtend"><option value="">Atendente…</option></select>
-          <select id="addTipo" onchange="addTipoChanged()">
-            <option value="mp">Mercado Pago</option>
-            <option value="outros">Outros</option>
-          </select>
-          <select id="addSinal">
-            <option value="1">+ adicionar</option>
-            <option value="-1">− reduzir</option>
-          </select>
-          <input id="addValor" class="add-val" type="text" inputmode="decimal" placeholder="0,00"/>
-          <input id="addMotivo" class="add-motivo hidden" type="text" maxlength="20" placeholder="motivo (1 palavra)"/>
-          <button class="add-btn" type="button" onclick="addAdicional()">+ Adicionar</button>
+    <!-- Etapa 2: Gasto de anúncio do dia -->
+    <div class="card">
+      <div class="card-title">2 · Gasto de anúncio do dia</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Data do fechamento</label>
+          <input type="date" id="inData"/>
         </div>
-        <div id="addList"></div>
+        <div class="field">
+          <label>Gasto de anúncio do dia (US$)</label>
+          <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL()"/>
+          <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
+        </div>
       </div>
     </div>
 
-    <!-- 2. Imagem dos % -->
-    <div class="card hidden" id="cardPct">
-      <div class="card-title">2 · % de atendimento (imagem) <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">opcional — divide o anúncio proporcional</span></div>
+    <!-- Etapa 3: Entradas e saídas adicionais (Mercado Pago / Outros, por atendente) -->
+    <div class="card">
+      <div class="card-title">3 · Entradas e saídas adicionais <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">opcional</span></div>
+      <div class="hint" style="margin:-2px 0 8px">Vendas do <b>Mercado Pago</b> (fora do extrato) ou <b>outros</b> ajustes por atendente. Tudo entra na Entrada (com 6% e ÷2). Só aparecem aqui atendentes com chave PIX cadastrada.</div>
+      <div class="add-row">
+        <select id="addAtend"><option value="">Atendente…</option></select>
+        <select id="addTipo" onchange="addTipoChanged()">
+          <option value="mp">Mercado Pago</option>
+          <option value="outros">Outros</option>
+        </select>
+        <select id="addSinal">
+          <option value="1">+ adicionar</option>
+          <option value="-1">− reduzir</option>
+        </select>
+        <input id="addValor" class="add-val" type="text" inputmode="decimal" placeholder="0,00"/>
+        <input id="addMotivo" class="add-motivo hidden" type="text" maxlength="20" placeholder="motivo (1 palavra)"/>
+        <button class="add-btn" type="button" onclick="addAdicional()">+ Adicionar</button>
+      </div>
+      <div id="addList"></div>
+    </div>
+
+    <!-- Etapa 4: % de atendimento (imagem) -->
+    <div class="card" id="cardPct">
+      <div class="card-title">4 · % de atendimento (imagem) <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">opcional — divide o anúncio proporcional</span></div>
       <div class="upload-area" id="pctArea" onclick="document.getElementById('pctInput').click()">
         <input id="pctInput" type="file" accept="image/*"/>
         <span class="icon">🖼️</span>
@@ -384,11 +407,13 @@ input[type="file"]{display:none}
       </div>
     </div>
 
-    <div class="card hidden" id="cardOrganizar">
+    <div class="card" id="cardOrganizar">
       <button class="btn-primary" id="btnOrganizar" style="width:100%" onclick="organizar()">Organizar por atendente →</button>
     </div>
 
-    <!-- 3. Revisão -->
+    </div><!-- /fecharSteps -->
+
+    <!-- Revisão -->
     <div class="card hidden" id="cardRevisao">
       <div class="card-title rev-title">3 · Revisar e enviar <span id="revData" style="color:var(--gold-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:13px"></span><button class="btn-secondary rev-zerar" onclick="zerarPlataforma()">⌫ Zerar custos de Plataforma</button></div>
       <div class="rev-head"><span>Atendente</span><span>Entrada</span><span>Imposto 6%</span><span>Anúncio ✎</span><span>Plataforma</span><span>Líquido</span></div>
@@ -412,26 +437,6 @@ input[type="file"]{display:none}
         <button class="btn-secondary" onclick="voltarUpload()">← Recomeçar</button>
         <button class="btn-primary" id="btnEnviar" onclick="enviar()">✓ Enviar pros atendentes</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ PIX AO VIVO ═══════════ -->
-  <div class="subpanel" id="sub-aovivo">
-    <div class="card">
-      <div class="card-title">💸 Pix recebidos hoje <span id="avoUpd" style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">—</span></div>
-      <div class="fin-total">
-        <div class="label">Entradas Pix de hoje</div>
-        <div class="value" id="avoTotal">R$ 0,00</div>
-        <div class="sub" id="avoQtd">aguardando…</div>
-      </div>
-      <div class="section-sub">Por atendente</div>
-      <div id="avoPorAtend"><div class="state-msg" style="padding:1rem"><div>—</div></div></div>
-      <div class="section-sub">Recebimentos (mais recentes primeiro)</div>
-      <div id="avoFeed"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
-      <div class="danger-zone">
-        <button class="btn-danger" onclick="aovivoApagar()">🗑 Apagar todos os Pix de hoje</button>
-      </div>
-      <div class="hint-box" style="margin-top:10px">Os Pix caem aqui automaticamente (atualiza sozinho a cada 15s). No fim do dia, isso já é a sua <b>Entrada</b> — você só põe o anúncio e o % e gera o fechamento. O <b>extrato manual</b> continua disponível na aba “Fechamento” como reserva.</div>
     </div>
   </div>
 
@@ -516,12 +521,12 @@ input[type="file"]{display:none}
       </div>
     </div>
 
-    <div id="avAoVivoBox"></div>
     <div id="avMonthBox"></div>
     <div id="avWeekBox"></div>
     <div id="avConta"></div>
     <div class="card hidden" id="avRankCard"><div class="card-title">🏆 Ranking da equipe</div><div id="avRank"></div></div>
     <div id="avRec"></div>
+    <div id="avSvc"></div>
   </div>
 </div>
 
@@ -544,11 +549,13 @@ async function init(){
     document.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); document.getElementById('sub-'+b.dataset.sub).classList.add('active');
     if(b.dataset.sub==='geral' && !geralLoadedOnce){ geralLoadedOnce=true; setMode('hoje'); }
-    if(b.dataset.sub==='atend') avInit(); else avAoVivoStop();
+    if(b.dataset.sub==='atend') avInit(); else avLiveStop();
     if(b.dataset.sub==='servico') svInit();
-    if(b.dataset.sub==='aovivo') aovivoStart(); else aovivoStop();
+    if(b.dataset.sub==='fechar') aovivoStart(); else aovivoStop();
   }));
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
+  document.getElementById('inData').value=ymd(new Date());   // data padrão = hoje
+  aovivoStart();   // a aba "Fechamento" (Etapa 1) já mostra os Pix de hoje, ao vivo
 }
 
 // ── aviso no grupo do WhatsApp (texto editável) ──
@@ -722,9 +729,7 @@ async function lerExtrato(file){
     document.getElementById('psTot').textContent=fmtBRL(tot);
     document.getElementById('inData').value=dataSug;
     document.getElementById('parseResult').classList.remove('hidden');
-    document.getElementById('cardPct').classList.remove('hidden');
-    document.getElementById('cardOrganizar').classList.remove('hidden');
-    toast('Extrato lido ✓','success');
+    toast('Extrato lido ✓ (reserva)','success');
   }catch(err){ toast('Erro ao ler: '+err.message,'error'); }
 }
 
@@ -756,27 +761,26 @@ function renderPct(soma){
 }
 
 function voltarUpload(){
-  ['cardRevisao'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('cardUpload').classList.remove('hidden');
-  document.getElementById('cardOrganizar').classList.remove('hidden');
+  document.getElementById('cardRevisao').classList.add('hidden');
+  document.getElementById('fecharSteps').classList.remove('hidden');
 }
 
 // ── organizar ──
 async function organizar(){
-  if(!parsed){ toast('Suba o extrato primeiro.','error'); return; }
   const data=document.getElementById('inData').value;
   if(!data){ toast('Escolha a data.','error'); return; }
   const anuncioUSD=parseNum(document.getElementById('inAnuncioUSD').value);
   const percentuais=(pctState||[]).filter(p=>p.email).map(p=>({email:p.email,percent:p.percent}));
   const mercadoPago=coletarMercadoPago(), diversos=coletarDiversos();
+  // créditos = Pix ao vivo (lido automático no backend) + o xlsx reserva, se você subiu
+  const creditos=parsed?parsed.creditos:[], debitos=parsed?parsed.debitos:[];
   const btn=document.getElementById('btnOrganizar'); btn.disabled=true; btn.textContent='Organizando…';
   try{
-    const r=await window.__luxFetch(WORKER_URL+'/financeiro/preview',{method:'POST',body:JSON.stringify({data,anuncioUSD,percentuais,creditos:parsed.creditos,debitos:parsed.debitos,mercadoPago,diversos})});
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/preview',{method:'POST',body:JSON.stringify({data,anuncioUSD,percentuais,creditos,debitos,mercadoPago,diversos})});
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     preview=d; renderRevisao();
-    document.getElementById('cardUpload').classList.add('hidden');
-    document.getElementById('cardOrganizar').classList.add('hidden');
+    document.getElementById('fecharSteps').classList.add('hidden');
     document.getElementById('cardRevisao').classList.remove('hidden');
     document.getElementById('cardRevisao').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){ toast('Erro: '+err.message,'error'); }
@@ -884,7 +888,7 @@ async function enviar(){
     } else {
       toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
     }
-    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('cardPct').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); },1300);
+    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; document.getElementById('inData').value=ymd(new Date()); document.getElementById('inAnuncioUSD').value=''; updateAnuncioBRL(); parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); aovivoLoad(); },1300);
   }catch(err){ toast('Erro: '+err.message,'error'); }
   finally{ btn.disabled=false; btn.textContent='✓ Enviar pros atendentes'; }
 }
@@ -1001,6 +1005,8 @@ async function loadGeral(){
 function renderGeral(d){
   const cont=document.getElementById('geralContainer'); const t=d.total||{};
   const atts=(d.atendentes||[]).filter(a=>a.temPix!==false);   // sem chave PIX cadastrada não aparece
+  // ranqueia pela METADE (dupla = líquido ÷ membros) — justo entre solos e duplas
+  atts.sort((a,b)=>((b.liquidoBRL||0)/(b.membros||1))-((a.liquidoBRL||0)/(a.membros||1)));
   let html=`
     <div class="fin-total"><div class="label">Lucro por sócio</div><div class="value">${fmtBRL(t.lucroSocioBRL)}</div>
       <div class="sub big">Entrada ${fmtBRL(t.entradaBRL)} · Imposto ${fmtBRL(t.impostoBRL)} · Anúncio ${fmtBRL(t.anuncioBRL)} · Plataforma ${fmtBRL(t.custoIaBRL)}</div></div>
@@ -1017,7 +1023,7 @@ function renderGeral(d){
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>
       <div class="num" data-l="Plataforma">${fmtBRL(a.custoIaBRL)}</div>
-      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}</span><button class="copybtn" data-v="${fmtNum(a.liquidoBRL)}" title="Copiar o lucro para pagamento">📋</button></div>
+      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}${(a.dupla&&(a.membros||1)>1)?` <small style="color:var(--gold-dim);font-weight:400">/ ${fmtBRL(a.liquidoBRL/(a.membros||2))}</small>`:''}</span><button class="copybtn" data-v="${fmtNum(a.liquidoBRL)}" title="Copiar o lucro para pagamento">📋</button></div>
     </div>
     <div class="att-expand hidden" id="exp-${i}">${(a.dias||[]).map(dd=>`<div class="day-row"><span>${fmtDBR(dd.data)}</span><span>${fmtBRL(dd.entradaBRL)}</span><span>${fmtBRL(dd.impostoBRL)}</span><span>${fmtBRL(dd.anuncioBRL)}</span><span>${fmtBRL(dd.custoIaBRL)}</span><span style="color:var(--gold)">${fmtBRL(dd.liquidoBRL)}</span></div>`).join('')||'<div class="day-row"><span>Sem dias.</span></div>'}</div>`;
   });
@@ -1140,44 +1146,23 @@ function avInit(){
 function avOnSelect(){
   avEmail=document.getElementById('avSelect').value;
   const tools=document.getElementById('avTools'), rank=document.getElementById('avRankCard');
-  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avMonthBox').innerHTML=''; document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; avAoVivoStop(); return; }
+  if(!avEmail){ tools.classList.add('hidden'); rank.classList.add('hidden'); document.getElementById('avMonthBox').innerHTML=''; document.getElementById('avWeekBox').innerHTML=''; document.getElementById('avConta').innerHTML=''; document.getElementById('avRec').innerHTML=''; document.getElementById('avSvc').innerHTML=''; avLiveStop(); return; }
   tools.classList.remove('hidden'); rank.classList.remove('hidden');
-  avAoVivoStart();
+  avLiveStart();
   avLoadMonth();
   avLoadWeek();
   avSetMode('dia');
 }
-// Pix ao vivo do atendente selecionado (espelho do que ELE vê no login dele)
-let avAoVivoTimer=null;
-function avAoVivoStart(){ avAoVivoLoad(); if(avAoVivoTimer) clearInterval(avAoVivoTimer); avAoVivoTimer=setInterval(avAoVivoLoad,15000); }
-function avAoVivoStop(){ if(avAoVivoTimer){ clearInterval(avAoVivoTimer); avAoVivoTimer=null; } const b=document.getElementById('avAoVivoBox'); if(b) b.innerHTML=''; }
-async function avAoVivoLoad(){
+// atualização ao vivo do "Ver atendente": o "hoje" entra dentro de "Sua conta" + "Recebimentos" (sem card separado)
+let avLiveTimer=null;
+function avLiveStart(){ if(avLiveTimer) clearInterval(avLiveTimer); avLiveTimer=setInterval(avLiveRefresh,20000); }
+function avLiveStop(){ if(avLiveTimer){ clearInterval(avLiveTimer); avLiveTimer=null; } }
+function avLiveRefresh(){
   if(!avEmail) return;
-  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/ao-vivo?as=${encodeURIComponent(avEmail)}`); const d=await r.json(); if(d.ok) avAoVivoRender(d); }catch(e){}
-}
-function avAoVivoRender(d){
-  const box=document.getElementById('avAoVivoBox'); if(!box) return;
-  const itens=(d.plataformaItens||[]).map(x=>`<div class="bd-row inc"><span class="k">↳ ${x.emoji||''} ${escapeHtml(x.label)} <small>${x.req}×</small></span><span class="v">- ${fmtBRL(x.brl)}</span></div>`).join('');
-  const recs=(d.recebimentos||[]);
-  let feed='';
-  if(recs.length){
-    feed=`<div style="margin-top:1rem;font-size:13px;color:var(--gold-dim);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:6px">Pix de hoje (${recs.length})</div><div class="rec-box"><div class="rec-item head" style="grid-template-columns:1fr auto"><span>Horário</span><span>Valor</span></div>`+recs.map(t=>`<div class="rec-item" style="grid-template-columns:1fr auto"><div class="rh" style="text-align:left">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+`</div>`;
-  }
-  const p2=n=>String(n).padStart(2,'0'),now=new Date();
-  box.innerHTML=`<div class="card" style="border-color:rgba(127,184,122,.4)">
-    <div class="card-title">💰 Conta de hoje (ao vivo) <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">${d.qtdPix||0} Pix · ${p2(now.getHours())}:${p2(now.getMinutes())}</span></div>
-    <div class="breakdown">
-      <div class="bd-row"><span class="k">🟢 Entrada (vendas)</span><span class="v">${fmtBRL(d.entradaBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Imposto (6%)</span><span class="v">- ${fmtBRL(d.impostoBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Anúncio <small style="color:var(--text-dim)">· definido no fechamento</small></span><span class="v">- ${fmtBRL(d.anuncioBRL)}</span></div>
-      <div class="bd-row neg"><span class="k">➖ Plataforma</span><span class="v">- ${fmtBRL(d.plataformaBRL)}</span></div>
-      ${itens}
-      <div class="bd-row sub"><span class="k">= Resultado</span><span class="v">${fmtBRL(d.resultadoBRL)}</span></div>
-      <div class="bd-note">➗ metade (parte do atendente)</div>
-      <div class="bd-row final"><span class="k">Lucro líquido</span><span class="v">${fmtBRL(d.liquidoBRL)}</span></div>
-    </div>
-    ${feed}
-  </div>`;
+  try{
+    avLoadMonth(); avLoadWeek();
+    if(avToCur && avToCur >= ymd(new Date())) avLoadMe(true);   // só re-busca a conta se o período inclui hoje
+  }catch(_){}
 }
 function avSetMode(m){
   avMode=m;
@@ -1195,7 +1180,7 @@ function avRangeFor(m,r){
   return [document.getElementById('avFrom').value,document.getElementById('avTo').value,''];
 }
 function avStep(dir){ if(avMode==='dia'||avMode==='ontem')avRef.setDate(avRef.getDate()+dir); else if(avMode==='semana'||avMode==='semanaAnt')avRef.setDate(avRef.getDate()+7*dir); else if(avMode==='mes')avRef.setMonth(avRef.getMonth()+dir); else if(avMode==='ano')avRef.setFullYear(avRef.getFullYear()+dir); avLoadTudo(); }
-async function avLoadTudo(){ const rg=avRangeFor(avMode,avRef); avFromCur=rg[0]; avToCur=rg[1]; if(!avFromCur||!avToCur){ toast('Escolha as datas.','error'); return; } document.getElementById('avNavLabel').textContent=rg[2]||`${fmtDBR(avFromCur)} a ${fmtDBR(avToCur)}`; await Promise.all([avLoadMe(),avLoadRanking()]); }
+async function avLoadTudo(){ const rg=avRangeFor(avMode,avRef); avFromCur=rg[0]; avToCur=rg[1]; if(!avFromCur||!avToCur){ toast('Escolha as datas.','error'); return; } document.getElementById('avNavLabel').textContent=rg[2]||`${fmtDBR(avFromCur)} a ${fmtDBR(avToCur)}`; await Promise.all([avLoadMe(),avLoadRanking(),avLoadSvc()]); }
 function avQS(){ return `from=${avFromCur}&to=${avToCur}&as=${encodeURIComponent(avEmail)}`; }
 
 async function avLoadWeek(){
@@ -1249,11 +1234,11 @@ function avRenderMonth(me, start, end){
     <div class="month-days">${dayLabels}</div>
   </div>`;
 }
-async function avLoadMe(){
-  const cont=document.getElementById('avConta'); cont.innerHTML='<div class="card"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>';
-  document.getElementById('avRec').innerHTML='';
+async function avLoadMe(silent){
+  const cont=document.getElementById('avConta');
+  if(!silent){ cont.innerHTML='<div class="card"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>'; document.getElementById('avRec').innerHTML=''; }
   try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?${avQS()}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); avRenderConta(d.me); avRenderRec(d.recebimentos||[]); }
-  catch(err){ cont.innerHTML=`<div class="card"><div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div></div>`; }
+  catch(err){ if(!silent) cont.innerHTML=`<div class="card"><div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div></div>`; }
 }
 function avRenderConta(me){
   const cont=document.getElementById('avConta');
@@ -1288,6 +1273,21 @@ function avRenderRec(recebimentos){
     html+=`</div>`;
   } else { html+=`<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum recebimento neste período.</div></div>`; }
   html+=`</div>`;
+  cont.innerHTML=html;
+}
+async function avLoadSvc(){
+  const cont=document.getElementById('avSvc'); if(!cont) return;
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/meus-servicos?${avQS()}`); const d=await r.json(); if(d.ok) avRenderSvc(d.servicos||[], d.totalBRL||0); }catch(_){}
+}
+function avRenderSvc(servicos, total){
+  const cont=document.getElementById('avSvc'); if(!cont) return;
+  let html=`<div class="card"><div class="card-title">🛠️ Serviços usados <span style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:13px;color:var(--gold-dim);font-weight:600;margin-left:auto">${fmtBRL(total)}</span></div>`;
+  if(servicos.length){
+    html+='<div class="breakdown">'+servicos.map(x=>`<div class="bd-row"><span class="k">${x.emoji||''} ${escapeHtml(x.label)} <small style="color:var(--text-dim)">· ${x.req}×</small></span><span class="v">${fmtBRL(x.brl)}</span></div>`).join('')+'</div>';
+  } else {
+    html+='<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum serviço neste período.</div></div>';
+  }
+  html+='</div>';
   cont.innerHTML=html;
 }
 async function avLoadRanking(){
