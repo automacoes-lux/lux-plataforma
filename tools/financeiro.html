@@ -72,7 +72,7 @@ input[type="file"]{display:none}
 .fin-total .sub.big{font-size:18px;color:#FFF;line-height:1.5}
 
 /* tabela editável da revisão (6 colunas) */
-.rev-head,.rev-row{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:8px;align-items:center}
+.rev-head,.rev-row{display:grid;grid-template-columns:1.3fr repeat(4,.95fr) 1.7fr;gap:8px;align-items:center}
 .rev-head{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-transform:uppercase;padding:0 12px 6px;font-family:'Cinzel',serif}
 .rev-head span:not(:first-child){text-align:right}
 .rev-row{background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:15px;margin-bottom:6px}
@@ -170,10 +170,11 @@ input[type="file"]{display:none}
 .week-days span{flex:1;text-align:center}
 
 .att-toggle{cursor:pointer}
-.att-row2{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:8px;align-items:center;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:15px;margin-bottom:6px}
+.att-row2{display:grid;grid-template-columns:1.3fr repeat(4,.95fr) 1.7fr;gap:8px;align-items:center;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:15px;margin-bottom:6px}
 .att-row2 .nome{font-weight:600;color:var(--text)}
 .att-row2 .num{text-align:right;color:var(--text-mid);font-variant-numeric:tabular-nums}
 .att-row2 .liquido{color:var(--gold);font-weight:600;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.att-row2 .liquido span,.rev-row .liquido span{white-space:nowrap}
 .copybtn{background:rgba(201,168,76,.12);border:.5px solid var(--border-bright);color:var(--gold);border-radius:6px;padding:4px 9px;font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s}
 .copybtn:hover{background:rgba(201,168,76,.22)}
 .copybtn.copied{background:rgba(127,184,122,.18);border-color:rgba(127,184,122,.5);color:var(--ok)}
@@ -1023,7 +1024,7 @@ function renderGeral(d){
       <div class="num" data-l="Imposto">${fmtBRL(a.impostoBRL)}</div>
       <div class="num" data-l="Anúncio">${fmtBRL(a.anuncioBRL)}</div>
       <div class="num" data-l="Plataforma">${fmtBRL(a.custoIaBRL)}</div>
-      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}${(a.dupla&&(a.membros||1)>1)?` <small style="color:var(--gold-dim);font-weight:400">/ ${fmtBRL(a.liquidoBRL/(a.membros||2))}</small>`:''}</span><button class="copybtn" data-v="${fmtNum(a.liquidoBRL)}" title="Copiar o lucro para pagamento">📋</button></div>
+      <div class="num liquido" data-l="Líquido"><span>${fmtBRL(a.liquidoBRL)}${(a.dupla&&(a.membros||1)>1)?` <small style="color:var(--gold-dim);font-weight:400">/ ${fmtBRL(a.liquidoBRL/(a.membros||2))}</small>`:''}</span><button class="copybtn" data-v="${fmtNum(a.liquidoBRL/(a.membros||1))}" title="Copiar o valor por pessoa (na dupla, a metade)">📋</button></div>
     </div>
     <div class="att-expand hidden" id="exp-${i}">${(a.dias||[]).map(dd=>`<div class="day-row"><span>${fmtDBR(dd.data)}</span><span>${fmtBRL(dd.entradaBRL)}</span><span>${fmtBRL(dd.impostoBRL)}</span><span>${fmtBRL(dd.anuncioBRL)}</span><span>${fmtBRL(dd.custoIaBRL)}</span><span style="color:var(--gold)">${fmtBRL(dd.liquidoBRL)}</span></div>`).join('')||'<div class="day-row"><span>Sem dias.</span></div>'}</div>`;
   });
