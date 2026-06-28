@@ -292,8 +292,8 @@ input[type="file"]{display:none}
 .sv-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.13),rgba(201,168,76,.03));border-color:rgba(201,168,76,.55)}
 .sv-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.10),rgba(200,200,210,.02));border-color:rgba(200,200,210,.4)}
 .sv-card.t3{background:linear-gradient(135deg,rgba(205,127,50,.10),rgba(205,127,50,.02));border-color:rgba(205,127,50,.4)}
-.sv-card.sv-sum{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.06));border:1px solid var(--gold-dim);box-shadow:0 6px 24px rgba(201,168,76,.14);margin-bottom:14px}
-.sv-card.sv-sum .sv-name{color:var(--gold);font-family:'Cinzel',serif;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.sv-card.sv-sum{background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.5);box-shadow:0 6px 24px rgba(255,255,255,.08);margin-bottom:14px}
+.sv-card.sv-sum .sv-name{color:#fff;font-family:'Cinzel',serif;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .sv-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .sv-name{font-weight:600;color:var(--text);font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sv-name .pos{color:var(--gold-dim);margin-right:5px}
@@ -326,9 +326,15 @@ input[type="file"]{display:none}
 
     <!-- Etapa 1: Pix recebidos hoje (automático, Sicredi) -->
     <div class="card">
-      <div class="card-title">1 · Pix recebidos hoje <span id="avoUpd" style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">—</span></div>
+      <div class="card-title">1 · Pix recebidos do dia <span id="avoUpd" style="font-family:'DM Sans';letter-spacing:0;text-transform:none;font-size:12px;color:var(--text-dim);font-weight:400;margin-left:auto">—</span></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <button class="fin-mode-btn active" id="avoBtnHoje" onclick="setFechamentoDia('hoje')" style="padding:8px 15px">Hoje</button>
+        <button class="fin-mode-btn" id="avoBtnOntem" onclick="setFechamentoDia('ontem')" style="padding:8px 15px">Ontem</button>
+        <input type="date" id="avoDateInput" onchange="setFechamentoDia(this.value)" title="Escolher outro dia (fechamento retroativo)" style="background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:8px 11px;font-size:14px;font-family:'DM Sans',sans-serif"/>
+        <span class="hint" style="margin:0">Dá pra fechar dias passados (ex.: sábado e domingo).</span>
+      </div>
       <div class="fin-total">
-        <div class="label">Entradas Pix de hoje</div>
+        <div class="label">Entradas Pix do dia</div>
         <div class="value" id="avoTotal">R$ 0,00</div>
         <div class="sub" id="avoQtd">aguardando…</div>
       </div>
@@ -557,8 +563,8 @@ async function init(){
     if(b.dataset.sub==='fechar') aovivoStart(); else aovivoStop();
   }));
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
-  document.getElementById('inData').value=ymd(new Date());   // data padrão = hoje
-  aovivoStart();   // a aba "Fechamento" (Etapa 1) já mostra os Pix de hoje, ao vivo
+  avoDate=ymd(new Date()); document.getElementById('inData').value=avoDate; document.getElementById('avoDateInput').value=avoDate;   // dia padrão = hoje
+  aovivoStart();   // mostra os Pix do dia selecionado (ao vivo se for hoje)
 }
 
 // ── aviso no grupo do WhatsApp (texto editável) ──
@@ -891,7 +897,7 @@ async function enviar(){
     } else {
       toast('✓ Enviado! '+d.atendentes+' atendentes atualizados.','success');
     }
-    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; document.getElementById('inData').value=ymd(new Date()); document.getElementById('inAnuncioUSD').value=''; updateAnuncioBRL(); parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); aovivoLoad(); },1300);
+    setTimeout(()=>{ voltarUpload(); document.getElementById('parseResult').classList.add('hidden'); document.getElementById('pctResult').classList.add('hidden'); document.getElementById('xlsxInput').value=''; document.getElementById('pctInput').value=''; document.getElementById('inAnuncioUSD').value=''; updateAnuncioBRL(); parsed=null; preview=null; pctState=null; adicionais=[]; renderAddList(); popularAtendentes(); setFechamentoDia('hoje'); },1300);
   }catch(err){ toast('Erro: '+err.message,'error'); }
   finally{ btn.disabled=false; btn.textContent='✓ Enviar pros atendentes'; }
 }
@@ -1330,20 +1336,36 @@ function avRenderRanking(d){
 // ════════════════════════════════════════════════════════════
 // PIX AO VIVO — recebimentos automáticos do Sicredi (tempo real)
 // ════════════════════════════════════════════════════════════
-let aovivoTimer=null, aovivoLoading=false;
+let aovivoTimer=null, aovivoLoading=false, avoDate='';
+// seletor de dia do fechamento (Hoje / Ontem / escolher) — permite fechar dias retroativos
+function setFechamentoDia(arg){
+  let d;
+  if(arg==='hoje'){ d=ymd(new Date()); }
+  else if(arg==='ontem'){ const x=new Date(); x.setDate(x.getDate()-1); d=ymd(x); }
+  else { d=String(arg||'').trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; }
+  avoDate=d;
+  document.getElementById('inData').value=d;
+  document.getElementById('avoDateInput').value=d;
+  const hoje=ymd(new Date()); const o=new Date(); o.setDate(o.getDate()-1); const ontem=ymd(o);
+  document.getElementById('avoBtnHoje').classList.toggle('active', d===hoje);
+  document.getElementById('avoBtnOntem').classList.toggle('active', d===ontem);
+  aovivoLoad();
+}
 function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }
 async function aovivoLoad(){
   if(aovivoLoading) return; aovivoLoading=true;
   try{
-    const r=await window.__luxFetch(WORKER_URL+'/sicredi/aovivo'); const d=await r.json();
+    const dia=avoDate||ymd(new Date());
+    const r=await window.__luxFetch(WORKER_URL+'/sicredi/aovivo?date='+encodeURIComponent(dia)); const d=await r.json();
     if(d.ok) aovivoRender(d);
   }catch(e){ /* silencioso */ }
   finally{ aovivoLoading=false; }
 }
 function aovivoRender(d){
   document.getElementById('avoTotal').textContent=fmtBRL(d.totalBRL);
-  document.getElementById('avoQtd').textContent=`${d.qtd||0} Pix hoje · atualiza sozinho a cada 15s`;
+  const ehHoje=((avoDate||ymd(new Date()))===ymd(new Date()));
+  document.getElementById('avoQtd').textContent=`${d.qtd||0} Pix · ${fmtDBR(avoDate||d.data||'')}`+(ehHoje?' · atualiza sozinho':'');
   const p2=n=>String(n).padStart(2,'0'), now=new Date();
   document.getElementById('avoUpd').textContent='atualizado '+p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
   const ats=d.atendentes||[];
@@ -1360,11 +1382,12 @@ function aovivoRender(d){
     '</div>';
 }
 async function aovivoApagar(){
-  if(!confirm('Apagar TODOS os Pix de hoje da tela (do admin e dos atendentes)?\n\nLimpa só os recebimentos automáticos de hoje — NÃO mexe nos fechamentos já enviados nem no extrato. Use se entrou algo errado.')) return;
+  const dia=avoDate||ymd(new Date());
+  if(!confirm('Apagar TODOS os Pix de '+fmtDBR(dia)+' da tela (do admin e dos atendentes)?\n\nLimpa só os recebimentos automáticos desse dia — NÃO mexe nos fechamentos já enviados nem no extrato. Use se entrou algo errado.')) return;
   try{
-    const r=await window.__luxFetch(WORKER_URL+'/sicredi/apagar',{method:'POST'}); const d=await r.json();
+    const r=await window.__luxFetch(WORKER_URL+'/sicredi/apagar?date='+encodeURIComponent(dia),{method:'POST'}); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
-    toast(`✓ ${d.apagados} Pix de hoje apagados.`,'success'); aovivoLoad();
+    toast(`✓ ${d.apagados} Pix de ${fmtDBR(dia)} apagados.`,'success'); aovivoLoad();
   }catch(e){ toast('Erro ao apagar: '+e.message,'error'); }
 }
 </script>
