@@ -292,6 +292,8 @@ input[type="file"]{display:none}
 .sv-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.13),rgba(201,168,76,.03));border-color:rgba(201,168,76,.55)}
 .sv-card.t2{background:linear-gradient(135deg,rgba(200,200,210,.10),rgba(200,200,210,.02));border-color:rgba(200,200,210,.4)}
 .sv-card.t3{background:linear-gradient(135deg,rgba(205,127,50,.10),rgba(205,127,50,.02));border-color:rgba(205,127,50,.4)}
+.sv-card.sv-sum{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.06));border:1px solid var(--gold-dim);box-shadow:0 6px 24px rgba(201,168,76,.14);margin-bottom:14px}
+.sv-card.sv-sum .sv-name{color:var(--gold);font-family:'Cinzel',serif;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .sv-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .sv-name{font-weight:600;color:var(--text);font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sv-name .pos{color:var(--gold-dim);margin-right:5px}
@@ -1111,7 +1113,16 @@ async function svLoad(){
 function svRender(linhas){
   const cont=document.getElementById('svContainer');
   if(!linhas.length){ cont.innerHTML='<div class="state-msg"><div>Nenhum atendente cadastrado.</div></div>'; return; }
-  let html='';
+  // ── card-resumo: somatório de TODOS os atendentes, ranqueado por QUANTIDADE ──
+  const tot={}; SV_SERVICOS.forEach(s=>tot[s.key]={req:0,brl:0});
+  linhas.forEach(a=>SV_SERVICOS.forEach(s=>{ const b=a.buckets[s.key]||{req:0,brl:0}; tot[s.key].req+=b.req; tot[s.key].brl+=b.brl; }));
+  const totItens=SV_SERVICOS.map(s=>({...s, req:tot[s.key].req, brl:tot[s.key].brl})).sort((x,y)=> (y.req-x.req) || (y.brl-x.brl));
+  const grandReq=totItens.reduce((s,x)=>s+x.req,0), grandBRL=totItens.reduce((s,x)=>s+x.brl,0);
+  const totRows=totItens.map(s=>`<div class="sv-row${s.req===0?' zero':''}"><span class="sl">${s.emoji} ${s.label}</span><span class="sq">${s.req}×</span><span class="sval">${fmtBRL(s.brl)}</span></div>`).join('');
+  let html=`<div class="sv-card sv-sum">
+      <div class="sv-head"><div class="sv-name">📊 Total da equipe <small style="color:var(--gold-dim);font-weight:400;font-family:'DM Sans'">· ${grandReq} serviços</small></div><div class="sv-total">${fmtBRL(grandBRL)}</div></div>
+      <div class="sv-grid">${totRows}</div>
+    </div>`;
   linhas.forEach((a,i)=>{
     const rowCls = i===0?' t1':i===1?' t2':i===2?' t3':'';
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
