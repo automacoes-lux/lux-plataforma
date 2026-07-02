@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Vídeo Promocional 📣</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../css/theme.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg-card:#121212;--bg-input:#1C1C1C;--bg-hover:#222;--text-mid:#B0A080}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;
+  background-image:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%)}
+.container{max-width:760px;margin:0 auto;padding:1.6rem 1.2rem 5rem}
+.page-head{margin-bottom:1.2rem}
+.page-title{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.page-sub{color:var(--text-dim);font-size:13.5px;margin-top:.4rem;line-height:1.5}
+
+.step{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.2rem;margin-bottom:1.1rem}
+.step-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.step-num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#141414;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif}
+.step-title{font-weight:600;font-size:15.5px;color:var(--text)}
+.step-hint{color:var(--text-dim);font-size:12.5px;margin:-.4rem 0 .8rem 0;line-height:1.45}
+
+label.fld{display:block;font-size:13px;color:var(--text-mid);margin:.7rem 0 .35rem}
+textarea,input[type=text]{width:100%;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem .8rem;font-family:'DM Sans',sans-serif;font-size:14.5px;resize:vertical}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--border-bright)}
+textarea{min-height:96px}
+
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:999px;padding:.55rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--border-bright);color:var(--text)}
+.chip.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+
+.up-cat{margin-bottom:.4rem}
+.up-cat-head{font-size:14px;color:var(--text);margin-bottom:.5rem;font-weight:500}
+.up-opt{color:var(--text-dim);font-size:12px;font-weight:400}
+.thumbs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.thumb{position:relative;width:74px;height:96px;border-radius:8px;overflow:hidden;border:.5px solid var(--border);background:var(--bg-input)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .rm{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:20px;text-align:center;padding:0}
+.up-btn{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--bg-input);border:.5px dashed var(--border-bright);color:var(--text-mid);border-radius:var(--radius);padding:.5rem .9rem;font-size:13px;transition:all .15s}
+.up-btn:hover{color:var(--text);border-color:var(--gold)}
+
+.paste{margin-top:.6rem;border:.5px dashed var(--border-bright);border-radius:var(--radius);padding:.7rem .8rem;color:var(--text-dim);font-size:12.5px;text-align:center;background:var(--bg-input)}
+
+.btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
+.btn-gold:hover{filter:brightness(1.07)}
+.btn-gold:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.3)}
+
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem}
+.tabbtn{flex:1;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem;font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--text-mid);cursor:pointer}
+.tabbtn.on{background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#141414;border-color:transparent}
+.rescard{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:.9rem 1rem;margin-bottom:.7rem}
+.rescard .rc-top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.rescard .rc-name{font-weight:600;color:var(--text);font-size:15px}
+.rescard .rc-meta{font-size:12px;color:var(--text-dim);margin-top:.2rem}
+.rc-st{font-size:12px;font-weight:700;padding:.25rem .6rem;border-radius:999px;white-space:nowrap}
+.rc-st.run{background:rgba(232,168,76,.14);color:#E8A84C}
+.rc-st.ok{background:rgba(80,200,120,.14);color:#7ED9A0}
+.rc-st.err{background:rgba(255,110,110,.12);color:#FF9B9B}
+.rc-acts{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
+.rc-acts a,.rc-acts button{flex:1;text-align:center;text-decoration:none;border-radius:var(--radius);padding:.6rem .8rem;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--border);font-family:inherit}
+.rc-acts .dl{background:linear-gradient(135deg,#D9BC6E,#C9A84C);color:#141414;border-color:transparent}
+.rc-acts .ed{background:transparent;color:var(--text-mid)}
+.rot-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin-bottom:1rem}
+.cena-p{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:.8rem;margin-bottom:.8rem;display:flex;gap:.8rem}
+.cena-p .cimg{flex:0 0 84px;width:84px;height:112px;border-radius:8px;overflow:hidden;background:var(--bg-input);border:.5px solid var(--border);display:flex;align-items:center;justify-content:center}
+.cena-p .cimg img{width:100%;height:100%;object-fit:cover}
+.cena-p .cimg span{font-size:11px;color:var(--text-dim);text-align:center;padding:4px}
+.cena-p .cbody{flex:1;min-width:0}
+.cena-badge{display:inline-block;background:var(--bg-input);border:.5px solid var(--border);color:var(--gold);border-radius:6px;padding:.2rem .55rem;font-size:12px;font-weight:700;font-family:'Cinzel',serif}
+.mini{font-size:11.5px;color:var(--text-dim);margin:.5rem 0 .2rem}
+.btn-row{display:flex;gap:.6rem}
+.btn-ghost{flex:1;background:transparent;color:var(--text-mid);border:.5px solid var(--border);border-radius:var(--radius);padding:.8rem 1rem;font-size:14px;cursor:pointer}
+.btn-ghost:hover{color:var(--text);border-color:var(--border-bright)}
+.btn-row .btn-gold{margin-top:0;flex:1}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1d1d1d;border:.5px solid var(--border-bright);color:var(--text);padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(20,20,20,.35);border-top-color:#141414;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.soon-note{font-size:12px;color:var(--text-dim);text-align:center;margin-top:.5rem;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-head">
+    <div class="page-title">📣 Vídeo Promocional</div>
+    <div class="page-sub">Vídeo de 30s: o avatar do cliente (ou o produto) apresenta o serviço, falando com o espectador,
+      com as imagens reais do negócio de fundo. Preencha os passos e gere o roteiro.</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tabbtn on" id="tabCriar" onclick="switchTab('criar')">✏️ Criar</button>
+    <button class="tabbtn" id="tabResultados" onclick="switchTab('resultados')">🎬 Resultados</button>
+  </div>
+
+  <div id="criarView">
+
+  <!-- PASSO 1 — NOME -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">Nome do cliente</div></div>
+    <input type="text" id="clientName" placeholder="Ex: Body Club Fitness"/>
+  </div>
+
+  <!-- PASSO 2 — APRESENTADOR (foto → avatar) -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Quem apresenta (vira avatar)</div></div>
+    <div class="step-hint">Escolha e suba 1 foto: o <b>dono</b> vira um avatar (sem microfone/palco), ou o <b>produto</b> vira um personagem (com braços, pernas e boca).</div>
+    <div class="chips" id="chipsApres" style="margin-bottom:.8rem">
+      <div class="chip on" data-v="dono">🧑 Avatar do dono</div>
+      <div class="chip" data-v="produto">📦 Produto vira personagem</div>
+    </div>
+    <div class="up-cat">
+      <div class="up-cat-head" id="fotoLabel">📸 Foto do dono <span class="up-opt">(1, rosto nítido de frente)</span></div>
+      <div class="thumbs" id="thumbsFoto"></div>
+      <label class="up-btn">+ Adicionar foto<input type="file" accept="image/*" hidden onchange="onPick(event,'foto')"/></label>
+    </div>
+  </div>
+
+  <!-- PASSO 3 — BRIEFING -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Briefing (o que divulgar)</div></div>
+    <div class="step-hint">Cole a mensagem do cliente. Pode também subir uma imagem ou <b>colar (Ctrl+V)</b> um panfleto — a IA lê tudo e monta o roteiro.</div>
+    <textarea id="briefing" placeholder="Ex: Academia Body Club em Cabo Frio. Divulgar o aulão de sábado, matrículas abertas, brindes. WhatsApp (22) 99999-9999."></textarea>
+    <div class="up-cat" style="margin-top:.7rem">
+      <div class="up-cat-head">🖼️ Imagens do briefing <span class="up-opt">(opcional — panfleto, cardápio…)</span></div>
+      <div class="thumbs" id="thumbsBrief"></div>
+      <label class="up-btn">+ Adicionar imagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'brief')"/></label>
+      <div class="paste" id="pasteZone">📋 Clique aqui e aperte <b>Ctrl+V</b> pra colar uma imagem (panfleto)</div>
+    </div>
+  </div>
+
+  <!-- PASSO 4 — IMAGENS DE FUNDO -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
+    <div class="step-hint">Até <b>6</b> imagens reais do negócio. O avatar aparece em cada uma. 6 imagens → 6 falas de 5s; 3 imagens → 3 falas de 10s.</div>
+    <div class="up-cat">
+      <div class="thumbs" id="thumbsFundo"></div>
+      <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
+    </div>
+    <div class="soon-note" id="fundoInfo"></div>
+  </div>
+
+  <button class="btn-gold" id="btnRoteiro" onclick="gerarRoteiro()">✨ Gerar roteiro</button>
+  <div class="soon-note">A IA cria as falas a partir do briefing e das imagens. Você revisa antes do vídeo.</div>
+
+  <!-- ROTEIRO EDITÁVEL -->
+  <div id="roteiroWrap" style="display:none;margin-top:1.5rem">
+    <div class="rot-title" id="rotTitle">🎬 Roteiro</div>
+    <div id="promoCenas"></div>
+
+    <!-- ÁUDIO (música de fundo 30s) -->
+    <div class="step" style="margin-top:1rem">
+      <div class="step-head"><div class="step-num">🎵</div><div class="step-title">Música de fundo (30s)</div></div>
+      <div class="step-hint">Opcional. Suba uma música e escolha onde começa o trecho de 30s.</div>
+      <label class="up-btn" style="margin-bottom:.6rem">+ Subir música<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusic(event)"/></label>
+      <div id="musicBox" style="display:none">
+        <div style="font-size:13px;color:var(--text-mid);margin-bottom:.4rem" id="musicName"></div>
+        <audio id="player" controls style="width:100%"></audio>
+        <div class="mini">Início do trecho de 30s: <b id="startLbl">0:00</b></div>
+        <input type="range" id="startRange" min="0" max="0" value="0" step="1" style="width:100%"/>
+        <button class="btn-ghost" style="margin-top:.5rem" onclick="ouvirTrecho()">▶ Ouvir os 30s escolhidos</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:.8rem">
+      <button class="btn-ghost" onclick="gerarRoteiro()">🔄 Gerar roteiro de novo</button>
+      <button class="btn-gold" onclick="gerarPDF()">📄 Gerar PDF (pro cliente)</button>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn-gold" id="btnVideo" onclick="gerarVideo()">🎬 Aprovar e gerar vídeo</button>
+      <div class="soon-note">O vídeo cai na aba <b>Resultados</b>. Pode fechar a aba — ele continua sozinho.</div>
+    </div>
+    <div id="videoStatus" class="step" style="display:none;margin-top:1rem"></div>
+  </div>
+
+  </div><!-- /criarView -->
+
+  <!-- RESULTADOS -->
+  <div id="resultadosView" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.6rem">
+      <button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="loadResultados()">↻ Atualizar</button>
+    </div>
+    <div id="resList"><div class="soon-note">Carregando…</div></div>
+  </div>
+
+</div>
+
+<!-- MODAL EDITAR TAKE -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:60;padding:1.2rem;overflow-y:auto">
+  <div style="max-width:640px;margin:2rem auto;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.3rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="rot-title" style="margin:0" id="edTitle">✏️ Editar vídeo</div>
+      <button class="btn-ghost" style="flex:0 0 auto;min-width:44px" onclick="fecharEditar()">✕</button>
+    </div>
+    <div id="edBody"><div class="soon-note">Carregando…</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../js/auth-iframe.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LUX VÍDEO PROMOCIONAL — Bloco 1 (wizard: entradas → gerar roteiro)
+// ═══════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
+const MAX_IMAGE_DIMENSION = 1536;
+const IMAGE_QUALITY = 0.85;
+const MAX_FUNDO = 6;
+
+function api(path, opts){
+  const url = WORKER_URL + path;
+  if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
+  return fetch(url, opts);
+}
+
+// ── Estado ──
+let apresentador = 'dono';
+let roteiro = null;
+let music = null;
+let musicPreviewTimer = null;
+let fotos = { foto:[], brief:[], fundo:[] };   // foto: 1 | brief: livre | fundo: até 6
+const LIMITS = { foto:1, brief:8, fundo:MAX_FUNDO };
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),3800); }
+
+// ── Apresentador (chips) ──
+document.querySelectorAll('#chipsApres .chip').forEach(function(c){
+  c.addEventListener('click',function(){
+    apresentador = c.dataset.v;
+    document.querySelectorAll('#chipsApres .chip').forEach(x=>x.classList.toggle('on',x===c));
+    document.getElementById('fotoLabel').innerHTML = (apresentador==='dono')
+      ? '📸 Foto do dono <span class="up-opt">(1, rosto nítido de frente)</span>'
+      : '📦 Foto do produto <span class="up-opt">(1, produto bem visível)</span>';
+  });
+});
+
+// ── Upload / otimização ──
+function readFileAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+async function fileToOptimizedImage(file){
+  const dataUrl = await readFileAsDataURL(file);
+  const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+  let { width, height } = img; const m=Math.max(width,height);
+  if (m > MAX_IMAGE_DIMENSION){ const f=MAX_IMAGE_DIMENSION/m; width=Math.round(width*f); height=Math.round(height*f); }
+  const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+  canvas.getContext('2d').drawImage(img,0,0,width,height);
+  const out=canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+  return { base64: out.split(',')[1], mimeType:'image/jpeg', thumbUrl: out };
+}
+async function addImage(file, cat){
+  if (fotos[cat].length >= LIMITS[cat]){ toast('Limite de '+LIMITS[cat]+' imagem(ns) aqui.'); return false; }
+  try { fotos[cat].push(await fileToOptimizedImage(file)); return true; }
+  catch(e){ toast('⚠️ Não consegui ler a imagem'); return false; }
+}
+async function onPick(ev, cat){
+  const files = Array.from(ev.target.files || []); ev.target.value='';
+  for (const f of files){ if (!(await addImage(f, cat))) break; }
+  renderThumbs(cat);
+}
+function renderThumbs(cat){
+  const box = document.getElementById('thumbs'+cat.charAt(0).toUpperCase()+cat.slice(1));
+  box.innerHTML='';
+  fotos[cat].forEach(function(f,idx){
+    const d=document.createElement('div'); d.className='thumb';
+    d.innerHTML='<img src="'+f.thumbUrl+'"/><button class="rm" title="Remover">✕</button>';
+    d.querySelector('.rm').onclick=()=>{ fotos[cat].splice(idx,1); renderThumbs(cat); if(cat==='fundo') updateFundoInfo(); };
+    box.appendChild(d);
+  });
+  if (cat==='fundo') updateFundoInfo();
+}
+function updateFundoInfo(){
+  const n = fotos.fundo.length;
+  const el = document.getElementById('fundoInfo');
+  if (!n){ el.textContent=''; return; }
+  const secs = Math.round(30/n);
+  el.textContent = n+' imagem(ns) → '+n+' fala(s) de ~'+secs+'s cada.';
+}
+
+// ── Colar (Ctrl+V) imagem no briefing ──
+const pasteZone = document.getElementById('pasteZone');
+pasteZone.addEventListener('click', ()=>{ pasteZone.style.borderColor='var(--gold)'; pasteZone.textContent='📋 Agora aperte Ctrl+V'; });
+window.addEventListener('paste', async function(e){
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  let achou=false;
+  for (const it of items){
+    if (it.type && it.type.indexOf('image')===0){
+      const file = it.getAsFile();
+      if (file){ achou=true; if (await addImage(file,'brief')) renderThumbs('brief'); }
+    }
+  }
+  if (achou){ toast('✅ Imagem colada no briefing!'); pasteZone.textContent='📋 Clique aqui e aperte Ctrl+V pra colar outra'; pasteZone.style.borderColor=''; }
+});
+
+// ── Gerar roteiro (Bloco 2 — backend /promoRoteiro) ──
+async function gerarRoteiro(){
+  const clientName = document.getElementById('clientName').value.trim();
+  const briefing = document.getElementById('briefing').value.trim();
+  if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
+  if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
+  if (!briefing && !fotos.brief.length){ toast('📝 Escreva o briefing ou cole uma imagem.'); return; }
+  if (!fotos.fundo.length){ toast('🖼️ Suba pelo menos 1 imagem de fundo.'); return; }
+
+  const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando roteiro...';
+  const payload = {
+    clientName, apresentador, briefing,
+    foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
+    briefImgs: fotos.brief.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
+    fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType }))
+  };
+  try {
+    const r = await api('/promoRoteiro', { method:'POST', body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao gerar roteiro')); return; }
+    roteiro = { titulo: d.titulo, cenas: d.cenas, segDur: d.segDur };
+    renderRoteiroPromo();
+    const custo = (typeof d.aiCostBRL === 'number') ? ' (IA ~R$'+d.aiCostBRL.toFixed(2)+')' : '';
+    toast('✅ Roteiro gerado!'+custo);
+    document.getElementById('roteiroWrap').style.display='block';
+    document.getElementById('roteiroWrap').scrollIntoView({ behavior:'smooth' });
+  } catch(e){ toast('⚠️ '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML=old; }
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderRoteiroPromo(){
+  document.getElementById('rotTitle').textContent = '🎬 ' + (roteiro.titulo || 'Roteiro') + ' · ~' + (roteiro.segDur||5) + 's por fala';
+  const wrap = document.getElementById('promoCenas'); wrap.innerHTML='';
+  roteiro.cenas.forEach(function(c,i){
+    const thumb = (fotos.fundo[i] && fotos.fundo[i].thumbUrl) ? '<img src="'+fotos.fundo[i].thumbUrl+'"/>' : '<span>sem imagem</span>';
+    const div = document.createElement('div'); div.className='cena-p';
+    div.innerHTML =
+      '<div class="cimg">'+thumb+'</div>'+
+      '<div class="cbody">'+
+        '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+        '<div class="mini">🗣️ Fala do apresentador</div>'+
+        '<textarea data-i="'+i+'" data-f="fala" style="min-height:52px">'+escHtml(c.fala)+'</textarea>'+
+        '<div class="mini">🎨 Como aparece na cena</div>'+
+        '<textarea data-i="'+i+'" data-f="visual" style="min-height:46px">'+escHtml(c.visual)+'</textarea>'+
+      '</div>';
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('[data-f]').forEach(function(el){ el.addEventListener('input',function(){ roteiro.cenas[+el.dataset.i][el.dataset.f]=el.value; }); });
+}
+function copiarRoteiro(){
+  if(!roteiro) return;
+  let txt='🎬 '+(roteiro.titulo||'Roteiro')+'\n\n';
+  roteiro.cenas.forEach(function(c,i){ txt+='CENA '+(i+1)+'\n🗣️ '+(c.fala||'')+'\n'+(c.visual?('🎨 '+c.visual+'\n'):'')+'\n'; });
+  const done=function(){ toast('📋 Roteiro copiado!'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt,done); }); } else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} document.body.removeChild(ta); }
+
+// ── Música de fundo (30s) ──
+async function onMusic(ev){
+  const file = ev.target.files && ev.target.files[0]; ev.target.value='';
+  if (!file) return;
+  try {
+    const dataUrl = await readFileAsDataURL(file);
+    music = { base64: dataUrl.split(',')[1], mimeType: file.type||'audio/mpeg', name: file.name, startSec: 0, duration: 0 };
+    const player = document.getElementById('player');
+    player.src = dataUrl;
+    document.getElementById('musicName').textContent = '🎵 ' + file.name;
+    document.getElementById('musicBox').style.display='block';
+    player.onloadedmetadata = function(){
+      const dur = player.duration || 0; music.duration = dur;
+      const range = document.getElementById('startRange');
+      range.max = Math.max(0, Math.floor(dur - 30)); range.value = 0; updateStartLbl(0);
+    };
+  } catch(e){ toast('⚠️ Não consegui ler a música'); }
+}
+function fmtT(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function updateStartLbl(v){ document.getElementById('startLbl').textContent = fmtT(v); if(music) music.startSec = Number(v)||0; }
+document.addEventListener('input', function(e){ if(e.target && e.target.id==='startRange') updateStartLbl(e.target.value); });
+function ouvirTrecho(){
+  const player = document.getElementById('player'); if(!music) return;
+  clearTimeout(musicPreviewTimer);
+  player.currentTime = music.startSec || 0; player.play();
+  musicPreviewTimer = setTimeout(function(){ player.pause(); }, 30000);
+}
+
+// ── Gerar PDF do roteiro (pro cliente) ──
+function gerarPDF(){
+  if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('Gere o roteiro primeiro.'); return; }
+  if (!window.jspdf || !window.jspdf.jsPDF){ toast('PDF indisponível — recarregue a página.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const W = doc.internal.pageSize.getWidth(); const M = 40; let y = 50;
+  const nome = document.getElementById('clientName').value.trim() || (roteiro.titulo||'Roteiro');
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(20,20,20);
+  doc.text('Roteiro — ' + nome, M, y); y+=10;
+  doc.setDrawColor(201,168,76); doc.setLineWidth(2); doc.line(M, y, W-M, y); y+=26;
+  roteiro.cenas.forEach(function(c,i){
+    const imgW = 82, imgH = 110;
+    if (y > 700){ doc.addPage(); y=50; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(154,122,56);
+    doc.text('CENA ' + (i+1), M, y);
+    const f = fotos.fundo[i];
+    if (f && f.thumbUrl){ try { doc.addImage(f.thumbUrl, 'JPEG', M, y+8, imgW, imgH); } catch(e){} }
+    const tx = M + imgW + 16, tw = W - M - tx;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(60,60,60); doc.text('Fala:', tx, y+18);
+    doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(20,20,20);
+    const fala = doc.splitTextToSize(c.fala || '—', tw); doc.text(fala, tx, y+34);
+    const yv = y+34 + fala.length*14 + 10;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(60,60,60); doc.text('Cena:', tx, yv);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,90,90);
+    const vis = doc.splitTextToSize(c.visual || '', tw); doc.text(vis, tx, yv+14);
+    y += imgH + 30;
+  });
+  doc.save('roteiro-' + nome.replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase() + '.pdf');
+  toast('📄 PDF gerado!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BLOCO 5 — Gerar vídeo + aba Resultados + Editar take
+// ═══════════════════════════════════════════════════════════════
+let resTimer = null;
+
+function switchTab(t){
+  const criar = (t==='criar');
+  document.getElementById('criarView').style.display = criar ? 'block' : 'none';
+  document.getElementById('resultadosView').style.display = criar ? 'none' : 'block';
+  document.getElementById('tabCriar').classList.toggle('on', criar);
+  document.getElementById('tabResultados').classList.toggle('on', !criar);
+  if (criar){ clearInterval(resTimer); resTimer=null; }
+  else { loadResultados(); clearInterval(resTimer); resTimer=setInterval(loadResultados, 12000); }
+}
+
+// ── Gerar vídeo (POST /promoCreate) ──
+async function gerarVideo(){
+  const clientName = document.getElementById('clientName').value.trim();
+  if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('Gere o roteiro primeiro.'); return; }
+  if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
+  if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
+  if (!fotos.fundo.length){ toast('🖼️ Suba pelo menos 1 imagem de fundo.'); return; }
+
+  const btn = document.getElementById('btnVideo'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
+  const stEl = document.getElementById('videoStatus'); stEl.style.display='block'; stEl.textContent='Enviando o pedido…';
+  const payload = {
+    clientName, apresentador,
+    roteiro: { titulo: roteiro.titulo, cenas: roteiro.cenas.map(c=>({ fala:c.fala, visual:c.visual })) },
+    foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
+    fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
+    music: (music && music.base64) ? { base64:music.base64, startSec:music.startSec||0 } : null
+  };
+  try {
+    const r = await api('/promoCreate', { method:'POST', body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao gerar vídeo')); stEl.textContent='⚠️ '+(d.error||'Erro'); return; }
+    stEl.innerHTML='✅ Vídeo em produção! Veja o andamento na aba <b>Resultados</b>.';
+    toast('✅ Vídeo em produção!');
+    setTimeout(()=>switchTab('resultados'), 800);
+  } catch(e){ toast('⚠️ '+e.message); stEl.textContent='⚠️ '+e.message; }
+  finally { btn.disabled=false; btn.innerHTML=old; }
+}
+
+// ── Aba Resultados ──
+function promoStatus(o){
+  if (o.videoUrl || o.status==='COMPLETED') return { cls:'ok', label:'✅ Pronto' };
+  if (o.genError) return { cls:'err', label:'⚠️ Erro' };
+  if (o.status==='PROMO_RENDER') return { cls:'run', label:'🎬 Montando o vídeo…' };
+  return { cls:'run', label:'⏳ Gerando (avatar, cenas, vozes)…' };
+}
+async function loadResultados(){
+  const box = document.getElementById('resList');
+  try {
+    const r = await api('/listOrders?limit=100');
+    const d = await r.json();
+    const orders = (d.orders||[]).filter(o=>o.kind==='promo');
+    renderResultados(orders);
+    const anyRun = orders.some(o=>!(o.videoUrl||o.status==='COMPLETED'||o.genError));
+    if (!anyRun && resTimer){ /* nada rodando: mantém o refresh leve mesmo assim */ }
+  } catch(e){ box.innerHTML='<div class="soon-note">⚠️ Não consegui carregar ('+escHtml(e.message)+'). <button class="btn-ghost" style="margin-top:.5rem" onclick="loadResultados()">Tentar de novo</button></div>'; }
+}
+function renderResultados(orders){
+  const box = document.getElementById('resList');
+  if (!orders.length){ box.innerHTML='<div class="soon-note">Nenhum vídeo promocional ainda. Crie um na aba <b>Criar</b>.</div>'; return; }
+  box.innerHTML='';
+  orders.forEach(function(o){
+    const st = promoStatus(o);
+    const custo = (typeof o.costBRL==='number') ? ('R$'+o.costBRL.toFixed(2)) : '—';
+    const when = o.createdAt || '';
+    const card = document.createElement('div'); card.className='rescard';
+    let acts = '';
+    if (o.videoUrl){
+      acts += '<a class="dl" href="'+o.videoUrl+'" target="_blank" rel="noopener" download>⬇️ Baixar vídeo</a>';
+      acts += '<button class="ed" onclick="abrirEditar(\''+encodeURIComponent(o.orderId)+'\')">✏️ Editar / Refazer take</button>';
+    } else if (o.genError){
+      acts += '<button class="ed" onclick="abrirEditar(\''+encodeURIComponent(o.orderId)+'\')">✏️ Ver / Refazer</button>';
+    }
+    card.innerHTML =
+      '<div class="rc-top">'+
+        '<div><div class="rc-name">'+escHtml(o.clientName||'—')+'</div>'+
+        '<div class="rc-meta">👤 '+escHtml(o.attendantName||'')+' · '+escHtml(when)+' · '+custo+'</div></div>'+
+        '<span class="rc-st '+st.cls+'">'+st.label+'</span>'+
+      '</div>'+
+      (o.genError ? '<div class="rc-meta" style="color:#FF9B9B;margin-top:.5rem">'+escHtml(o.genError)+'</div>' : '')+
+      (acts ? '<div class="rc-acts">'+acts+'</div>' : '');
+    box.appendChild(card);
+  });
+}
+
+// ── Editar / Refazer take (GET /promoGet + POST /promoRedoTake) ──
+let edOrderId = null;
+async function abrirEditar(encId){
+  edOrderId = decodeURIComponent(encId);
+  document.getElementById('editModal').style.display='block';
+  document.getElementById('edBody').innerHTML='<div class="soon-note">Carregando…</div>';
+  try {
+    const r = await api('/promoGet?orderId='+encodeURIComponent(edOrderId));
+    const d = await r.json();
+    if (!d.ok){ document.getElementById('edBody').innerHTML='<div class="soon-note">⚠️ '+escHtml(d.error||'Erro')+'</div>'; return; }
+    document.getElementById('edTitle').textContent = '✏️ '+(d.clientName||'Editar vídeo');
+    renderTakes(d.takes||[]);
+  } catch(e){ document.getElementById('edBody').innerHTML='<div class="soon-note">⚠️ '+escHtml(e.message)+'</div>'; }
+}
+function renderTakes(takes){
+  const b = document.getElementById('edBody');
+  if (!takes.length){ b.innerHTML='<div class="soon-note">Sem takes.</div>'; return; }
+  b.innerHTML='<div class="step-hint">Ajuste a fala/cena de um take e clique em <b>Refazer este take</b>. Só esse trecho é gerado de novo (barato); o resto é reaproveitado.</div>';
+  takes.forEach(function(t){
+    const img = t.sceneUrl || t.fundoUrl;
+    const div = document.createElement('div'); div.className='cena-p'; div.style.marginBottom='.8rem';
+    div.innerHTML =
+      '<div class="cimg">'+(img?('<img src="'+img+'"/>'):'<span>—</span>')+'</div>'+
+      '<div class="cbody">'+
+        '<span class="cena-badge">TAKE '+(t.idx+1)+'</span>'+
+        '<div class="mini">🗣️ Fala</div>'+
+        '<textarea id="edFala'+t.idx+'" style="min-height:52px">'+escHtml(t.fala)+'</textarea>'+
+        '<div class="mini">🎨 Como aparece</div>'+
+        '<textarea id="edVis'+t.idx+'" style="min-height:44px">'+escHtml(t.visual)+'</textarea>'+
+        '<button class="btn-ghost" style="margin-top:.5rem" onclick="refazerTake('+t.idx+',this)">🔄 Refazer este take</button>'+
+      '</div>';
+    b.appendChild(div);
+  });
+}
+async function refazerTake(idx, btn){
+  const fala = document.getElementById('edFala'+idx).value;
+  const visual = document.getElementById('edVis'+idx).value;
+  const old = btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
+  try {
+    const r = await api('/promoRedoTake', { method:'POST', body: JSON.stringify({ orderId:edOrderId, idx, fala, visual }) });
+    const d = await r.json();
+    if (!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
+    toast('🔄 Take '+(idx+1)+' vai ser refeito! Acompanhe em Resultados.');
+    fecharEditar(); switchTab('resultados');
+  } catch(e){ toast('⚠️ '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML=old; }
+}
+function fecharEditar(){ document.getElementById('editModal').style.display='none'; edOrderId=null; }
+</script>
+</body>
+</html>
