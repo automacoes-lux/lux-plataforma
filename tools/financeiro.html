@@ -370,11 +370,14 @@ input[type="file"]{display:none}
       <div class="field-row">
         <div class="field">
           <label>Data do fechamento</label>
-          <input type="date" id="inData"/>
+          <input type="date" id="inData" onchange="setFechamentoDia(this.value)"/>
         </div>
         <div class="field">
           <label>Gasto de anúncio do dia (US$)</label>
-          <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL()"/>
+          <div style="display:flex;gap:8px;align-items:stretch">
+            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL()" style="flex:1;min-width:0"/>
+            <button type="button" id="btnAnuncioMeta" onclick="puxarAnuncioMeta(false)" title="Puxar o gasto do Meta Ads deste dia (só-leitura)" style="white-space:nowrap;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:0 13px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">↻ Puxar do Meta</button>
+          </div>
           <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
         </div>
       </div>
@@ -565,6 +568,7 @@ async function init(){
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
   avoDate=ymd(new Date()); document.getElementById('inData').value=avoDate; document.getElementById('avoDateInput').value=avoDate;   // dia padrão = hoje
   aovivoStart();   // mostra os Pix do dia selecionado (ao vivo se for hoje)
+  puxarAnuncioMeta(true);   // já tenta puxar o gasto de anúncio do Meta (silencioso se não configurado)
 }
 
 // ── aviso no grupo do WhatsApp (texto editável) ──
@@ -671,6 +675,22 @@ function updateAnuncioBRL(){
   const hint=document.getElementById('cambioHint');
   if(cambio){ hint.innerHTML=`Câmbio do dia: <b>R$ ${cambio.toFixed(2).replace('.',',')}</b> · ≈ <b>${fmtBRL(usd*cambio)}</b> em reais`; }
   else hint.textContent='Câmbio será buscado ao organizar.';
+}
+// Puxa o gasto do Meta Ads do dia selecionado e preenche o campo de anúncio (US$).
+// silent=true → chamada automática (não incomoda com erro se o Meta ainda não estiver configurado).
+async function puxarAnuncioMeta(silent){
+  const btn=document.getElementById('btnAnuncioMeta');
+  const dia=(typeof avoDate!=='undefined' && avoDate) ? avoDate : ymd(new Date());
+  if(btn && !silent){ btn.disabled=true; btn.dataset.txt=btn.textContent; btn.textContent='Puxando…'; }
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/anuncio-meta?date='+encodeURIComponent(dia));
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    document.getElementById('inAnuncioUSD').value=Number(d.spendUSD||0).toFixed(2);
+    updateAnuncioBRL();
+    if(!silent) toast('✓ Anúncio do Meta: US$ '+Number(d.spendUSD||0).toFixed(2));
+  }catch(e){ if(!silent) toast('Meta: '+e.message,'error'); }
+  finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Meta'; } }
 }
 
 // ── extrato ──
@@ -1350,6 +1370,7 @@ function setFechamentoDia(arg){
   document.getElementById('avoBtnHoje').classList.toggle('active', d===hoje);
   document.getElementById('avoBtnOntem').classList.toggle('active', d===ontem);
   aovivoLoad();
+  puxarAnuncioMeta(true);   // auto-preenche o gasto de anúncio do Meta pro dia escolhido
 }
 function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }
