@@ -17,7 +17,7 @@ const TOOLS = {
   corte:             'tools/corte.html',
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
-  'videos-novelinha':'tools/videos-novelinha.html',
+  'videos-promocional':'tools/videos-promocional.html',
   atendimento:       'tools/atendimento.html',
   'financeiro-atendente': 'tools/financeiro-atendente.html',
   financeiro:        'tools/financeiro.html',
