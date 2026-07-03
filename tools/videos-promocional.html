@@ -204,6 +204,46 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="soon-note" id="fundoInfo"></div>
   </div>
 
+  <!-- PASSO 5 — MÚSICA DE FUNDO (30s — editor de corte + fades) -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (30s)</div></div>
+    <div class="step-hint">Opcional. Se a música passar de 30s, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
+    <label class="up-btn" id="musicUpBtn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusic(event)"/></label>
+
+    <!-- música pronta -->
+    <div id="musicBox" style="display:none">
+      <div style="font-size:13px;color:var(--text-mid);margin-bottom:.4rem" id="musicName"></div>
+      <audio id="player" controls style="width:100%"></audio>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+        <button class="btn-ghost" style="flex:1;min-width:130px" onclick="document.getElementById('musicInput').click()">trocar a música</button>
+        <button class="btn-ghost" id="btnReabrirCorte" style="flex:1;min-width:130px;display:none" onclick="reabrirCorte()">refazer o corte</button>
+      </div>
+    </div>
+
+    <!-- editor de corte (música > 30s) -->
+    <div class="cut-editor" id="cutEditor">
+      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>30 segundos</b> que vão pro vídeo:</div>
+      <canvas id="waveCanvas"></canvas>
+      <div class="cut-row"><span>Os 30s começam em</span><b id="cutStartLabel">0:00 → 0:30</b></div>
+      <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
+      <div class="fades-row">
+        <div class="fade-box">
+          <div class="cut-row"><span>Fade in (entrada)</span><b id="fadeInVal">1,0s</b></div>
+          <input type="range" id="fadeIn" min="0" max="5" step="0.5" value="1"/>
+        </div>
+        <div class="fade-box">
+          <div class="cut-row"><span>Fade out (final)</span><b id="fadeOutVal">2,5s</b></div>
+          <input type="range" id="fadeOut" min="0" max="6" step="0.5" value="2.5"/>
+        </div>
+      </div>
+      <div class="cut-actions">
+        <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
+        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 30s</button>
+      </div>
+      <div class="cut-progress" id="cutProgress"></div>
+    </div>
+  </div>
+
   <button class="btn-gold" id="btnRoteiro" onclick="gerarRoteiro()">✨ Gerar roteiro</button>
   <div class="soon-note">A IA cria as falas a partir do briefing e das imagens. Você revisa antes do vídeo.</div>
 
@@ -214,46 +254,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <!-- Gerar um novo roteiro a partir do atual -->
     <button class="btn-gold" id="btnNovoRoteiro" onclick="gerarNovoRoteiro()" style="margin-top:.4rem">✨ Gerar novo roteiro</button>
-
-    <!-- PASSO 5 — ÁUDIO (música de fundo 30s — editor de corte + fades) -->
-    <div class="step" style="margin-top:1rem">
-      <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (30s)</div></div>
-      <div class="step-hint">Opcional. Se a música passar de 30s, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
-      <label class="up-btn" id="musicUpBtn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusic(event)"/></label>
-
-      <!-- música pronta -->
-      <div id="musicBox" style="display:none">
-        <div style="font-size:13px;color:var(--text-mid);margin-bottom:.4rem" id="musicName"></div>
-        <audio id="player" controls style="width:100%"></audio>
-        <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
-          <button class="btn-ghost" style="flex:1;min-width:130px" onclick="document.getElementById('musicInput').click()">trocar a música</button>
-          <button class="btn-ghost" id="btnReabrirCorte" style="flex:1;min-width:130px;display:none" onclick="reabrirCorte()">refazer o corte</button>
-        </div>
-      </div>
-
-      <!-- editor de corte (música > 30s) -->
-      <div class="cut-editor" id="cutEditor">
-        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>30 segundos</b> que vão pro vídeo:</div>
-        <canvas id="waveCanvas"></canvas>
-        <div class="cut-row"><span>Os 30s começam em</span><b id="cutStartLabel">0:00 → 0:30</b></div>
-        <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
-        <div class="fades-row">
-          <div class="fade-box">
-            <div class="cut-row"><span>Fade in (entrada)</span><b id="fadeInVal">1,0s</b></div>
-            <input type="range" id="fadeIn" min="0" max="5" step="0.5" value="1"/>
-          </div>
-          <div class="fade-box">
-            <div class="cut-row"><span>Fade out (final)</span><b id="fadeOutVal">2,5s</b></div>
-            <input type="range" id="fadeOut" min="0" max="6" step="0.5" value="2.5"/>
-          </div>
-        </div>
-        <div class="cut-actions">
-          <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-          <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 30s</button>
-        </div>
-        <div class="cut-progress" id="cutProgress"></div>
-      </div>
-    </div>
 
     <div class="btn-row" style="margin-top:.8rem">
       <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro cliente</button>
