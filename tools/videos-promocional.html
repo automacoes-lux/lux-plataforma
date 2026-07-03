@@ -45,6 +45,8 @@ textarea{min-height:96px}
 .thumb .rm{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:20px;text-align:center;padding:0}
 .up-btn{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--bg-input);border:.5px dashed var(--border-bright);color:var(--text-mid);border-radius:var(--radius);padding:.5rem .9rem;font-size:13px;transition:all .15s}
 .up-btn:hover{color:var(--text);border-color:var(--gold)}
+.clip-btn{display:inline-flex;align-items:center;gap:.35rem;cursor:pointer;background:transparent;border:none;color:var(--text-dim);font-size:12.5px;padding:.2rem .3rem;transition:color .15s}
+.clip-btn:hover{color:var(--gold)}
 
 .paste{margin-top:.6rem;border:.5px dashed var(--border-bright);border-radius:var(--radius);padding:.7rem .8rem;color:var(--text-dim);font-size:12.5px;text-align:center;background:var(--bg-input)}
 
@@ -183,14 +185,12 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 3 — BRIEFING -->
   <div class="step">
     <div class="step-head"><div class="step-num">3</div><div class="step-title">Briefing (o que divulgar)</div></div>
-    <div class="step-hint">Cole a mensagem do cliente. Pode também subir uma imagem ou <b>colar (Ctrl+V)</b> um panfleto — a IA lê tudo e monta o roteiro.</div>
-    <textarea id="briefing" placeholder="Ex: Academia Body Club em Cabo Frio. Divulgar o aulão de sábado, matrículas abertas, brindes. WhatsApp (22) 99999-9999."></textarea>
-    <div class="up-cat" style="margin-top:.7rem">
-      <div class="up-cat-head">🖼️ Imagens do briefing <span class="up-opt">(opcional — panfleto, cardápio…)</span></div>
-      <div class="thumbs" id="thumbsBrief"></div>
-      <label class="up-btn">+ Adicionar imagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'brief')"/></label>
-      <div class="paste" id="pasteZone">📋 Clique aqui e aperte <b>Ctrl+V</b> pra colar uma imagem (panfleto)</div>
+    <div class="step-hint">Cole a mensagem do cliente. Pode anexar um panfleto pelo clipe 📎 (ou <b>Ctrl+V</b>) — a IA lê tudo.</div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:.35rem">
+      <label class="clip-btn" title="Anexar imagem (panfleto, cardápio)">📎 Anexar imagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'brief')"/></label>
     </div>
+    <textarea id="briefing" placeholder="Ex: Academia Body Club em Cabo Frio. Divulgar o aulão de sábado, matrículas abertas, brindes. WhatsApp (22) 99999-9999."></textarea>
+    <div class="thumbs" id="thumbsBrief" style="margin-top:.5rem"></div>
   </div>
 
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
@@ -212,12 +212,12 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="rot-title" id="rotTitle">🎬 Roteiro</div>
     <div id="promoCenas"></div>
 
-    <!-- Gerar um novo roteiro (mais criativo) a partir do atual -->
-    <button class="btn-ghost" id="btnNovoRoteiro" onclick="gerarNovoRoteiro()" style="width:100%;margin-top:.4rem">✨ Gerar novo roteiro (mais criativo)</button>
+    <!-- Gerar um novo roteiro a partir do atual -->
+    <button class="btn-gold" id="btnNovoRoteiro" onclick="gerarNovoRoteiro()" style="margin-top:.4rem">✨ Gerar novo roteiro</button>
 
-    <!-- ÁUDIO (música de fundo 30s — editor de corte + fades) -->
+    <!-- PASSO 5 — ÁUDIO (música de fundo 30s — editor de corte + fades) -->
     <div class="step" style="margin-top:1rem">
-      <div class="step-head"><div class="step-num">🎵</div><div class="step-title">Música de fundo (30s)</div></div>
+      <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (30s)</div></div>
       <div class="step-hint">Opcional. Se a música passar de 30s, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
       <label class="up-btn" id="musicUpBtn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusic(event)"/></label>
 
@@ -407,9 +407,7 @@ function updateFundoInfo(){
   el.textContent = n+' imagem(ns) → '+n+' fala(s) de ~'+secs+'s cada.';
 }
 
-// ── Colar (Ctrl+V) imagem no briefing ──
-const pasteZone = document.getElementById('pasteZone');
-pasteZone.addEventListener('click', ()=>{ pasteZone.style.borderColor='var(--gold)'; pasteZone.textContent='📋 Agora aperte Ctrl+V'; });
+// ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
 window.addEventListener('paste', async function(e){
   const items = (e.clipboardData && e.clipboardData.items) || [];
   let achou=false;
@@ -419,7 +417,7 @@ window.addEventListener('paste', async function(e){
       if (file){ achou=true; if (await addImage(file,'brief')) renderThumbs('brief'); }
     }
   }
-  if (achou){ toast('✅ Imagem colada no briefing!'); pasteZone.textContent='📋 Clique aqui e aperte Ctrl+V pra colar outra'; pasteZone.style.borderColor=''; }
+  if (achou){ toast('✅ Imagem anexada ao briefing!'); }
 });
 
 // ── Gerar roteiro (Bloco 2 — backend /promoRoteiro) ──
