@@ -406,13 +406,20 @@ input[type="file"]{display:none}
 
     <!-- Etapa 4: % de atendimento (imagem) -->
     <div class="card" id="cardPct">
-      <div class="card-title">4 · % de atendimento (imagem) <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">opcional — divide o anúncio proporcional</span></div>
-      <div class="upload-area" id="pctArea" onclick="document.getElementById('pctInput').click()">
-        <input id="pctInput" type="file" accept="image/*"/>
-        <span class="icon">🖼️</span>
-        <p>Suba <b>ou cole (Ctrl+V)</b> a imagem com o % de cada atendente</p>
-        <span>A IA lê os percentuais — você revisa antes de aplicar. Sem imagem, o anúncio é dividido igualmente entre quem vendeu.</span>
+      <div class="card-title">4 · % de atendimento <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">automático do Rotator — divide o anúncio proporcional</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <button type="button" id="btnRotator" onclick="puxarAtendimentoRotator(false)" title="Puxar os leads por atendente do WhatsApp Rotator no dia selecionado" style="white-space:nowrap;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:9px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer">↻ Puxar do Rotator</button>
+        <span class="hint" id="rotatorHint" style="margin:0">Puxa os leads por atendente do dia selecionado (segue o "Pix recebido do dia"). Só ativos, e só quando &gt; 1%.</span>
       </div>
+      <details style="margin-bottom:4px">
+        <summary style="cursor:pointer;color:var(--text-dim);font-size:12.5px;user-select:none">🖼️ Reserva: colar/subir a imagem do % (se o Rotator falhar)</summary>
+        <div class="upload-area" id="pctArea" onclick="document.getElementById('pctInput').click()" style="margin-top:8px">
+          <input id="pctInput" type="file" accept="image/*"/>
+          <span class="icon">🖼️</span>
+          <p>Suba <b>ou cole (Ctrl+V)</b> a imagem com o % de cada atendente</p>
+          <span>A IA lê os percentuais — você revisa antes de aplicar.</span>
+        </div>
+      </details>
       <div id="pctResult" class="hidden">
         <div class="section-sub" id="pctSoma">Percentuais lidos</div>
         <div id="pctTable"></div>
@@ -569,6 +576,7 @@ async function init(){
   avoDate=ymd(new Date()); document.getElementById('inData').value=avoDate; document.getElementById('avoDateInput').value=avoDate;   // dia padrão = hoje
   aovivoStart();   // mostra os Pix do dia selecionado (ao vivo se for hoje)
   puxarAnuncioMeta(true);   // já tenta puxar o gasto de anúncio do Meta (silencioso se não configurado)
+  puxarAtendimentoRotator(true);   // já tenta puxar o % de atendimento do Rotator (silencioso)
 }
 
 // ── aviso no grupo do WhatsApp (texto editável) ──
@@ -787,6 +795,24 @@ function renderPct(soma){
     t.appendChild(row);
   });
   t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{ pctState[Number(e.target.dataset.i)].percent=parseNum(e.target.value); }));
+}
+// ── % de atendimento AUTOMÁTICO (WhatsApp Rotator) ──
+// silent=true → chamada automática (não incomoda se o Rotator não responder / não configurado).
+async function puxarAtendimentoRotator(silent){
+  const btn=document.getElementById('btnRotator');
+  const dia=(typeof avoDate!=='undefined' && avoDate) ? avoDate : ymd(new Date());
+  if(btn && !silent){ btn.disabled=true; btn.dataset.txt=btn.textContent; btn.textContent='Puxando…'; }
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/atendimento-rotator?date='+encodeURIComponent(dia));
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    pctState=d.percentuais||[];
+    renderPct(d.soma);
+    const hint=document.getElementById('rotatorHint');
+    if(hint) hint.innerHTML=`✓ <b>${pctState.length}</b> atendentes · <b>${d.totalLeads||0}</b> leads em ${fmtDBR(d.date||dia)}`;
+    if(!silent) toast('% de atendimento puxado do Rotator ✓','success');
+  }catch(e){ if(!silent) toast('Rotator: '+e.message,'error'); }
+  finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Rotator'; } }
 }
 
 function voltarUpload(){
@@ -1371,6 +1397,7 @@ function setFechamentoDia(arg){
   document.getElementById('avoBtnOntem').classList.toggle('active', d===ontem);
   aovivoLoad();
   puxarAnuncioMeta(true);   // auto-preenche o gasto de anúncio do Meta pro dia escolhido
+  puxarAtendimentoRotator(true);   // auto-preenche o % de atendimento (Rotator) pro dia escolhido
 }
 function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }
