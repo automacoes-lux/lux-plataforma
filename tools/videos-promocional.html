@@ -136,7 +136,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="page-head">
     <div class="page-title">📣 Vídeo Promocional</div>
-    <div class="page-sub">Vídeo de 30s: o avatar do cliente (ou o produto) apresenta o serviço, falando com o espectador,
+    <div class="page-sub">Vídeo de 1 minuto: o avatar do cliente (ou o produto) apresenta o serviço, falando com o espectador,
       com as imagens reais do negócio de fundo. Preencha os passos e gere o roteiro.</div>
   </div>
 
@@ -196,7 +196,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
   <div class="step">
     <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Até <b>6</b> imagens reais do negócio. O avatar aparece em cada uma. 6 imagens → 6 falas de 5s; 3 imagens → 3 falas de 10s.</div>
+    <div class="step-hint">Até <b>6</b> imagens reais do negócio. O avatar aparece em cada uma. Vídeo de 1 minuto: 6 imagens → 6 cenas de 10s; 3 imagens → 3 cenas de 20s.</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -206,8 +206,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <!-- PASSO 5 — MÚSICA DE FUNDO (30s — editor de corte + fades) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (30s)</div></div>
-    <div class="step-hint">Opcional. Se a música passar de 30s, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (60s)</div></div>
+    <div class="step-hint">Opcional. Se a música passar de 1 minuto, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
     <label class="up-btn" id="musicUpBtn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusic(event)"/></label>
 
     <!-- música pronta -->
@@ -222,9 +222,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <!-- editor de corte (música > 30s) -->
     <div class="cut-editor" id="cutEditor">
-      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>30 segundos</b> que vão pro vídeo:</div>
+      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o <b>1 minuto</b> que vai pro vídeo:</div>
       <canvas id="waveCanvas"></canvas>
-      <div class="cut-row"><span>Os 30s começam em</span><b id="cutStartLabel">0:00 → 0:30</b></div>
+      <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
       <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
       <div class="fades-row">
         <div class="fade-box">
@@ -238,8 +238,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <div class="cut-actions">
         <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 30s</button>
+        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 1 min</button>
       </div>
+      <button class="btn-ghost" style="width:100%;margin-top:.6rem" onclick="trocarMusica()">🔁 Trocar música</button>
       <div class="cut-progress" id="cutProgress"></div>
     </div>
   </div>
@@ -257,7 +258,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <div class="btn-row" style="margin-top:.8rem">
       <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro cliente</button>
-      <button class="btn-gold" onclick="gerarPDF()">📄 Gerar roteiro</button>
     </div>
     <div style="margin-top:1rem">
       <button class="btn-gold" id="btnVideo" onclick="gerarVideo()">🎬 Aprovar e gerar vídeo</button>
@@ -403,8 +403,8 @@ function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
   if (!n){ el.textContent=''; return; }
-  const secs = Math.round(30/n);
-  el.textContent = n+' imagem(ns) → '+n+' fala(s) de ~'+secs+'s cada.';
+  const secs = Math.round(60/n);
+  el.textContent = n+' imagem(ns) → '+n+' cena(s) de ~'+secs+'s cada (vídeo de 1 min).';
 }
 
 // ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
@@ -492,7 +492,7 @@ function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta
 // ═══════════════════════════════════════════════════════════════
 // MÚSICA DE FUNDO (30s) — editor de corte + fades (portado do Vídeo Avatar)
 // ═══════════════════════════════════════════════════════════════
-const PROMO_WINDOW = 30;            // trecho fixo de 30s
+const PROMO_WINDOW = 60;            // trecho fixo de 60s (vídeo de 1 minuto)
 const DUR_TOLERANCE = 1.5;          // ≤ ~30s usa inteira
 let rawAudioBuffer = null, rawAudioName = '';
 let wavePeaks = null;
@@ -549,6 +549,7 @@ function abrirEditorCorte(){
   computePeaks(); updateCutUI();
 }
 function reabrirCorte(){ if(!rawAudioBuffer){ toast('Envie a música de novo pra refazer o corte.'); return; } music=null; document.getElementById('musicUpBtn').style.display=''; abrirEditorCorte(); }
+function trocarMusica(){ stopPreviewCorte(); document.getElementById('musicInput').click(); }
 
 function getCutValues(){ return {
   startSec: parseFloat(document.getElementById('cutStart').value)||0,
@@ -638,8 +639,8 @@ async function aplicarCorte(){
     const mp3Blob=await encodeMP3(processed,(p)=>{ prog.textContent='Convertendo pra MP3… '+Math.round(p*100)+'%'; });
     const base64=await blobToBase64(mp3Blob);
     const baseName=rawAudioName.replace(/\.[^.]+$/,'');
-    setMusicReady({ base64, name:baseName+'_30s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
-    toast('✂ Corte feito: 30s com fades.');
+    setMusicReady({ base64, name:baseName+'_60s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
+    toast('✂ Corte feito: 1 minuto com fades.');
   } catch(err){ toast('⚠️ Erro no corte: '+err.message); }
   finally { btn.disabled=false; prog.classList.remove('show'); }
 }
