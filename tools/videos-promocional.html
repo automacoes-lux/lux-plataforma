@@ -196,7 +196,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
   <div class="step">
     <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Até <b>6</b> imagens reais do negócio. O avatar aparece em cada uma. Vídeo de 1 minuto: 6 imagens → 6 cenas de 10s; 3 imagens → 3 cenas de 20s.</div>
+    <div class="step-hint">Até <b>8</b> imagens reais do negócio. Cada imagem vira uma cena de ~8s (a última é o CTA). Pra ~1 minuto, use 7-8 imagens.</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -320,7 +320,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536;
 const IMAGE_QUALITY = 0.85;
-const MAX_FUNDO = 6;
+const MAX_FUNDO = 8;
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -403,8 +403,7 @@ function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
   if (!n){ el.textContent=''; return; }
-  const secs = Math.round(60/n);
-  el.textContent = n+' imagem(ns) → '+n+' cena(s) de ~'+secs+'s cada (vídeo de 1 min).';
+  el.textContent = n+' imagem(ns) → '+n+' cena(s) de ~8s (vídeo de ~'+(n*8)+'s).';
 }
 
 // ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
