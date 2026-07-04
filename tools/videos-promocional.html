@@ -93,6 +93,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .btn-ed-cancel{background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid)}
 .btn-ed-save{border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;letter-spacing:.05em}
 
+/* trilhas sonoras */
+.trilhas-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.4rem}
+.trilha-item{display:flex;align-items:center;gap:.5rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.45rem .6rem;cursor:pointer;transition:all .12s}
+.trilha-item.sel{border-color:var(--gold);background:rgba(201,168,76,.12)}
+.trilha-item .tplay{flex:0 0 auto;width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-bright);background:transparent;color:var(--gold);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0}
+.trilha-item .tname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:13px}
+.trilha-item .tdel{flex:0 0 auto;color:#d98a8a;background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px}
+.trilhas-empty{grid-column:1/-1;color:var(--text-dim);font-size:12.5px;text-align:center;padding:.4rem}
+.tsep{text-align:center;color:var(--text-dim);font-size:12px;margin:.7rem 0 .5rem}
+@media(max-width:480px){.trilhas-grid{grid-template-columns:1fr}}
 .tabs{display:flex;gap:.5rem;margin-bottom:1rem}
 .tabbtn{flex:1;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem;font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--text-mid);cursor:pointer}
 .tabbtn.on{background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#141414;border-color:transparent}
@@ -180,6 +190,17 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <div class="soon-note" style="color:var(--gold)">✓ Esse avatar será usado no vídeo.</div>
     </div>
+
+    <!-- Estilo de voz (guia a voz do Veo) -->
+    <div class="up-cat" style="margin-top:1rem">
+      <div class="up-cat-head">🎙️ Estilo de voz <span class="up-opt">(como o apresentador vai falar)</span></div>
+      <div class="chips" id="chipsVoz">
+        <div class="chip" data-v="grave">🎙️ Grave / séria</div>
+        <div class="chip" data-v="jovem">⚡ Jovem / animada</div>
+        <div class="chip on" data-v="calorosa">😊 Calorosa / próxima</div>
+        <div class="chip" data-v="feminina">👩 Feminina</div>
+      </div>
+    </div>
   </div>
 
   <!-- PASSO 3 — BRIEFING -->
@@ -196,7 +217,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
   <div class="step">
     <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Até <b>8</b> imagens reais do negócio. Cada imagem vira uma cena de ~8s (a última é o CTA). Pra ~1 minuto, use 7-8 imagens.</div>
+    <div class="step-hint">Suba <b>exatamente 7 imagens</b> reais do negócio. Cada uma vira uma cena de 8s → vídeo de <b>56s</b> (a última cena é o CTA).</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -204,10 +225,23 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="soon-note" id="fundoInfo"></div>
   </div>
 
-  <!-- PASSO 5 — MÚSICA DE FUNDO (30s — editor de corte + fades) -->
+  <!-- PASSO 5 — TRILHA SONORA (biblioteca + upload) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">5</div><div class="step-title">Música de fundo (60s)</div></div>
-    <div class="step-hint">Opcional. Se a música passar de 1 minuto, abre o editor pra você escolher o trecho e ajustar os fades de entrada/saída.</div>
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Trilha sonora (56s)</div></div>
+    <div class="step-hint">Escolha uma trilha da biblioteca <b>ou</b> envie a sua música (o editor corta em 56s com fades). Ela fica baixinha, embaixo da fala.</div>
+
+    <!-- biblioteca de trilhas -->
+    <div id="trilhasGrid" class="trilhas-grid"></div>
+
+    <!-- ADMIN: adicionar trilha (só aparece pro admin) -->
+    <div id="trilhaAdmin" style="display:none;margin:.2rem 0 .6rem;padding:.7rem;border:.5px dashed var(--border-bright);border-radius:var(--radius)">
+      <div class="up-cat-head">🎛️ Admin — adicionar trilha <span class="up-opt" id="trilhaCount"></span></div>
+      <input type="text" id="trilhaTitle" placeholder="Título da trilha (ex: Energia, Emocional...)" style="margin-bottom:.4rem"/>
+      <label class="up-btn">+ Enviar MP3 da trilha<input type="file" id="trilhaFile" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="adminAddTrilha(event)"/></label>
+    </div>
+
+    <div class="tsep">— ou envie a sua música —</div>
+
     <label class="up-btn" id="musicUpBtn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusic(event)"/></label>
 
     <!-- música pronta -->
@@ -220,11 +254,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <!-- editor de corte (música > 30s) -->
+    <!-- editor de corte (música > 56s) -->
     <div class="cut-editor" id="cutEditor">
-      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o <b>1 minuto</b> que vai pro vídeo:</div>
+      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>56 segundos</b> que vão pro vídeo:</div>
       <canvas id="waveCanvas"></canvas>
-      <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
+      <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 0:56</b></div>
       <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
       <div class="fades-row">
         <div class="fade-box">
@@ -238,7 +272,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <div class="cut-actions">
         <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 1 min</button>
+        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 56s</button>
       </div>
       <button class="btn-ghost" style="width:100%;margin-top:.6rem" onclick="trocarMusica()">🔁 Trocar música</button>
       <div class="cut-progress" id="cutProgress"></div>
@@ -320,7 +354,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536;
 const IMAGE_QUALITY = 0.85;
-const MAX_FUNDO = 8;
+const MAX_FUNDO = 7;   // OBRIGATÓRIO 7 → 7 cenas de 8s = 56s
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -330,9 +364,14 @@ function api(path, opts){
 
 // ── Estado ──
 let apresentador = 'dono';
+let voiceStyle = 'calorosa';   // estilo de voz do Veo
 let roteiro = null;
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
+let trilhas = [];             // biblioteca de trilhas (admin sobe até 10)
+let selectedTrilha = null;    // trilha escolhida { id, title, url }
+let isAdminUser = false;
+let trilhaAudio = null;       // <audio> pra tocar a prévia da trilha
 let fotos = { foto:[], brief:[], fundo:[] };   // foto: 1 | brief: livre | fundo: até 6
 const LIMITS = { foto:1, brief:8, fundo:MAX_FUNDO };
 
@@ -350,6 +389,14 @@ document.querySelectorAll('#chipsApres .chip').forEach(function(c){
       ? 'A IA transforma o produto num personagem (com braços/pernas/boca). Você confere e baixa antes de gerar o vídeo.'
       : 'A IA transforma a foto no avatar do dono. Você confere e baixa antes de gerar o vídeo.';
     onFotoChanged();   // trocou dono↔produto → o avatar gerado é invalidado
+  });
+});
+
+// ── Estilo de voz (chips) ──
+document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
+  c.addEventListener('click',function(){
+    voiceStyle = c.dataset.v;
+    document.querySelectorAll('#chipsVoz .chip').forEach(x=>x.classList.toggle('on',x===c));
   });
 });
 
@@ -403,7 +450,9 @@ function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
   if (!n){ el.textContent=''; return; }
-  el.textContent = n+' imagem(ns) → '+n+' cena(s) de ~8s (vídeo de ~'+(n*8)+'s).';
+  el.innerHTML = (n===7)
+    ? '✅ <b>7 imagens</b> → 7 cenas de 8s = vídeo de 56s.'
+    : '<b style="color:#E8A84C">'+n+' de 7</b> imagens — suba '+(7-n)+' pra completar (obrigatório 7).';
 }
 
 // ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
@@ -426,7 +475,7 @@ async function gerarRoteiro(){
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
   if (!briefing && !fotos.brief.length){ toast('📝 Escreva o briefing ou cole uma imagem.'); return; }
-  if (!fotos.fundo.length){ toast('🖼️ Suba pelo menos 1 imagem de fundo.'); return; }
+  if (fotos.fundo.length !== 7){ toast('🖼️ Suba exatamente 7 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
 
   const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando roteiro...';
@@ -491,7 +540,7 @@ function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta
 // ═══════════════════════════════════════════════════════════════
 // MÚSICA DE FUNDO (30s) — editor de corte + fades (portado do Vídeo Avatar)
 // ═══════════════════════════════════════════════════════════════
-const PROMO_WINDOW = 60;            // trecho fixo de 60s (vídeo de 1 minuto)
+const PROMO_WINDOW = 56;            // trecho fixo de 56s (7 cenas de 8s)
 const DUR_TOLERANCE = 1.5;          // ≤ ~30s usa inteira
 let rawAudioBuffer = null, rawAudioName = '';
 let wavePeaks = null;
@@ -529,6 +578,7 @@ async function onMusic(ev){
 
 function setMusicReady(m){
   music = { base64:m.base64, name:m.name, mimeType:'audio/mpeg', duration:m.duration, startSec:m.startSec||0 };
+  if (selectedTrilha){ selectedTrilha=null; if(typeof renderTrilhas==='function') renderTrilhas(); }   // upload próprio cancela a trilha
   document.getElementById('musicUpBtn').style.display='none';
   document.getElementById('cutEditor').classList.remove('show');
   const box = document.getElementById('musicBox'); box.style.display='block';
@@ -638,10 +688,84 @@ async function aplicarCorte(){
     const mp3Blob=await encodeMP3(processed,(p)=>{ prog.textContent='Convertendo pra MP3… '+Math.round(p*100)+'%'; });
     const base64=await blobToBase64(mp3Blob);
     const baseName=rawAudioName.replace(/\.[^.]+$/,'');
-    setMusicReady({ base64, name:baseName+'_60s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
-    toast('✂ Corte feito: 1 minuto com fades.');
+    setMusicReady({ base64, name:baseName+'_56s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
+    toast('✂ Corte feito: 56s com fades.');
   } catch(err){ toast('⚠️ Erro no corte: '+err.message); }
   finally { btn.disabled=false; prog.classList.remove('show'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRILHAS SONORAS (biblioteca — admin sobe até 10, atendente escolhe)
+// ═══════════════════════════════════════════════════════════════
+async function loadTrilhas(){
+  try {
+    const r = await api('/promoTrilhas'); const d = await r.json();
+    if (!d.ok) return;
+    trilhas = d.trilhas || []; isAdminUser = !!d.isAdmin;
+    document.getElementById('trilhaAdmin').style.display = isAdminUser ? 'block' : 'none';
+    document.getElementById('trilhaCount').textContent = '('+trilhas.length+'/10)';
+    renderTrilhas();
+  } catch(e){}
+}
+function renderTrilhas(){
+  const box = document.getElementById('trilhasGrid'); box.innerHTML='';
+  if (!trilhas.length){ box.innerHTML='<div class="trilhas-empty">Nenhuma trilha na biblioteca ainda.'+(isAdminUser?' Suba as suas abaixo. 👇':'')+'</div>'; return; }
+  trilhas.forEach(function(t){
+    const d=document.createElement('div'); d.className='trilha-item'+(selectedTrilha&&selectedTrilha.id===t.id?' sel':'');
+    d.innerHTML='<button class="tplay" title="Ouvir">▶</button><span class="tname">'+escHtml(t.title)+'</span>'+(isAdminUser?'<button class="tdel" title="Apagar">🗑️</button>':'');
+    d.querySelector('.tname').onclick=()=>selectTrilha(t.id);
+    d.querySelector('.tplay').onclick=(e)=>{ e.stopPropagation(); playTrilha(t, e.currentTarget); };
+    const del=d.querySelector('.tdel'); if(del) del.onclick=(e)=>{ e.stopPropagation(); adminDelTrilha(t.id, t.title); };
+    box.appendChild(d);
+  });
+}
+function selectTrilha(id){
+  const t = trilhas.find(x=>x.id===id); if(!t) return;
+  selectedTrilha = t;
+  // escolher trilha cancela o upload próprio
+  music=null; stopPreviewCorte&&stopPreviewCorte();
+  document.getElementById('musicBox').style.display='none';
+  document.getElementById('cutEditor').classList.remove('show');
+  document.getElementById('musicUpBtn').style.display='';
+  renderTrilhas();
+  toast('🎵 Trilha "'+t.title+'" selecionada.');
+}
+function playTrilha(t, btn){
+  if(!trilhaAudio) trilhaAudio=new Audio();
+  if(trilhaAudio._btn && trilhaAudio._btn!==btn){ trilhaAudio._btn.textContent='▶'; }
+  if(!trilhaAudio.paused && trilhaAudio._id===t.id){ trilhaAudio.pause(); btn.textContent='▶'; return; }
+  trilhaAudio.src=t.url; trilhaAudio._id=t.id; trilhaAudio._btn=btn;
+  trilhaAudio.play().then(()=>{ btn.textContent='⏸'; }).catch(()=>{});
+  trilhaAudio.onended=()=>{ btn.textContent='▶'; };
+}
+async function adminAddTrilha(ev){
+  const file = ev.target.files && ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  const title = (document.getElementById('trilhaTitle').value||'').trim();
+  if(!title){ toast('✍️ Dê um título à trilha primeiro.'); return; }
+  const isMp3 = /\.mp3$/i.test(file.name)||file.type==='audio/mpeg'||file.type==='audio/mp3';
+  if(!isMp3){ toast('⚠️ A trilha precisa ser MP3.'); return; }
+  toast('⏳ Enviando trilha...');
+  try {
+    const dataUrl = await readFileAsDataURL(file);
+    const r = await api('/promoTrilha',{ method:'POST', body:JSON.stringify({ title, base64:dataUrl.split(',')[1] }) });
+    const d = await r.json();
+    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
+    trilhas = d.trilhas||[]; document.getElementById('trilhaTitle').value='';
+    document.getElementById('trilhaCount').textContent='('+trilhas.length+'/10)';
+    renderTrilhas(); toast('✅ Trilha adicionada!');
+  } catch(e){ toast('⚠️ '+e.message); }
+}
+async function adminDelTrilha(id, title){
+  if(!confirm('Apagar a trilha "'+title+'"?')) return;
+  try {
+    const r = await api('/promoTrilhaDel',{ method:'POST', body:JSON.stringify({ id }) });
+    const d = await r.json();
+    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
+    trilhas = d.trilhas||[]; if(selectedTrilha&&selectedTrilha.id===id) selectedTrilha=null;
+    document.getElementById('trilhaCount').textContent='('+trilhas.length+'/10)';
+    renderTrilhas(); toast('🗑️ Trilha apagada.');
+  } catch(e){ toast('⚠️ '+e.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -806,7 +930,7 @@ async function gerarVideo(){
   if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('Gere o roteiro primeiro.'); return; }
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
-  if (!fotos.fundo.length){ toast('🖼️ Suba pelo menos 1 imagem de fundo.'); return; }
+  if (fotos.fundo.length !== 7){ toast('🖼️ Suba exatamente 7 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
 
   const btn = document.getElementById('btnVideo'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
@@ -817,7 +941,9 @@ async function gerarVideo(){
     foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
     avatarBase64: (promoAvatarData && promoAvatarData.base64) ? promoAvatarData.base64 : null,
     fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
-    music: (music && music.base64) ? { base64:music.base64, startSec:music.startSec||0 } : null
+    voiceStyle,
+    trilhaUrl: selectedTrilha ? selectedTrilha.url : null,
+    music: (!selectedTrilha && music && music.base64) ? { base64:music.base64, startSec:music.startSec||0 } : null
   };
   try {
     const r = await api('/promoCreate', { method:'POST', body: JSON.stringify(payload) });
@@ -924,6 +1050,9 @@ async function refazerTake(idx, btn){
   finally { btn.disabled=false; btn.innerHTML=old; }
 }
 function fecharEditar(){ document.getElementById('editModal').style.display='none'; edOrderId=null; }
+
+// carrega a biblioteca de trilhas ao abrir
+loadTrilhas();
 </script>
 </body>
 </html>
