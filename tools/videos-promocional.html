@@ -428,11 +428,8 @@ function renderThumbs(cat){
   box.innerHTML='';
   fotos[cat].forEach(function(f,idx){
     const d=document.createElement('div'); d.className='thumb';
-    let inner='<img src="'+f.thumbUrl+'"/><button class="rm" title="Remover">✕</button>';
-    if (cat==='fundo') inner+='<button class="edit" title="Enquadrar (9:16)">✏️</button>';
-    d.innerHTML=inner;
+    d.innerHTML='<img src="'+f.thumbUrl+'"/><button class="rm" title="Remover">✕</button>';
     d.querySelector('.rm').onclick=()=>{ fotos[cat].splice(idx,1); renderThumbs(cat); if(cat==='foto') onFotoChanged(); if(cat==='fundo'){ updateFundoInfo(); } };
-    const eb=d.querySelector('.edit'); if(eb) eb.onclick=()=>openEditor(idx);
     box.appendChild(d);
   });
   if (cat==='fundo') updateFundoInfo();
@@ -512,7 +509,6 @@ function renderRoteiroPromo(){
         '<div class="cimg" title="Arraste pra reordenar">'+thumb+'</div>'+
         '<div style="display:flex;gap:3px">'+
           '<button class="mvbtn" title="Mover imagem pra cima" onclick="moveFundo('+i+','+(i-1)+')"'+(i===0?' disabled style="opacity:.4"':'')+'>◀</button>'+
-          '<button class="mvbtn" title="Enquadrar (9:16)" onclick="openEditor('+i+')">✏️</button>'+
           '<button class="mvbtn" title="Mover imagem pra baixo" onclick="moveFundo('+i+','+(i+1)+')"'+(i===n-1?' disabled style="opacity:.4"':'')+'>▶</button>'+
         '</div>'+
       '</div>'+
@@ -931,6 +927,12 @@ async function gerarVideo(){
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
   if (fotos.fundo.length !== 7){ toast('🖼️ Suba exatamente 7 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
+  // Música pendurada no editor de corte (subiu mas não clicou em "Cortar e usar 56s") → avisa antes de gerar sem música
+  if (!selectedTrilha && !music && rawAudioBuffer){
+    toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 56s" (ou escolha uma trilha) antes de gerar.');
+    document.getElementById('cutEditor').scrollIntoView({ behavior:'smooth' });
+    return;
+  }
 
   const btn = document.getElementById('btnVideo'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
