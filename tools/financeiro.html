@@ -333,6 +333,7 @@ input[type="file"]{display:none}
         <input type="date" id="avoDateInput" onchange="setFechamentoDia(this.value)" title="Escolher outro dia (fechamento retroativo)" style="background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:8px 11px;font-size:14px;font-family:'DM Sans',sans-serif"/>
         <span class="hint" style="margin:0">Dá pra fechar dias passados (ex.: sábado e domingo).</span>
       </div>
+      <div id="autoFechStatus" style="display:none;align-items:center;gap:8px;background:rgba(212,175,55,.08);border:.5px solid var(--border-bright);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:13px;color:var(--text-dim)"></div>
       <div class="fin-total">
         <div class="label">Entradas Pix do dia</div>
         <div class="value" id="avoTotal">R$ 0,00</div>
@@ -375,7 +376,7 @@ input[type="file"]{display:none}
         <div class="field">
           <label>Gasto de anúncio do dia (US$)</label>
           <div style="display:flex;gap:8px;align-items:stretch">
-            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL()" style="flex:1;min-width:0"/>
+            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL();salvarRascunho({anuncioUSD:parseNum(this.value)})" style="flex:1;min-width:0"/>
             <button type="button" id="btnAnuncioMeta" onclick="puxarAnuncioMeta(false)" title="Puxar o gasto do Meta Ads deste dia (só-leitura)" style="white-space:nowrap;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:0 13px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">↻ Puxar do Meta</button>
           </div>
           <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
@@ -386,7 +387,8 @@ input[type="file"]{display:none}
     <!-- Etapa 3: Entradas e saídas adicionais (Mercado Pago / Outros, por atendente) -->
     <div class="card">
       <div class="card-title">3 · Entradas e saídas adicionais <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">opcional</span></div>
-      <div class="hint" style="margin:-2px 0 8px">Vendas do <b>Mercado Pago</b> (fora do extrato) ou <b>outros</b> ajustes por atendente. Tudo entra na Entrada (com 6% e ÷2). Só aparecem aqui atendentes com chave PIX cadastrada.</div>
+      <div id="mpAtendList" style="margin:0 0 10px"></div>
+      <div class="hint" style="margin:-2px 0 8px">As vendas do <b>Mercado Pago</b> que os atendentes registram entram <b>sozinhas</b> (acima, já com −5% de taxa). Use o adicionador abaixo só pra <b>exceções</b> (MP manual ou <b>outros</b> ajustes). Tudo entra na Entrada (com 6% e ÷2).</div>
       <div class="add-row">
         <select id="addAtend"><option value="">Atendente…</option></select>
         <select id="addTipo" onchange="addTipoChanged()">
@@ -575,8 +577,7 @@ async function init(){
   setupUpload(); loadCambio(); loadAtendentes(); loadGrupoMsg();
   avoDate=ymd(new Date()); document.getElementById('inData').value=avoDate; document.getElementById('avoDateInput').value=avoDate;   // dia padrão = hoje
   aovivoStart();   // mostra os Pix do dia selecionado (ao vivo se for hoje)
-  puxarAnuncioMeta(true);   // já tenta puxar o gasto de anúncio do Meta (silencioso se não configurado)
-  puxarAtendimentoRotator(true);   // já tenta puxar o % de atendimento do Rotator (silencioso)
+  setFechamentoDia('hoje');   // carrega rascunho + Meta + Rotator + MP dos atendentes
 }
 
 // ── aviso no grupo do WhatsApp (texto editável) ──
@@ -635,8 +636,9 @@ function addAdicional(){
   document.getElementById('addMotivo').value='';
   document.getElementById('addAtend').focus();
   renderAddList();
+  salvarRascunho({adicionais});   // vale no fechamento automático das 23:59
 }
-function removeAdicional(i){ adicionais.splice(i,1); renderAddList(); }
+function removeAdicional(i){ adicionais.splice(i,1); renderAddList(); salvarRascunho({adicionais}); }
 function renderAddList(){
   const box=document.getElementById('addList'); if(!box) return;
   if(!adicionais.length){ box.innerHTML=''; return; }
@@ -652,6 +654,33 @@ function coletarMercadoPago(){
 }
 function coletarDiversos(){
   return adicionais.filter(x=>x.tipo==='outros').map(x=>({ email:x.email, valorBRL: x.sinal*x.valorBRL, label: x.motivo||'' }));
+}
+// ── 💳 vendas Mercado Pago registradas pelos ATENDENTES (dia do fechamento; entram sozinhas no preview) ──
+async function loadMpAdmin(){
+  const box=document.getElementById('mpAtendList'); if(!box) return;
+  const dia=(typeof avoDate!=='undefined' && avoDate) ? avoDate : ymd(new Date());
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/mp?all=1&date='+encodeURIComponent(dia));
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    if(!(d.vendas||[]).length){ box.innerHTML='<div class="hint" style="margin:0">💳 Nenhuma venda de Mercado Pago registrada pelos atendentes em '+fmtDBR(dia)+'.</div>'; return; }
+    box.innerHTML='<div class="section-sub" style="margin-top:0">💳 Mercado Pago dos atendentes — '+d.vendas.length+' venda(s) · entra '+fmtBRL(d.totalBRL)+'</div>'
+      +d.vendas.map(v=>`<div style="display:flex;align-items:center;gap:10px;background:var(--bg-input);border:.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13.5px;margin-bottom:6px">
+        <span style="color:var(--text-dim);font-size:12px">${escapeHtml(v.hora||'')}</span>
+        <b>${escapeHtml(nomePorEmail(String(v.email||'').toLowerCase()))}</b>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)">${escapeHtml(v.cliente||'')}</span>
+        <span style="color:var(--text-dim);font-size:12px;text-decoration:line-through">${fmtBRL(v.brutoBRL)}</span>
+        <b style="color:#7FB87A">${fmtBRL(v.valorBRL)}</b>
+        <button onclick="delMpAdmin('${v.key}')" title="Apagar esta venda" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:2px">🗑</button>
+      </div>`).join('');
+  }catch(e){ box.innerHTML=''; }
+}
+async function delMpAdmin(key){
+  if(!confirm('Apagar esta venda do Mercado Pago?')) return;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/mp/apagar',{method:'POST',body:JSON.stringify({key})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    toast('Venda apagada.','success'); loadMpAdmin();
+  }catch(e){ toast('Erro: '+e.message,'error'); }
 }
 // composição da entrada (PIX · MP · diversas) p/ mostrar na revisão
 function compoHtml(a){
@@ -696,7 +725,7 @@ async function puxarAnuncioMeta(silent){
     if(!d.ok) throw new Error(d.error||'Erro');
     document.getElementById('inAnuncioUSD').value=Number(d.spendUSD||0).toFixed(2);
     updateAnuncioBRL();
-    if(!silent) toast('✓ Anúncio do Meta: US$ '+Number(d.spendUSD||0).toFixed(2));
+    if(!silent){ salvarRascunho({anuncioUSD:null}); toast('✓ Anúncio do Meta: US$ '+Number(d.spendUSD||0).toFixed(2)+' — dia voltou pro automático'); }
   }catch(e){ if(!silent) toast('Meta: '+e.message,'error'); }
   finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Meta'; } }
 }
@@ -781,6 +810,7 @@ async function lerImagemPct(file){
     if(!d.ok) throw new Error(d.error||'Erro ao ler imagem');
     pctState=d.percentuais||[];
     renderPct(d.soma);
+    salvarRascunho({percentuais:pctState});   // imagem = correção sua (vale no fechamento automático)
     toast('Percentuais lidos ✓ — confira antes de organizar','success');
   }catch(err){ toast('Erro na imagem: '+err.message,'error'); }
 }
@@ -794,7 +824,7 @@ function renderPct(soma){
       <input type="number" step="0.1" data-i="${i}" value="${Number(p.percent||0)}">`;
     t.appendChild(row);
   });
-  t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{ pctState[Number(e.target.dataset.i)].percent=parseNum(e.target.value); }));
+  t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{ pctState[Number(e.target.dataset.i)].percent=parseNum(e.target.value); salvarRascunho({percentuais:pctState}); }));
 }
 // ── % de atendimento AUTOMÁTICO (WhatsApp Rotator) ──
 // silent=true → chamada automática (não incomoda se o Rotator não responder / não configurado).
@@ -810,7 +840,7 @@ async function puxarAtendimentoRotator(silent){
     renderPct(d.soma);
     const hint=document.getElementById('rotatorHint');
     if(hint) hint.innerHTML=`✓ <b>${pctState.length}</b> atendentes · <b>${d.totalLeads||0}</b> leads em ${fmtDBR(d.date||dia)}`;
-    if(!silent) toast('% de atendimento puxado do Rotator ✓','success');
+    if(!silent){ salvarRascunho({percentuais:null}); toast('% puxado do Rotator ✓ — dia voltou pro automático','success'); }
   }catch(e){ if(!silent) toast('Rotator: '+e.message,'error'); }
   finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Rotator'; } }
 }
@@ -1383,12 +1413,45 @@ function avRenderRanking(d){
 // PIX AO VIVO — recebimentos automáticos do Sicredi (tempo real)
 // ════════════════════════════════════════════════════════════
 let aovivoTimer=null, aovivoLoading=false, avoDate='';
+// ── RASCUNHO do dia: correções do admin (anúncio / % / adicionais) ficam salvas
+// e valem no fechamento automático das 23:59. Campo null = volta pro automático.
+let rascTimer=null, rascPend={};
+function salvarRascunho(campos){
+  const dia=avoDate||ymd(new Date());
+  if(rascPend.date && rascPend.date!==dia) flushRascunho();   // trocou o dia com edição pendente
+  Object.assign(rascPend, campos, {date:dia});
+  clearTimeout(rascTimer); rascTimer=setTimeout(flushRascunho, 600);
+}
+async function flushRascunho(){
+  clearTimeout(rascTimer);
+  const payload=rascPend; rascPend={};
+  if(!payload.date) return;
+  try{ await window.__luxFetch(WORKER_URL+'/financeiro/rascunho',{method:'POST',body:JSON.stringify(payload)}); }catch(_){}
+}
+function aplicarRascunho(st){
+  const box=document.getElementById('autoFechStatus');
+  const r=(st&&st.rascunho)||{};
+  if(box){
+    box.style.display='flex';
+    if(st&&st.fechado) box.innerHTML='✅ <b style="color:var(--text)">Este dia já foi fechado.</b>&nbsp;Os números abaixo são só consulta — pra refazer, apague o dia na Visão geral e feche de novo.';
+    else box.innerHTML='🕚 Este dia fecha <b style="color:var(--text)">sozinho às 23:59</b> com o que estiver aqui (Pix + Mercado Pago + anúncio + %). Pode corrigir à vontade — suas correções ficam salvas e valem no fechamento.';
+  }
+  adicionais=Array.isArray(r.adicionais)?r.adicionais.slice():[]; renderAddList();
+  if(r.anuncioUSD!=null){ document.getElementById('inAnuncioUSD').value=Number(r.anuncioUSD).toFixed(2); updateAnuncioBRL(); }
+  if(Array.isArray(r.percentuais)&&r.percentuais.length){
+    pctState=r.percentuais.slice();
+    renderPct(pctState.reduce((s,p)=>s+(Number(p.percent)||0),0));
+  }
+  return r;
+}
+
 // seletor de dia do fechamento (Hoje / Ontem / escolher) — permite fechar dias retroativos
-function setFechamentoDia(arg){
+async function setFechamentoDia(arg){
   let d;
   if(arg==='hoje'){ d=ymd(new Date()); }
   else if(arg==='ontem'){ const x=new Date(); x.setDate(x.getDate()-1); d=ymd(x); }
   else { d=String(arg||'').trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; }
+  flushRascunho();   // salva edição pendente antes de trocar o dia
   avoDate=d;
   document.getElementById('inData').value=d;
   document.getElementById('avoDateInput').value=d;
@@ -1396,8 +1459,13 @@ function setFechamentoDia(arg){
   document.getElementById('avoBtnHoje').classList.toggle('active', d===hoje);
   document.getElementById('avoBtnOntem').classList.toggle('active', d===ontem);
   aovivoLoad();
-  puxarAnuncioMeta(true);   // auto-preenche o gasto de anúncio do Meta pro dia escolhido
-  puxarAtendimentoRotator(true);   // auto-preenche o % de atendimento (Rotator) pro dia escolhido
+  loadMpAdmin();   // vendas Mercado Pago dos atendentes no dia escolhido
+  // rascunho primeiro: correção sua tem prioridade sobre o automático (Meta/Rotator)
+  let st=null;
+  try{ const r=await window.__luxFetch(WORKER_URL+'/financeiro/rascunho?date='+encodeURIComponent(d)); st=await r.json(); }catch(_){}
+  const rc=aplicarRascunho(st);
+  if(rc.anuncioUSD==null) puxarAnuncioMeta(true);            // sem correção → puxa do Meta
+  if(!(Array.isArray(rc.percentuais)&&rc.percentuais.length)) puxarAtendimentoRotator(true);   // sem correção → puxa do Rotator
 }
 function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }

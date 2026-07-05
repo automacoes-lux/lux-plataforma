@@ -158,6 +158,18 @@ body{
   <!-- 1) Sua conta (inclui o "hoje ao vivo" quando o período inclui hoje) -->
   <div id="contaContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>
 
+  <!-- 1b) Vendas Mercado Pago (o atendente registra a própria venda) -->
+  <div class="card" id="mpCard">
+    <div class="card-title">💳 Vendas Mercado Pago — hoje</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">
+      <input id="mpValor" type="text" inputmode="decimal" placeholder="Valor da venda (R$)" oninput="mpPreview()" style="flex:1;min-width:130px;padding:11px 13px;font-size:16px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none"/>
+      <input id="mpCliente" type="text" placeholder="Nome do cliente (do comprovante)" maxlength="60" style="flex:1.4;min-width:170px;padding:11px 13px;font-size:16px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none"/>
+      <button class="btn-secondary" id="mpBtn" onclick="addMp()" style="white-space:nowrap">+ Adicionar</button>
+    </div>
+    <div id="mpHint" style="color:var(--text-dim);font-size:12.5px;margin-top:8px">Digite o valor cheio da venda — o sistema desconta <b>5%</b> (taxa do cartão) e o restante entra na sua conta.</div>
+    <div id="mpList" style="margin-top:10px"></div>
+  </div>
+
   <!-- 2) Ranking -->
   <div class="card"><div class="card-title">🏆 Ranking da equipe</div><div id="rankContainer"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div></div>
 
@@ -182,6 +194,7 @@ async function init(){
   loadWeek();        // caixa verde da semana (sempre a semana atual sáb→sex)
   loadMonthWhite();  // caixa branca do mês (lucro diário, sempre o mês atual)
   setMode('dia');
+  loadMp();          // vendas Mercado Pago de hoje (self-service)
   setInterval(liveRefresh, 20000);   // hoje entra ao vivo dentro de "Sua conta" + "Recebimentos"
 }
 
@@ -340,6 +353,55 @@ function renderMeusServicos(servicos, total){
   cont.innerHTML=html;
 }
 
+// ── 💳 Vendas Mercado Pago (self-service; taxa de 5% descontada na hora) ──
+function mpParse(v){ let s=String(v||'').trim(); if(!s) return 0; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isFinite(n)?n:0; }
+function mpPreview(){
+  const v=mpParse(document.getElementById('mpValor').value);
+  const el=document.getElementById('mpHint');
+  if(v>0) el.innerHTML=`Entra na sua conta: <b style="color:var(--ok)">${fmtBRL(v*0.95)}</b> &nbsp;(${fmtBRL(v)} − 5% de taxa do cartão)`;
+  else el.innerHTML='Digite o valor cheio da venda — o sistema desconta <b>5%</b> (taxa do cartão) e o restante entra na sua conta.';
+}
+async function addMp(){
+  const v=mpParse(document.getElementById('mpValor').value);
+  const cliente=document.getElementById('mpCliente').value.trim();
+  if(!(v>0)){ toast('Digite o valor da venda.','error'); return; }
+  if(!cliente){ toast('Digite o nome do cliente (como está no comprovante).','error'); return; }
+  const btn=document.getElementById('mpBtn'); btn.disabled=true; btn.textContent='Salvando…';
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/mp',{method:'POST',body:JSON.stringify({valorBRL:v,cliente})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    document.getElementById('mpValor').value=''; document.getElementById('mpCliente').value=''; mpPreview();
+    toast('💳 Venda registrada ✓ — entra '+fmtBRL(d.valorBRL)+' na sua conta','success');
+    liveRefresh();
+  }catch(e){ toast('Erro: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='+ Adicionar'; }
+}
+async function loadMp(){
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/mp'); const d=await r.json();
+    if(!d.ok) return;
+    const box=document.getElementById('mpList'); if(!box) return;
+    if(!(d.vendas||[]).length){ box.innerHTML='<div style="color:var(--text-dim);font-size:13px;padding:4px 2px">Nenhuma venda registrada hoje.</div>'; return; }
+    box.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+d.vendas.map(v=>`
+      <div style="display:flex;align-items:center;gap:10px;background:var(--bg-input);border:.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px">
+        <span style="color:var(--text-dim);font-size:12.5px">${escapeHtml(v.hora||'')}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(v.cliente||'')}</span>
+        <span style="color:var(--text-dim);font-size:12.5px;text-decoration:line-through">${fmtBRL(v.brutoBRL)}</span>
+        <b style="color:var(--ok)">${fmtBRL(v.valorBRL)}</b>
+        <button onclick="delMp('${v.key}')" title="Apagar (só dá hoje)" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px;padding:2px">🗑</button>
+      </div>`).join('')+'</div>'
+      +`<div style="text-align:right;color:var(--text-dim);font-size:12.5px;margin-top:6px">${d.vendas.length} venda(s) · entra na conta: <b style="color:var(--ok)">${fmtBRL(d.totalBRL)}</b></div>`;
+  }catch(_){}
+}
+async function delMp(key){
+  if(!confirm('Apagar esta venda do Mercado Pago?')) return;
+  try{
+    const r=await window.__luxFetch(WORKER_URL+'/financeiro/mp/apagar',{method:'POST',body:JSON.stringify({key})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro');
+    toast('Venda apagada.','success'); liveRefresh();
+  }catch(e){ toast('Erro: '+e.message,'error'); }
+}
+
 const FRASES={1:'🏆 Você é o nº 1! Performance espetacular — a equipe inteira se inspira em você. Obrigado por puxar o time pra cima!',2:'🥈 Quase lá! Você está voando — falta pouquíssimo pro topo. Orgulho da equipe!',3:'🥉 Pódio merecido! Sua consistência faz diferença. Bora subir mais um degrau!'};
 const FRASE_ULTIMO='Essa rodada foi mais dura, mas é só uma fase. Você tem talento de sobra — bora virar esse jogo juntos. Conte com a gente! 💪';
 const MEDALHA={1:'🥇',2:'🥈',3:'🥉'};
@@ -373,7 +435,7 @@ function renderRanking(d){
 // ── atualização ao vivo: o "hoje" entra dentro de "Sua conta" + "Recebimentos" (sem card separado) ──
 function liveRefresh(){
   try{
-    loadWeek(); loadMonthWhite();
+    loadWeek(); loadMonthWhite(); loadMp();
     if(curTo && curTo >= ymd(new Date())) loadMe(true);   // só re-busca a conta se o período inclui hoje
   }catch(_){}
 }
