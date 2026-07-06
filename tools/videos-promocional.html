@@ -707,9 +707,10 @@ function renderTrilhas(){
   const box = document.getElementById('trilhasGrid'); box.innerHTML='';
   if (!trilhas.length){ box.innerHTML='<div class="trilhas-empty">Nenhuma trilha na biblioteca ainda.'+(isAdminUser?' Suba as suas abaixo. 👇':'')+'</div>'; return; }
   trilhas.forEach(function(t){
-    const d=document.createElement('div'); d.className='trilha-item'+(selectedTrilha&&selectedTrilha.id===t.id?' sel':'');
-    d.innerHTML='<button class="tplay" title="Ouvir">▶</button><span class="tname">'+escHtml(t.title)+'</span>'+(isAdminUser?'<button class="tdel" title="Apagar">🗑️</button>':'');
-    d.querySelector('.tname').onclick=()=>selectTrilha(t.id);
+    const sel = (selectedTrilha&&selectedTrilha.id===t.id);
+    const d=document.createElement('div'); d.className='trilha-item'+(sel?' sel':'');
+    d.innerHTML='<button class="tplay" title="Ouvir">▶</button><span class="tname">'+(sel?'✅ ':'')+escHtml(t.title)+'</span>'+(isAdminUser?'<button class="tdel" title="Apagar">🗑️</button>':'');
+    d.onclick=()=>selectTrilha(t.id);   // o CARD INTEIRO seleciona (antes só o texto — causava seleção "fantasma")
     d.querySelector('.tplay').onclick=(e)=>{ e.stopPropagation(); playTrilha(t, e.currentTarget); };
     const del=d.querySelector('.tdel'); if(del) del.onclick=(e)=>{ e.stopPropagation(); adminDelTrilha(t.id, t.title); };
     box.appendChild(d);
@@ -932,6 +933,13 @@ async function gerarVideo(){
     toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 56s" (ou escolha uma trilha) antes de gerar.');
     document.getElementById('cutEditor').scrollIntoView({ behavior:'smooth' });
     return;
+  }
+  // Nenhuma música escolhida → só gera se o atendente CONFIRMAR que é sem trilha mesmo
+  if (!selectedTrilha && !music){
+    if (!confirm('Nenhuma trilha sonora foi escolhida.\n\nGerar o vídeo SEM música de fundo?')) {
+      document.getElementById('trilhasGrid').scrollIntoView({ behavior:'smooth' });
+      return;
+    }
   }
 
   const btn = document.getElementById('btnVideo'); const old=btn.innerHTML;
