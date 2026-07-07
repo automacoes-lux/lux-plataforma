@@ -333,6 +333,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .calib-arrow:hover{background:rgba(255,255,255,.12)}
 .calib-arrow:active{background:var(--gold);color:#141414}
 .calib-reset{font-size:19px}
+/* Seletor de TAMANHO do avatar no palco (– / +) */
+.avsize-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 2px 2px}
+.avsize-lbl{font-size:12.5px;color:var(--text-mid);font-weight:600}
+.avsize-ctrl{display:flex;align-items:center;gap:8px}
+.avsize-btn{width:46px;height:42px;border-radius:10px;border:.5px solid var(--border-bright);background:rgba(255,255,255,.06);color:var(--text);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+.avsize-btn:hover{background:rgba(255,255,255,.12)}
+.avsize-btn:active{background:var(--gold);color:#141414}
+.avsize-val{min-width:52px;text-align:center;font-size:14px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
 
 /* Botão Editar nos resultados + modal de refazer cena */
 .btn-editar{padding:9px 14px;border-radius:var(--radius);background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);font-size:12.5px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.04em;cursor:pointer}
@@ -558,6 +566,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <button type="button" class="calib-arrow" onclick="calibMove(1,0)" title="direita">▶</button>
       </div>
       <button type="button" class="calib-arrow" onclick="calibMove(0,1)" title="descer">▼</button>
+    </div>
+    <div class="avsize-row">
+      <span class="avsize-lbl">Tamanho do avatar</span>
+      <div class="avsize-ctrl">
+        <button type="button" class="avsize-btn" onclick="avScaleChange(-1)" title="diminuir">−</button>
+        <span class="avsize-val" id="avSizeVal">100%</span>
+        <button type="button" class="avsize-btn" onclick="avScaleChange(1)" title="aumentar">+</button>
+      </div>
     </div>
     <div class="editor-actions">
       <button class="btn-ed-cancel" onclick="closeCalib(false)">Cancelar</button>
@@ -911,6 +927,7 @@ async function gerarAvatar() {
     const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
     avatarPreview = { cartoonBase64: normB64, approved: false };
     avatarCalib = { dx: 0, dy: 0 };   // novo avatar → calibração de posição zerada
+    avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
@@ -941,6 +958,8 @@ function baixarAvatar() {
 // dx/dy viram o offset do avatar no Shotstack. Como o InfiniteTalk preserva o enquadramento,
 // o que ele calibra aqui bate no vídeo final. Fórmula validada contra render real (<0,5% de erro).
 let avatarCalib = { dx: 0, dy: 0 };
+let avScale = 0.85;          // tamanho do avatar no palco (0.51 = −40% … 0.85 = padrão/máx)
+const AVSCALE_MAX = 0.85, AVSCALE_MIN = 0.51, AVSCALE_STEP = 0.0425;   // 100%→60%, passo de ~5%
 let _calibCut = null;        // canvas do avatar recortado (fundo transparente)
 let _palcoImg = null;        // Image do palco.png
 let _calibDragReady = false;
@@ -989,7 +1008,7 @@ function drawCalib() {
   x.clearRect(0, 0, cw, ch);
   x.fillStyle = '#2b2b2b'; x.fillRect(0, 0, cw, ch);
   if (_palcoImg) _drawAsset(x, _palcoImg, 'none', 0.73, 0, -0.16, sc);
-  if (_calibCut) _drawAsset(x, _calibCut, 'contain', 0.85, avatarCalib.dx, 0.04 + avatarCalib.dy, sc);
+  if (_calibCut) _drawAsset(x, _calibCut, 'contain', avScale, avatarCalib.dx, 0.04 + avatarCalib.dy, sc);
   x.strokeStyle = 'rgba(212,175,55,.6)'; x.lineWidth = 1;
   x.beginPath(); x.moveTo(Math.round(cw / 2) + .5, 0); x.lineTo(Math.round(cw / 2) + .5, ch); x.stroke();
 }
@@ -1019,6 +1038,7 @@ async function abrirCalib() {
   document.getElementById('calibOverlay').classList.add('show');
   _setupCalibDrag();
   drawCalib();
+  updateAvSizeLabel();
 }
 function calibMove(sx, sy) {
   avatarCalib.dx = Math.max(-0.5, Math.min(0.5, avatarCalib.dx + sx * CALIB_STEP));
@@ -1026,6 +1046,15 @@ function calibMove(sx, sy) {
   drawCalib();
 }
 function calibReset() { avatarCalib = { dx: 0, dy: 0 }; drawCalib(); }
+// Seletor de tamanho do avatar (– / +). Vai de 100% (0.85, padrão/máx) até 60% (0.51, −40%).
+function avScaleChange(dir) {
+  avScale = Math.max(AVSCALE_MIN, Math.min(AVSCALE_MAX, avScale + dir * AVSCALE_STEP));
+  drawCalib(); updateAvSizeLabel();
+}
+function updateAvSizeLabel() {
+  const el = document.getElementById('avSizeVal'); if (!el) return;
+  el.textContent = Math.round(avScale / AVSCALE_MAX * 100) + '%';
+}
 function closeCalib(confirmar) {
   document.getElementById('calibOverlay').classList.remove('show');
   if (confirmar && avatarPreview) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); }
@@ -1913,6 +1942,7 @@ async function gerarClipe() {
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       avatarCalib: avatarCalib,
+      avScale: avScale,
       backgrounds: buildBackgrounds(),
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
@@ -2056,6 +2086,7 @@ async function editarClipe(orderId) {
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
     avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
+    avScale      = (typeof d.avScale === 'number') ? d.avScale : AVSCALE_MAX;
     music = { fromEdit: true, url: d.musicUrl || '', duration: d.videoSec || 60, name: 'Música atual (mantida)' };
     scenes = (d.backgrounds || []).map((b, i) => ({
       id: 'ed' + i + Math.random().toString(36).slice(2, 5),
