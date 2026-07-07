@@ -191,23 +191,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="soon-note" style="color:var(--gold)">✓ Esse avatar será usado no vídeo.</div>
     </div>
 
-    <!-- Voz do apresentador (11 vozes ElevenLabs — atendente escolhe pra CASAR com o personagem) -->
+    <!-- Estilo de voz (guia a voz do Veo — ele gera a voz a partir da descrição) -->
     <div class="up-cat" style="margin-top:1rem">
-      <div class="up-cat-head">🎙️ Voz do apresentador <span class="up-opt">(clique ▶ pra ouvir; escolha a que combina com o personagem)</span></div>
+      <div class="up-cat-head">🎙️ Estilo de voz <span class="up-opt">(como o apresentador vai falar)</span></div>
       <div class="chips" id="chipsVoz">
-        <div class="chip on" data-v="iP95p4xoKVk53GoZ742B" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/50f0037dd0f64a62ab872259f6d62674/1.mp3"><span class="vplay">▶</span> Chris <span class="up-opt">homem adulto</span></div>
-        <div class="chip" data-v="TX3LPaxmHKxFdv7VOQHJ" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/f4f92832591844689525e745e36151f1/1.mp3"><span class="vplay">▶</span> Liam <span class="up-opt">homem jovem</span></div>
-        <div class="chip" data-v="pqHfZKP75CvOlQylNhV4" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/186992b6e0024da8952d4a0ce8e6909b/1.mp3"><span class="vplay">▶</span> Bill <span class="up-opt">homem maduro</span></div>
-        <div class="chip" data-v="onwK4e9ZLuTAKqWW03F9" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/39a6442f3a714cc2a232aa1952a569d8/1.mp3"><span class="vplay">▶</span> Daniel <span class="up-opt">autoridade</span></div>
-        <div class="chip" data-v="JBFqnCBsd6RMkjVDRZzb" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/d7493122a2de4c758577cd377d9d3de3/1.mp3"><span class="vplay">▶</span> George <span class="up-opt">grave/premium</span></div>
-        <div class="chip" data-v="TxGEqnHWrfWFTfGW9XjX" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/5842a579f0b345239359a40d67ff7a84/1.mp3"><span class="vplay">▶</span> Josh <span class="up-opt">grave</span></div>
-        <div class="chip" data-v="bVMeCyTHy58xNoL34h3p" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/8f15a92dd89647a4836bd124cacb4019/1.mp3"><span class="vplay">▶</span> Jeremy <span class="up-opt">empolgado</span></div>
-        <div class="chip" data-v="ODq5zmih8GrVes37Dizd" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/04b99f20194f4b0393582ee945d009ef/1.mp3"><span class="vplay">▶</span> Patrick <span class="up-opt">caricata</span></div>
-        <div class="chip" data-v="jBpfuIE2acCO8z3wKNLl" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/5e4bc68500e942e0adfc91596893bf3a/1.mp3"><span class="vplay">▶</span> Gigi <span class="up-opt">criança</span></div>
-        <div class="chip" data-v="Xb7hH8MSUJpSbSDYk0k2" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/5433ad8a44c9451385004628b787528b/1.mp3"><span class="vplay">▶</span> Alice <span class="up-opt">mulher</span></div>
-        <div class="chip" data-v="21m00Tcm4TlvDq8ikWAM" data-p="https://d2h7xmz5gqybh9.cloudfront.net/predictions/3bd17198a88842239320a8b128bfe3c0/1.mp3"><span class="vplay">▶</span> Rachel <span class="up-opt">mulher</span></div>
+        <div class="chip" data-v="grave">🎙️ Grave / séria</div>
+        <div class="chip" data-v="jovem">⚡ Jovem / animada</div>
+        <div class="chip on" data-v="calorosa">😊 Calorosa / próxima</div>
+        <div class="chip" data-v="feminina">👩 Feminina</div>
       </div>
-      <audio id="voicePrev" preload="none"></audio>
     </div>
   </div>
 
@@ -372,8 +364,7 @@ function api(path, opts){
 
 // ── Estado ──
 let apresentador = 'dono';
-let voiceStyle = 'calorosa';   // (legado, mantido por compat)
-let voiceId = 'iP95p4xoKVk53GoZ742B';   // Chris (padrão) — voz ElevenLabs escolhida pelo atendente
+let voiceStyle = 'calorosa';   // estilo de voz do Veo
 let roteiro = null;
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
@@ -401,22 +392,13 @@ document.querySelectorAll('#chipsApres .chip').forEach(function(c){
   });
 });
 
-// ── Voz do apresentador (11 vozes ElevenLabs — ▶ ouve a prévia, clique no chip seleciona) ──
-(function(){
-  var prev = document.getElementById('voicePrev');
-  document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
-    c.addEventListener('click', function(ev){
-      if (ev.target && ev.target.classList.contains('vplay')) {
-        var url = c.dataset.p;
-        if (prev.src === url && !prev.paused) { prev.pause(); return; }
-        prev.src = url; prev.currentTime = 0; prev.play().catch(function(){ toast('Não deu pra tocar a prévia.'); });
-        return;
-      }
-      voiceId = c.dataset.v;
-      document.querySelectorAll('#chipsVoz .chip').forEach(x=>x.classList.toggle('on', x===c));
-    });
+// ── Estilo de voz (chips) ──
+document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
+  c.addEventListener('click',function(){
+    voiceStyle = c.dataset.v;
+    document.querySelectorAll('#chipsVoz .chip').forEach(x=>x.classList.toggle('on',x===c));
   });
-})();
+});
 
 // ── Upload / otimização ──
 function readFileAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
@@ -969,7 +951,7 @@ async function gerarVideo(){
     foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
     avatarBase64: (promoAvatarData && promoAvatarData.base64) ? promoAvatarData.base64 : null,
     fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
-    voiceStyle, voiceId,
+    voiceStyle,
     trilhaUrl: selectedTrilha ? selectedTrilha.url : null,
     music: (!selectedTrilha && music && music.base64) ? { base64:music.base64, startSec:music.startSec||0 } : null
   };
