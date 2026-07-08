@@ -582,6 +582,19 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   </div>
 </div>
 
+<!-- COMPACTANDO vídeo grande (no navegador, antes de subir) -->
+<div class="editor-overlay" id="compactOverlay">
+  <div class="editor-box" style="max-width:360px;text-align:center">
+    <h3>🗜️ Compactando o vídeo</h3>
+    <div class="hint" id="compactName" style="word-break:break-all"></div>
+    <div style="background:rgba(255,255,255,.08);border-radius:8px;height:14px;overflow:hidden;margin:14px 0 6px">
+      <div id="compactBar" style="height:100%;width:0%;background:linear-gradient(90deg,#D9BC6E,#C9A84C);transition:width .2s"></div>
+    </div>
+    <div id="compactPct" style="font-size:13px;color:var(--gold);font-weight:700">0%</div>
+    <div class="hint" style="margin-top:10px">Deixa o vídeo mais leve pra subir (não muda a qualidade do resultado final). Pode levar até ~1 min. Não feche a aba.</div>
+  </div>
+</div>
+
 <!-- EDITAR CENAS (refazer 1 cena de 10s) -->
 <div class="editor-overlay" id="editScenesOverlay">
   <div class="editor-box es-box">
@@ -658,7 +671,8 @@ const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
 const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
 const MAX_MEDIA      = 20;          // até 20 fundos (fotos + vídeos) atrás do avatar
 const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
-const CLIP_MAX_MB    = 60;          // limite por vídeo de b-roll
+const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto do Cloudflare no plano atual)
+const COMPACT_ABOVE_MB = 60;        // vídeo acima disso é compactado no navegador (1080p, sem áudio) antes de subir
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.11;      // cartoon (gpt-image medium)
@@ -1164,10 +1178,18 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
     const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|webm|m4v|avi)$/i.test(file.name);
     try {
       if (isVideo) {
-        if (file.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': vídeo acima de ' + CLIP_MAX_MB + 'MB.'); continue; }
-        toast('⏳ Enviando ' + file.name + '…');
         const meta = await getVideoMeta(file);
-        const clipKey = await uploadClip(file);
+        let up = file;
+        // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB)
+        if (file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
+          try { showCompact(file.name); up = await compactarVideo(file, setCompact); }
+          catch (err) { hideCompact(); toast('⚠️ Não consegui compactar ' + file.name + ': ' + err.message); continue; }
+          hideCompact();
+          toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
+        }
+        if (up.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': mesmo compactado ficou acima de ' + CLIP_MAX_MB + 'MB. Use um vídeo mais curto.'); continue; }
+        toast('⏳ Enviando ' + file.name + '…');
+        const clipKey = await uploadClip(up);
         const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(meta.duration || 5)));
         scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: meta.duration || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: meta.thumbUrl || '', name: file.name, localUrl: URL.createObjectURL(file) });
       } else {
@@ -1217,6 +1239,75 @@ async function uploadClip(file) {
   if (!j.ok) throw new Error(j.error || 'Falha no upload do vídeo.');
   return j.key;
 }
+
+// ── COMPACTAÇÃO de vídeo no navegador (canvas + MediaRecorder → WebM) ──
+// Reduz pra no máx 1280px no maior lado, ~2.5 Mbps, SEM áudio (o fundo é mudo).
+// Roda em tempo real (toca o vídeo 1x). Devolve um Blob WebM (o Shotstack aceita WebM).
+function compactarVideo(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+    let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0;
+    const cleanup = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (watchdog) clearTimeout(watchdog);
+      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+      URL.revokeObjectURL(url);
+    };
+    const fail = (msg) => { if (done) return; done = true; cleanup(); reject(new Error(msg)); };
+    v.onerror = () => fail('vídeo inválido');
+    v.onloadedmetadata = () => {
+      const vw = v.videoWidth || 1080, vh = v.videoHeight || 1920;
+      const MAXDIM = 1280;
+      const scale = Math.min(1, MAXDIM / Math.max(vw, vh));
+      const tw = Math.max(2, Math.round(vw * scale / 2) * 2);
+      const th = Math.max(2, Math.round(vh * scale / 2) * 2);
+      const canvas = document.createElement('canvas'); canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      let stream;
+      try { stream = canvas.captureStream(24); } catch (e) { return fail('navegador não suporta captura de vídeo'); }
+      const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+        .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+      if (!mime) return fail('navegador não suporta compactação de vídeo');
+      try { recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 }); }
+      catch (e) { return fail('não consegui iniciar a compactação'); }
+      recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+      recorder.onstop = () => {
+        cleanup();
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        if (!blob.size) { if (!done) { done = true; reject(new Error('a compactação saiu vazia')); } return; }
+        if (!done) { done = true; resolve(blob); }
+      };
+      const tick = () => {
+        if (done) return;
+        try { ctx.drawImage(v, 0, 0, tw, th); } catch (e) {}
+        if (onProgress && v.duration) onProgress(Math.min(99, Math.round(v.currentTime / v.duration * 100)));
+        rafId = requestAnimationFrame(tick);
+      };
+      v.onended = () => { if (done || !recorder) return; if (onProgress) onProgress(100); try { recorder.stop(); } catch (e) {} };
+      v.play().then(() => {
+        started = true;
+        try { recorder.start(1000); } catch (e) { return fail('não consegui gravar'); }
+        tick();
+        // salvaguarda: se o 'ended' nunca disparar (vídeo com duração estranha), encerra assim mesmo
+        watchdog = setTimeout(() => { if (!done && recorder && recorder.state !== 'inactive') { try { recorder.stop(); } catch (e) {} } }, Math.max(20000, (v.duration || 60) * 1500 + 15000));
+      }).catch(() => fail('não consegui reproduzir o vídeo pra compactar'));
+    };
+    // salvaguarda: se travar ao carregar/iniciar, desiste em 20s (só antes de começar a gravar)
+    setTimeout(() => { if (!started && !done) fail('tempo esgotado ao preparar o vídeo'); }, 20000);
+  });
+}
+function showCompact(name) {
+  const o = document.getElementById('compactOverlay'); if (!o) return;
+  const n = document.getElementById('compactName'); if (n) n.textContent = name || '';
+  setCompact(0); o.classList.add('show');
+}
+function setCompact(pct) {
+  const b = document.getElementById('compactBar'), p = document.getElementById('compactPct');
+  if (b) b.style.width = pct + '%'; if (p) p.textContent = pct + '%';
+}
+function hideCompact() { const o = document.getElementById('compactOverlay'); if (o) o.classList.remove('show'); }
 
 function renderScenes() {
   const row = document.getElementById('scenesRow');
