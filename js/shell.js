@@ -72,7 +72,9 @@ function loadTool(name) {
   if (!iframe) {
     iframe = document.createElement('iframe');
     iframe.className = 'tool-iframe';
-    iframe.src = url;
+    // cache-busting: força o navegador a baixar a versão nova da tela (window.__LUX_VERSION, definido no index.html)
+    const _v = (typeof window !== 'undefined' && window.__LUX_VERSION) ? window.__LUX_VERSION : '0';
+    iframe.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(_v);
     iframe.allow = 'clipboard-write';
     iframe.allowFullscreen = true;
     view.appendChild(iframe);
