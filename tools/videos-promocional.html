@@ -193,12 +193,10 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <!-- Estilo de voz (guia a voz do Veo — ele gera a voz a partir da descrição) -->
     <div class="up-cat" style="margin-top:1rem">
-      <div class="up-cat-head">🎙️ Estilo de voz <span class="up-opt">(como o apresentador vai falar)</span></div>
+      <div class="up-cat-head">🎙️ Voz do apresentador <span class="up-opt">(escolha conforme o cliente)</span></div>
       <div class="chips" id="chipsVoz">
-        <div class="chip" data-v="grave">🎙️ Grave / séria</div>
-        <div class="chip" data-v="jovem">⚡ Jovem / animada</div>
-        <div class="chip on" data-v="calorosa">😊 Calorosa / próxima</div>
-        <div class="chip" data-v="feminina">👩 Feminina</div>
+        <div class="chip on" data-v="masculina">👨 Masculina (Fernando)</div>
+        <div class="chip" data-v="feminina">👩 Feminina (Aida)</div>
       </div>
     </div>
   </div>
@@ -364,7 +362,7 @@ function api(path, opts){
 
 // ── Estado ──
 let apresentador = 'dono';
-let voiceStyle = 'calorosa';   // estilo de voz do Veo
+let voiceStyle = 'masculina';   // voz padrão (Fernando Martinez); a tela troca p/ feminina (Aida)
 let roteiro = null;
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
