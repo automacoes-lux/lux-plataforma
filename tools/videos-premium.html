@@ -1248,7 +1248,7 @@ function compactarVideo(file, onProgress) {
     const url = URL.createObjectURL(file);
     const v = document.createElement('video');
     v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
-    let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0;
+    let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0, srcDur = 0;
     const cleanup = () => {
       if (rafId) cancelAnimationFrame(rafId);
       if (watchdog) clearTimeout(watchdog);
@@ -1259,6 +1259,7 @@ function compactarVideo(file, onProgress) {
     v.onerror = () => fail('vídeo inválido');
     v.onloadedmetadata = () => {
       const vw = v.videoWidth || 1080, vh = v.videoHeight || 1920;
+      srcDur = (v.duration && isFinite(v.duration)) ? v.duration : 0;   // duração real (o original TEM) → injetamos no WebM
       const MAXDIM = 1280;
       const scale = Math.min(1, MAXDIM / Math.max(vw, vh));
       const tw = Math.max(2, Math.round(vw * scale / 2) * 2);
@@ -1273,10 +1274,13 @@ function compactarVideo(file, onProgress) {
       try { recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 }); }
       catch (e) { return fail('não consegui iniciar a compactação'); }
       recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         cleanup();
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        let blob = new Blob(chunks, { type: 'video/webm' });
         if (!blob.size) { if (!done) { done = true; reject(new Error('a compactação saiu vazia')); } return; }
+        // o MediaRecorder NÃO grava a duração no WebM → sem ela o Shotstack não corta o trecho (trimStart) e o
+        // clipe de fundo sai VAZIO. Injeta a duração real (a do original) no cabeçalho antes de subir.
+        if (srcDur) { try { blob = await fixWebmDuration(blob, Math.round(srcDur * 1000)); } catch (e) {} }
         if (!done) { done = true; resolve(blob); }
       };
       const tick = () => {
@@ -1308,6 +1312,75 @@ function setCompact(pct) {
   if (b) b.style.width = pct + '%'; if (p) p.textContent = pct + '%';
 }
 function hideCompact() { const o = document.getElementById('compactOverlay'); if (o) o.classList.remove('show'); }
+
+// ── Conserta o WebM do MediaRecorder injetando a DURAÇÃO no cabeçalho (elemento Info > Duration) ──
+// O MediaRecorder grava como stream ao vivo, SEM a duração. Sem ela, players/ffmpeg leem duração = Infinity
+// e o Shotstack não consegue "pular" pro trecho cortado (trimStart) → o clipe de fundo sai vazio.
+// Só mexe se o Segment for de tamanho DESCONHECIDO (padrão do MediaRecorder). Se algo fugir do esperado,
+// devolve o blob original (nunca piora). durationMs = duração em milissegundos (TimecodeScale padrão = 1ms).
+async function fixWebmDuration(blob, durationMs) {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  const readId = (p) => {
+    const first = buf[p]; let mask = 0x80, len = 1;
+    while (len <= 4 && !(first & mask)) { mask >>= 1; len++; }
+    if (len > 4) return null;
+    let id = 0; for (let i = 0; i < len; i++) id = id * 256 + buf[p + i];
+    return { id, len };
+  };
+  const readSize = (p) => {
+    const first = buf[p]; let mask = 0x80, len = 1;
+    while (len <= 8 && !(first & mask)) { mask >>= 1; len++; }
+    if (len > 8) return null;
+    let unknown = ((first & (mask - 1)) === (mask - 1));
+    let value = first & (mask - 1);
+    for (let i = 1; i < len; i++) { if (buf[p + i] !== 0xFF) unknown = false; value = value * 256 + buf[p + i]; }
+    return { value, len, unknown };
+  };
+  const findChild = (start, end, targetId) => {
+    let p = start;
+    while (p < end) {
+      const idr = readId(p); if (!idr) return null;
+      const szr = readSize(p + idr.len); if (!szr) return null;
+      const contentStart = p + idr.len + szr.len;
+      const contentEnd = szr.unknown ? end : contentStart + szr.value;
+      if (idr.id === targetId) return { p, szPos: p + idr.len, contentStart, contentEnd, unknown: szr.unknown };
+      p = contentEnd;
+    }
+    return null;
+  };
+  const seg = findChild(0, buf.length, 0x18538067);              // Segment
+  if (!seg || !seg.unknown) return blob;                          // só o caso do MediaRecorder (size desconhecido)
+  const info = findChild(seg.contentStart, seg.contentEnd, 0x1549A966);   // Info
+  if (!info) return blob;
+  const dur = findChild(info.contentStart, info.contentEnd, 0x4489);
+  if (dur) {   // o MediaRecorder grava um Duration = 0 (placeholder) → sobrescreve o valor no lugar (float64 BE)
+    if ((dur.contentEnd - dur.contentStart) !== 8) return blob;   // tamanho inesperado → não arrisca
+    const out = buf.slice();
+    new DataView(out.buffer).setFloat64(dur.contentStart, durationMs, false);
+    return new Blob([out], { type: 'video/webm' });
+  }
+  const durEl = new Uint8Array(11);                              // (fallback) sem Duration → cria: id 0x4489 + size 0x88(8) + float64 BE
+  durEl[0] = 0x44; durEl[1] = 0x89; durEl[2] = 0x88;
+  new DataView(durEl.buffer).setFloat64(3, durationMs, false);
+  const newLen = (info.contentEnd - info.contentStart) + durEl.length;
+  const newSz = encodeEbmlSize(newLen);
+  return new Blob([
+    buf.slice(0, info.szPos),                          // ...até o id do Info (inclusive)
+    newSz,                                             // novo tamanho do Info
+    buf.slice(info.contentStart, info.contentEnd),     // conteúdo antigo do Info
+    durEl,                                             // + Duration
+    buf.slice(info.contentEnd)                         // resto (Tracks, Clusters...)
+  ], { type: 'video/webm' });
+}
+function encodeEbmlSize(value) {
+  let len = 1;
+  while (len < 8 && value >= (Math.pow(2, 7 * len) - 1)) len++;
+  const out = new Uint8Array(len);
+  let v = value;
+  for (let i = len - 1; i >= 0; i--) { out[i] = v & 0xFF; v = Math.floor(v / 256); }
+  out[0] |= (0x80 >> (len - 1));
+  return out;
+}
 
 function renderScenes() {
   const row = document.getElementById('scenesRow');
