@@ -15,8 +15,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
-<link rel="stylesheet" href="css/theme.css"/>
-<link rel="stylesheet" href="css/shell.css"/>
+<!-- ═══════════ VERSÃO DAS TELAS (cache-busting) ═══════════
+     Sempre que você ATUALIZAR QUALQUER TELA (tools/*.html) no GitHub, troque o número
+     em window.__LUX_VERSION (logo abaixo, perto do </head>) — ex.: 20260709 → 20260710.
+     Isso OBRIGA o navegador de todo mundo a baixar a versão nova (adeus "limpar cache").
+     Os ?v= dos css/js abaixo só precisam mudar se você mexer no próprio shell/css/auth. -->
+<link rel="stylesheet" href="css/theme.css?v=20260709"/>
+<link rel="stylesheet" href="css/shell.css?v=20260709"/>
 
 <style>
 /* Badge "EM BREVE" amarelo dourado (alinhado com gold da plataforma) */
@@ -66,7 +71,9 @@
 }
 </style>
 
-<script type="module" src="js/auth.js"></script>
+<!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
+<script>window.__LUX_VERSION = '20260709';</script>
+<script type="module" src="js/auth.js?v=20260709"></script>
 </head>
 <body>
 
@@ -550,6 +557,6 @@ function openLogoAnim(event) {
 })();
 </script>
 
-<script src="js/shell.js"></script>
+<script src="js/shell.js?v=20260709"></script>
 </body>
 </html>
