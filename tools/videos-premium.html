@@ -1206,10 +1206,10 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
     try {
       if (isVideo) {
         const meta = await getVideoMeta(file);
-        let up = file;
+        let up = file, realDur = meta.duration;
         // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB)
         if (file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
-          try { showCompact(file.name); up = await compactarVideo(file, setCompact); }
+          try { showCompact(file.name); const r = await compactarVideo(file, setCompact); up = r.blob; if (r.dur > 0.3) realDur = r.dur; }
           catch (err) { hideCompact(); toast('⚠️ Não consegui compactar ' + file.name + ': ' + err.message); continue; }
           hideCompact();
           toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
@@ -1217,8 +1217,8 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
         if (up.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': mesmo compactado ficou acima de ' + CLIP_MAX_MB + 'MB. Use um vídeo mais curto.'); continue; }
         toast('⏳ Enviando ' + file.name + '…');
         const clipKey = await uploadClip(up);
-        const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(meta.duration || 5)));
-        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: meta.duration || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: meta.thumbUrl || '', name: file.name, localUrl: URL.createObjectURL(file) });
+        const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(realDur || 5)));
+        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: realDur || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: meta.thumbUrl || '', name: file.name, localUrl: URL.createObjectURL(file) });
       } else {
         const opt = await fileToOptimizedImage(file, false);
         scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'photo', ...opt, name: file.name, origBase64: opt.base64 });
@@ -1275,7 +1275,7 @@ function compactarVideo(file, onProgress) {
     const url = URL.createObjectURL(file);
     const v = document.createElement('video');
     v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
-    let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0, srcDur = 0;
+    let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0, srcDur = 0, maxCT = 0, lastAdv = 0, realDur = 0;
     const cleanup = () => {
       if (rafId) cancelAnimationFrame(rafId);
       if (watchdog) clearTimeout(watchdog);
@@ -1305,20 +1305,30 @@ function compactarVideo(file, onProgress) {
         cleanup();
         let blob = new Blob(chunks, { type: 'video/webm' });
         if (!blob.size) { if (!done) { done = true; reject(new Error('a compactação saiu vazia')); } return; }
-        // o MediaRecorder NÃO grava a duração no WebM → sem ela o Shotstack não corta o trecho (trimStart) e o
-        // clipe de fundo sai VAZIO. Injeta a duração real (a do original) no cabeçalho antes de subir.
-        if (srcDur) { try { blob = await fixWebmDuration(blob, Math.round(srcDur * 1000)); } catch (e) {} }
-        if (!done) { done = true; resolve(blob); }
+        // DURAÇÃO REAL = o ponto MAIS LONGE que o vídeo REALMENTE tocou (maxCT), NÃO o srcDur do cabeçalho do
+        // original (que pode MENTIR: dizer 82s mas o conteúdo acabar em 75s → o clipe pisca no fim — bug SAFETY
+        // HUB 09/07). Injeta maxCT no WebM e devolve p/ o Passo 3 limitar o corte a esse tempo.
+        realDur = (maxCT > 0.3) ? maxCT : srcDur;
+        if (realDur) { try { blob = await fixWebmDuration(blob, Math.round(realDur * 1000)); } catch (e) {} }
+        if (!done) { done = true; resolve({ blob: blob, dur: realDur }); }
       };
       const tick = () => {
         if (done) return;
         try { ctx.drawImage(v, 0, 0, tw, th); } catch (e) {}
-        if (onProgress && v.duration) onProgress(Math.min(99, Math.round(v.currentTime / v.duration * 100)));
+        const ct = v.currentTime;
+        if (ct > maxCT + 0.02) { maxCT = ct; lastAdv = performance.now(); }   // avançou → guarda o ponto real
+        if (onProgress && v.duration) onProgress(Math.min(99, Math.round(ct / v.duration * 100)));
+        // STALL: travou (não avança há >2,5s) e não é pausa nem fim → é o FIM REAL do conteúdo (o container
+        // mente na duração). Encerra a gravação aqui — não conta o "rabo" congelado que faria o clipe piscar.
+        if (started && !v.paused && !v.ended && lastAdv && (performance.now() - lastAdv) > 2500) {
+          if (recorder && recorder.state !== 'inactive') { try { recorder.stop(); } catch (e) {} }
+          return;
+        }
         rafId = requestAnimationFrame(tick);
       };
       v.onended = () => { if (done || !recorder) return; if (onProgress) onProgress(100); try { recorder.stop(); } catch (e) {} };
       v.play().then(() => {
-        started = true;
+        started = true; lastAdv = performance.now();
         try { recorder.start(1000); } catch (e) { return fail('não consegui gravar'); }
         tick();
         // salvaguarda: se o 'ended' nunca disparar (vídeo com duração estranha), encerra assim mesmo
@@ -1499,7 +1509,11 @@ function openVideoEditor(id) {
     // dimensiona o vídeo pra COBRIR o box 9:16 (o zoom amplia a partir do centro)
     if (vw / vh > boxW / boxH) { v.style.height = boxH + 'px'; v.style.width = Math.round(boxH * vw / vh) + 'px'; }
     else { v.style.width = boxW + 'px'; v.style.height = Math.round(boxW * vh / vw) + 'px'; }
-    const dur = v.duration || s.origDur || 5;
+    // LIMITE do corte = duração REAL do clipe compactado (origDur). O vídeo do editor é o ORIGINAL, cuja
+    // metadata pode MENTIR (dizer 82s mas o conteúdo real ser 75s) → sem o cap, dava pra cortar num trecho
+    // que não existe no compactado e o clipe piscava no fim (bug SAFETY HUB 09/07).
+    const realMax = s.origDur || v.duration || 5;
+    const dur = Math.min(v.duration || realMax, realMax);
     vee.dur = dur;
     vee.tStart = Math.max(0, Math.min(s.trimStart || 0, dur - 1));
     vee.tEnd = Math.min(dur, vee.tStart + (s.dur || Math.min(5, dur)));
