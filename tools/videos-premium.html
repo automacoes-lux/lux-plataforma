@@ -1151,21 +1151,48 @@ function buildBackgrounds() {
     if (at != null) o.at = at;
     return o;
   };
-  if (lyricOn && lyricBlocks && lyricBlocks.some(b => b.mediaId)) {
-    const firstM = (lyricBlocks.find(b => b.mediaId) || {}).mediaId;
-    let last = firstM, lastMid = null;
+  if (lyricOn && lyricBlocks && lyricBlocks.length) {
+    // PROTEÇÃO (bug Eriene/PADARIA 09-07): a versão antiga montava a lista a partir das FRASES —
+    // mídia não encaixada era DESCARTADA em silêncio (13 fotos viravam 4). Agora TODA mídia entra.
+    // 1) limpa encaixes órfãos (foto removida OU ids trocados ao entrar na edição)
+    lyricBlocks.forEach(b => { if (b.mediaId && !scenes.find(s => s.id === b.mediaId)) b.mediaId = null; });
+    if (!lyricBlocks.some(b => b.mediaId)) {
+      // nada casado sobrou (ex: entrou na edição) → desliga o modo letra e segue no modo normal,
+      // em vez de mandar lista VAZIA (era o "Envie de 1 a 20 fotos/vídeos" na edição)
+      lyricOn = false; updateLyricStatus();
+      _lyricExtra = 0;
+      return scenes.map(s => mk(s));
+    }
+    // 2) tempo de cada mídia CASADA = a primeira frase em que ela aparece
+    const atById = {};
+    lyricBlocks.forEach(b => { if (b.mediaId && atById[b.mediaId] == null) atById[b.mediaId] = b.start; });
+    // 3) TODAS as mídias entram, na ordem do Passo 3: casada abre um grupo no tempo da frase;
+    //    não-casadas entram no grupo da casada ANTERIOR e dividem a janela até o próximo grupo.
+    const total = Math.max(5, Math.min(VIDEO_SECONDS, (music && music.duration) || VIDEO_SECONDS));
+    const groups = [];
+    let cur = null;
+    scenes.forEach(s => {
+      if (atById[s.id] != null) { cur = { at: atById[s.id], members: [s] }; groups.push(cur); }
+      else if (cur) { cur.members.push(s); }
+      else { cur = { at: 0, members: [s] }; groups.push(cur); }   // não-casadas ANTES da 1ª casada → começo
+    });
+    groups.sort((a, b) => a.at - b.at);
     const out = [];
-    lyricBlocks.forEach(b => {
-      const mid = b.mediaId || last; last = mid;
-      if (mid === lastMid) return;   // colapsa frases seguidas com a mesma imagem
-      const s = scenes.find(x => x.id === mid);
-      if (!s) return;
-      out.push(mk(s, b.start)); lastMid = mid;
+    _lyricExtra = 0;
+    groups.forEach((g, gi) => {
+      const end = (gi < groups.length - 1) ? groups[gi + 1].at : total;
+      const span = Math.max(0.5, end - g.at);
+      g.members.forEach((s, mi) => {
+        if (mi > 0) _lyricExtra++;
+        out.push(mk(s, Math.max(0, Math.min(total - 0.5, g.at + (span * mi / g.members.length)))));
+      });
     });
     return out;
   }
+  _lyricExtra = 0;
   return scenes.map(s => mk(s));
 }
+let _lyricExtra = 0;   // qtd de mídias não-casadas distribuídas pela buildBackgrounds (p/ avisar no gerar)
 
 // ───────────────────────────────────────────────
 // PASSO 3 — fotos e vídeos do comércio (passam atrás do avatar)
@@ -1649,6 +1676,9 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
   const isMp3 = /\.mp3$/i.test(file.name) || file.type === 'audio/mpeg' || file.type === 'audio/mp3';
   if (!isMp3) { toast('⚠️ A música precisa ser MP3 — converta e envie de novo.'); return; }
 
+  // música NOVA → os tempos das frases mudam: zera o "casar com a letra" (evita encaixes velhos)
+  lyricBlocks = null; lyricOn = false; updateLyricStatus();
+
   stopPreviewCorte();
   music = null;
   rawAudioBuffer = null;
@@ -2082,11 +2112,19 @@ async function gerarClipe() {
   btn.textContent = 'Enviando os arquivos…';
 
   try {
+    // PROTEÇÃO ANTI-PERDA (incidente 09-07): a lista enviada tem que ter TODAS as mídias do Passo 3.
+    // Se divergir (qualquer bug futuro), BLOQUEIA com aviso claro — nunca mais descarte silencioso.
+    const bgs = buildBackgrounds();
+    if (bgs.length !== scenes.length) {
+      toast('⚠️ Proteção: ' + (scenes.length - bgs.length) + ' de ' + scenes.length + ' mídias iam ficar de FORA do vídeo. Nada foi enviado. Clique em "desfazer" no casar-com-a-letra (ou recarregue a página) e tente de novo.');
+      return;
+    }
+    if (_lyricExtra > 0) toast('ℹ️ ' + _lyricExtra + ' mídia(s) não casadas com a letra foram distribuídas no tempo — todas as ' + scenes.length + ' aparecem no vídeo.');
     if (editState) {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: buildBackgrounds(), avatarCalib: avatarCalib };
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib };
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2107,7 +2145,8 @@ async function gerarClipe() {
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       avatarCalib: avatarCalib,
       avScale: avScale,
-      backgrounds: buildBackgrounds(),
+      backgrounds: bgs,
+      bgExpected: scenes.length,
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
@@ -2258,6 +2297,9 @@ async function editarClipe(orderId) {
       srcKey: b.srcKey, thumbUrl: b.url, base64: null, name: 'mídia ' + (i + 1),
       dur: b.dur, trimStart: b.trimStart, scale: b.scale, offsetX: b.offsetX, offsetY: b.offsetY, at: b.at
     }));
+    // reset do "casar com a letra": os ids das mídias MUDAM na edição — o mapa antigo apontaria
+    // pra ids inexistentes e a lista sairia VAZIA (bug "Envie de 1 a 20 fotos/vídeos", 09-07)
+    lyricBlocks = null; lyricOn = false; updateLyricStatus();
     aplicarModoEdicao(d);
     if (typeof renderScenes === 'function') renderScenes();
     if (typeof renderStoryboard === 'function') renderStoryboard();
@@ -2302,6 +2344,7 @@ function aplicarModoEdicao(d) {
 function sairEdicao() {
   editState = null;
   avatarPreview = null; clientPhoto = null; music = null; scenes = [];
+  lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   aplicarModoEdicao(null);
   if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
