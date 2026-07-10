@@ -1184,10 +1184,21 @@ function buildBackgrounds() {
       const span = Math.max(0.5, end - g.at);
       g.members.forEach((s, mi) => {
         if (mi > 0) _lyricExtra++;
-        out.push(mk(s, Math.max(0, Math.min(total - 0.5, g.at + (span * mi / g.members.length)))));
+        out.push({ s: s, at: g.at + (span * mi / g.members.length) });
       });
     });
-    return out;
+    // 4) ESPAÇAMENTO MÍNIMO por mídia (anti-piscação): com muitas imagens + frases juntas, os fundos
+    //    ficavam a ~0,5s um do outro → cada fundo durava 0,5s e a transição de 1s aparecia pela metade
+    //    (bug VICENTE DRONES / Miranda 10/07). Força cada mídia ≥ MIN no ar, sem estourar a música.
+    out.sort((a, b) => a.at - b.at);
+    const N = out.length;
+    const MIN_DUR = Math.min(2.5, total / N);   // MIN*N ≤ total garante que TODAS cabem
+    for (let i = 0; i < N; i++) {
+      const floor = (i === 0) ? 0 : out[i - 1].at + MIN_DUR;
+      const ceil = total - (N - 1 - i) * MIN_DUR - 0.3;   // reserva espaço p/ os fundos seguintes
+      out[i].at = Number(Math.max(floor, Math.min(out[i].at, ceil)).toFixed(2));
+    }
+    return out.map(o => mk(o.s, o.at));
   }
   _lyricExtra = 0;
   return scenes.map(s => mk(s));
