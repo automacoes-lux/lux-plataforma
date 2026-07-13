@@ -215,7 +215,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
   <div class="step">
     <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Suba <b>exatamente 7 imagens</b> reais do negócio. Cada uma vira uma cena de 8s → vídeo de <b>56s</b> (a última cena é o CTA).</div>
+    <div class="step-hint">Suba de <b>1 a 6 imagens</b> reais do negócio (produtos, ambiente, pratos). O vídeo terá <b>5-6 cenas</b> (~30 a 38s). Se você subir menos de 6, as imagens se repetem — com o avatar em poses diferentes (a última cena é o CTA).</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -225,8 +225,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <!-- PASSO 5 — TRILHA SONORA (biblioteca + upload) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">5</div><div class="step-title">Trilha sonora (56s)</div></div>
-    <div class="step-hint">Escolha uma trilha da biblioteca <b>ou</b> envie a sua música (o editor corta em 56s com fades). Ela fica baixinha, embaixo da fala.</div>
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Trilha sonora (40s)</div></div>
+    <div class="step-hint">Escolha uma trilha da biblioteca <b>ou</b> envie a sua música (o editor corta em 40s com fades). Ela fica baixinha, embaixo da fala.</div>
 
     <!-- biblioteca de trilhas -->
     <div id="trilhasGrid" class="trilhas-grid"></div>
@@ -252,11 +252,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <!-- editor de corte (música > 56s) -->
+    <!-- editor de corte (música > 40s) -->
     <div class="cut-editor" id="cutEditor">
-      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>56 segundos</b> que vão pro vídeo:</div>
+      <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha os <b>40 segundos</b> que vão pro vídeo:</div>
       <canvas id="waveCanvas"></canvas>
-      <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 0:56</b></div>
+      <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 0:40</b></div>
       <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
       <div class="fades-row">
         <div class="fade-box">
@@ -270,7 +270,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <div class="cut-actions">
         <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 56s</button>
+        <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 40s</button>
       </div>
       <button class="btn-ghost" style="width:100%;margin-top:.6rem" onclick="trocarMusica()">🔁 Trocar música</button>
       <div class="cut-progress" id="cutProgress"></div>
@@ -352,7 +352,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536;
 const IMAGE_QUALITY = 0.85;
-const MAX_FUNDO = 7;   // OBRIGATÓRIO 7 → 7 cenas de 8s = 56s
+const MAX_FUNDO = 6;   // máx 6 imagens → 5-6 cenas → vídeo ~30-38s (menos de 6 = imagens se repetem)
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -445,9 +445,7 @@ function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
   if (!n){ el.textContent=''; return; }
-  el.innerHTML = (n===7)
-    ? '✅ <b>7 imagens</b> → 7 cenas de 8s = vídeo de 56s.'
-    : '<b style="color:#E8A84C">'+n+' de 7</b> imagens — suba '+(7-n)+' pra completar (obrigatório 7).';
+  el.innerHTML = '✅ <b>'+n+' imagem'+(n>1?'ns':'')+'</b> → vídeo de ~30 a 38s.'+(n<6?' <span style="color:#E8A84C">(pode subir até 6; com menos de 6 as imagens se repetem)</span>':'');
 }
 
 // ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
@@ -470,7 +468,7 @@ async function gerarRoteiro(){
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
   if (!briefing && !fotos.brief.length){ toast('📝 Escreva o briefing ou cole uma imagem.'); return; }
-  if (fotos.fundo.length !== 7){ toast('🖼️ Suba exatamente 7 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
+  if (fotos.fundo.length < 1){ toast('🖼️ Suba pelo menos 1 imagem de fundo (até 6).'); return; }
 
   const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando roteiro...';
@@ -500,7 +498,8 @@ function renderRoteiroPromo(){
   const wrap = document.getElementById('promoCenas'); wrap.innerHTML='';
   const n = roteiro.cenas.length;
   roteiro.cenas.forEach(function(c,i){
-    const thumb = (fotos.fundo[i] && fotos.fundo[i].thumbUrl) ? '<img src="'+fotos.fundo[i].thumbUrl+'"/>' : '<span>sem imagem</span>';
+    const _fi = fotos.fundo.length ? fotos.fundo[i % fotos.fundo.length] : null;   // cicla se houver menos fotos que cenas
+    const thumb = (_fi && _fi.thumbUrl) ? '<img src="'+_fi.thumbUrl+'"/>' : '<span>sem imagem</span>';
     const div = document.createElement('div'); div.className='cena-p'; div.setAttribute('data-idx', i);
     div.innerHTML =
       '<div class="ccol">'+
@@ -534,7 +533,7 @@ function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta
 // ═══════════════════════════════════════════════════════════════
 // MÚSICA DE FUNDO (30s) — editor de corte + fades (portado do Vídeo Avatar)
 // ═══════════════════════════════════════════════════════════════
-const PROMO_WINDOW = 56;            // trecho fixo de 56s (7 cenas de 8s)
+const PROMO_WINDOW = 40;            // trecho fixo de ~40s (cobre o vídeo de 30-38s com folga)
 const DUR_TOLERANCE = 1.5;          // ≤ ~30s usa inteira
 let rawAudioBuffer = null, rawAudioName = '';
 let wavePeaks = null;
@@ -682,8 +681,8 @@ async function aplicarCorte(){
     const mp3Blob=await encodeMP3(processed,(p)=>{ prog.textContent='Convertendo pra MP3… '+Math.round(p*100)+'%'; });
     const base64=await blobToBase64(mp3Blob);
     const baseName=rawAudioName.replace(/\.[^.]+$/,'');
-    setMusicReady({ base64, name:baseName+'_56s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
-    toast('✂ Corte feito: 56s com fades.');
+    setMusicReady({ base64, name:baseName+'_40s.mp3', duration:PROMO_WINDOW, playerSrc:URL.createObjectURL(mp3Blob), wasCut:true, startSec:0 });
+    toast('✂ Corte feito: 40s com fades.');
   } catch(err){ toast('⚠️ Erro no corte: '+err.message); }
   finally { btn.disabled=false; prog.classList.remove('show'); }
 }
@@ -888,7 +887,7 @@ function gerarPDF(){
     if (y > 700){ doc.addPage(); y=50; }
     doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(154,122,56);
     doc.text('CENA ' + (i+1), M, y);
-    const f = fotos.fundo[i];
+    const f = fotos.fundo.length ? fotos.fundo[i % fotos.fundo.length] : null;   // cicla se houver menos fotos que cenas
     if (f && f.thumbUrl){ try { doc.addImage(f.thumbUrl, 'JPEG', M, y+8, imgW, imgH); } catch(e){} }
     const tx = M + imgW + 16, tw = W - M - tx;
     doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(60,60,60); doc.text('Fala:', tx, y+18);
@@ -925,10 +924,10 @@ async function gerarVideo(){
   if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('Gere o roteiro primeiro.'); return; }
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
-  if (fotos.fundo.length !== 7){ toast('🖼️ Suba exatamente 7 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
-  // Música pendurada no editor de corte (subiu mas não clicou em "Cortar e usar 56s") → avisa antes de gerar sem música
+  if (fotos.fundo.length < 1){ toast('🖼️ Suba pelo menos 1 imagem de fundo (até 6).'); return; }
+  // Música pendurada no editor de corte (subiu mas não clicou em "Cortar e usar 40s") → avisa antes de gerar sem música
   if (!selectedTrilha && !music && rawAudioBuffer){
-    toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 56s" (ou escolha uma trilha) antes de gerar.');
+    toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 40s" (ou escolha uma trilha) antes de gerar.');
     document.getElementById('cutEditor').scrollIntoView({ behavior:'smooth' });
     return;
   }
