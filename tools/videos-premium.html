@@ -591,7 +591,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="compactBar" style="height:100%;width:0%;background:linear-gradient(90deg,#D9BC6E,#C9A84C);transition:width .2s"></div>
     </div>
     <div id="compactPct" style="font-size:13px;color:var(--gold);font-weight:700">0%</div>
-    <div class="hint" style="margin-top:10px">Deixa o vídeo mais leve pra subir (não muda a qualidade do resultado final). Pode levar até ~1 min. Não feche a aba.</div>
+    <div class="hint" style="margin-top:10px">Deixa o vídeo mais leve pra subir (não muda a qualidade do resultado final). Pode levar até ~1 min. <b style="color:var(--text-mid)">Não feche nem troque de aba</b> (trocar de aba congela um trecho do vídeo).</div>
   </div>
 </div>
 
@@ -1042,8 +1042,10 @@ function _setupCalibDrag() {
   cv.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
   cv.addEventListener('touchstart', start, { passive: false }); cv.addEventListener('touchmove', move, { passive: false }); cv.addEventListener('touchend', end);
 }
+let _calibSnap = null;   // snapshot p/ o Cancelar desfazer de verdade (antes, arrastar e cancelar mantinha a mudança)
 async function abrirCalib() {
   if (!avatarPreview || !avatarPreview.cartoonBase64) { toast('Gere o avatar primeiro.'); return; }
+  _calibSnap = { dx: avatarCalib.dx, dy: avatarCalib.dy, sc: avScale };
   try {
     const img = await loadImg('data:image/png;base64,' + avatarPreview.cartoonBase64);
     _calibCut = _recortarAvatar(img);
@@ -1071,6 +1073,11 @@ function updateAvSizeLabel() {
 }
 function closeCalib(confirmar) {
   document.getElementById('calibOverlay').classList.remove('show');
+  if (!confirmar && _calibSnap) {   // Cancelar = volta posição e tamanho de antes de abrir
+    avatarCalib = { dx: _calibSnap.dx, dy: _calibSnap.dy };
+    avScale = _calibSnap.sc;
+  }
+  _calibSnap = null;
   if (confirmar && avatarPreview) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); }
 }
 
@@ -1094,9 +1101,12 @@ async function abrirCasarLetra() {
     } catch (err) { toast('⚠️ ' + err.message); return; }
     finally { btn.disabled = false; btn.innerHTML = t0; }
   }
+  // snapshot p/ o Cancelar desfazer os encaixes feitos nesta abertura (antes, clicar errado + Cancelar mantinha)
+  _lyricSnap = { on: lyricOn, blocks: lyricBlocks ? lyricBlocks.map(b => ({ start: b.start, text: b.text, mediaId: b.mediaId })) : null };
   renderLyric();
   document.getElementById('lyricOverlay').classList.add('show');
 }
+let _lyricSnap = null;
 function renderLyric() {
   if (!lyricBlocks) return;
   document.getElementById('lyricRows').innerHTML = lyricBlocks.map((b, i) => {
@@ -1124,10 +1134,18 @@ function lyricAssign(mediaId) {
 function salvarCasarLetra() {
   if (!lyricBlocks || !lyricBlocks.some(b => b.mediaId)) { toast('Encaixe pelo menos 1 imagem numa frase.'); return; }
   lyricOn = true;
-  closeCasarLetra();
+  closeCasarLetra(true);
   updateLyricStatus();
 }
-function closeCasarLetra() { document.getElementById('lyricOverlay').classList.remove('show'); }
+function closeCasarLetra(salvo) {
+  document.getElementById('lyricOverlay').classList.remove('show');
+  if (!salvo && _lyricSnap) {   // Cancelar = volta os encaixes de antes de abrir
+    lyricOn = _lyricSnap.on;
+    lyricBlocks = _lyricSnap.blocks ? _lyricSnap.blocks.map(b => ({ start: b.start, text: b.text, mediaId: b.mediaId })) : null;
+    updateLyricStatus();
+  }
+  _lyricSnap = null;
+}
 function desligarLetra() { lyricOn = false; updateLyricStatus(); }
 function updateLyricStatus() {
   const el = document.getElementById('lyricStatus');
@@ -1144,37 +1162,50 @@ function buildBackgrounds() {
     if (s.kind === 'video') {
       o = { kind: 'video', dur: s.dur, trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0, name: s.name };
       if (s.srcKey) o.srcKey = s.srcKey; else o.clipKey = s.clipKey;   // edição: mantém o vídeo do original
+      // conteúdo REAL disponível (p/ o backend nunca esticar o clipe além do que existe — anti-congelamento):
+      // odur = duração total real; cdur = o que sobra a partir do corte escolhido
+      if (s.origDur) { o.odur = Math.round(s.origDur * 10) / 10; o.cdur = Math.max(0.5, Math.round((s.origDur - (s.trimStart || 0)) * 10) / 10); }
     } else {
-      o = s.srcKey ? { kind: 'image', srcKey: s.srcKey, name: s.name }   // edição: foto do original (não re-envia)
-                   : { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType };
+      // base64 PRIMEIRO: se a atendente re-enquadrou a foto (✏️), o base64 novo vale mais que o srcKey antigo
+      o = s.base64 ? { kind: 'image', base64: s.base64, name: s.name, mimeType: s.mimeType }
+                   : { kind: 'image', srcKey: s.srcKey, name: s.name };
     }
     if (at != null) o.at = at;
     return o;
   };
+  // ÂNCORAS de tempo: (a) do casar-com-a-letra (criação) OU (b) dos `at` originais das cenas mantidas
+  // (EDIÇÃO de um vídeo casado com a letra — preserva a sincronia; cenas novas se distribuem entre elas).
+  let atById = null;
   if (lyricOn && lyricBlocks && lyricBlocks.length) {
     // PROTEÇÃO (bug Eriene/PADARIA 09-07): a versão antiga montava a lista a partir das FRASES —
     // mídia não encaixada era DESCARTADA em silêncio (13 fotos viravam 4). Agora TODA mídia entra.
     // 1) limpa encaixes órfãos (foto removida OU ids trocados ao entrar na edição)
     lyricBlocks.forEach(b => { if (b.mediaId && !scenes.find(s => s.id === b.mediaId)) b.mediaId = null; });
     if (!lyricBlocks.some(b => b.mediaId)) {
-      // nada casado sobrou (ex: entrou na edição) → desliga o modo letra e segue no modo normal,
-      // em vez de mandar lista VAZIA (era o "Envie de 1 a 20 fotos/vídeos" na edição)
+      // nada casado sobrou → desliga o modo letra (era o "Envie de 1 a 20 fotos/vídeos" na edição)
       lyricOn = false; updateLyricStatus();
-      _lyricExtra = 0;
-      return scenes.map(s => mk(s));
+    } else {
+      // tempo de cada mídia CASADA = a primeira frase em que ela aparece
+      atById = {};
+      lyricBlocks.forEach(b => { if (b.mediaId && atById[b.mediaId] == null) atById[b.mediaId] = b.start; });
     }
-    // 2) tempo de cada mídia CASADA = a primeira frase em que ela aparece
-    const atById = {};
-    lyricBlocks.forEach(b => { if (b.mediaId && atById[b.mediaId] == null) atById[b.mediaId] = b.start; });
-    // 3) TODAS as mídias entram, na ordem do Passo 3: casada abre um grupo no tempo da frase;
-    //    não-casadas entram no grupo da casada ANTERIOR e dividem a janela até o próximo grupo.
+  }
+  if (!atById && scenes.some(s => s.at != null)) {
+    // EDIÇÃO de um vídeo que foi casado com a letra: mantém os tempos originais como âncoras
+    // (antes a edição PERDIA a sincronia com a letra em silêncio — review 12/07)
+    atById = {};
+    scenes.forEach(s => { if (s.at != null) atById[s.id] = parseFloat(s.at) || 0; });
+  }
+  if (atById) {
+    // TODAS as mídias entram, na ordem do Passo 3: ancorada abre um grupo no seu tempo;
+    // não-ancoradas entram no grupo da ancorada ANTERIOR e dividem a janela até o próximo grupo.
     const total = Math.max(5, Math.min(VIDEO_SECONDS, (music && music.duration) || VIDEO_SECONDS));
     const groups = [];
     let cur = null;
     scenes.forEach(s => {
       if (atById[s.id] != null) { cur = { at: atById[s.id], members: [s] }; groups.push(cur); }
       else if (cur) { cur.members.push(s); }
-      else { cur = { at: 0, members: [s] }; groups.push(cur); }   // não-casadas ANTES da 1ª casada → começo
+      else { cur = { at: 0, members: [s] }; groups.push(cur); }   // não-ancoradas ANTES da 1ª → começo
     });
     groups.sort((a, b) => a.at - b.at);
     const out = [];
@@ -1312,6 +1343,7 @@ function compactarVideo(file, onProgress) {
       try { recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 }); }
       catch (e) { return fail('não consegui iniciar a compactação'); }
       recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+      recorder.onerror = () => fail('erro na gravação do vídeo compactado — tente de novo');
       recorder.onstop = async () => {
         cleanup();
         let blob = new Blob(chunks, { type: 'video/webm' });
@@ -1471,7 +1503,7 @@ function setClipDur(id, val) {
   if (!s) return;
   let d = Math.round(parseFloat(val) || 1);
   d = Math.max(1, Math.min(videoDur() || VIDEO_SECONDS, d));   // não passa da duração da música
-  if (s.origDur) d = Math.min(d, Math.max(1, Math.round(s.origDur)));   // nem da duração real do clipe
+  if (s.origDur) d = Math.min(d, Math.max(1, Math.floor(s.origDur - (s.trimStart || 0))));   // nem do conteúdo REAL que sobra após o corte (floor: nunca além)
   s.dur = d;
   renderScenes(); renderStoryboard();
 }
@@ -1560,7 +1592,7 @@ function saveVideoEditor() {
   const s = scenes.find(x => x.id === vee.id);
   if (!s) { closeVideoEditor(); return; }
   s.trimStart = vee.tStart;
-  s.dur = Math.max(1, Math.round(vee.tEnd - vee.tStart));
+  s.dur = Math.max(1, Math.floor(vee.tEnd - vee.tStart));   // floor: arredondar pra cima passava do conteúdo (+0,5s congelado no fim)
   s.scale = vee.scale;
   s.offsetX = 0; s.offsetY = 0;   // sem mover (mãozinha removida) → vídeo centralizado, só zoom
   closeVideoEditor();
@@ -1634,6 +1666,8 @@ async function openEditor(id) {
   const i = scenes.findIndex(s => s.id === id);
   if (i < 0) return;
   const s = scenes[i];
+  // foto MANTIDA do vídeo original (edição): não temos o arquivo dela nesta sessão → sem falha silenciosa
+  if (!s.origBase64 && !s.base64) { toast('Essa foto veio do vídeo original — pra reenquadrar, remova-a e adicione o arquivo de novo.'); return; }
   const src = 'data:' + (s.mimeType || 'image/jpeg') + ';base64,' + (s.origBase64 || s.base64);
   const img = await loadImg(src);
   const minScale = Math.max(OUT_W / img.naturalWidth, OUT_H / img.naturalHeight);
@@ -2117,6 +2151,14 @@ function validar() {
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 3).';
     if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
+    if (scenes.some(s => s.at != null)) {
+      // vídeo casado com a letra: valida a densidade (mín. ~2,5s por mídia)
+      const D = videoDur();
+      const maxM = Math.max(1, Math.floor(D / 2.5));
+      if (scenes.length > maxM) return 'Este vídeo foi casado com a letra: cabem no máximo ' + maxM + ' mídias em ' + D + 's. Remova ' + (scenes.length - maxM) + ' mídia(s) (Passo 3).';
+    } else {
+      const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).';   // antes a edição pulava esta checagem e enviava timeline inválida
+    }
     return '';
   }
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
@@ -2125,6 +2167,12 @@ function validar() {
   if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 3).';
   if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
   if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).'; }   // modo letra define o tempo pela música
+  else {
+    // modo letra: garante espaço mínimo de ~2,5s por mídia (senão o clipe pisca — cada fundo teria <2,5s na tela)
+    const D = videoDur();
+    const maxMidias = Math.max(1, Math.floor(D / 2.5));
+    if (scenes.length > maxMidias) return 'No modo "casar com a letra" cabem no máximo ' + maxMidias + ' mídias em ' + D + 's de música (mín. ~2,5s por mídia). Remova ' + (scenes.length - maxMidias) + ' mídia(s) ou use um trecho maior (Passo 3).';
+  }
   return null;
 }
 
@@ -2145,6 +2193,11 @@ async function gerarClipe() {
       return;
     }
     if (_lyricExtra > 0) toast('ℹ️ ' + _lyricExtra + ' mídia(s) não casadas com a letra foram distribuídas no tempo — todas as ' + scenes.length + ' aparecem no vídeo.');
+    // se o modo letra se desligou SOZINHO no buildBackgrounds (encaixes órfãos), valida o timing automático agora
+    if (!editState && !lyricOn && !scenes.some(s => s.at != null)) {
+      const tv = computeTiming();
+      if (!tv.ok) { toast('⚠️ ' + tv.msg + ' (Passo 3).'); return; }
+    }
     if (editState) {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
@@ -2183,13 +2236,24 @@ async function gerarClipe() {
     if (!d1.ok) throw new Error(d1.error || 'Falha ao criar o pedido.');
 
     btn.textContent = 'Iniciando a produção…';
-    const r2 = await api('/produceAvatarVideo', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: d1.orderId })
-    });
-    const d2 = await r2.json();
-    if (!d2.ok) throw new Error(d2.error || 'Falha ao iniciar a produção.');
+    // a largada da produção re-tenta 3x (rede/500 passageiro não pode abandonar um pedido já criado)
+    let d2 = null;
+    for (let tent = 1; tent <= 3; tent++) {
+      try {
+        const r2 = await api('/produceAvatarVideo', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: d1.orderId })
+        });
+        d2 = await r2.json();
+        if (d2.ok) break;
+        if (tent === 3) throw new Error(d2.error || 'Falha ao iniciar a produção.');
+      } catch (e) {
+        if (tent === 3) throw new Error('O pedido foi criado, mas a produção não iniciou (' + (e.message || 'rede') + '). Recarregue a página (Ctrl+Shift+R) e gere de novo — o pedido não iniciado NÃO é cobrado.');
+      }
+      await new Promise(r => setTimeout(r, 1200 * tent));
+    }
 
     addPending(d1.orderId, payload.clientName);
+    resetCreateForm();   // form limpo: evita 2º clique gerar pedido DUPLICADO (~R$20) sem querer
 
     toast('🎬 Produção iniciada! Pode gerar outro clipe enquanto este fica pronto.');
     showTab('resultados');
@@ -2235,20 +2299,26 @@ function startPolling() {
   updateLiveBanner();
   if (!getPending().length) return;
   const tick = async () => {
-    const list = getPending();
-    if (!list.length) { stopPolling(); updateLiveBanner(); return; }
-    let mudou = false;
-    for (const p of list) {
-      try {
-        const resp = await api('/checkStatus?orderId=' + encodeURIComponent(p.orderId));
-        const d = await resp.json();
-        if (d.status === 'completed' && d.videoUrl) { removePending(p.orderId); toast('✅ Clipe de "' + p.clientName + '" pronto!'); mudou = true; }
-        else if (d.status === 'error') { removePending(p.orderId); toast('⚠️ "' + p.clientName + '" falhou: ' + (d.error || 'erro')); mudou = true; }
-      } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
-    }
-    updateLiveBanner();
-    if (mudou) loadOrders();
-    if (!getPending().length) stopPolling();
+    if (tick._busy) return;   // ticks não se sobrepõem (rede lenta × intervalo fixo duplicava avisos)
+    tick._busy = true;
+    try {
+      const list = getPending();
+      if (!list.length) { stopPolling(); updateLiveBanner(); return; }
+      let mudou = false;
+      for (const p of list) {
+        // pendência com mais de 24h = pedido morto/expirado → sai do banner (senão ficava eterno)
+        if (p.ts && (Date.now() - p.ts) > 24 * 60 * 60 * 1000) { removePending(p.orderId); mudou = true; continue; }
+        try {
+          const resp = await api('/checkStatus?orderId=' + encodeURIComponent(p.orderId));
+          const d = await resp.json();
+          if (d.status === 'completed' && d.videoUrl) { removePending(p.orderId); toast('✅ Clipe de "' + p.clientName + '" pronto!'); mudou = true; }
+          else if (d.status === 'error') { removePending(p.orderId); toast('⚠️ "' + p.clientName + '" falhou: ' + (d.error || 'erro')); mudou = true; }
+        } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
+      }
+      updateLiveBanner();
+      if (mudou) loadOrders();
+      if (!getPending().length) stopPolling();
+    } finally { tick._busy = false; }
   };
   tick();
   pollTimer = setInterval(tick, POLL_INTERVAL_MS);
@@ -2320,11 +2390,17 @@ async function editarClipe(orderId) {
       id: 'ed' + i + Math.random().toString(36).slice(2, 5),
       kind: b.kind === 'video' ? 'video' : 'photo',
       srcKey: b.srcKey, thumbUrl: b.url, base64: null, name: 'mídia ' + (i + 1),
-      dur: b.dur, trimStart: b.trimStart, scale: b.scale, offsetX: b.offsetX, offsetY: b.offsetY, at: b.at
+      dur: b.dur, trimStart: b.trimStart, scale: b.scale, offsetX: b.offsetX, offsetY: b.offsetY, at: b.at,
+      origDur: (b.odur != null ? Number(b.odur) : null)   // conteúdo real do clipe (limita ⏱ e viaja de volta no payload)
     }));
     // reset do "casar com a letra": os ids das mídias MUDAM na edição — o mapa antigo apontaria
     // pra ids inexistentes e a lista sairia VAZIA (bug "Envie de 1 a 20 fotos/vídeos", 09-07)
     lyricBlocks = null; lyricOn = false; updateLyricStatus();
+    // música é TRAVADA na edição: desarma o editor de corte que possa ter ficado aberto de outro fluxo
+    // (senão "Cortar e usar" trocaria a música travada por uma de outra sessão — review 12/07)
+    try { stopPreviewCorte(); } catch (e) {}
+    rawAudioBuffer = null;
+    const _cut = document.getElementById('cutEditor'); if (_cut) _cut.classList.remove('show');
     aplicarModoEdicao(d);
     if (typeof renderScenes === 'function') renderScenes();
     if (typeof renderStoryboard === 'function') renderStoryboard();
@@ -2346,16 +2422,19 @@ function aplicarModoEdicao(d) {
     }
   }
   // avatar TRAVADO → esconde upload da foto + geração + preview + badge
-  ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+  // (+ btnCasarLetra: a música é travada na edição, então casar-com-a-letra não se aplica)
+  ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved', 'btnCasarLetra'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = on ? 'none' : '';
   });
   // tarjas vermelhas de bloqueio (avatar + música) — aparecem só na edição
   ['avatarLock', 'musicLock'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.toggle('show', on);
   });
-  // música TRAVADA → esconde o upload e o botão "trocar a música"; mostra só o player da música atual
+  // música TRAVADA → esconde o upload, o "trocar a música" e o corte; mostra só o player da música atual
   const tile = document.getElementById('musicTile'); if (tile) tile.style.display = on ? 'none' : '';
   const btnTroca = document.getElementById('btnTrocarMusica'); if (btnTroca) btnTroca.style.display = on ? 'none' : '';
+  const btnReab = document.getElementById('btnReabrirCorte'); if (btnReab && on) btnReab.style.display = 'none';
+  const cutEd = document.getElementById('cutEditor'); if (cutEd && on) cutEd.classList.remove('show');
   if (on && d) {
     const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.add('show');
     const nm = document.getElementById('musicName'); if (nm) nm.textContent = 'Música atual (mantida)';
@@ -2366,9 +2445,28 @@ function aplicarModoEdicao(d) {
   if (btn) btn.textContent = on ? '💾 Salvar edição' : '🎬 Gerar o clipe';
 }
 
+// limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
+function resetCreateForm() {
+  clientPhoto = null; avatarPreview = null;
+  avatarCalib = { dx: 0, dy: 0 }; avScale = AVSCALE_MAX;
+  scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
+  scenes = [];
+  music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
+  lyricBlocks = null; lyricOn = false; updateLyricStatus();
+  const cn = document.getElementById('clientName'); if (cn) cn.value = '';
+  const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
+  const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
+  const cut = document.getElementById('cutEditor'); if (cut) cut.classList.remove('show');
+  if (typeof renderClientPhoto === 'function') renderClientPhoto();
+  if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
+  renderScenes(); renderStoryboard();
+}
+
 function sairEdicao() {
   editState = null;
-  avatarPreview = null; clientPhoto = null; music = null; scenes = [];
+  avatarPreview = null; clientPhoto = null; music = null;
+  scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
+  scenes = [];
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   aplicarModoEdicao(null);
