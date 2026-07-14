@@ -191,13 +191,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="soon-note" style="color:var(--gold)">✓ Esse avatar será usado no vídeo.</div>
     </div>
 
-    <!-- Estilo de voz (guia a voz do Veo — ele gera a voz a partir da descrição) -->
+    <!-- Voz: REMOVIDA — o Veo gera a voz NATIVA (não precisa escolher). -->
     <div class="up-cat" style="margin-top:1rem">
-      <div class="up-cat-head">🎙️ Voz do apresentador <span class="up-opt">(escolha conforme o cliente)</span></div>
-      <div class="chips" id="chipsVoz">
-        <div class="chip on" data-v="masculina">👨 Masculina (Fernando)</div>
-        <div class="chip" data-v="feminina">👩 Feminina (Aida)</div>
-      </div>
+      <div class="up-cat-head">🎙️ Voz <span class="up-opt">(automática — o Veo narra sozinho, com a voz que combina com o avatar)</span></div>
     </div>
   </div>
 
@@ -215,7 +211,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <!-- PASSO 4 — IMAGENS DE FUNDO -->
   <div class="step">
     <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Suba de <b>1 a 6 imagens</b> reais do negócio (produtos, ambiente, pratos). O vídeo terá <b>5-6 cenas</b> (~30 a 38s). Se você subir menos de 6, as imagens se repetem — com o avatar em poses diferentes (a última cena é o CTA).</div>
+    <div class="step-hint">Suba <b>exatamente 4 imagens</b> reais do negócio (produtos, ambiente). Cada uma vira uma cena de 8s → vídeo de <b>32s</b> (a última é o CTA). 💡 Depois dá pra <b>refazer 1 cena só</b> se alguma sair com erro, sem gerar o vídeo todo.</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -352,7 +348,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536;
 const IMAGE_QUALITY = 0.85;
-const MAX_FUNDO = 6;   // máx 6 imagens → 5-6 cenas → vídeo ~30-38s (menos de 6 = imagens se repetem)
+const MAX_FUNDO = 4;   // Veo: EXATAMENTE 4 imagens → 4 cenas de 8s = vídeo de 32s
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -362,7 +358,7 @@ function api(path, opts){
 
 // ── Estado ──
 let apresentador = 'dono';
-let voiceStyle = 'masculina';   // voz padrão (Fernando Martinez); a tela troca p/ feminina (Aida)
+let voiceStyle = 'masculina';   // NÃO usado no Veo (voz nativa) — mantido só p/ compatibilidade do backend
 let roteiro = null;
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
@@ -445,7 +441,7 @@ function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
   if (!n){ el.textContent=''; return; }
-  el.innerHTML = '✅ <b>'+n+' imagem'+(n>1?'ns':'')+'</b> → vídeo de ~30 a 38s.'+(n<6?' <span style="color:#E8A84C">(pode subir até 6; com menos de 6 as imagens se repetem)</span>':'');
+  el.innerHTML = (n===4) ? '✅ <b>4 imagens</b> → 4 cenas de 8s = vídeo de 32s.' : '<b style="color:#E8A84C">'+n+' de 4</b> imagens — '+(n<4?('suba '+(4-n)+' pra completar'):'tire '+(n-4))+' (precisa de exatamente 4).';
 }
 
 // ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
@@ -468,7 +464,7 @@ async function gerarRoteiro(){
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
   if (!briefing && !fotos.brief.length){ toast('📝 Escreva o briefing ou cole uma imagem.'); return; }
-  if (fotos.fundo.length < 1){ toast('🖼️ Suba pelo menos 1 imagem de fundo (até 6).'); return; }
+  if (fotos.fundo.length !== 4){ toast('🖼️ Suba exatamente 4 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
 
   const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando roteiro...';
@@ -924,7 +920,7 @@ async function gerarVideo(){
   if (!roteiro || !roteiro.cenas || !roteiro.cenas.length){ toast('Gere o roteiro primeiro.'); return; }
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
-  if (fotos.fundo.length < 1){ toast('🖼️ Suba pelo menos 1 imagem de fundo (até 6).'); return; }
+  if (fotos.fundo.length !== 4){ toast('🖼️ Suba exatamente 4 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
   // Música pendurada no editor de corte (subiu mas não clicou em "Cortar e usar 40s") → avisa antes de gerar sem música
   if (!selectedTrilha && !music && rawAudioBuffer){
     toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 40s" (ou escolha uma trilha) antes de gerar.');
