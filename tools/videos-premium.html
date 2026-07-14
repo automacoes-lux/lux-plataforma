@@ -672,7 +672,10 @@ const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
 const MAX_MEDIA      = 20;          // até 20 fundos (fotos + vídeos) atrás do avatar
 const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
 const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto do Cloudflare no plano atual)
-const COMPACT_ABOVE_MB = 60;        // vídeo acima disso é compactado no navegador (1080p, sem áudio) antes de subir
+// (13/07, incidente Diogo/Pousada) 60–95MB agora sobe o ORIGINAL direto (o Worker aceita 100MB) — a
+// compactação em tempo real congelava se a atendente trocasse de aba (74% do clipe parado no arquivo).
+// Só compacta o que NÃO CABE no teto do Cloudflare, com abort em aba oculta + análise anti-travada.
+const COMPACT_ABOVE_MB = 95;        // vídeo acima disso é compactado no navegador (1080p, sem áudio) antes de subir
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.11;      // cartoon (gpt-image medium)
@@ -1251,9 +1254,20 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
         let up = file, realDur = meta.duration;
         // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB)
         if (file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
-          try { showCompact(file.name); const r = await compactarVideo(file, setCompact); up = r.blob; if (r.dur > 0.3) realDur = r.dur; }
-          catch (err) { hideCompact(); toast('⚠️ Não consegui compactar ' + file.name + ': ' + err.message); continue; }
+          // PORTÃO DE QUALIDADE (incidente Diogo 13/07): só aceita o compactado se ele saiu SEM travadas
+          // gravadas (maior buraco ≤1,2s e total parado ≤2,5s). Saiu ruim → refaz sozinho 1x; 2x ruim → recusa.
+          let r = null, okComp = false;
+          try {
+            for (let tent = 1; tent <= 2; tent++) {
+              showCompact(file.name + (tent === 2 ? ' — 2ª tentativa' : ''));
+              r = await compactarVideo(file, setCompact);
+              const b = r.buracos || {};
+              if (b.frames !== 0 && (b.maxGapMs || 0) <= 1200 && (b.totalGapMs || 0) <= 2500) { okComp = true; break; }
+            }
+          } catch (err) { hideCompact(); toast('⚠️ Não consegui compactar ' + file.name + ': ' + err.message); continue; }
           hideCompact();
+          if (!okComp) { toast('⚠️ ' + file.name + ': a compactação saiu com travadas 2 vezes (computador sobrecarregado?). Feche outras abas/programas e tente de novo — ou use um vídeo menor que ' + COMPACT_ABOVE_MB + 'MB.'); continue; }
+          up = r.blob; if (r.dur > 0.3) realDur = r.dur;
           toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
         }
         if (up.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': mesmo compactado ficou acima de ' + CLIP_MAX_MB + 'MB. Use um vídeo mais curto.'); continue; }
@@ -1318,9 +1332,13 @@ function compactarVideo(file, onProgress) {
     const v = document.createElement('video');
     v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
     let recorder = null, chunks = [], rafId = 0, done = false, started = false, watchdog = 0, srcDur = 0, maxCT = 0, lastAdv = 0, realDur = 0;
+    // ABA OCULTA = rAF pausa e o arquivo sai com buracos gigantes (incidente Diogo 13/07: 40s congelados
+    // de 55s). Aborta NA HORA com instrução clara em vez de produzir um clipe podre.
+    const onVis = () => { if (document.hidden && started && !done) fail('a aba foi trocada/minimizada durante a compactação — deixe esta aba VISÍVEL na tela e tente de novo'); };
     const cleanup = () => {
       if (rafId) cancelAnimationFrame(rafId);
       if (watchdog) clearTimeout(watchdog);
+      document.removeEventListener('visibilitychange', onVis);
       try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
       URL.revokeObjectURL(url);
     };
@@ -1353,7 +1371,10 @@ function compactarVideo(file, onProgress) {
         // HUB 09/07). Injeta maxCT no WebM e devolve p/ o Passo 3 limitar o corte a esse tempo.
         realDur = (maxCT > 0.3) ? maxCT : srcDur;
         if (realDur) { try { blob = await fixWebmDuration(blob, Math.round(realDur * 1000)); } catch (e) {} }
-        if (!done) { done = true; resolve({ blob: blob, dur: realDur }); }
+        // REDE DE SEGURANÇA (incidente Diogo 13/07): mede os buracos entre quadros DO PRÓPRIO arquivo
+        // gravado — qualquer travada gravada (aba oculta, decode pesado, jank) é detectada aqui.
+        const buracos = await analisarBuracosWebm(blob);
+        if (!done) { done = true; resolve({ blob: blob, dur: realDur, buracos: buracos }); }
       };
       const tick = () => {
         if (done) return;
@@ -1372,6 +1393,8 @@ function compactarVideo(file, onProgress) {
       v.onended = () => { if (done || !recorder) return; if (onProgress) onProgress(100); try { recorder.stop(); } catch (e) {} };
       v.play().then(() => {
         started = true; lastAdv = performance.now();
+        if (document.hidden) return fail('a aba precisa estar VISÍVEL durante a compactação — volte pra ela e tente de novo');
+        document.addEventListener('visibilitychange', onVis);
         try { recorder.start(1000); } catch (e) { return fail('não consegui gravar'); }
         tick();
         // salvaguarda: se o 'ended' nunca disparar (vídeo com duração estranha), encerra assim mesmo
@@ -1392,6 +1415,41 @@ function setCompact(pct) {
   if (b) b.style.width = pct + '%'; if (p) p.textContent = pct + '%';
 }
 function hideCompact() { const o = document.getElementById('compactOverlay'); if (o) o.classList.remove('show'); }
+
+// ── Analisa os timestamps dos quadros de um WebM gravado e mede os BURACOS (travadas GRAVADAS) ──
+// Rede de segurança da compactação (incidente Diogo 13/07: 40s congelados de 55s por aba em 2º plano).
+// Varre os Clusters (Timecode 0xE7) e blocos (SimpleBlock 0xA3 / BlockGroup 0xA0 > Block 0xA1).
+async function analisarBuracosWebm(blob) {
+  try {
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const vlen = (b) => { let m = 0x80, l = 1; while (l <= 8 && !(b & m)) { m >>= 1; l++; } return l; };
+    const times = [];
+    let clusterTc = 0, p = 0;
+    while (p < buf.length - 4) {
+      const il = vlen(buf[p]); let id = 0; for (let i = 0; i < il; i++) id = id * 256 + buf[p + i];
+      if (!id) { p++; continue; }
+      const sp = p + il;
+      const sl = vlen(buf[sp]); let sv = buf[sp] & (0xFF >> sl);
+      let unknown = (sl === 8 ? buf[sp] === 0x01 : sv === (0xFF >> sl));
+      for (let i = 1; i < sl; i++) { if (buf[sp + i] !== 0xFF) unknown = false; sv = sv * 256 + buf[sp + i]; }
+      const cs = sp + sl;
+      if (id === 0x18538067 || id === 0x1F43B675 || id === 0xA0) { p = cs; continue; }   // Segment/Cluster/BlockGroup → entra
+      if (id === 0xE7) { let v = 0; for (let k = cs; k < cs + sv; k++) v = v * 256 + buf[k]; clusterTc = v; p = cs + sv; continue; }
+      if (id === 0xA3 || id === 0xA1) { const tl = vlen(buf[cs]); times.push(clusterTc + dv.getInt16(cs + tl)); p = cs + sv; continue; }
+      if (unknown) { p = cs; continue; }
+      p = cs + sv;
+    }
+    times.sort((a, b) => a - b);
+    let maxGap = 0, totalGap = 0;
+    for (let i = 1; i < times.length; i++) {
+      const g = times[i] - times[i - 1];
+      if (g > maxGap) maxGap = g;
+      if (g > 150) totalGap += g;
+    }
+    return { frames: times.length, maxGapMs: Math.round(maxGap), totalGapMs: Math.round(totalGap) };
+  } catch (e) { return { frames: -1, maxGapMs: 0, totalGapMs: 0 }; }   // análise falhou → não bloqueia o fluxo
+}
 
 // ── Conserta o WebM do MediaRecorder injetando a DURAÇÃO no cabeçalho (elemento Info > Duration) ──
 // O MediaRecorder grava como stream ao vivo, SEM a duração. Sem ela, players/ffmpeg leem duração = Infinity
