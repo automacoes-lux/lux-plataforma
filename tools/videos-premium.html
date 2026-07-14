@@ -1221,23 +1221,28 @@ function buildBackgrounds() {
         out.push({ s: s, at: g.at + (span * mi / g.members.length) });
       });
     });
-    // 4) ESPAÇAMENTO MÍNIMO por mídia (anti-piscação): com muitas imagens + frases juntas, os fundos
-    //    ficavam a ~0,5s um do outro → cada fundo durava 0,5s e a transição de 1s aparecia pela metade
-    //    (bug VICENTE DRONES / Miranda 10/07). Força cada mídia ≥ MIN no ar, sem estourar a música.
+    // 4) ESPAÇAMENTO MÍNIMO por mídia (anti-piscação, bug VICENTE/Miranda 10/07) em 3 PASSADAS:
+    //    ida (empurra amontoados pra frente) → VOLTA (puxa excessos pra trás — garante que TODA mídia,
+    //    INCLUSIVE A ÚLTIMA, tenha ≥ MIN de janela; antes a última podia ficar com 0,3s e a logo do
+    //    fechamento sumia — incidente MDS Cursos 14/07) → ida final (normaliza o comecinho).
     out.sort((a, b) => a.at - b.at);
     const N = out.length;
     const MIN_DUR = Math.min(2.5, total / N);   // MIN*N ≤ total garante que TODAS cabem
-    for (let i = 0; i < N; i++) {
-      const floor = (i === 0) ? 0 : out[i - 1].at + MIN_DUR;
-      const ceil = total - (N - 1 - i) * MIN_DUR - 0.3;   // reserva espaço p/ os fundos seguintes
-      out[i].at = Number(Math.max(floor, Math.min(out[i].at, ceil)).toFixed(2));
-    }
+    for (let i = 1; i < N; i++) out[i].at = Math.max(out[i].at, out[i - 1].at + MIN_DUR);
+    out[N - 1].at = Math.min(out[N - 1].at, total - MIN_DUR);   // a ÚLTIMA também tem janela mínima
+    for (let i = N - 2; i >= 0; i--) out[i].at = Math.min(out[i].at, out[i + 1].at - MIN_DUR);
+    out[0].at = Math.max(0, out[0].at);
+    for (let i = 1; i < N; i++) out[i].at = Math.max(out[i].at, out[i - 1].at + MIN_DUR);
+    out.forEach(o => { o.at = Number(Math.max(0, Math.min(total - 0.5, o.at)).toFixed(2)); });
+    _ultimaJanela = Number((total - out[N - 1].at).toFixed(1));   // p/ avisar se a última mídia (logo) ficou curta
     return out.map(o => mk(o.s, o.at));
   }
   _lyricExtra = 0;
+  _ultimaJanela = 0;   // modo normal: sem âncoras, o aviso de "última mídia curta" não se aplica
   return scenes.map(s => mk(s));
 }
 let _lyricExtra = 0;   // qtd de mídias não-casadas distribuídas pela buildBackgrounds (p/ avisar no gerar)
+let _ultimaJanela = 0; // segundos da ÚLTIMA mídia no modo âncora (logo do fechamento — avisa se ficou curta)
 
 // ───────────────────────────────────────────────
 // PASSO 3 — fotos e vídeos do comércio (passam atrás do avatar)
@@ -2251,6 +2256,8 @@ async function gerarClipe() {
       return;
     }
     if (_lyricExtra > 0) toast('ℹ️ ' + _lyricExtra + ' mídia(s) não casadas com a letra foram distribuídas no tempo — todas as ' + scenes.length + ' aparecem no vídeo.');
+    // última mídia (geralmente a LOGO do fechamento) com pouca tela → avisa ANTES de gastar (incidente MDS 14/07)
+    if (_ultimaJanela > 0 && _ultimaJanela < 4) toast('⚠️ Atenção: a ÚLTIMA mídia vai aparecer por só ' + String(_ultimaJanela).replace('.', ',') + 's. Se ela é a logo do fechamento e você quer mais tempo, remova algumas mídias ou use um trecho de música maior.');
     // se o modo letra se desligou SOZINHO no buildBackgrounds (encaixes órfãos), valida o timing automático agora
     if (!editState && !lyricOn && !scenes.some(s => s.at != null)) {
       const tv = computeTiming();
