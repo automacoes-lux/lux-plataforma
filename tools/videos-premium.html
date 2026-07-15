@@ -455,8 +455,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="music-loaded" id="musicLoaded">
         <div class="music-name">🎵 <b id="musicName"></b> · <span id="musicDur"></span><span class="music-ok-chip">✓</span></div>
         <audio id="player" controls preload="metadata"></audio>
-        <button class="btn-mini" id="btnTrocarMusica" onclick="document.getElementById('musicInput').click()">trocar a música</button>
-        <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">refazer o corte</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn-mini" id="btnTrocarMusica" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
+          <button class="btn-mini" id="btnRemoverMusica" onclick="removerMusica()">🗑️ Remover</button>
+          <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">✂ Refazer o corte</button>
+        </div>
       </div>
 
       <!-- editor de corte (música > 1:00) -->
@@ -478,6 +481,10 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <div class="cut-actions">
           <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
           <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 1:00</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
+          <button class="btn-mini" id="btnTrocarMusicaCorte" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
+          <button class="btn-mini" id="btnRemoverMusicaCorte" onclick="removerMusica()">🗑️ Remover</button>
         </div>
         <div class="cut-progress" id="cutProgress"></div>
       </div>
@@ -1955,6 +1962,21 @@ function abrirEditorCorte() {
   updateCutUI();
 }
 
+// Remove a música escolhida na CRIAÇÃO (upload errado) — volta o Passo 2 pro estado inicial,
+// sem precisar recarregar a página. Na EDIÇÃO não existe (música travada).
+function removerMusica() {
+  if (editState) return;
+  music = null; rawAudioBuffer = null; rawAudioName = '';
+  try { stopPreviewCorte(); } catch (e) {}
+  lyricBlocks = null; lyricOn = false; updateLyricStatus();   // a letra casada era da música removida
+  document.getElementById('musicLoaded').classList.remove('show');
+  document.getElementById('cutEditor').classList.remove('show');
+  const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
+  const inp = document.getElementById('musicInput'); if (inp) inp.value = '';
+  renderStoryboard();
+  toast('Música removida — envie outra quando quiser.');
+}
+
 function reabrirCorte() {
   if (!rawAudioBuffer) { toast('Envie a música de novo pra refazer o corte.'); return; }
   music = null;
@@ -2498,6 +2520,7 @@ function aplicarModoEdicao(d) {
   // música TRAVADA → esconde o upload, o "trocar a música" e o corte; mostra só o player da música atual
   const tile = document.getElementById('musicTile'); if (tile) tile.style.display = on ? 'none' : '';
   const btnTroca = document.getElementById('btnTrocarMusica'); if (btnTroca) btnTroca.style.display = on ? 'none' : '';
+  const btnRem = document.getElementById('btnRemoverMusica'); if (btnRem) btnRem.style.display = on ? 'none' : '';
   const btnReab = document.getElementById('btnReabrirCorte'); if (btnReab && on) btnReab.style.display = 'none';
   const cutEd = document.getElementById('cutEditor'); if (cutEd && on) cutEd.classList.remove('show');
   if (on && d) {
