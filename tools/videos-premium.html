@@ -543,11 +543,24 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 </div>
 
 <!-- EDITOR 9:16 (enquadrar a foto da cena) -->
+<!-- TELA "EM BREVE" (manutenção): mostrada só p/ ATENDENTE quando a flag está ligada; admin não vê -->
+<div id="avatarSoon" style="display:none;position:fixed;inset:0;z-index:99999;background:#0d0d0f;align-items:center;justify-content:center;text-align:center;padding:24px">
+  <div style="max-width:430px">
+    <div style="font-size:54px;margin-bottom:14px">🚧</div>
+    <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:22px;margin-bottom:12px">Vídeo Avatar — Em breve</h2>
+    <p style="font-size:14.5px;color:var(--text-dim);line-height:1.65">Estamos deixando o Vídeo Avatar ainda melhor. Ele volta pra você já já! 💛<br><br>Enquanto isso, as outras ferramentas seguem funcionando normalmente.</p>
+  </div>
+</div>
+
 <div class="editor-overlay" id="editorOverlay">
   <div class="editor-box">
     <h3>✏️ Enquadrar a cena (9:16)</h3>
-    <div class="hint">Arraste pra posicionar e use o controle pra dar zoom. O que ficar no quadro é o que aparece atrás do avatar.</div>
+    <div class="hint"><b style="color:var(--text-mid)">Preencher</b>: a imagem cobre a tela e as bordas são cortadas. <b style="color:var(--text-mid)">Ajustar tudo</b>: mostra a imagem INTEIRA (sem cortar) e preenche o resto com um fundo desfocado nas cores da própria imagem — ideal pra foto quadrada ou deitada. Arraste pra posicionar e use o zoom.</div>
     <canvas id="editorCanvas" width="270" height="480"></canvas>
+    <div class="avatar-tipo-seg" style="margin:10px 0 4px">
+      <button type="button" class="seg-btn active" id="edModeCrop" onclick="setEditorFit(false)">Preencher (corta bordas)</button>
+      <button type="button" class="seg-btn" id="edModeFit" onclick="setEditorFit(true)">Ajustar tudo (fundo desfocado)</button>
+    </div>
     <div class="editor-zoom-row">
       <span>🔍</span>
       <input type="range" id="editorZoom" min="100" max="400" step="1" value="100"/>
@@ -1740,25 +1753,66 @@ async function openEditor(id) {
   if (!s.origBase64 && !s.base64) { toast('Essa foto veio do vídeo original — pra reenquadrar, remova-a e adicione o arquivo de novo.'); return; }
   const src = 'data:' + (s.mimeType || 'image/jpeg') + ';base64,' + (s.origBase64 || s.base64);
   const img = await loadImg(src);
-  const minScale = Math.max(OUT_W / img.naturalWidth, OUT_H / img.naturalHeight);
-  ed = { i, img, minScale, maxScale: minScale * 4, scale: minScale, offX: 0, offY: 0, dragging: false, lastX: 0, lastY: 0 };
-  ed.offX = (OUT_W - img.naturalWidth * ed.scale) / 2;
-  ed.offY = (OUT_H - img.naturalHeight * ed.scale) / 2;
-  document.getElementById('editorZoom').value = 100;
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const coverScale = Math.max(OUT_W / w, OUT_H / h);   // "preencher" (imagem cobre tudo, corta bordas)
+  const fitScale   = Math.min(OUT_W / w, OUT_H / h);   // "ajustar tudo" (imagem inteira + fundo desfocado)
+  ed = { i, img, coverScale, fitScale, fit: false, minScale: coverScale, maxScale: coverScale * 4, scale: coverScale, offX: 0, offY: 0, dragging: false, lastX: 0, lastY: 0 };
+  // imagem NÃO vertical (quadrada/deitada) → já abre no modo "ajustar tudo", pra não cortar nada sem querer
+  const naoVertical = (w / h) > (OUT_W / OUT_H) + 0.03;
   document.getElementById('editorOverlay').classList.add('show');
+  setEditorFit(naoVertical);
+}
+function centerEditor() {
+  ed.offX = (OUT_W - ed.img.naturalWidth * ed.scale) / 2;
+  ed.offY = (OUT_H - ed.img.naturalHeight * ed.scale) / 2;
+}
+// alterna PREENCHER (cobre e corta) × AJUSTAR TUDO (imagem inteira + fundo desfocado colorido)
+function setEditorFit(fit) {
+  if (!ed) return;
+  ed.fit = !!fit;
+  ed.minScale = ed.fit ? ed.fitScale : ed.coverScale;
+  ed.maxScale = ed.coverScale * 4;
+  ed.scale = ed.minScale;
+  centerEditor();
+  const z = document.getElementById('editorZoom'); if (z) z.value = 100;
+  const bc = document.getElementById('edModeCrop'), bf = document.getElementById('edModeFit');
+  if (bc) bc.classList.toggle('active', !ed.fit);
+  if (bf) bf.classList.toggle('active', ed.fit);
   drawEditor();
 }
 function clampEditor() {
   const w = ed.img.naturalWidth * ed.scale, h = ed.img.naturalHeight * ed.scale;
-  ed.offX = Math.min(0, Math.max(OUT_W - w, ed.offX));
-  ed.offY = Math.min(0, Math.max(OUT_H - h, ed.offY));
+  const cl = (v, a, b) => Math.max(Math.min(a, b), Math.min(Math.max(a, b), v));
+  if (ed.fit) {   // pode ter folga (aí o fundo desfocado aparece) — só não deixa a imagem sair do quadro
+    ed.offX = cl(ed.offX, 0, OUT_W - w);
+    ed.offY = cl(ed.offY, 0, OUT_H - h);
+  } else {        // "preencher": a imagem sempre cobre o quadro inteiro
+    ed.offX = Math.min(0, Math.max(OUT_W - w, ed.offX));
+    ed.offY = Math.min(0, Math.max(OUT_H - h, ed.offY));
+  }
+}
+// desenha 1 quadro (fundo desfocado da própria imagem + imagem nítida). ds = OUT→pixels do canvas.
+function paintEditor(ctx, ds) {
+  const iw = ed.img.naturalWidth, ih = ed.img.naturalHeight;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W * ds, OUT_H * ds);
+  if (ed.fit) {
+    // fundo = a PRÓPRIA imagem cobrindo o quadro, BORRADA (herda a paleta de cores) + leve sobra
+    const cov = Math.max(OUT_W / iw, OUT_H / ih) * 1.12;
+    const bw = iw * cov * ds, bh = ih * cov * ds;
+    ctx.save();
+    try { ctx.filter = 'blur(' + Math.max(5, Math.round(OUT_W * ds * 0.05)) + 'px)'; } catch (e) {}
+    ctx.drawImage(ed.img, (OUT_W * ds - bw) / 2, (OUT_H * ds - bh) / 2, bw, bh);
+    ctx.restore();
+    ctx.filter = 'none';
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; ctx.fillRect(0, 0, OUT_W * ds, OUT_H * ds);   // leve escurecida (mantém a paleta)
+  }
+  ctx.drawImage(ed.img, ed.offX * ds, ed.offY * ds, iw * ed.scale * ds, ih * ed.scale * ds);
 }
 function drawEditor() {
   if (!ed) return;
   clampEditor();
-  const cv = document.getElementById('editorCanvas'), ctx = cv.getContext('2d'), ds = cv.width / OUT_W;
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.drawImage(ed.img, ed.offX * ds, ed.offY * ds, ed.img.naturalWidth * ed.scale * ds, ed.img.naturalHeight * ed.scale * ds);
+  const cv = document.getElementById('editorCanvas'), ctx = cv.getContext('2d');
+  paintEditor(ctx, cv.width / OUT_W);
 }
 document.getElementById('editorZoom').addEventListener('input', (e) => {
   if (!ed) return;
@@ -1785,8 +1839,8 @@ async function saveEditor() {
   if (!ed) return;
   clampEditor();
   const cv = document.createElement('canvas'); cv.width = OUT_W; cv.height = OUT_H;
-  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
-  ctx.drawImage(ed.img, ed.offX, ed.offY, ed.img.naturalWidth * ed.scale, ed.img.naturalHeight * ed.scale);
+  const ctx = cv.getContext('2d');
+  paintEditor(ctx, 1);   // mesmo desenho da prévia, em alta resolução (inclui o fundo desfocado no modo "ajustar")
   const dataUrl = cv.toDataURL('image/jpeg', 0.85);
   const s = scenes[ed.i];
   if (s) { s.base64 = dataUrl.split(',')[1]; s.mimeType = 'image/jpeg'; s.thumbUrl = dataUrl; }
@@ -2648,10 +2702,19 @@ function resumePending() {
 // ───────────────────────────────────────────────
 // INICIALIZAÇÃO
 // ───────────────────────────────────────────────
+// TRAVA "Em breve": pergunta ao Worker se este usuário está bloqueado (admin nunca está) e mostra a tela
+async function checkManutencao() {
+  try {
+    const r = await api('/avatarStatus');
+    const d = await r.json();
+    if (d && d.locked) { const el = document.getElementById('avatarSoon'); if (el) el.style.display = 'flex'; }
+  } catch (e) { /* rede oscilou — não trava a tela por isso (o backend já barra a geração) */ }
+}
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
   renderStoryboard();
   checkPending();
+  checkManutencao();
 });
 window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
 </script>
