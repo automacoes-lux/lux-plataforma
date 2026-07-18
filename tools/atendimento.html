@@ -232,6 +232,18 @@ body{
   border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;
 }
 .card-add-btn:hover{background:rgba(201,168,76,.2)}
+/* Linha de arquivo + botão de download (todos) e apagar (só admin) */
+.tutorial-file-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-input);border:1px solid rgba(201,168,76,.12);border-radius:8px}
+.tutorial-file-icon{flex-shrink:0}
+.tutorial-file-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.tutorial-file-size{font-size:11px;color:var(--text-mid);flex-shrink:0}
+.tutorial-file-dl,.card-video-dl{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;background:linear-gradient(135deg,#C9A84C,#E2BA5F);color:#000;font-weight:600;font-family:'DM Sans',sans-serif;border-radius:6px;white-space:nowrap}
+.tutorial-file-dl{font-size:11.5px;padding:5px 11px}
+.card-video-dl{font-size:12px;padding:7px 14px;border-radius:8px}
+.tutorial-file-dl:hover,.card-video-dl:hover{filter:brightness(1.08)}
+.tutorial-file-del{flex-shrink:0;background:transparent;border:1px solid var(--danger-border);color:var(--danger);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}
+.tutorial-file-del:hover{background:var(--danger-bg)}
+.card-video-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .card-admin-actions{
   display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
   border-top:1px solid rgba(201,168,76,.15);
@@ -1180,10 +1192,14 @@ function renderCardHtml(c, idx) {
   // Vídeo principal
   let videoHtml = '';
   if (c.videoPrincipal && c.videoPrincipal.fileId) {
-    videoHtml = `<video class="card-video" controls preload="metadata" src="${base}/file/${c.videoPrincipal.fileId}"></video>`;
+    const vurl = `${base}/file/${c.videoPrincipal.fileId}`;
+    videoHtml = `<video class="card-video" controls preload="metadata" src="${vurl}"></video>`;
+    videoHtml += `<div class="card-video-actions"><a class="card-video-dl" href="${vurl}?download=1">⬇ Baixar vídeo</a>`;
     if (admin) {
-      videoHtml += `<button class="btn-mini danger" onclick="removerCardFile('${c.id}','${c.videoPrincipal.fileId}')">🗑 Remover vídeo</button>`;
+      videoHtml += `<button class="btn-mini" onclick="uploadCardFile('${c.id}','video-principal')">🔄 Trocar vídeo</button>`;
+      videoHtml += `<button class="btn-mini danger" onclick="removerCardFile('${c.id}','${c.videoPrincipal.fileId}')">🗑 Remover</button>`;
     }
+    videoHtml += `</div>`;
   } else if (admin) {
     videoHtml = `<button class="card-upload-btn" onclick="uploadCardFile('${c.id}','video-principal')">🎬 Enviar vídeo principal</button>`;
   }
@@ -1244,12 +1260,17 @@ function renderCardHtml(c, idx) {
 }
 
 function renderCardFileRow(cardId, f, base, icon, admin) {
+  const url = `${base}/file/${f.fileId}`;
+  // ⬇ Baixar: força o download (?download=1 → o Worker manda Content-Disposition). Todos veem.
+  const dl = `<a class="tutorial-file-dl" href="${url}?download=1" title="Baixar arquivo">⬇ Baixar</a>`;
+  // 🗑 Apagar: SÓ admin (o backend também bloqueia com 403).
   const del = admin
-    ? `<button class="tutorial-file-del" onclick="removerCardFile('${cardId}','${f.fileId}')">🗑</button>` : '';
+    ? `<button class="tutorial-file-del" onclick="removerCardFile('${cardId}','${f.fileId}')" title="Apagar (só admin)">🗑</button>` : '';
   return `<div class="tutorial-file-item">
     <span class="tutorial-file-icon">${icon}</span>
-    <a class="tutorial-file-name" href="${base}/file/${f.fileId}" target="_blank" download>${escapeHtml(f.name)}</a>
+    <a class="tutorial-file-name" href="${url}" target="_blank" rel="noopener" title="Abrir/ouvir">${escapeHtml(f.name)}</a>
     <span class="tutorial-file-size">${formatBytes(f.size || 0)}</span>
+    ${dl}
     ${del}
   </div>`;
 }
