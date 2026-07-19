@@ -400,7 +400,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- Tipo do avatar: 2 vias separadas — Pessoa (foto de gente) x Personagem/Produto (mascote do produto) -->
       <div class="avatar-tipo-seg" id="avatarTipoSeg">
         <button type="button" class="seg-btn active" data-tipo="pessoa" onclick="setAvatarTipo('pessoa')">🧑 Pessoa</button>
-        <button type="button" class="seg-btn" data-tipo="personagem" onclick="setAvatarTipo('personagem')">🍢 Personagem / Produto</button>
+        <button type="button" class="seg-btn" data-tipo="dupla" onclick="setAvatarTipo('dupla')">👥 Dupla</button>
+        <button type="button" class="seg-btn" data-tipo="personagem" onclick="setAvatarTipo('personagem')">🍢 Personagem</button>
       </div>
 
       <div class="card-hint" id="avatarHint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
@@ -415,6 +416,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*" hidden/>
+      <!-- Dupla: 2º espaço de foto (opcional — só aparece no modo Dupla) -->
+      <div class="thumb-row" id="clientPhoto2Row" style="display:none;margin-top:8px">
+        <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhoto2Input').click()">
+          <span class="big">🧑‍🤝‍🧑</span>
+          <span>2ª pessoa (opcional)</span>
+        </div>
+      </div>
+      <input type="file" id="clientPhoto2Input" accept="image/*" hidden/>
 
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
@@ -709,6 +718,7 @@ const PENDING_KEY = 'lux_avatar_pending';
 
 // Estado
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
+let clientPhoto2 = null;           // Dupla: 2ª foto (opcional — quando o atendente manda 1 de cada pessoa)
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
 let avatarTipo = 'pessoa';         // via do Passo 1: 'pessoa' (foto de gente) | 'personagem' (produto/mascote: espetinho, fruta, pizza…)
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
@@ -849,23 +859,50 @@ function renderClientPhoto() {
   }
   row.innerHTML =
     '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Foto do cliente"/>' +
-    '<div class="tag">Cantor(a)</div>' +
+    '<div class="tag">' + (avatarTipo === 'dupla' ? 'Pessoa 1' : 'Cantor(a)') + '</div>' +
     '<button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
 }
 function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
+
+// ── Dupla: 2ª foto (opcional) ──
+document.getElementById('clientPhoto2Input').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (file) await setClientPhoto2FromFile(file);
+});
+async function setClientPhoto2FromFile(file) {
+  try {
+    const opt = await fileToOptimizedImage(file, false);
+    clientPhoto2 = { ...opt, name: file.name || 'pessoa2.png' };
+    avatarPreview = null;            // foto nova → o avatar antigo não vale mais
+    renderClientPhoto2(); refreshAvatarUI();
+  } catch (err) { toast('⚠️ ' + err.message); }
+}
+function renderClientPhoto2() {
+  const row = document.getElementById('clientPhoto2Row'); if (!row) return;
+  if (!clientPhoto2) {
+    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhoto2Input\').click()"><span class="big">🧑‍🤝‍🧑</span><span>2ª pessoa (opcional)</span></div>';
+    return;
+  }
+  row.innerHTML =
+    '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="2ª pessoa"/>' +
+    '<div class="tag">Pessoa 2</div>' +
+    '<button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
+}
+function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
 
 // ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
 // com avatar não aprovado → preview; aprovado → selo.
 function refreshAvatarUI() {
   if (editState) {   // modo edição: avatar travado (vem do original) — esconde a UI de gerar/aprovar
-    ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     return;
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
+  const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = (avatarTipo === 'dupla') ? '' : 'none';   // 2ª foto só na Dupla
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
   const okBadge = document.getElementById('avatarApproved');
@@ -931,34 +968,40 @@ function normalizarAvatarPes(b64) {
 // ── Passo 1: alterna entre 2 vias — Pessoa (foto de gente) x Personagem/Produto (mascote do produto) ──
 const AVATAR_HINTS = {
   pessoa: 'Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).',
-  personagem: 'Foto do <b style="color:var(--text-mid)">produto ou personagem</b> que vai cantar (espetinho, fruta, pizza, sorvete…). A IA mantém as características originais — <b style="color:var(--text-mid)">logo, cores, formato e tudo que estiver na imagem</b> — só adiciona rosto, braços, pernas e o microfone, e cria o mascote cantando de corpo inteiro. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).'
+  personagem: 'Foto do <b style="color:var(--text-mid)">produto ou personagem</b> que vai cantar (espetinho, fruta, pizza, sorvete…). A IA mantém as características originais — <b style="color:var(--text-mid)">logo, cores, formato e tudo que estiver na imagem</b> — só adiciona rosto, braços, pernas e o microfone, e cria o mascote cantando de corpo inteiro. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).',
+  dupla: 'Duas pessoas cantando <b style="color:var(--text-mid)">juntas, lado a lado</b>, cada uma com microfone. Você tem <b style="color:var(--text-mid)">2 formas</b>: enviar <b style="color:var(--text-mid)">1 foto com os dois juntos</b>, OU enviar <b style="color:var(--text-mid)">1 foto de cada pessoa</b> (use o 2º espaço que aparece). Corpo inteiro nas duas, com os pés à mostra. A IA preserva os dois rostos e as roupas.'
 };
 function setAvatarTipo(t) {
   if (editState) return;   // no modo edição o avatar é travado (vem do original)
-  avatarTipo = (t === 'personagem') ? 'personagem' : 'pessoa';
+  avatarTipo = (t === 'personagem') ? 'personagem' : (t === 'dupla') ? 'dupla' : 'pessoa';
   document.querySelectorAll('#avatarTipoSeg .seg-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('data-tipo') === avatarTipo);
   });
-  const ehPers = (avatarTipo === 'personagem');
+  const ehPers = (avatarTipo === 'personagem'), ehDupla = (avatarTipo === 'dupla');
   const hint = document.getElementById('avatarHint'); if (hint) hint.innerHTML = AVATAR_HINTS[avatarTipo];
-  const ic = document.getElementById('clientPhotoIcon'); if (ic) ic.textContent = ehPers ? '🍢' : '🧑‍🎤';
-  const lb = document.getElementById('clientPhotoLabel'); if (lb) lb.textContent = ehPers ? 'Enviar ou colar a foto do produto' : 'Enviar ou colar a foto';
+  const ic = document.getElementById('clientPhotoIcon'); if (ic) ic.textContent = ehPers ? '🍢' : ehDupla ? '👥' : '🧑‍🎤';
+  const lb = document.getElementById('clientPhotoLabel'); if (lb) lb.textContent = ehPers ? 'Enviar ou colar a foto do produto' : ehDupla ? 'Foto dos dois (ou da 1ª pessoa)' : 'Enviar ou colar a foto';
+  // o 2º espaço de foto só aparece na Dupla; ao sair da Dupla, descarta a 2ª foto
+  const row2 = document.getElementById('clientPhoto2Row'); if (row2) row2.style.display = ehDupla ? '' : 'none';
+  if (!ehDupla && clientPhoto2) { clientPhoto2 = null; renderClientPhoto2(); avatarPreview = null; }
   const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = ehPers
     ? 'A IA transforma o produto num personagem cantando, mantendo as características originais. Você confere antes de continuar.'
+    : ehDupla
+    ? 'A IA cria os DOIS cantando lado a lado, cada um com microfone, preservando os rostos e as roupas. Você confere antes de continuar.'
     : 'A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.';
+  refreshAvatarUI();
 }
 
 async function gerarAvatar() {
-  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
+  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : avatarTipo === 'dupla' ? 'Envie a foto (dos dois juntos, ou da 1ª pessoa) primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const r = await api('/avatarCartoon', {
-      method: 'POST',
-      body: JSON.stringify({ clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo })
-    });
+    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
+    if (avatarTipo === 'dupla' && clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };
+    const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
     const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
@@ -2589,7 +2632,8 @@ function aplicarModoEdicao(d) {
 
 // limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
 function resetCreateForm() {
-  clientPhoto = null; avatarPreview = null;
+  clientPhoto = null; clientPhoto2 = null; avatarPreview = null;
+  try { renderClientPhoto2(); } catch (e) {}
   avatarCalib = { dx: 0, dy: 0 }; avScale = AVSCALE_MAX;
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
@@ -2606,7 +2650,8 @@ function resetCreateForm() {
 
 function sairEdicao() {
   editState = null;
-  avatarPreview = null; clientPhoto = null; music = null;
+  avatarPreview = null; clientPhoto = null; clientPhoto2 = null; music = null;
+  try { renderClientPhoto2(); } catch (e) {}
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
