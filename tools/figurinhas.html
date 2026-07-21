@@ -440,6 +440,11 @@ let state = {
   superList:  Array.from({ length: 10 }, () => ({ gesto: '', frase: '' })),
   logoSuperList: Array.from({ length: 10 }, () => ({ tema: '', frase: '' })),
   currentOrderId: null, currentResults: [], currentTotal: 10, currentStatus: null,
+  // ── Dados do pedido SENDO VISTO (aba Resultados). Ficam SEPARADOS do
+  // formulário de propósito: abrir um pedido do Histórico NÃO pode alterar o
+  // tipo/cliente que o atendente está preparando no Novo Pedido. Era isso que
+  // fazia a tela mostrar "Logomarca" mas gerar Avatar.
+  viewKind: 'avatar', viewCliente: '', viewAtendente: '',
 };
 
 let pollTimer = null;
@@ -727,6 +732,10 @@ async function generateStickers() {
   state.atendente = document.getElementById('inAtendente').value.trim();
   state.cliente   = document.getElementById('inCliente').value.trim();
 
+  // TRAVA DE SEGURANÇA: o tipo enviado é lido do BOTÃO MARCADO NA TELA, não de
+  // uma variável que algo possa ter mudado por baixo. O que o atendente vê
+  // selecionado é exatamente o que é gerado.
+  state.kind = document.getElementById('kind-logo').classList.contains('active') ? 'logo' : 'avatar';
   const isLogo = state.kind === 'logo';
 
   if (!state.atendente)   return toast('Digite o nome do atendente.', 'error');
@@ -794,6 +803,10 @@ async function generateStickers() {
 
     // A produção continua no servidor — acompanhamos por polling.
     state.currentOrderId  = orderId;
+    // Espelha o que foi realmente enviado nos campos de visualização.
+    state.viewKind        = state.kind;
+    state.viewCliente     = state.cliente;
+    state.viewAtendente   = state.atendente;
     state.currentTotal    = produceData.totalExpected || totalToGenerate;
     state.currentResults  = [];
     state.currentStatus   = 'PROCESSING';
@@ -834,9 +847,10 @@ async function pollOrder(orderId) {
     if (state.currentOrderId !== orderId) { stopPolling(); return; }
 
     const order = data.order;
-    state.kind            = order.kind || 'avatar';
-    state.cliente         = order.clientName || state.cliente;
-    state.atendente       = order.attendantName || state.atendente;
+    // IMPORTANTE: grava nos campos de VISUALIZAÇÃO (view*), nunca no formulário.
+    state.viewKind        = order.kind || 'avatar';
+    state.viewCliente     = order.clientName || state.viewCliente;
+    state.viewAtendente   = order.attendantName || state.viewAtendente;
     state.currentTotal    = order.totalRequested || state.currentTotal;
     state.currentResults  = order.stickers || [];
     state.currentStatus   = order.status;
@@ -950,12 +964,12 @@ function renderResults() {
   }
   document.getElementById('resultsEmpty').style.display = 'none';
   document.getElementById('resultsContent').style.display = '';
-  document.getElementById('resOrderTitle').textContent = `Pack — ${state.cliente}`;
-  const kindLabel = state.kind === 'logo' ? '🏷️ Logomarca' : '🧑 Avatar';
+  document.getElementById('resOrderTitle').textContent = `Pack — ${state.viewCliente || state.cliente}`;
+  const kindLabel = state.viewKind === 'logo' ? '🏷️ Logomarca' : '🧑 Avatar';
   const custoTxt = (state.currentCostBRL != null)
     ? ` · Custo: R$ ${Number(state.currentCostBRL).toFixed(2).replace('.', ',')}`
     : '';
-  document.getElementById('resOrderMeta').textContent  = `${kindLabel} · Atendente: ${state.atendente} · ${state.currentTotal} figurinhas${custoTxt}`;
+  document.getElementById('resOrderMeta').textContent  = `${kindLabel} · Atendente: ${state.viewAtendente || state.atendente} · ${state.currentTotal} figurinhas${custoTxt}`;
 
   // Banner de progresso enquanto está gerando no servidor.
   const processing = (state.currentStatus === 'PROCESSING' || state.currentStatus === 'CREATED');
@@ -1058,7 +1072,7 @@ async function downloadOne(num) {
     const blob = await resp.blob();
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${state.cliente}-figurinha-${String(num).padStart(2,'0')}.png`;
+    link.download = `${state.viewCliente || state.cliente}-figurinha-${String(num).padStart(2,'0')}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   } catch (err) {
@@ -1157,6 +1171,7 @@ async function loadHistory() {
         <div class="history-item-info">
           <div class="history-client">${escapeHtml(order.clientName)}</div>
           <div class="history-meta">
+            <span>👤 ${escapeHtml(order.attendantName || '—')}</span>
             <span>${kindLabel}</span>
             <span>📦 ${order.totalGenerated}/${order.totalRequested}</span>
           </div>
@@ -1191,9 +1206,10 @@ async function openHistoryOrder(orderSummary) {
     const order = data.order;
     stopPolling();
     state.currentOrderId  = order.orderId;
-    state.kind            = order.kind || 'avatar';
-    state.atendente       = order.attendantName;
-    state.cliente         = order.clientName;
+    // Campos de VISUALIZAÇÃO — não mexem no formulário do Novo Pedido.
+    state.viewKind        = order.kind || 'avatar';
+    state.viewAtendente   = order.attendantName;
+    state.viewCliente     = order.clientName;
     state.currentTotal    = order.totalRequested || 10;
     state.currentResults  = order.stickers || [];
     state.currentStatus   = order.status;
