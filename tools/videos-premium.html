@@ -1878,6 +1878,49 @@ document.getElementById('editorZoom').addEventListener('input', (e) => {
   cv.addEventListener('touchend', end);
 })();
 function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); ed = null; }
+
+// ── FUNDO DESFOCADO AUTOMÁTICO (prevenção "só cortou") ──────────────────────
+// Foto claramente HORIZONTAL/quadrada que a atendente NÃO reenquadrou no ✏️ ia com fit:'crop' no
+// back-end → virava uma tirinha vertical do meio (perde as laterais). Aqui, na hora de gerar, a foto
+// não-editada e claramente deitada ganha SOZINHA o 9:16 com fundo desfocado colorido (mesma lógica do
+// editor), sem depender de abrir o ✏️. Retrato/quase-9:16 (ratio < 0,9) segue como antes (crop preenche
+// bonito). BLINDADO: qualquer erro cai no comportamento de sempre (srcKey/origBase64) — nunca trava o envio.
+function renderBlurFill9x16(img) {
+  const c = document.createElement('canvas');
+  c.width = OUT_W; c.height = OUT_H;
+  const ctx = c.getContext('2d');
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OUT_W, OUT_H);
+  // fundo = a PRÓPRIA imagem cobrindo o quadro, BORRADA (herda a paleta) + leve sobra
+  const cov = Math.max(OUT_W / iw, OUT_H / ih) * 1.12;
+  const bw = iw * cov, bh = ih * cov;
+  ctx.save();
+  try { ctx.filter = 'blur(' + Math.max(5, Math.round(OUT_W * 0.05)) + 'px)'; } catch (e) {}
+  ctx.drawImage(img, (OUT_W - bw) / 2, (OUT_H - bh) / 2, bw, bh);
+  ctx.restore();
+  ctx.filter = 'none';
+  ctx.fillStyle = 'rgba(0,0,0,0.10)'; ctx.fillRect(0, 0, OUT_W, OUT_H);   // leve escurecida (mantém a paleta)
+  // imagem INTEIRA (fit) centralizada por cima
+  const fit = Math.min(OUT_W / iw, OUT_H / ih);
+  const fw = iw * fit, fh = ih * fit;
+  ctx.drawImage(img, (OUT_W - fw) / 2, (OUT_H - fh) / 2, fw, fh);
+  return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+}
+async function autoFitHorizontais() {
+  for (const s of scenes) {
+    try {
+      if (!s || s.kind !== 'photo') continue;   // vídeo/clip não entra
+      if (s.base64) continue;                    // já reenquadrada no ✏️ (crop OU fit) → respeita a escolha
+      if (!s.origBase64) continue;               // foto herdada do vídeo original (sem arquivo) → não dá p/ processar
+      const img = await loadImg('data:' + (s.mimeType || 'image/jpeg') + ';base64,' + s.origBase64);
+      const ratio = img.naturalWidth / img.naturalHeight;
+      if (ratio < 0.9) continue;                 // retrato/quase-9:16 → crop preenche bonito (não mexe)
+      s.base64 = renderBlurFill9x16(img);        // deitada/quadrada → 9:16 com fundo desfocado
+      s.mimeType = 'image/jpeg';
+      s._autoFit = true;                         // marca (só p/ rastreio; o mk já prefere base64 a srcKey)
+    } catch (e) { /* qualquer falha → mantém a foto como estava; nunca trava o envio */ }
+  }
+}
 async function saveEditor() {
   if (!ed) return;
   clampEditor();
@@ -2367,6 +2410,9 @@ async function gerarClipe() {
   btn.textContent = 'Enviando os arquivos…';
 
   try {
+    // FUNDO DESFOCADO AUTOMÁTICO: fotos deitadas/quadradas não reenquadradas ganham o 9:16 desfocado
+    // ANTES de montar a lista (blindado: nunca trava). Assim ninguém mais perde as laterais sem querer.
+    await autoFitHorizontais();
     // PROTEÇÃO ANTI-PERDA (incidente 09-07): a lista enviada tem que ter TODAS as mídias do Passo 3.
     // Se divergir (qualquer bug futuro), BLOQUEIA com aviso claro — nunca mais descarte silencioso.
     const bgs = buildBackgrounds();
