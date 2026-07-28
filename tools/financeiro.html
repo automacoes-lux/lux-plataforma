@@ -1489,12 +1489,13 @@ function aovivoRender(d){
     ? ats.map((a,i)=>`<div class="list-row"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small></div><div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`).join('')
     : '<div class="bd-note">Nenhum ainda.</div>';
   const feed=[];
-  ats.forEach(a=>(a.recebimentos||[]).forEach(x=>feed.push({pagador:x.pagador,hora:x.hora,valorBRL:x.valorBRL,atendente:a.atendente})));
+  ats.forEach(a=>(a.recebimentos||[]).forEach(x=>feed.push({pagador:x.pagador,doc:x.doc,info:x.info,hora:x.hora,valorBRL:x.valorBRL,atendente:a.atendente})));
   feed.sort((x,y)=>String(y.hora||'').localeCompare(String(x.hora||'')));
   const fe=document.getElementById('avoFeed');
   if(!feed.length){ fe.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Nenhum Pix ainda hoje. Assim que cair, aparece aqui sozinho.</div></div>'; return; }
-  fe.innerHTML='<div class="rec-box"><div class="rec-item head" style="grid-template-columns:1.6fr .8fr auto"><span>Atendente</span><span>Hora</span><span>Valor</span></div>'+
-    feed.map(t=>`<div class="rec-item" style="grid-template-columns:1.6fr .8fr auto"><div class="rn" style="color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
+  const G='grid-template-columns:1.9fr 1fr .7fr auto';
+  fe.innerHTML=`<div class="rec-box"><div class="rec-item head" style="${G}"><span>Cliente</span><span>Atendente</span><span>Hora</span><span>Valor</span></div>`+
+    feed.map(t=>`<div class="rec-item" style="${G}"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}${(t.doc||t.info)?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc||'')}${(t.doc&&t.info)?' · ':''}${escapeHtml(t.info||'')}</small>`:''}</div><div class="rd" style="text-align:left;color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
     '</div>';
 }
 async function aovivoApagar(){
