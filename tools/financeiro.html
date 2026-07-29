@@ -1380,7 +1380,7 @@ function avRenderRec(recebimentos){
   let html=`<div class="card"><div class="card-title">🧾 Recebimentos (${recebimentos.length})</div>`;
   if(recebimentos.length){
     html+=`<div class="rec-box"><div class="rec-item head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>`;
-    html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}${t.doc?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc)}</small>`:''}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
     html+=`</div>`;
   } else { html+=`<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum recebimento neste período.</div></div>`; }
   html+=`</div>`;
