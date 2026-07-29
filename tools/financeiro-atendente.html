@@ -86,12 +86,25 @@ body{
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 .rec-box{max-height:380px;overflow-y:auto;border:.5px solid var(--border);border-radius:var(--radius);margin-top:6px}
-.rec-item{display:grid;grid-template-columns:1.6fr 1fr .8fr auto;gap:10px;padding:10px 13px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:14px;align-items:center}
+/* Colunas Data/Hora/Valor com largura FIXA (não 'fr'/'auto'). Cada linha é um grid
+   próprio, então largura por conteúdo dava colunas diferentes no cabeçalho ("VALOR"
+   40px) e nas linhas ("R$ 67,00" 59px) — era isso que desalinhava Data e Hora.
+   Como esses campos têm formato fixo (dd/mm/aaaa, hh:mm), fixar a largura deixa todas
+   as linhas idênticas. ATENÇÃO: a fonte NÃO tem dígito tabular de verdade (o "1" é mais
+   estreito que o "0"), então a coluna tem que caber o pior caso — senão o texto vaza e
+   desalinha de novo: Data "08/08/2026"≈80px, Hora "00:00"≈41px, Valor "R$ 8.888,88"≈80px. */
+.rec-item{display:grid;grid-template-columns:minmax(0,1fr) 82px 42px 88px;gap:10px;padding:10px 13px;border-bottom:.5px solid rgba(255,255,255,.04);font-size:14px;align-items:center}
 .rec-item:last-child{border-bottom:none}
 .rec-item.head{position:sticky;top:0;background:#161616;font-size:12px;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.04em}
+/* Data/Hora/Valor: título à direita, igual ao valor da linha (Nome fica à esquerda) */
+.rec-item.head span:nth-child(n+2){text-align:right}
 .rec-item .rn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .rec-item .rd,.rec-item .rh{color:var(--text-dim);text-align:right;font-variant-numeric:tabular-nums}
 .rec-item .rv{color:var(--ok);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+/* Celular: aperta as colunas fixas e o espaçamento pra sobrar mais espaço pro Nome */
+@media (max-width:480px){
+  .rec-item{grid-template-columns:minmax(0,1fr) 80px 42px 80px;gap:6px;padding:10px 10px}
+}
 
 .trophy-card{border-radius:var(--radius-lg);padding:1.5rem 1.2rem;text-align:center;margin-bottom:1rem;border:1px solid var(--border-bright)}
 .trophy-card.t1{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.05));border-color:rgba(201,168,76,.7)}
