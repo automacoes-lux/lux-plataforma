@@ -137,10 +137,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .pers-col img{width:100%;border-radius:8px;border:.5px solid var(--border);display:block}
 .pers-lab{font-size:11px;color:var(--text-dim);margin-bottom:.25rem}
 .pers-ph{width:100%;aspect-ratio:2/3;border-radius:8px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:11.5px;text-align:center;padding:.4rem}
-/* Passo 4 — ação por cena (miniatura arrastável) */
-.acao-item{display:flex;gap:.6rem;align-items:flex-start;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;margin-bottom:.6rem}
-.acao-thumb{width:54px;height:72px;object-fit:cover;border-radius:6px;flex:0 0 auto;border:.5px solid var(--border);cursor:grab;touch-action:none}
-.acao-body{flex:1;min-width:0}
+.pers-grip{cursor:grab;color:var(--text-dim);font-size:19px;line-height:1;touch-action:none;padding:.15rem .35rem;user-select:none}
+.pers-grip:active{cursor:grabbing;color:var(--gold)}
 .acao-drag{opacity:.5;background:var(--bg-hover)}
 /* Bloco 6 — as 2 histórias e a conferência das cenas */
 .hist-card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
@@ -186,10 +184,24 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <input type="text" id="clientName" placeholder="Ex: Body Club Fitness"/>
   </div>
 
-  <!-- PASSO 2 — IMAGENS DO CLIENTE → PERSONAGENS -->
+  <!-- PASSO 2 — EMOÇÃO (antes das imagens: o personagem é desenhado JÁ com essa cara) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">2</div><div class="step-title">Imagens do cliente</div></div>
-    <div class="step-hint">Suba de <b>1 a 4 imagens</b> que o cliente mandou (o dono, a equipe, o produto, o ambiente). Cada imagem vira uma <b>cena de 8s</b>. Depois clique em <b>Gerar personagem</b>: a IA transforma cada foto em <b>desenho 3D estilo Pixar mantendo o cenário</b> — pessoa continua a pessoa; produto ganha olhos e boca e cria vida.</div>
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Emoção do personagem</div></div>
+    <div class="step-hint">Escolha <b>antes</b> de gerar o personagem — ele é desenhado já com essa expressão no rosto, e o tom vale pra todas as cenas.</div>
+    <div class="chips" id="emocaoChips">
+      <div class="chip on" data-e="Empolgado"   onclick="setEmocao(this)">🤩 Empolgado</div>
+      <div class="chip"    data-e="Confiante"   onclick="setEmocao(this)">😎 Confiante</div>
+      <div class="chip"    data-e="Debochado"   onclick="setEmocao(this)">😏 Debochado</div>
+      <div class="chip"    data-e="Irritado"    onclick="setEmocao(this)">😡 Irritado</div>
+      <div class="chip"    data-e="Triste"      onclick="setEmocao(this)">😢 Triste</div>
+      <div class="chip"    data-e="Desesperado" onclick="setEmocao(this)">😱 Desesperado</div>
+    </div>
+  </div>
+
+  <!-- PASSO 3 — IMAGENS DO CLIENTE → PERSONAGENS -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Imagens do cliente</div></div>
+    <div class="step-hint">Suba de <b>1 a 4 imagens</b> que o cliente mandou (o dono, a equipe, o produto, o ambiente). Cada imagem vira uma <b>cena de 8s</b>. Clique em <b>Gerar personagem</b>: a IA transforma cada foto em <b>desenho 3D estilo Pixar mantendo o cenário</b> — pessoa continua a pessoa; produto ganha olhos e boca e cria vida. 👆 Segure e arraste um card pra <b>mudar a ordem</b> das cenas.</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
@@ -203,41 +215,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div id="persGrid" style="margin-top:.9rem"></div>
   </div>
 
-  <!-- PASSO 3 — EMOÇÃO (só botões) -->
+  <!-- PASSO 4 — IDEIA DO CLIENTE -->
   <div class="step">
-    <div class="step-head"><div class="step-num">3</div><div class="step-title">Emoção do personagem</div></div>
-    <div class="step-hint">Escolha <b>uma</b> — vale pra todas as cenas, na fala e na atitude.</div>
-    <div class="chips" id="emocaoChips">
-      <div class="chip on" data-e="Empolgado"   onclick="setEmocao(this)">🤩 Empolgado</div>
-      <div class="chip"    data-e="Confiante"   onclick="setEmocao(this)">😎 Confiante</div>
-      <div class="chip"    data-e="Debochado"   onclick="setEmocao(this)">😏 Debochado</div>
-      <div class="chip"    data-e="Irritado"    onclick="setEmocao(this)">😡 Irritado</div>
-      <div class="chip"    data-e="Triste"      onclick="setEmocao(this)">😢 Triste</div>
-      <div class="chip"    data-e="Desesperado" onclick="setEmocao(this)">😱 Desesperado</div>
-    </div>
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Ideia do cliente</div></div>
+    <div class="step-hint">Cole aqui a ideia que o cliente mandou. A IA usa ela como <b>conceito do vídeo</b> e decide as ações de cada cena. Se deixar em branco, ela cria a ideia sozinha a partir das imagens e da emoção.</div>
+    <textarea id="ideiaCliente" placeholder="Ex: o dono aparece reclamando do preço das outras academias e mostra o valor da mensalidade dele. Inclua a oferta e o contato, se houver."></textarea>
   </div>
 
-  <!-- PASSO 4 — AÇÃO DE CADA CENA (miniaturas + arrastar pra reordenar) -->
+  <!-- PASSO 5 — TRILHA SONORA (biblioteca + upload) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">4</div><div class="step-title">Ação de cada cena</div></div>
-    <div class="step-hint">Escreva o que o personagem faz em <b>cada quadro</b>. 👆 Segure e arraste a miniatura pra <b>mudar a ordem</b> das cenas.</div>
-    <div id="acoesBox"><div class="soon-note">Suba as imagens no passo 2 pra aparecerem aqui.</div></div>
-  </div>
-
-  <!-- PASSO 5 — A IDEIA -->
-  <div class="step">
-    <div class="step-head"><div class="step-num">5</div><div class="step-title">A ideia do vídeo</div></div>
-    <div class="step-hint">A IA lê <b>cada imagem</b> junto com a emoção e as ações que você escreveu, e monta <b>2 histórias completas</b> pra você mandar pro cliente escolher.</div>
-    <div class="chips" id="ideiaModo">
-      <div class="chip on" data-modo="ia"    onclick="setIdeiaModo('ia')">✨ Criar ideia com IA</div>
-      <div class="chip"    data-modo="minha" onclick="setIdeiaModo('minha')">✍️ Eu já tenho uma ideia</div>
-    </div>
-    <textarea id="ideiaPropria" style="display:none;margin-top:.6rem" placeholder="Escreva sua ideia em 1-2 frases (pode colar a do cliente). Ex: o dono aparece reclamando do preço das outras academias e mostra o valor da mensalidade dele. Inclua a oferta e o contato, se houver."></textarea>
-  </div>
-
-  <!-- PASSO 6 — TRILHA SONORA (biblioteca + upload) -->
-  <div class="step">
-    <div class="step-head"><div class="step-num">6</div><div class="step-title">Trilha sonora (40s)</div></div>
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Trilha sonora (40s)</div></div>
     <div class="step-hint">Escolha uma trilha da biblioteca <b>ou</b> envie a sua música (o editor corta em 40s com fades). Ela fica baixinha, embaixo da fala.</div>
 
     <!-- biblioteca de trilhas -->
@@ -386,13 +373,11 @@ let voiceStyle = 'masculina';   // NÃO usado no Veo (voz nativa) — mantido s�
 let roteiro = null;
 // Bloco 6 (método guiado): personalidade → 2 histórias → conferir cenas → produzir
 let emocao = 'Empolgado';     // escolhida UMA vez, vale pras 4 cenas
-let ideiaModo = 'ia';         // 'ia' = a IA cria | 'minha' = o atendente cola a dele
 let historias = null;         // as 2 versões que a IA devolveu
 let historiaIdx = -1;         // qual história o cliente aprovou
 let segDurGlobal = 8;
 let prodCenas = [];           // [{ fala, visual, ambiente, img(base64), prompt, loading }]
-let personagens = [];         // passo 2: [{ img(base64), ajuste, loading }] — 1 por imagem do cliente
-let acoes = [];               // passo 4: ação escrita pelo atendente pra cada cena
+let personagens = [];         // passo 3: [{ img(base64), ajuste, loading }] — 1 por imagem do cliente
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
 let trilhas = [];             // biblioteca de trilhas (admin sobe até 10)
@@ -458,12 +443,12 @@ function updateFundoInfo(){
   const el = document.getElementById('fundoInfo');
   const row = document.getElementById('persGenRow');
   if (row) row.style.display = n ? 'block' : 'none';
-  if (!n){ el.textContent=''; personagens=[]; acoes=[]; renderPersGrid(); renderAcoes(); return; }
+  if (!n){ el.textContent=''; personagens=[]; renderPersGrid(); return; }
   el.innerHTML = '✅ <b>'+n+' imagem(ns)</b> → '+n+' cena(s) de 8s = vídeo de <b>'+(n*8)+'s</b>.' + (n<MAX_FUNDO ? ' Pode subir até '+MAX_FUNDO+'.' : '');
   // mantém o que já existe pra cada índice e ajusta o tamanho das listas
-  personagens.length = n; acoes.length = n;
-  for (let i=0;i<n;i++){ if(!personagens[i]) personagens[i]={ img:null, ajuste:'', loading:false }; if(typeof acoes[i]!=='string') acoes[i]=''; }
-  renderPersGrid(); renderAcoes();
+  personagens.length = n;
+  for (let i=0;i<n;i++){ if(!personagens[i]) personagens[i]={ img:null, ajuste:'', loading:false }; }
+  renderPersGrid();
 }
 
 // ── Colar (Ctrl+V) imagem do cliente direto no passo 2 (funciona em toda a página) ──
@@ -492,8 +477,8 @@ async function gerarRoteiro(){
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando as histórias...';
   const payload = {
     clientName,
-    emocao, acoes: acoes.slice(0, fotos.fundo.length),
-    ideiaPropria: (ideiaModo==='minha') ? (document.getElementById('ideiaPropria').value||'').trim() : '',
+    emocao,
+    ideiaPropria: (document.getElementById('ideiaCliente').value||'').trim(),
     // manda o PERSONAGEM já desenhado (é o que vai virar o vídeo); cai na foto original se algum faltar
     fundo: fotos.fundo.map(function(f,i){
       const p = personagens[i];
@@ -520,15 +505,21 @@ async function gerarRoteiro(){
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return escHtml(s).replace(/"/g,'&quot;'); }
 
-// ── Passo 5/6: personalidade + modo da ideia ──
+// ── Passo 2: emoção. Vem ANTES das imagens porque o personagem é desenhado JÁ com essa cara —
+// então trocar a emoção depois invalida os personagens que já foram gerados.
 function setEmocao(el){
-  document.querySelectorAll('#emocaoChips .chip').forEach(function(c){ c.classList.remove('on'); });
-  el.classList.add('on'); emocao = el.dataset.e;
-}
-function setIdeiaModo(m){
-  ideiaModo = m;
-  document.querySelectorAll('#ideiaModo .chip').forEach(function(c){ c.classList.toggle('on', c.dataset.modo===m); });
-  document.getElementById('ideiaPropria').style.display = (m==='minha') ? 'block' : 'none';
+  const nova = el.dataset.e;
+  if (nova === emocao) return;
+  const jaTem = personagens.some(function(p){ return p && p.img; });
+  if (jaTem && !confirm('Mudar a emoção apaga os personagens já gerados — eles foram desenhados com a expressão anterior.\n\nMudar mesmo assim?')) return;
+  emocao = nova;
+  document.querySelectorAll('#emocaoChips .chip').forEach(function(c){ c.classList.toggle('on', c===el); });
+  if (jaTem){
+    personagens.forEach(function(p){ if(p) p.img = null; });
+    renderPersGrid();
+    if (historiaIdx >= 0){ prodCenas.forEach(function(c){ c.img = null; }); renderProducao(); }
+    toast('🎭 Gere os personagens de novo com a emoção nova.');
+  }
 }
 
 // ── Passo 2: gerar o PERSONAGEM de cada imagem (foto → desenho Pixar, PRESERVANDO o cenário) ──
@@ -539,9 +530,12 @@ function renderPersGrid(){
     const p = personagens[i] || { img:null, ajuste:'', loading:false };
     const dir = p.img ? '<img src="data:image/jpeg;base64,'+p.img+'"/>'
                       : '<div class="pers-ph">'+(p.loading ? '⏳ desenhando…' : 'ainda não gerado')+'</div>';
-    const div = document.createElement('div'); div.className='pers-item';
+    const div = document.createElement('div'); div.className='pers-item'; div.setAttribute('data-idx', i);
     div.innerHTML =
-      '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+      '<div style="display:flex;align-items:center;gap:.5rem">'+
+        '<span class="pers-grip" title="Segure e arraste pra mudar a ordem das cenas">⠿</span>'+
+        '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+      '</div>'+
       '<div class="pers-par" style="margin-top:.5rem">'+
         '<div class="pers-col"><div class="pers-lab">foto do cliente</div><img src="'+f.thumbUrl+'"/></div>'+
         '<div class="pers-col"><div class="pers-lab">personagem</div>'+dir+'</div>'+
@@ -554,6 +548,23 @@ function renderPersGrid(){
   box.querySelectorAll('[data-f]').forEach(function(el){
     el.addEventListener('input', function(){ personagens[+el.dataset.i][el.dataset.f] = el.value; });
   });
+  initPersDrag();
+}
+// Arrastar pela alça ⠿ pra mudar a ordem das cenas (foto + personagem andam juntos)
+let persSortable=null;
+function initPersDrag(){
+  const box = document.getElementById('persGrid');
+  if(!box || typeof Sortable==='undefined') return;
+  if(persSortable){ try{ persSortable.destroy(); }catch(e){} persSortable=null; }
+  persSortable = Sortable.create(box, { animation:150, handle:'.pers-grip', draggable:'.pers-item', ghostClass:'acao-drag',
+    onEnd:function(){
+      const ordem = Array.from(box.querySelectorAll('.pers-item')).map(el=>+el.getAttribute('data-idx'));
+      if(ordem.length !== fotos.fundo.length) return;
+      fotos.fundo = ordem.map(i=>fotos.fundo[i]);
+      personagens = ordem.map(i=>personagens[i]);
+      renderThumbs('fundo');   // já chama updateFundoInfo → renderPersGrid
+      toast('↔ Ordem das cenas atualizada.');
+    } });
 }
 async function gerarPersonagens(){
   if(!fotos.fundo.length){ toast('🖼️ Suba as imagens primeiro.'); return; }
@@ -576,48 +587,11 @@ async function gerarPersonagem(i){
     p.img = d.base64;
     if (prodCenas[i]) prodCenas[i].img = p.img;   // reflete na tela de conferência, se já estiver aberta
   } catch(e){ toast('⚠️ Cena '+(i+1)+': '+e.message); }
-  finally { p.loading = false; renderPersGrid(); renderAcoes(); }
+  finally { p.loading = false; renderPersGrid(); }
 }
 
-// ── Passo 4: ação de cada cena + arrastar a miniatura pra mudar a ordem ──
-function renderAcoes(){
-  const box = document.getElementById('acoesBox'); if(!box) return;
-  if(!fotos.fundo.length){ box.innerHTML='<div class="soon-note">Suba as imagens no passo 2 pra aparecerem aqui.</div>'; return; }
-  box.innerHTML='';
-  fotos.fundo.forEach(function(f,i){
-    const p = personagens[i];
-    const src = (p && p.img) ? ('data:image/jpeg;base64,'+p.img) : f.thumbUrl;
-    const div = document.createElement('div'); div.className='acao-item'; div.setAttribute('data-idx', i);
-    div.innerHTML =
-      '<img class="acao-thumb" src="'+src+'" title="Segure e arraste pra mudar a ordem"/>'+
-      '<div class="acao-body">'+
-        '<span class="cena-badge">CENA '+(i+1)+'</span>'+
-        '<div class="mini">🎬 O que o personagem faz nesta cena</div>'+
-        '<input type="text" data-i="'+i+'" placeholder="Ex: aponta pro aparelho e dá risada" value="'+escAttr(acoes[i]||'')+'"/>'+
-      '</div>';
-    box.appendChild(div);
-  });
-  box.querySelectorAll('input[data-i]').forEach(function(el){
-    el.addEventListener('input', function(){ acoes[+el.dataset.i] = el.value; });
-  });
-  initAcoesDrag();
-}
-let acoesSortable=null;
-function initAcoesDrag(){
-  const box = document.getElementById('acoesBox');
-  if(!box || typeof Sortable==='undefined') return;
-  if(acoesSortable){ try{ acoesSortable.destroy(); }catch(e){} acoesSortable=null; }
-  acoesSortable = Sortable.create(box, { animation:150, handle:'.acao-thumb', draggable:'.acao-item', delay:120, delayOnTouchOnly:true, ghostClass:'acao-drag',
-    onEnd:function(){
-      const ordem = Array.from(box.querySelectorAll('.acao-item')).map(el=>+el.getAttribute('data-idx'));
-      if(ordem.length !== fotos.fundo.length) return;
-      fotos.fundo = ordem.map(i=>fotos.fundo[i]);
-      personagens = ordem.map(i=>personagens[i]);
-      acoes       = ordem.map(i=>acoes[i]);
-      renderThumbs('fundo');   // já chama updateFundoInfo → renderPersGrid + renderAcoes
-      toast('↔ Ordem das cenas atualizada.');
-    } });
-}
+// "Ação de cada cena": REMOVIDA. Agora a IA decide a ação de cada cena a partir da IDEIA DO CLIENTE
+// (passo 4) + da emoção + do que ela vê em cada imagem. O reordenar virou a alça ⠿ no passo 3.
 
 // ── As 2 histórias (cada cena sai de UMA foto; as cenas se encadeiam numa história só) ──
 function renderHistorias(){
@@ -641,6 +615,9 @@ function renderHistorias(){
           '<textarea data-h="'+hi+'" data-i="'+i+'" data-f="visual" style="min-height:44px">'+escHtml(c.visual)+'</textarea>'+
         '</div></div></div>';
     });
+    // Repete o botão no FIM do card: o card é comprido (4 cenas × 2 campos) e o do topo some ao rolar.
+    inner += '<button class="btn-gold" style="margin-top:.9rem" onclick="escolherHistoria('+hi+')">'+
+      (hi===historiaIdx ? '✅ História '+(hi+1)+' escolhida — role pra baixo' : '✅ Usar a História '+(hi+1))+'</button>';
     div.innerHTML = inner; box.appendChild(div);
   });
   box.querySelectorAll('[data-f]').forEach(function(el){
@@ -1038,8 +1015,8 @@ async function gerarNovoRoteiro(){
   const clientName=document.getElementById('clientName').value.trim();
   const payload={ clientName, criativo:true,
     baseRoteiro:{ cenas: historias[0].cenas },   // manda a 1ª como "o que EVITAR" pra vir diferente
-    emocao, acoes: acoes.slice(0, fotos.fundo.length),
-    ideiaPropria: (ideiaModo==='minha') ? (document.getElementById('ideiaPropria').value||'').trim() : '',
+    emocao,
+    ideiaPropria: (document.getElementById('ideiaCliente').value||'').trim(),
     fundo: fotos.fundo.map(function(f,i){ const p=personagens[i]; return (p&&p.img) ? { base64:p.img, mimeType:'image/jpeg' } : { base64:f.base64, mimeType:f.mimeType }; }) };
   try {
     const r=await api('/promoRoteiro',{ method:'POST', body:JSON.stringify(payload) });
