@@ -130,6 +130,18 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .mvbtn{flex:1;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:6px;padding:3px 0;font-size:11px;cursor:pointer;line-height:1.2}
 .mvbtn:hover{border-color:var(--gold);color:var(--gold)}
 .mini{font-size:11.5px;color:var(--text-dim);margin:.5rem 0 .2rem}
+/* Passo 2 — foto do cliente × personagem gerado */
+.pers-item{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem;margin-bottom:.7rem}
+.pers-par{display:flex;gap:.6rem;align-items:flex-start}
+.pers-col{flex:1;min-width:0;text-align:center}
+.pers-col img{width:100%;border-radius:8px;border:.5px solid var(--border);display:block}
+.pers-lab{font-size:11px;color:var(--text-dim);margin-bottom:.25rem}
+.pers-ph{width:100%;aspect-ratio:2/3;border-radius:8px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:11.5px;text-align:center;padding:.4rem}
+/* Passo 4 — ação por cena (miniatura arrastável) */
+.acao-item{display:flex;gap:.6rem;align-items:flex-start;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;margin-bottom:.6rem}
+.acao-thumb{width:54px;height:72px;object-fit:cover;border-radius:6px;flex:0 0 auto;border:.5px solid var(--border);cursor:grab;touch-action:none}
+.acao-body{flex:1;min-width:0}
+.acao-drag{opacity:.5;background:var(--bg-hover)}
 /* Bloco 6 — as 2 histórias e a conferência das cenas */
 .hist-card{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
 .hist-card.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
@@ -174,67 +186,27 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <input type="text" id="clientName" placeholder="Ex: Body Club Fitness"/>
   </div>
 
-  <!-- PASSO 2 — APRESENTADOR (foto → avatar) -->
+  <!-- PASSO 2 — IMAGENS DO CLIENTE → PERSONAGENS -->
   <div class="step">
-    <div class="step-head"><div class="step-num">2</div><div class="step-title">Quem apresenta (vira avatar)</div></div>
-    <div class="step-hint">Escolha e suba 1 foto: o <b>dono</b> vira um avatar (sem microfone/palco), ou o <b>produto</b> vira um personagem (com braços, pernas e boca).</div>
-    <div class="chips" id="chipsApres" style="margin-bottom:.8rem">
-      <div class="chip on" data-v="dono">🧑 Avatar do dono</div>
-      <div class="chip" data-v="produto">📦 Produto vira personagem</div>
-    </div>
-    <div class="up-cat">
-      <div class="up-cat-head" id="fotoLabel">📸 Foto do dono <span class="up-opt">(1, rosto nítido de frente)</span></div>
-      <div class="thumbs" id="thumbsFoto"></div>
-      <label class="up-btn">+ Adicionar foto<input type="file" accept="image/*" hidden onchange="onPick(event,'foto')"/></label>
-    </div>
-
-    <!-- Gerar o avatar (preview + baixar) -->
-    <div id="avatarGenRow" style="display:none;margin-top:.9rem">
-      <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatarPromo()">🎨 Gerar avatar</button>
-      <div class="soon-note" id="avatarGenNote">A IA transforma a foto no avatar. Você confere e baixa antes de gerar o vídeo.</div>
-    </div>
-    <div id="avatarPreview" style="display:none;margin-top:.9rem">
-      <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:300px;max-width:100%;border-radius:12px;border:.5px solid var(--border-bright)" alt="Avatar gerado"/></div>
-      <div class="btn-row" style="margin-top:.6rem">
-        <button class="btn-ghost" id="btnRegenAvatar" onclick="gerarAvatarPromo()">🔄 Gerar de novo</button>
-        <button class="btn-ghost" onclick="baixarAvatarPromo()">⬇️ Baixar avatar</button>
-      </div>
-      <div class="soon-note" style="color:var(--gold)">✓ Esse avatar será usado no vídeo.</div>
-    </div>
-
-    <!-- Voz: REMOVIDA — o Veo gera a voz NATIVA (não precisa escolher). -->
-    <div class="up-cat" style="margin-top:1rem">
-      <div class="up-cat-head">🎙️ Voz <span class="up-opt">(automática — o Veo narra sozinho, com a voz que combina com o avatar)</span></div>
-    </div>
-  </div>
-
-  <!-- PASSO 3 — BRIEFING -->
-  <div class="step">
-    <div class="step-head"><div class="step-num">3</div><div class="step-title">Briefing (o que divulgar)</div></div>
-    <div class="step-hint">Cole a mensagem do cliente. Pode anexar um panfleto pelo clipe 📎 (ou <b>Ctrl+V</b>) — a IA lê tudo.</div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:.35rem">
-      <label class="clip-btn" title="Anexar imagem (panfleto, cardápio)">📎 Anexar imagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'brief')"/></label>
-    </div>
-    <textarea id="briefing" placeholder="Ex: Academia Body Club em Cabo Frio. Divulgar o aulão de sábado, matrículas abertas, brindes. WhatsApp (22) 99999-9999."></textarea>
-    <div class="thumbs" id="thumbsBrief" style="margin-top:.5rem"></div>
-  </div>
-
-  <!-- PASSO 4 — IMAGENS DE FUNDO -->
-  <div class="step">
-    <div class="step-head"><div class="step-num">4</div><div class="step-title">Imagens do negócio (fundo)</div></div>
-    <div class="step-hint">Suba <b>exatamente 4 imagens</b> reais do negócio (produtos, ambiente). Cada uma vira uma cena de 8s → vídeo de <b>32s</b> (a última é o CTA). 💡 Depois dá pra <b>refazer 1 cena só</b> se alguma sair com erro, sem gerar o vídeo todo.</div>
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Imagens do cliente</div></div>
+    <div class="step-hint">Suba de <b>1 a 4 imagens</b> que o cliente mandou (o dono, a equipe, o produto, o ambiente). Cada imagem vira uma <b>cena de 8s</b>. Depois clique em <b>Gerar personagem</b>: a IA transforma cada foto em <b>desenho 3D estilo Pixar mantendo o cenário</b> — pessoa continua a pessoa; produto ganha olhos e boca e cria vida.</div>
     <div class="up-cat">
       <div class="thumbs" id="thumbsFundo"></div>
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
     </div>
     <div class="soon-note" id="fundoInfo"></div>
+
+    <div id="persGenRow" style="display:none;margin-top:.9rem">
+      <button class="btn-gold" id="btnGenPers" onclick="gerarPersonagens()">🎭 Gerar personagem</button>
+      <div class="soon-note">A IA desenha cada imagem preservando o cenário. Dá pra refazer uma por uma antes de seguir.</div>
+    </div>
+    <div id="persGrid" style="margin-top:.9rem"></div>
   </div>
 
-  <!-- PASSO 5 — PERSONALIDADE DO PERSONAGEM (emoção + ação) -->
+  <!-- PASSO 3 — EMOÇÃO (só botões) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">5</div><div class="step-title">Personalidade do personagem</div></div>
-    <div class="step-hint">Escolha <b>uma vez</b> — vale pras 4 cenas. A IA adapta o jeito dele a cada ambiente, mantendo esse tom.</div>
-    <div class="mini">😀 Emoção</div>
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Emoção do personagem</div></div>
+    <div class="step-hint">Escolha <b>uma</b> — vale pra todas as cenas, na fala e na atitude.</div>
     <div class="chips" id="emocaoChips">
       <div class="chip on" data-e="Empolgado"   onclick="setEmocao(this)">🤩 Empolgado</div>
       <div class="chip"    data-e="Confiante"   onclick="setEmocao(this)">😎 Confiante</div>
@@ -243,24 +215,29 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="chip"    data-e="Triste"      onclick="setEmocao(this)">😢 Triste</div>
       <div class="chip"    data-e="Desesperado" onclick="setEmocao(this)">😱 Desesperado</div>
     </div>
-    <div class="mini" style="margin-top:.9rem">🎬 Ação (o que ele faz no vídeo)</div>
-    <input type="text" id="acao" placeholder="Ex: apresentando os aparelhos, dando boas-vindas, mostrando o cardápio"/>
   </div>
 
-  <!-- PASSO 6 — A IDEIA -->
+  <!-- PASSO 4 — AÇÃO DE CADA CENA (miniaturas + arrastar pra reordenar) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">6</div><div class="step-title">A ideia do vídeo</div></div>
-    <div class="step-hint">A IA lê <b>cada uma das 4 fotos</b> e monta <b>2 histórias completas</b> (4 cenas encadeadas cada) pra você mandar no briefing do cliente escolher.</div>
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Ação de cada cena</div></div>
+    <div class="step-hint">Escreva o que o personagem faz em <b>cada quadro</b>. 👆 Segure e arraste a miniatura pra <b>mudar a ordem</b> das cenas.</div>
+    <div id="acoesBox"><div class="soon-note">Suba as imagens no passo 2 pra aparecerem aqui.</div></div>
+  </div>
+
+  <!-- PASSO 5 — A IDEIA -->
+  <div class="step">
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">A ideia do vídeo</div></div>
+    <div class="step-hint">A IA lê <b>cada imagem</b> junto com a emoção e as ações que você escreveu, e monta <b>2 histórias completas</b> pra você mandar pro cliente escolher.</div>
     <div class="chips" id="ideiaModo">
-      <div class="chip on" data-modo="ia"    onclick="setIdeiaModo('ia')">✨ A IA cria pra mim</div>
+      <div class="chip on" data-modo="ia"    onclick="setIdeiaModo('ia')">✨ Criar ideia com IA</div>
       <div class="chip"    data-modo="minha" onclick="setIdeiaModo('minha')">✍️ Eu já tenho uma ideia</div>
     </div>
-    <textarea id="ideiaPropria" style="display:none;margin-top:.6rem" placeholder="Escreva sua ideia em 1-2 frases. Ex: o dono aparece na recepção falando que aqui o treino é sério, mostra os aparelhos novos e chama pra fazer a matrícula."></textarea>
+    <textarea id="ideiaPropria" style="display:none;margin-top:.6rem" placeholder="Escreva sua ideia em 1-2 frases (pode colar a do cliente). Ex: o dono aparece reclamando do preço das outras academias e mostra o valor da mensalidade dele. Inclua a oferta e o contato, se houver."></textarea>
   </div>
 
-  <!-- PASSO 7 — TRILHA SONORA (biblioteca + upload) -->
+  <!-- PASSO 6 — TRILHA SONORA (biblioteca + upload) -->
   <div class="step">
-    <div class="step-head"><div class="step-num">7</div><div class="step-title">Trilha sonora (40s)</div></div>
+    <div class="step-head"><div class="step-num">6</div><div class="step-title">Trilha sonora (40s)</div></div>
     <div class="step-hint">Escolha uma trilha da biblioteca <b>ou</b> envie a sua música (o editor corta em 40s com fades). Ela fica baixinha, embaixo da fala.</div>
 
     <!-- biblioteca de trilhas -->
@@ -413,7 +390,9 @@ let ideiaModo = 'ia';         // 'ia' = a IA cria | 'minha' = o atendente cola a
 let historias = null;         // as 2 versões que a IA devolveu
 let historiaIdx = -1;         // qual história o cliente aprovou
 let segDurGlobal = 8;
-let prodCenas = [];           // [{ fala, visual, ambiente, img(base64), prompt, ajuste, loading }]
+let prodCenas = [];           // [{ fala, visual, ambiente, img(base64), prompt, loading }]
+let personagens = [];         // passo 2: [{ img(base64), ajuste, loading }] — 1 por imagem do cliente
+let acoes = [];               // passo 4: ação escrita pelo atendente pra cada cena
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
 let trilhas = [];             // biblioteca de trilhas (admin sobe até 10)
@@ -425,20 +404,9 @@ const LIMITS = { foto:1, brief:8, fundo:MAX_FUNDO };
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),3800); }
 
-// ── Apresentador (chips) ──
-document.querySelectorAll('#chipsApres .chip').forEach(function(c){
-  c.addEventListener('click',function(){
-    apresentador = c.dataset.v;
-    document.querySelectorAll('#chipsApres .chip').forEach(x=>x.classList.toggle('on',x===c));
-    document.getElementById('fotoLabel').innerHTML = (apresentador==='dono')
-      ? '📸 Foto do dono <span class="up-opt">(1, rosto nítido de frente)</span>'
-      : '📦 Foto do produto <span class="up-opt">(1, produto bem visível)</span>';
-    const gn=document.getElementById('avatarGenNote'); if(gn) gn.textContent = (apresentador==='produto')
-      ? 'A IA transforma o produto num personagem (com braços/pernas/boca). Você confere e baixa antes de gerar o vídeo.'
-      : 'A IA transforma a foto no avatar do dono. Você confere e baixa antes de gerar o vídeo.';
-    onFotoChanged();   // trocou dono↔produto → o avatar gerado é invalidado
-  });
-});
+// ── Apresentador (dono × produto): REMOVIDO no fluxo v2 ──
+// A própria imagem do cliente vira o personagem (pessoa continua pessoa; produto ganha rosto),
+// então não existe mais escolha de "quem apresenta" nem avatar isolado em fundo cinza.
 
 // ── Estilo de voz (chips) ──
 document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
@@ -483,54 +451,54 @@ function renderThumbs(cat){
   if (cat==='fundo') updateFundoInfo();
   if (cat==='foto') onFotoChanged();
 }
-// mostra o botão "Gerar avatar" quando há foto; qualquer troca de foto invalida o avatar já gerado
-function onFotoChanged(){
-  const has = fotos.foto.length > 0;
-  const row = document.getElementById('avatarGenRow');
-  if (row) row.style.display = has ? 'block' : 'none';
-  promoAvatarData = null;
-  const pv = document.getElementById('avatarPreview'); if (pv) pv.style.display='none';
-  // trocou a foto → o avatar mudou → as cenas já compostas ficaram velhas
-  if (prodCenas.length){ prodCenas.forEach(function(c){ c.img=null; }); if (historiaIdx>=0) renderProducao(); }
-}
+function onFotoChanged(){ /* v2: não existe mais foto separada do apresentador */ }
+// As imagens do cliente mudaram → o nº de cenas muda, e os personagens/ações antigos não valem mais.
 function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
-  if (!n){ el.textContent=''; return; }
-  el.innerHTML = (n===4) ? '✅ <b>4 imagens</b> → 4 cenas de 8s = vídeo de 32s.' : '<b style="color:#E8A84C">'+n+' de 4</b> imagens — '+(n<4?('suba '+(4-n)+' pra completar'):'tire '+(n-4))+' (precisa de exatamente 4).';
+  const row = document.getElementById('persGenRow');
+  if (row) row.style.display = n ? 'block' : 'none';
+  if (!n){ el.textContent=''; personagens=[]; acoes=[]; renderPersGrid(); renderAcoes(); return; }
+  el.innerHTML = '✅ <b>'+n+' imagem(ns)</b> → '+n+' cena(s) de 8s = vídeo de <b>'+(n*8)+'s</b>.' + (n<MAX_FUNDO ? ' Pode subir até '+MAX_FUNDO+'.' : '');
+  // mantém o que já existe pra cada índice e ajusta o tamanho das listas
+  personagens.length = n; acoes.length = n;
+  for (let i=0;i<n;i++){ if(!personagens[i]) personagens[i]={ img:null, ajuste:'', loading:false }; if(typeof acoes[i]!=='string') acoes[i]=''; }
+  renderPersGrid(); renderAcoes();
 }
 
-// ── Colar (Ctrl+V) imagem no briefing (funciona em toda a página) ──
+// ── Colar (Ctrl+V) imagem do cliente direto no passo 2 (funciona em toda a página) ──
 window.addEventListener('paste', async function(e){
   const items = (e.clipboardData && e.clipboardData.items) || [];
   let achou=false;
   for (const it of items){
     if (it.type && it.type.indexOf('image')===0){
       const file = it.getAsFile();
-      if (file){ achou=true; if (await addImage(file,'brief')) renderThumbs('brief'); }
+      if (file){ achou=true; if (await addImage(file,'fundo')) renderThumbs('fundo'); }
     }
   }
-  if (achou){ toast('✅ Imagem anexada ao briefing!'); }
+  if (achou){ toast('✅ Imagem adicionada ao passo 2!'); }
 });
 
 // ── Gerar roteiro (Bloco 2 — backend /promoRoteiro) ──
 async function gerarRoteiro(){
   const clientName = document.getElementById('clientName').value.trim();
-  const briefing = document.getElementById('briefing').value.trim();
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
-  if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
-  if (!briefing && !fotos.brief.length){ toast('📝 Escreva o briefing ou cole uma imagem.'); return; }
-  if (fotos.fundo.length !== 4){ toast('🖼️ Suba exatamente 4 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
+  if (!fotos.fundo.length){ toast('🖼️ Suba de 1 a 4 imagens do cliente (passo 2).'); return; }
+  const semPers = personagens.map((p,i)=>(p&&p.img)?null:(i+1)).filter(Boolean);
+  if (semPers.length === fotos.fundo.length){ toast('🎭 Clique em "Gerar personagem" no passo 2 antes.'); return; }
+  if (semPers.length && !confirm('A(s) cena(s) '+semPers.join(', ')+' ainda estão sem personagem gerado.\n\nContinuar assim?')) return;
 
   const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando as histórias...';
   const payload = {
-    clientName, apresentador, briefing,
-    emocao, acao: (document.getElementById('acao').value||'').trim(),
+    clientName,
+    emocao, acoes: acoes.slice(0, fotos.fundo.length),
     ideiaPropria: (ideiaModo==='minha') ? (document.getElementById('ideiaPropria').value||'').trim() : '',
-    foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
-    briefImgs: fotos.brief.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
-    fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType }))
+    // manda o PERSONAGEM já desenhado (é o que vai virar o vídeo); cai na foto original se algum faltar
+    fundo: fotos.fundo.map(function(f,i){
+      const p = personagens[i];
+      return (p && p.img) ? { base64:p.img, mimeType:'image/jpeg' } : { base64:f.base64, mimeType:f.mimeType };
+    })
   };
   try {
     const r = await api('/promoRoteiro', { method:'POST', body: JSON.stringify(payload) });
@@ -563,7 +531,95 @@ function setIdeiaModo(m){
   document.getElementById('ideiaPropria').style.display = (m==='minha') ? 'block' : 'none';
 }
 
-// ── As 2 histórias (cada cena sai de UMA foto; as 4 se encadeiam numa história só) ──
+// ── Passo 2: gerar o PERSONAGEM de cada imagem (foto → desenho Pixar, PRESERVANDO o cenário) ──
+function renderPersGrid(){
+  const box = document.getElementById('persGrid'); if(!box) return;
+  box.innerHTML='';
+  fotos.fundo.forEach(function(f,i){
+    const p = personagens[i] || { img:null, ajuste:'', loading:false };
+    const dir = p.img ? '<img src="data:image/jpeg;base64,'+p.img+'"/>'
+                      : '<div class="pers-ph">'+(p.loading ? '⏳ desenhando…' : 'ainda não gerado')+'</div>';
+    const div = document.createElement('div'); div.className='pers-item';
+    div.innerHTML =
+      '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+      '<div class="pers-par" style="margin-top:.5rem">'+
+        '<div class="pers-col"><div class="pers-lab">foto do cliente</div><img src="'+f.thumbUrl+'"/></div>'+
+        '<div class="pers-col"><div class="pers-lab">personagem</div>'+dir+'</div>'+
+      '</div>'+
+      '<div class="mini">✏️ O que mudar (opcional)</div>'+
+      '<input type="text" data-i="'+i+'" data-f="ajuste" placeholder="Ex: deixe o sorriso maior, olhos mais expressivos" value="'+escAttr(p.ajuste||'')+'"/>'+
+      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="gerarPersonagem('+i+')"'+(p.loading?' disabled':'')+'>'+(p.img?'🔄 Refazer este':'🎭 Gerar este')+'</button>';
+    box.appendChild(div);
+  });
+  box.querySelectorAll('[data-f]').forEach(function(el){
+    el.addEventListener('input', function(){ personagens[+el.dataset.i][el.dataset.f] = el.value; });
+  });
+}
+async function gerarPersonagens(){
+  if(!fotos.fundo.length){ toast('🖼️ Suba as imagens primeiro.'); return; }
+  const btn=document.getElementById('btnGenPers'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando…';
+  try {
+    for(let i=0;i<fotos.fundo.length;i++){ if(!personagens[i] || !personagens[i].img) await gerarPersonagem(i); }
+    toast('✅ Personagens prontos! Confira antes de seguir.');
+  } finally { btn.disabled=false; btn.innerHTML=old; }
+}
+async function gerarPersonagem(i){
+  const f = fotos.fundo[i]; if(!f) return;
+  if(!personagens[i]) personagens[i] = { img:null, ajuste:'', loading:false };
+  const p = personagens[i];
+  p.loading = true; renderPersGrid();
+  try {
+    const r = await api('/promoPersonagem', { method:'POST', body: JSON.stringify({ foto:{ base64:f.base64, mimeType:f.mimeType }, ajuste:p.ajuste||'' }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem.');
+    p.img = d.base64;
+    if (prodCenas[i]) prodCenas[i].img = p.img;   // reflete na tela de conferência, se já estiver aberta
+  } catch(e){ toast('⚠️ Cena '+(i+1)+': '+e.message); }
+  finally { p.loading = false; renderPersGrid(); renderAcoes(); }
+}
+
+// ── Passo 4: ação de cada cena + arrastar a miniatura pra mudar a ordem ──
+function renderAcoes(){
+  const box = document.getElementById('acoesBox'); if(!box) return;
+  if(!fotos.fundo.length){ box.innerHTML='<div class="soon-note">Suba as imagens no passo 2 pra aparecerem aqui.</div>'; return; }
+  box.innerHTML='';
+  fotos.fundo.forEach(function(f,i){
+    const p = personagens[i];
+    const src = (p && p.img) ? ('data:image/jpeg;base64,'+p.img) : f.thumbUrl;
+    const div = document.createElement('div'); div.className='acao-item'; div.setAttribute('data-idx', i);
+    div.innerHTML =
+      '<img class="acao-thumb" src="'+src+'" title="Segure e arraste pra mudar a ordem"/>'+
+      '<div class="acao-body">'+
+        '<span class="cena-badge">CENA '+(i+1)+'</span>'+
+        '<div class="mini">🎬 O que o personagem faz nesta cena</div>'+
+        '<input type="text" data-i="'+i+'" placeholder="Ex: aponta pro aparelho e dá risada" value="'+escAttr(acoes[i]||'')+'"/>'+
+      '</div>';
+    box.appendChild(div);
+  });
+  box.querySelectorAll('input[data-i]').forEach(function(el){
+    el.addEventListener('input', function(){ acoes[+el.dataset.i] = el.value; });
+  });
+  initAcoesDrag();
+}
+let acoesSortable=null;
+function initAcoesDrag(){
+  const box = document.getElementById('acoesBox');
+  if(!box || typeof Sortable==='undefined') return;
+  if(acoesSortable){ try{ acoesSortable.destroy(); }catch(e){} acoesSortable=null; }
+  acoesSortable = Sortable.create(box, { animation:150, handle:'.acao-thumb', draggable:'.acao-item', delay:120, delayOnTouchOnly:true, ghostClass:'acao-drag',
+    onEnd:function(){
+      const ordem = Array.from(box.querySelectorAll('.acao-item')).map(el=>+el.getAttribute('data-idx'));
+      if(ordem.length !== fotos.fundo.length) return;
+      fotos.fundo = ordem.map(i=>fotos.fundo[i]);
+      personagens = ordem.map(i=>personagens[i]);
+      acoes       = ordem.map(i=>acoes[i]);
+      renderThumbs('fundo');   // já chama updateFundoInfo → renderPersGrid + renderAcoes
+      toast('↔ Ordem das cenas atualizada.');
+    } });
+}
+
+// ── As 2 histórias (cada cena sai de UMA foto; as cenas se encadeiam numa história só) ──
 function renderHistorias(){
   const box = document.getElementById('historiasBox'); box.innerHTML='';
   historias.forEach(function(h,hi){
@@ -610,15 +666,18 @@ async function escolherHistoria(hi){
   roteiro = { titulo: historias[hi].titulo, cenas: historias[hi].cenas.map(function(c){ return { fala:c.fala, visual:c.visual, ambiente:c.ambiente }; }), segDur: segDurGlobal };
   renderHistorias();
   try {
-    const r = await api('/promoPrompts', { method:'POST', body: JSON.stringify({ roteiro:{ cenas: roteiro.cenas } }) });
+    const r = await api('/promoPrompts', { method:'POST', body: JSON.stringify({ roteiro:{ cenas: roteiro.cenas }, emocao }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao montar os prompts.');
-    prodCenas = roteiro.cenas.map(function(c,i){ return { fala:c.fala, visual:c.visual, ambiente:c.ambiente, img:null, prompt:(d.prompts&&d.prompts[i])||'', ajuste:'', loading:false }; });
+    // a imagem de cada cena JÁ existe: é o personagem gerado no passo 2
+    prodCenas = roteiro.cenas.map(function(c,i){
+      const p = personagens[i];
+      return { fala:c.fala, visual:c.visual, ambiente:c.ambiente, img:(p&&p.img)||null, prompt:(d.prompts&&d.prompts[i])||'', loading:false };
+    });
   } catch(e){ toast('⚠️ '+e.message); return; }
   document.getElementById('producaoWrap').style.display='block';
   renderProducao();
   document.getElementById('producaoWrap').scrollIntoView({ behavior:'smooth' });
-  await gerarTodasCenas();
 }
 function voltarHistorias(){ document.getElementById('historiasWrap').scrollIntoView({ behavior:'smooth' }); }
 
@@ -636,8 +695,8 @@ function renderProducao(){
       '<div class="mini">🗣️ Fala desta cena</div>'+
       '<div style="font-size:13px;color:var(--text-mid);line-height:1.45">'+escHtml(c.fala)+'</div>'+
       '<div class="mini" style="margin-top:.7rem">✏️ O que mudar na imagem (opcional)</div>'+
-      '<input type="text" data-i="'+i+'" data-f="ajuste" placeholder="Ex: deixe ele mais à esquerda, sem o balcão na frente" value="'+escAttr(c.ajuste)+'"/>'+
-      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="gerarCena('+i+')"'+(c.loading?' disabled':'')+'>🔄 Refazer só esta imagem</button>'+
+      '<input type="text" data-p="'+i+'" placeholder="Ex: deixe o sorriso maior, olhos mais expressivos" value="'+escAttr((personagens[i]&&personagens[i].ajuste)||'')+'"/>'+
+      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="refazerCenaProd('+i+')"'+((personagens[i]&&personagens[i].loading)?' disabled':'')+'>🔄 Refazer só esta imagem</button>'+
       '<div class="mini" style="margin-top:.8rem">🤖 Prompt do vídeo (é isto que o Veo recebe — dá pra editar)</div>'+
       '<textarea data-i="'+i+'" data-f="prompt" style="min-height:78px;font-size:12px">'+escHtml(c.prompt)+'</textarea>';
     box.appendChild(div);
@@ -645,26 +704,24 @@ function renderProducao(){
   box.querySelectorAll('[data-f]').forEach(function(el){
     el.addEventListener('input', function(){ prodCenas[+el.dataset.i][el.dataset.f] = el.value; });
   });
+  box.querySelectorAll('[data-p]').forEach(function(el){   // o ajuste pertence ao personagem (passo 2)
+    el.addEventListener('input', function(){ const i=+el.dataset.p; if(personagens[i]) personagens[i].ajuste = el.value; });
+  });
 }
 
-async function gerarTodasCenas(){
-  if(!promoAvatarData || !promoAvatarData.base64){
-    toast('🎭 Gerando o avatar primeiro…');
-    await gerarAvatarPromo();
-    if(!promoAvatarData || !promoAvatarData.base64){ toast('⚠️ Gere o avatar na etapa 2 antes de continuar.'); return; }
-  }
-  for(let i=0;i<prodCenas.length;i++){ if(!prodCenas[i].img) await gerarCena(i); }
-  toast('✅ Cenas prontas! Confira antes de produzir.');
+// Refaz a imagem direto da tela de conferência — é a MESMA geração do passo 2 (personagem).
+async function refazerCenaProd(i){
+  await gerarPersonagem(i);
+  if(prodCenas[i] && personagens[i]) prodCenas[i].img = personagens[i].img;
+  renderProducao();
 }
-async function gerarCena(i){
+async function _gerarCenaLegado(i){
   const c = prodCenas[i]; const fi = fotos.fundo[i];
   if(!c) return;
   if(!fi){ toast('🖼️ Falta a imagem '+(i+1)+' do negócio.'); return; }
-  if(!promoAvatarData || !promoAvatarData.base64){ toast('🎭 Gere o avatar na etapa 2 antes.'); return; }
   c.loading = true; renderProducao();
   try {
     const r = await api('/promoCena', { method:'POST', body: JSON.stringify({
-      avatarBase64: promoAvatarData.base64,
       fundo: { base64: fi.base64, mimeType: fi.mimeType },
       visual: c.visual||'', ajuste: c.ajuste||''
     })});
@@ -908,29 +965,15 @@ async function adminDelTrilha(id, title){
   } catch(e){ toast('⚠️ '+e.message); }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AVATAR (gerar + preview + baixar) — reusa a UX do Vídeo Avatar
-// ═══════════════════════════════════════════════════════════════
-async function gerarAvatarPromo(){
-  if(!fotos.foto[0]){ toast('📸 Suba a foto primeiro.'); return; }
-  const btns=['btnGenAvatar','btnRegenAvatar'].map(id=>document.getElementById(id)).filter(Boolean);
-  btns.forEach(b=>{ b.disabled=true; b._t=b.textContent; b.textContent='⏳ Gerando…'; });
-  try {
-    const r=await api('/promoAvatar',{ method:'POST', body:JSON.stringify({ apresentador, foto:{ base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType } }) });
-    const d=await r.json();
-    if(!d.ok) throw new Error(d.error||'Falha ao gerar o avatar.');
-    promoAvatarData={ base64:d.avatarBase64 };
-    document.getElementById('avatarPreviewImg').src='data:image/jpeg;base64,'+d.avatarBase64;
-    document.getElementById('avatarPreview').style.display='block';
-    toast('✅ Avatar gerado!');
-  } catch(e){ toast('⚠️ '+e.message); }
-  finally { btns.forEach(b=>{ b.disabled=false; if(b._t) b.textContent=b._t; }); }
-}
-function baixarAvatarPromo(){
-  if(!promoAvatarData||!promoAvatarData.base64){ toast('Gere o avatar primeiro.'); return; }
-  const a=document.createElement('a'); a.href='data:image/jpeg;base64,'+promoAvatarData.base64;
-  const nm=(document.getElementById('clientName').value||'avatar').trim().replace(/[^a-zA-Z0-9_-]/g,'_')||'avatar';
-  a.download='avatar-'+nm+'.jpg'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+// AVATAR isolado (fundo cinza): REMOVIDO no fluxo v2. Quem faz o personagem agora é
+// gerarPersonagem() / gerarPersonagens() no passo 2 (rota /promoPersonagem).
+// Baixar o personagem gerado (1 por cena).
+function baixarPersonagem(i){
+  const p = personagens[i];
+  if(!p || !p.img){ toast('Gere o personagem primeiro.'); return; }
+  const a=document.createElement('a'); a.href='data:image/jpeg;base64,'+p.img;
+  const nm=(document.getElementById('clientName').value||'personagem').trim().replace(/[^a-zA-Z0-9_-]/g,'_')||'personagem';
+  a.download='cena-'+(i+1)+'-'+nm+'.jpg'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -993,13 +1036,11 @@ async function gerarNovoRoteiro(){
   const btn=document.getElementById('btnNovoRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando…';
   const clientName=document.getElementById('clientName').value.trim();
-  const briefing=document.getElementById('briefing').value.trim();
-  const payload={ clientName, apresentador, briefing, criativo:true,
+  const payload={ clientName, criativo:true,
     baseRoteiro:{ cenas: historias[0].cenas },   // manda a 1ª como "o que EVITAR" pra vir diferente
-    emocao, acao:(document.getElementById('acao').value||'').trim(),
+    emocao, acoes: acoes.slice(0, fotos.fundo.length),
     ideiaPropria: (ideiaModo==='minha') ? (document.getElementById('ideiaPropria').value||'').trim() : '',
-    briefImgs:fotos.brief.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
-    fundo:fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType })) };
+    fundo: fotos.fundo.map(function(f,i){ const p=personagens[i]; return (p&&p.img) ? { base64:p.img, mimeType:'image/jpeg' } : { base64:f.base64, mimeType:f.mimeType }; }) };
   try {
     const r=await api('/promoRoteiro',{ method:'POST', body:JSON.stringify(payload) });
     const d=await r.json();
@@ -1067,11 +1108,10 @@ async function gerarVideo(){
   const clientName = document.getElementById('clientName').value.trim();
   if (!roteiro || !roteiro.cenas || !roteiro.cenas.length || historiaIdx < 0){ toast('Escolha uma das 2 histórias primeiro.'); return; }
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
-  // Cena sem imagem ainda → o vídeo sairia com a cena composta às cegas; melhor avisar.
+  // Cena sem personagem gerado → a IA teria que desenhar sozinha na produção; melhor avisar.
   const semImg = prodCenas.map((c,i)=>c.img?null:(i+1)).filter(Boolean);
-  if (semImg.length && !confirm('A(s) cena(s) '+semImg.join(', ')+' ainda estão sem imagem conferida.\n\nProduzir assim? (a IA vai compor essas cenas sozinha)')) return;
-  if (!fotos.foto[0]){ toast('📸 Suba a foto do '+(apresentador==='dono'?'dono':'produto')+'.'); return; }
-  if (fotos.fundo.length !== 4){ toast('🖼️ Suba exatamente 4 imagens de fundo (tem '+fotos.fundo.length+').'); return; }
+  if (semImg.length && !confirm('A(s) cena(s) '+semImg.join(', ')+' ainda estão sem personagem gerado.\n\nProduzir assim? (a IA vai desenhar essas cenas sozinha)')) return;
+  if (!fotos.fundo.length){ toast('🖼️ Suba de 1 a 4 imagens do cliente (passo 2).'); return; }
   // Música pendurada no editor de corte (subiu mas não clicou em "Cortar e usar 40s") → avisa antes de gerar sem música
   if (!selectedTrilha && !music && rawAudioBuffer){
     toast('🎵 Sua música está no editor: clique em "✂ Cortar e usar 40s" (ou escolha uma trilha) antes de gerar.');
@@ -1090,14 +1130,13 @@ async function gerarVideo(){
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
   const stEl = document.getElementById('videoStatus'); stEl.style.display='block'; stEl.textContent='Enviando o pedido…';
   const payload = {
-    clientName, apresentador,
-    roteiro: { titulo: roteiro.titulo, cenas: roteiro.cenas.map(c=>({ fala:c.fala, visual:c.visual, ambiente:c.ambiente })) },
-    foto: { base64:fotos.foto[0].base64, mimeType:fotos.foto[0].mimeType },
-    avatarBase64: (promoAvatarData && promoAvatarData.base64) ? promoAvatarData.base64 : null,
-    // cenas e prompts JÁ conferidos na tela → a pipeline não regera nada disso
+    clientName, emocao,
+    roteiro: { titulo: roteiro.titulo, cenas: roteiro.cenas.map(c=>({ fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente })) },
+    // personagens e prompts JÁ conferidos na tela → a pipeline não regera nada disso
     cenasBase64:    prodCenas.map(c=>c.img||null),
     veoPromptsEdit: prodCenas.map(c=>c.prompt||''),
-    cenaAjustes:    prodCenas.map(c=>c.ajuste||''),
+    cenaAjustes:    personagens.map(p=>(p&&p.ajuste)||''),
+    // fotos ORIGINAIS do cliente (só pra auditoria e pra pipeline poder redesenhar se faltar alguma cena)
     fundo: fotos.fundo.map(f=>({ base64:f.base64, mimeType:f.mimeType })),
     voiceStyle,
     trilhaUrl: selectedTrilha ? selectedTrilha.url : null,
