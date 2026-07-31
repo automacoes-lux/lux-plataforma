@@ -227,11 +227,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <label class="up-btn">+ Adicionar imagens<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'fundo')"/></label>
     </div>
     <div class="soon-note" id="fundoInfo"></div>
-    <div id="refBox" style="display:none;margin-top:.9rem">
-      <div class="mini">👥 Qual dessas fotos tem <b>as pessoas</b> que serão os personagens?</div>
-      <div class="chips" id="refChips"></div>
-    </div>
     <div id="ordemBox" style="margin-top:.9rem"></div>
+  </div>
+
+  <!-- PASSO — PERSONAGENS (só no modo História): 1 foto separada por personagem -->
+  <div class="step" id="stepPers">
+    <div class="step-head"><div class="step-num" id="numPers">5</div><div class="step-title">Personagens</div></div>
+    <div class="step-hint">Suba <b>1 foto de cada personagem, separadas</b>, e dê o nome de cada um. É isso que impede a IA de <b>trocar quem é quem</b> entre as cenas. Se subir só 1, ele aparece sozinho em todas.</div>
+    <div id="persSlots"></div>
   </div>
 
   <!-- PASSO — TRILHA SONORA (biblioteca + upload) -->
@@ -392,15 +395,18 @@ let segDurGlobal = 8;
 let prodCenas = [];           // [{ fala, visual, ambiente, img(base64), prompt, loading }]
 let personagens = [];         // 1 por cena: [{ img(base64), ajuste, loading }] — desenhado DEPOIS da história
 let modo = 'historia';        // 'historia' = pessoas são os personagens | 'mascote' = o produto ganha rosto
-let refIdx = 0;               // (modo história) qual foto tem as pessoas que viram os personagens
+let refIdx = 0;               // (legado) mantido só pra compatibilidade do payload
+let persNomes = ['', ''];     // nome de cada personagem (modo história)
+let persDesc = [];            // [{n, nome, descEn}] — descrição visual que a IA devolve (quem fala no vídeo)
+let persCartoon = [];         // desenho cartoon de cada personagem (referência das cenas)
 let music = null;
 let promoAvatarData = null;   // { base64 } do avatar gerado/aprovado (vai no /promoCreate)
 let trilhas = [];             // biblioteca de trilhas (admin sobe até 10)
 let selectedTrilha = null;    // trilha escolhida { id, title, url }
 let isAdminUser = false;
 let trilhaAudio = null;       // <audio> pra tocar a prévia da trilha
-let fotos = { foto:[], brief:[], fundo:[] };   // foto: 1 | brief: livre | fundo: até 6
-const LIMITS = { foto:1, brief:8, fundo:MAX_FUNDO };
+let fotos = { foto:[], brief:[], fundo:[], pers:[] };   // fundo = cenários (até 4) | pers = 1 foto por personagem (até 2)
+const LIMITS = { foto:1, brief:8, fundo:MAX_FUNDO, pers:2 };
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),3800); }
 
@@ -456,15 +462,12 @@ function onFotoChanged(){ /* v2: não existe mais foto separada do apresentador 
 function updateFundoInfo(){
   const n = fotos.fundo.length;
   const el = document.getElementById('fundoInfo');
-  const refBox = document.getElementById('refBox');
-  if (refBox) refBox.style.display = (modo==='historia' && n) ? 'block' : 'none';
-  if (!n){ el.textContent=''; personagens=[]; renderOrdem(); renderRefChips(); return; }
+  if (!n){ el.textContent=''; personagens=[]; renderOrdem(); return; }
   el.innerHTML = '✅ <b>'+n+' imagem(ns)</b> → '+n+' cena(s) de 8s = vídeo de <b>'+(n*8)+'s</b>.' + (n<MAX_FUNDO ? ' Pode subir até '+MAX_FUNDO+'.' : '');
   // mantém o que já existe pra cada índice e ajusta o tamanho das listas
   personagens.length = n;
   for (let i=0;i<n;i++){ if(!personagens[i]) personagens[i]={ img:null, ajuste:'', loading:false }; }
-  if (refIdx >= n) refIdx = 0;
-  renderRefChips(); renderOrdem();
+  renderOrdem();
 }
 
 // ── Colar (Ctrl+V) imagem do cliente direto no passo 2 (funciona em toda a página) ──
@@ -485,8 +488,11 @@ async function gerarRoteiro(){
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName){ toast('✍️ Coloque o nome do cliente.'); return; }
   if (!fotos.fundo.length){ toast('🖼️ Suba de 1 a 4 imagens do cliente.'); return; }
-  if (modo==='historia' && !(document.getElementById('ideiaCliente').value||'').trim()
-      && !confirm('No modo História a ideia é o que guia tudo, e ela está em branco.\n\nDeixar a IA inventar a história sozinha?')) return;
+  if (modo==='historia'){
+    if (!fotos.pers.filter(Boolean).length){ toast('👥 Suba a foto de pelo menos 1 personagem (passo 5).'); return; }
+    if (!(document.getElementById('ideiaCliente').value||'').trim()
+        && !confirm('No modo História a ideia é o que guia tudo, e ela está em branco.\n\nDeixar a IA inventar a história sozinha?')) return;
+  }
 
   const btn = document.getElementById('btnRoteiro'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando as histórias...';
@@ -494,7 +500,9 @@ async function gerarRoteiro(){
     clientName,
     emocao,
     ideiaPropria: (document.getElementById('ideiaCliente').value||'').trim(),
-    modo, refIdx,
+    modo,
+    personagens: fotos.pers.filter(Boolean).map(function(p,k){ return { nome:(persNomes[k]||'').trim() }; }),
+    personagensFotos: fotos.pers.filter(Boolean).map(function(p){ return { base64:p.base64, mimeType:p.mimeType }; }),
     // as FOTOS ORIGINAIS: a história é escrita antes de desenhar as cenas
     fundo: fotos.fundo.map(function(f){ return { base64:f.base64, mimeType:f.mimeType }; })
   };
@@ -503,6 +511,7 @@ async function gerarRoteiro(){
     const d = await r.json();
     if (!d.ok){ toast('⚠️ '+(d.error||'Erro ao criar as histórias')); return; }
     historias = (d.historias && d.historias.length) ? d.historias : [{ titulo:d.titulo, cenas:d.cenas }];
+    persDesc = Array.isArray(d.personagens) ? d.personagens : [];   // descrição visual de quem fala
     segDurGlobal = d.segDur || 8;
     historiaIdx = -1; prodCenas = [];
     renderHistorias();
@@ -538,28 +547,68 @@ function renderModoUI(){
     ? 'Conte a história: <b>quem é quem</b> (pela roupa/cor), o <b>jeito de cada um</b> e o que acontece. As emoções saem daqui — podem ser diferentes por personagem e mudar no fim.'
     : 'Cole a ideia do cliente. A IA usa como <b>conceito do vídeo</b> e decide as ações de cada cena. Em branco, ela cria sozinha a partir das imagens.';
   document.getElementById('imagensHint').innerHTML =
-    'Suba de <b>1 a 4 imagens</b>. Cada uma vira uma <b>cena de 8s</b>. ' +
-    (hist ? 'Marque abaixo qual foto tem <b>as pessoas</b>; as outras são só <b>cenários</b> — os personagens serão desenhados dentro delas. '
-          : 'Cada foto tem seu próprio personagem. ') +
+    (hist ? 'Suba de <b>1 a 4 fotos dos CENÁRIOS</b> (os ambientes, sem as pessoas). Cada uma vira uma <b>cena de 8s</b> — os personagens do passo 5 serão desenhados dentro delas. '
+          : 'Suba de <b>1 a 4 imagens</b>. Cada uma vira uma <b>cena de 8s</b> e tem seu próprio personagem. ') +
     '👆 Segure e arraste pra <b>mudar a ordem</b>.<br>📐 Pode mandar foto <b>deitada</b>: vira <b>vertical (9:16)</b> sem cortar — a IA estende o próprio ambiente.';
   // a emoção em botões só faz sentido no modo mascote (na história ela vem do texto da ideia)
   document.getElementById('stepEmocao').style.display = hist ? 'none' : 'block';
-  document.getElementById('refBox').style.display = (hist && fotos.fundo.length) ? 'block' : 'none';
+  document.getElementById('stepPers').style.display   = hist ? 'block' : 'none';
   // renumera os passos visíveis
   document.getElementById('numEmocao').textContent  = '4';
   document.getElementById('numImagens').textContent = hist ? '4' : '5';
-  document.getElementById('numTrilha').textContent  = hist ? '5' : '6';
-  renderRefChips();
+  document.getElementById('numPers').textContent    = '5';
+  document.getElementById('numTrilha').textContent  = '6';
+  renderPersSlots();
 }
-function renderRefChips(){
-  const box = document.getElementById('refChips'); if(!box) return;
+// ── Personagens: 1 foto SEPARADA por personagem + nome. Sem isso a IA troca quem é quem. ──
+function renderPersSlots(){
+  const box = document.getElementById('persSlots'); if(!box) return;
   box.innerHTML='';
-  if(refIdx >= fotos.fundo.length) refIdx = 0;
-  fotos.fundo.forEach(function(f,i){
-    const d=document.createElement('div'); d.className='chip'+(i===refIdx?' on':'');
-    d.textContent='Foto '+(i+1); d.onclick=function(){ refIdx=i; renderRefChips(); };
-    box.appendChild(d);
+  for(let i=0;i<2;i++){
+    const f = fotos.pers[i];
+    const div = document.createElement('div'); div.className='pers-item';
+    div.innerHTML =
+      '<div style="display:flex;gap:.7rem;align-items:flex-start">'+
+        (f ? '<img src="'+f.thumbUrl+'" style="width:70px;height:94px;object-fit:cover;border-radius:8px;border:.5px solid var(--border);flex:0 0 auto"/>'
+           : '<div style="width:70px;height:94px;flex:0 0 auto;border-radius:8px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:11px;text-align:center">sem foto</div>')+
+        '<div style="flex:1;min-width:0">'+
+          '<span class="cena-badge">PERSONAGEM '+(i+1)+'</span>'+
+          '<div class="mini">Nome</div>'+
+          '<input type="text" data-pn="'+i+'" placeholder="Ex: '+(i===0?'Gegê':'Tiagão')+'" value="'+escAttr(persNomes[i]||'')+'"/>'+
+          '<label class="up-btn" style="margin-top:.5rem">'+(f?'🔄 Trocar foto':'+ Foto do personagem')+
+            '<input type="file" accept="image/*" hidden onchange="onPickPers(event,'+i+')"/></label>'+
+          (f ? '<button class="btn-ghost" style="width:100%;margin-top:.4rem" onclick="removerPers('+i+')">✕ Remover</button>' : '')+
+        '</div>'+
+      '</div>';
+    box.appendChild(div);
+  }
+  box.querySelectorAll('[data-pn]').forEach(function(el){
+    el.addEventListener('input', function(){ persNomes[+el.dataset.pn] = el.value; });
   });
+}
+async function onPickPers(ev, i){
+  const file = (ev.target.files||[])[0]; ev.target.value='';
+  if(!file) return;
+  try {
+    fotos.pers[i] = await fileToOptimizedImage(file);
+    invalidarCenas('trocou a foto do personagem');
+    renderPersSlots();
+  } catch(e){ toast('⚠️ Não consegui ler a imagem'); }
+}
+function removerPers(i){
+  fotos.pers.splice(i,1);
+  invalidarCenas('removeu um personagem');
+  renderPersSlots();
+}
+// Qualquer mudança nos personagens invalida as cenas já desenhadas (elas usam esses rostos).
+function invalidarCenas(motivo){
+  const tinha = personagens.some(function(p){ return p && p.img; }) || prodCenas.some(function(c){ return c && c.img; });
+  persCartoon = [];
+  if(!tinha) return;
+  personagens.forEach(function(p){ if(p) p.img=null; });
+  prodCenas.forEach(function(c){ if(c) c.img=null; });
+  if(historiaIdx>=0) renderProducao();
+  toast('🎭 As cenas precisam ser desenhadas de novo ('+motivo+').');
 }
 
 // ── Emoção (só no modo mascote). Vem ANTES das imagens porque o personagem é desenhado JÁ com essa cara —
@@ -585,14 +634,12 @@ function renderOrdem(){
   box.innerHTML='';
   if(!fotos.fundo.length) return;
   fotos.fundo.forEach(function(f,i){
-    const ehRef = (modo==='historia' && i===refIdx);
     const div = document.createElement('div'); div.className='ord-item'; div.setAttribute('data-idx', i);
     div.innerHTML =
       '<span class="pers-grip" title="Segure e arraste pra mudar a ordem">⠿</span>'+
       '<img class="ord-thumb" src="'+f.thumbUrl+'"/>'+
       '<div style="flex:1;min-width:0">'+
         '<span class="cena-badge">CENA '+(i+1)+'</span>'+
-        (ehRef ? '<div class="hist-amb">👥 é daqui que saem os personagens</div>' : '')+
       '</div>';
     box.appendChild(div);
   });
@@ -607,11 +654,9 @@ function initOrdemDrag(){
     onEnd:function(){
       const ordem = Array.from(box.querySelectorAll('.ord-item')).map(el=>+el.getAttribute('data-idx'));
       if(ordem.length !== fotos.fundo.length) return;
-      const novoRef = ordem.indexOf(refIdx);           // a foto dos personagens acompanha a mudança
       fotos.fundo = ordem.map(i=>fotos.fundo[i]);
       personagens = ordem.map(i=>personagens[i]);
-      if(novoRef >= 0) refIdx = novoRef;
-      renderThumbs('fundo');   // já chama updateFundoInfo → renderOrdem + renderRefChips
+      renderThumbs('fundo');   // já chama updateFundoInfo → renderOrdem
       toast('↔ Ordem das cenas atualizada.');
     } });
 }
@@ -619,24 +664,18 @@ function initOrdemDrag(){
 // ── Desenhar as cenas (depois da história aprovada, já com a ação de cada uma) ──
 // Modo história: a cena de REFERÊNCIA (a foto com as pessoas) é feita PRIMEIRO; as outras usam ela
 // como referência dos personagens, pra serem sempre as mesmas pessoas.
+// Cada cena é INDEPENDENTE: recebe a foto de cada personagem + a foto do cenário. Por isso todas
+// podem ser desenhadas ao mesmo tempo, e os personagens nunca trocam de papel entre as cenas.
 async function gerarTodasCenas(forcar){
   if(!prodCenas.length){ toast('Escolha uma história primeiro.'); return; }
   const btn=document.getElementById('btnGenCenas'); const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Desenhando…'; }
   try {
     if(forcar) prodCenas.forEach(function(c,i){ c.img=null; if(personagens[i]) personagens[i].img=null; });
-    if(modo === 'historia'){
-      const r = Math.min(refIdx, prodCenas.length-1);
-      if(!prodCenas[r].img){ if(btn) btn.innerHTML='<span class="spin"></span>Desenhando os personagens…'; await gerarCenaImg(r); }
-      if(!prodCenas[r].img){ toast('⚠️ Não deu pra desenhar os personagens — tente de novo.'); return; }
-      const outras = prodCenas.map(function(c,i){ return i; }).filter(function(i){ return i!==r && !prodCenas[i].img; });
-      if(outras.length){
-        if(btn) btn.innerHTML='<span class="spin"></span>Colocando os personagens nas cenas…';
-        await Promise.all(outras.map(function(i){ return gerarCenaImg(i); }));
-      }
-    } else {
-      const pend = prodCenas.map(function(c,i){ return i; }).filter(function(i){ return !prodCenas[i].img; });
-      if(pend.length) await Promise.all(pend.map(function(i){ return gerarCenaImg(i); }));
+    const pend = prodCenas.map(function(c,i){ return i; }).filter(function(i){ return !prodCenas[i].img; });
+    if(pend.length){
+      if(btn) btn.innerHTML='<span class="spin"></span>Desenhando '+pend.length+' cena(s)…';
+      await Promise.all(pend.map(function(i){ return gerarCenaImg(i); }));
     }
     const ok = prodCenas.filter(function(c){ return c.img; }).length;
     toast(ok===prodCenas.length ? '✅ Cenas prontas! Confira antes de produzir.'
@@ -651,10 +690,13 @@ async function gerarCenaImg(i){
   c.loading = true; renderProducao();
   try {
     const body = { modo, foto:{ base64:f.base64, mimeType:f.mimeType }, ajuste:p.ajuste||'', visualEn:c.visualEn||'', emocao };
-    // modo história: cenas que NÃO são a de referência recebem o desenho dos personagens
-    if(modo==='historia' && i!==Math.min(refIdx, prodCenas.length-1)){
-      const ref = prodCenas[Math.min(refIdx, prodCenas.length-1)];
-      if(ref && ref.img) body.refBase64 = ref.img;
+    // modo história: manda a foto de CADA personagem com o nome e o que ELE faz nesta cena
+    if(modo==='historia'){
+      body.refs = fotos.pers.filter(Boolean).map(function(pf,k){
+        return { base64: pf.base64,
+                 nome: (persNomes[k]||'').trim() || ('Personagem '+(k+1)),
+                 acaoEn: (k===0 ? (c.acaoP1En||'') : (c.acaoP2En||'')) };
+      });
     }
     const r = await api('/promoPersonagem', { method:'POST', body: JSON.stringify(body) });
     const d = await r.json();
@@ -711,15 +753,15 @@ function copiarHistorias(){
 // ── Aprovar uma história → monta os prompts (grátis) e gera as 4 imagens pra conferência ──
 async function escolherHistoria(hi){
   historiaIdx = hi;
-  roteiro = { titulo: historias[hi].titulo, cenas: historias[hi].cenas.map(function(c){ return { fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente }; }), segDur: segDurGlobal };
+  roteiro = { titulo: historias[hi].titulo, cenas: historias[hi].cenas.map(function(c){ return { fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente, acaoP1En:c.acaoP1En, acaoP2En:c.acaoP2En, quemFala:c.quemFala }; }), segDur: segDurGlobal };
   renderHistorias();
   try {
-    const r = await api('/promoPrompts', { method:'POST', body: JSON.stringify({ roteiro:{ cenas: roteiro.cenas }, emocao }) });
+    const r = await api('/promoPrompts', { method:'POST', body: JSON.stringify({ roteiro:{ cenas: roteiro.cenas }, emocao, personagens: persDesc }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao montar os prompts.');
     prodCenas = roteiro.cenas.map(function(c,i){
       const p = personagens[i];
-      return { fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente, img:(p&&p.img)||null, prompt:(d.prompts&&d.prompts[i])||'', loading:false };
+      return { fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente, acaoP1En:c.acaoP1En, acaoP2En:c.acaoP2En, quemFala:c.quemFala, img:(p&&p.img)||null, prompt:(d.prompts&&d.prompts[i])||'', loading:false };
     });
   } catch(e){ toast('⚠️ '+e.message); return; }
   document.getElementById('producaoWrap').style.display='block';
@@ -758,18 +800,8 @@ function renderProducao(){
   });
 }
 
-// Refaz SÓ uma cena. No modo história, refazer a cena de REFERÊNCIA muda os personagens de todas —
-// então avisa e limpa as outras pra serem redesenhadas com os personagens novos.
-async function refazerCenaProd(i){
-  const r = Math.min(refIdx, prodCenas.length-1);
-  if(modo==='historia' && i===r){
-    const outras = prodCenas.filter(function(c,k){ return k!==r && c.img; }).length;
-    if(outras && !confirm('Esta é a cena de onde saem os personagens.\n\nRefazer ela obriga a redesenhar as outras '+outras+' cena(s) também. Continuar?')) return;
-    prodCenas.forEach(function(c,k){ if(k!==r){ c.img=null; if(personagens[k]) personagens[k].img=null; } });
-  }
-  await gerarCenaImg(i);
-  if(modo==='historia' && i===r) await gerarTodasCenas(false);
-}
+// Refaz SÓ uma cena — as cenas são independentes, então isso não afeta as outras.
+async function refazerCenaProd(i){ await gerarCenaImg(i); }
 function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} document.body.removeChild(ta); }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1079,13 +1111,16 @@ async function gerarNovoRoteiro(){
     baseRoteiro:{ cenas: historias[0].cenas },   // manda a 1ª como "o que EVITAR" pra vir diferente
     emocao,
     ideiaPropria: (document.getElementById('ideiaCliente').value||'').trim(),
-    modo, refIdx,
+    modo,
+    personagens: fotos.pers.filter(Boolean).map(function(p,k){ return { nome:(persNomes[k]||'').trim() }; }),
+    personagensFotos: fotos.pers.filter(Boolean).map(function(p){ return { base64:p.base64, mimeType:p.mimeType }; }),
     fundo: fotos.fundo.map(function(f){ return { base64:f.base64, mimeType:f.mimeType }; }) };
   try {
     const r=await api('/promoRoteiro',{ method:'POST', body:JSON.stringify(payload) });
     const d=await r.json();
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     historias = (d.historias && d.historias.length) ? d.historias : [{ titulo:d.titulo, cenas:d.cenas }];
+    persDesc = Array.isArray(d.personagens) ? d.personagens : [];   // descrição visual de quem fala
     segDurGlobal = d.segDur || 8;
     historiaIdx = -1; prodCenas = [];
     document.getElementById('producaoWrap').style.display='none';   // as cenas antigas não valem mais
@@ -1170,7 +1205,8 @@ async function gerarVideo(){
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enviando...';
   const stEl = document.getElementById('videoStatus'); stEl.style.display='block'; stEl.textContent='Enviando o pedido…';
   const payload = {
-    clientName, emocao, modo, refIdx,
+    clientName, emocao, modo,
+    personagens: persDesc,   // nome + descrição visual de cada personagem (quem fala)
     roteiro: { titulo: roteiro.titulo, cenas: roteiro.cenas.map(c=>({ fala:c.fala, visual:c.visual, visualEn:c.visualEn, ambiente:c.ambiente })) },
     // personagens e prompts JÁ conferidos na tela → a pipeline não regera nada disso
     cenasBase64:    prodCenas.map(c=>c.img||null),
