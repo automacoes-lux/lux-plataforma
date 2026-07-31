@@ -61,6 +61,29 @@ body{
 
 .form-grid{display:grid;gap:1.2rem}
 
+/* ── Seletor de tipo de música (Empresas × Política) ── */
+.tipo-selector{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;
+}
+.tipo-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  background:#0E0E0E;border:1px solid var(--border);
+  color:var(--text-dim);padding:13px 10px;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .15s;text-align:center;line-height:1.25;
+}
+.tipo-btn:hover{border-color:var(--gold-dim);color:var(--text)}
+.tipo-btn.active{
+  background:rgba(201,168,76,0.12);border-color:var(--gold);
+  color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;
+}
+.tipo-btn .tipo-emoji{font-size:16px;line-height:1}
+.tipo-hint{font-size:12.5px;color:var(--text-dim);line-height:1.45;padding-left:2px}
+@media(max-width:430px){
+  .tipo-btn{font-size:12.5px;padding:12px 6px;gap:5px}
+  .tipo-hint{font-size:12px}
+}
+
 .field label{
   display:block;font-size:14px;font-weight:600;letter-spacing:.1em;
   color:var(--gold-dim);margin-bottom:6px;text-transform:uppercase;
@@ -593,6 +616,19 @@ body{
     <div class="form-grid">
 
       <div class="field">
+        <label>🎯 Tipo de Música</label>
+        <div class="tipo-selector">
+          <button type="button" class="tipo-btn active" data-tipo="empresa">
+            <span class="tipo-emoji">🏢</span> Música para Empresas
+          </button>
+          <button type="button" class="tipo-btn" data-tipo="politica">
+            <span class="tipo-emoji">🗳️</span> Música para Política
+          </button>
+        </div>
+        <div class="tipo-hint" id="tipoHint"></div>
+      </div>
+
+      <div class="field">
         <label>Briefing</label>
         <div class="textarea-wrap">
           <button type="button" class="btn-clear-text" id="btnClearBriefing" title="Apagar tudo">🗑️</button>
@@ -749,6 +785,40 @@ function attachClearTextButton(textareaId, buttonId) {
 }
 attachClearTextButton('briefing',   'btnClearBriefing');
 attachClearTextButton('instrucoes', 'btnClearInstrucoes');
+
+// ── SELETOR DE TIPO DE MÚSICA (Empresas × Política) ───────────
+// 'empresa' = prompt comercial (PADRÃO). 'politica' = jingle de
+// campanha: o Worker troca o system prompt (nome + número do
+// candidato por extenso, refrão memorável, sem ataque a adversário).
+let tipoMusica = 'empresa';
+
+const TIPO_UI = {
+  empresa: {
+    hint: 'Jingle comercial: produto, serviço, diferenciais, endereço e telefone do cliente.',
+    placeholder: 'Conte sobre o cliente, produtos, serviços, mensagem, endereço, telefone, diferenciais...'
+  },
+  politica: {
+    hint: 'Jingle de campanha: informe o <strong>nome de urna</strong>, o <strong>NÚMERO</strong>, o cargo e a cidade. O número sai cantado por extenso.',
+    placeholder: 'Ex: Vote para deputado estadual Jubilei 33223, em Natal. Mensagem: trabalho, esporte e luta contra a violência...'
+  }
+};
+
+function setTipoMusica(novo) {
+  tipoMusica = (novo === 'politica') ? 'politica' : 'empresa';
+  document.querySelectorAll('.tipo-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tipo === tipoMusica);
+  });
+  const ui   = TIPO_UI[tipoMusica];
+  const hint = document.getElementById('tipoHint');
+  const bf   = document.getElementById('briefing');
+  if (hint) hint.innerHTML   = ui.hint;
+  if (bf)   bf.placeholder   = ui.placeholder;
+}
+
+document.querySelectorAll('.tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => setTipoMusica(btn.dataset.tipo));
+});
+setTipoMusica('empresa'); // padrão ao abrir a ferramenta
 
 const imageInput   = document.getElementById('imageInput');
 const imagePreview = document.getElementById('imagePreview');
@@ -1206,7 +1276,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
   status.textContent = 'Gerando letra com IA... pode levar até 30 segundos.';
 
   try {
-    const body = { briefing, ritmo, instrucoes };
+    const body = { briefing, ritmo, instrucoes, tipo: tipoMusica };
     if (compressedImage) {
       body.imageBase64 = compressedImage.base64;
       body.imageMime   = compressedImage.mime;
@@ -1233,6 +1303,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
       ritmo,
       clientName: data.result.nome_negocio || '',
       result:     data.result,
+      tipo:       tipoMusica,
       hasImage:   !!compressedImage,
       costBRL:    data.costBRL ?? null
     };
@@ -1523,6 +1594,7 @@ async function regenerateBlock(blockName, btn) {
         sectionName: sections[idx].name,
         lyrics:      currentOrder.result.lyrics,
         briefing:    currentOrder.briefing,
+        tipo:        currentOrder.tipo || 'empresa',
         instrucoes:  getCombinedInstructions()
       })
     });
@@ -1589,6 +1661,7 @@ async function modifyExcerpt() {
         excerpt:    trecho,
         lyrics:     letraAtual,
         briefing:   currentOrder.briefing || '',
+        tipo:       currentOrder.tipo || 'empresa',
         instrucoes: getCombinedInstructions()
       })
     });
@@ -1771,6 +1844,9 @@ function redoOrder() {
   document.getElementById('instrucoes').value = currentOrder.instrucoes || '';
   document.getElementById('ritmo').value      = currentOrder.ritmo      || '';
 
+  // Reaplica o tipo do pedido antigo (empresa/política)
+  setTipoMusica(currentOrder.tipo || 'empresa');
+
   // Atualiza estado visual do botão ⭐ (favoritos)
   if (typeof updateSaveButtonState === 'function') updateSaveButtonState();
 
@@ -1858,6 +1934,7 @@ function resetForm() {
   document.getElementById('briefing').value = '';
   document.getElementById('instrucoes').value = '';
   document.getElementById('ritmo').value = '';
+  setTipoMusica('empresa'); // volta pro padrão
   compressedImage = null;
   imageInput.value = '';
   imagePreview.classList.remove('has-img');
@@ -2000,6 +2077,7 @@ async function openHistoryOrder(orderId) {
       ritmo:      o.ritmo,
       clientName: o.clientName,
       result:     o.result,
+      tipo:       o.tipo || 'empresa',
       hasImage:   !!o.hasImage,
       costBRL:    o.costBRL ?? null
     };
