@@ -109,7 +109,7 @@ body{
 .card-hint{font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:1rem}
 .edit-lock{display:none;background:rgba(220,80,80,.1);border:1px solid rgba(220,80,80,.45);border-radius:10px;padding:11px 13px;margin:6px 0 10px;font-size:12.5px;color:#E87A7A;font-weight:600;line-height:1.55}
 .edit-lock.show{display:block}
-.avatar-tipo-seg{display:flex;gap:8px;margin-bottom:14px}
+.avatar-tipo-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .avatar-tipo-seg .seg-btn{flex:1;padding:11px 8px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:var(--bg-input);border:1px solid var(--border-bright);color:var(--text-dim);transition:border-color .15s,color .15s,background .15s}
 .avatar-tipo-seg .seg-btn:hover{border-color:var(--gold);color:var(--gold)}
 .avatar-tipo-seg .seg-btn.active{background:rgba(201,168,76,.14);border-color:var(--gold);color:var(--gold)}
@@ -402,6 +402,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <button type="button" class="seg-btn active" data-tipo="pessoa" onclick="setAvatarTipo('pessoa')">🧑 Pessoa</button>
         <button type="button" class="seg-btn" data-tipo="dupla" onclick="setAvatarTipo('dupla')">👥 Dupla</button>
         <button type="button" class="seg-btn" data-tipo="personagem" onclick="setAvatarTipo('personagem')">🍢 Personagem</button>
+        <button type="button" class="seg-btn" data-tipo="personagemDupla" onclick="setAvatarTipo('personagemDupla')">🎭 Personagem Dupla</button>
       </div>
 
       <div class="card-hint" id="avatarHint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
@@ -859,7 +860,7 @@ function renderClientPhoto() {
   }
   row.innerHTML =
     '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Foto do cliente"/>' +
-    '<div class="tag">' + (avatarTipo === 'dupla' ? 'Pessoa 1' : 'Cantor(a)') + '</div>' +
+    '<div class="tag">' + (avatarTipo === 'dupla' ? 'Pessoa 1' : avatarTipo === 'personagemDupla' ? '1º' : 'Cantor(a)') + '</div>' +
     '<button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
 }
 function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
@@ -879,13 +880,16 @@ async function setClientPhoto2FromFile(file) {
 }
 function renderClientPhoto2() {
   const row = document.getElementById('clientPhoto2Row'); if (!row) return;
+  const ehPersDupla = (avatarTipo === 'personagemDupla');
+  const lblEmpty = ehPersDupla ? '2ª foto — pessoa ou personagem (opcional)' : '2ª pessoa (opcional)';
+  const tag = ehPersDupla ? '2º' : 'Pessoa 2';
   if (!clientPhoto2) {
-    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhoto2Input\').click()"><span class="big">🧑‍🤝‍🧑</span><span>2ª pessoa (opcional)</span></div>';
+    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhoto2Input\').click()"><span class="big">🧑‍🤝‍🧑</span><span>' + lblEmpty + '</span></div>';
     return;
   }
   row.innerHTML =
-    '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="2ª pessoa"/>' +
-    '<div class="tag">Pessoa 2</div>' +
+    '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="2ª foto"/>' +
+    '<div class="tag">' + tag + '</div>' +
     '<button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
 }
 function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
@@ -902,7 +906,7 @@ function refreshAvatarUI() {
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
-  const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = (avatarTipo === 'dupla') ? '' : 'none';   // 2ª foto só na Dupla
+  const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? '' : 'none';   // 2ª foto nas duplas (Dupla e Personagem Dupla)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
   const okBadge = document.getElementById('avatarApproved');
@@ -969,22 +973,27 @@ function normalizarAvatarPes(b64) {
 const AVATAR_HINTS = {
   pessoa: 'Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).',
   personagem: 'Foto do <b style="color:var(--text-mid)">produto ou personagem</b> que vai cantar (espetinho, fruta, pizza, sorvete…). A IA mantém as características originais — <b style="color:var(--text-mid)">logo, cores, formato e tudo que estiver na imagem</b> — só adiciona rosto, braços, pernas e o microfone, e cria o mascote cantando de corpo inteiro. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).',
-  dupla: 'Duas pessoas cantando <b style="color:var(--text-mid)">juntas, lado a lado</b>, cada uma com microfone. Você tem <b style="color:var(--text-mid)">2 formas</b>: enviar <b style="color:var(--text-mid)">1 foto com os dois juntos</b>, OU enviar <b style="color:var(--text-mid)">1 foto de cada pessoa</b> (use o 2º espaço que aparece). Corpo inteiro nas duas, com os pés à mostra. A IA preserva os dois rostos e as roupas.'
+  dupla: 'Duas pessoas cantando <b style="color:var(--text-mid)">juntas, lado a lado</b>, cada uma com microfone. Você tem <b style="color:var(--text-mid)">2 formas</b>: enviar <b style="color:var(--text-mid)">1 foto com os dois juntos</b>, OU enviar <b style="color:var(--text-mid)">1 foto de cada pessoa</b> (use o 2º espaço que aparece). Corpo inteiro nas duas, com os pés à mostra. A IA preserva os dois rostos e as roupas.',
+  personagemDupla: 'Dois cantando <b style="color:var(--text-mid)">lado a lado</b>, cada um com microfone — pode <b style="color:var(--text-mid)">misturar</b>: pessoa + personagem, ou dois personagens (ex.: gato + cachorro, ou dois mascotes). A IA <b style="color:var(--text-mid)">preserva cada foto do jeito que é</b> (pessoa continua pessoa, personagem continua personagem), só coloca cantando de corpo inteiro. <b style="color:var(--text-mid)">2 formas</b>: 1 foto com os dois juntos, OU 1 foto de cada (use o 2º espaço que aparece).'
 };
 function setAvatarTipo(t) {
   if (editState) return;   // no modo edição o avatar é travado (vem do original)
-  avatarTipo = (t === 'personagem') ? 'personagem' : (t === 'dupla') ? 'dupla' : 'pessoa';
+  avatarTipo = ['pessoa', 'dupla', 'personagem', 'personagemDupla'].includes(t) ? t : 'pessoa';
   document.querySelectorAll('#avatarTipoSeg .seg-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('data-tipo') === avatarTipo);
   });
-  const ehPers = (avatarTipo === 'personagem'), ehDupla = (avatarTipo === 'dupla');
+  const ehPers = (avatarTipo === 'personagem'), ehDupla = (avatarTipo === 'dupla'), ehPersDupla = (avatarTipo === 'personagemDupla');
+  const ehDuo = ehDupla || ehPersDupla;   // qualquer dupla usa a 2ª foto (image[])
   const hint = document.getElementById('avatarHint'); if (hint) hint.innerHTML = AVATAR_HINTS[avatarTipo];
-  const ic = document.getElementById('clientPhotoIcon'); if (ic) ic.textContent = ehPers ? '🍢' : ehDupla ? '👥' : '🧑‍🎤';
-  const lb = document.getElementById('clientPhotoLabel'); if (lb) lb.textContent = ehPers ? 'Enviar ou colar a foto do produto' : ehDupla ? 'Foto dos dois (ou da 1ª pessoa)' : 'Enviar ou colar a foto';
-  // o 2º espaço de foto só aparece na Dupla; ao sair da Dupla, descarta a 2ª foto
-  const row2 = document.getElementById('clientPhoto2Row'); if (row2) row2.style.display = ehDupla ? '' : 'none';
-  if (!ehDupla && clientPhoto2) { clientPhoto2 = null; renderClientPhoto2(); avatarPreview = null; }
-  const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = ehPers
+  const ic = document.getElementById('clientPhotoIcon'); if (ic) ic.textContent = ehPersDupla ? '🎭' : ehPers ? '🍢' : ehDupla ? '👥' : '🧑‍🎤';
+  const lb = document.getElementById('clientPhotoLabel'); if (lb) lb.textContent = ehPersDupla ? 'Foto dos dois (ou do 1º)' : ehPers ? 'Enviar ou colar a foto do produto' : ehDupla ? 'Foto dos dois (ou da 1ª pessoa)' : 'Enviar ou colar a foto';
+  // o 2º espaço de foto aparece em QUALQUER dupla; ao sair, descarta a 2ª foto
+  const row2 = document.getElementById('clientPhoto2Row'); if (row2) row2.style.display = ehDuo ? '' : 'none';
+  renderClientPhoto2();   // atualiza o rótulo do 2º espaço conforme o tipo (pessoa × pessoa/personagem)
+  if (!ehDuo && clientPhoto2) { clientPhoto2 = null; renderClientPhoto2(); avatarPreview = null; }
+  const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = ehPersDupla
+    ? 'A IA cria os DOIS cantando lado a lado (pessoa e/ou personagem), preservando cada foto do jeito que é. Você confere antes de continuar.'
+    : ehPers
     ? 'A IA transforma o produto num personagem cantando, mantendo as características originais. Você confere antes de continuar.'
     : ehDupla
     ? 'A IA cria os DOIS cantando lado a lado, cada um com microfone, preservando os rostos e as roupas. Você confere antes de continuar.'
@@ -993,14 +1002,14 @@ function setAvatarTipo(t) {
 }
 
 async function gerarAvatar() {
-  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : avatarTipo === 'dupla' ? 'Envie a foto (dos dois juntos, ou da 1ª pessoa) primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
+  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? 'Envie a foto (dos dois juntos, ou a 1ª) primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
     const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
-    if (avatarTipo === 'dupla' && clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };
+    if ((avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') && clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
