@@ -70,6 +70,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .c-ideal{background:rgba(90,190,120,.16);color:#6FD08C}
 .c-longa{background:rgba(230,90,90,.16);color:#E87070}
 .est{font-size:11.5px;color:var(--text-dim);background:var(--bg-input);border-radius:6px;padding:.4rem .55rem;margin-top:.4rem;line-height:1.45;word-break:break-word}
+.alerta{background:rgba(230,90,90,.12);border:.5px solid rgba(230,90,90,.5);color:#E87070;border-radius:var(--radius);padding:.55rem .7rem;margin-top:.5rem;font-size:12.5px;line-height:1.45}
+.prog-item{display:flex;align-items:center;gap:.6rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .7rem;margin-bottom:.45rem;font-size:13px;color:var(--text-mid)}
 /* imagens/vídeos */
 .cena-img{width:100%;max-width:190px;border-radius:10px;border:.5px solid var(--border);display:block;margin:0 auto .4rem;background:var(--bg-input)}
 .cena-ph{width:100%;max-width:190px;aspect-ratio:2/3;border-radius:10px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;text-align:center;padding:.5rem;margin:0 auto .4rem}
@@ -103,12 +105,12 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <!-- ══ PASSO 1 — O PRODUTO (foto → a IA lê e sugere → você descreve) ══ -->
   <div class="step">
-    <div class="step-head"><div class="step-num">1</div><div class="step-title">O produto</div></div>
+    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Produto</div></div>
     <div class="mini">Cliente / empresa</div>
     <input type="text" id="fCliente" placeholder="Ex: Body Club Fitness"/>
 
     <div class="mini" style="margin-top:.9rem">Foto do produto <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">Suba a foto do que vai ser divulgado. A IA lê a imagem e te diz o que dá pra anunciar ali.</div>
+    <div class="step-hint">Suba a foto do que vai ser divulgado.</div>
     <div class="thumbs" id="thProduto"></div>
     <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
 
@@ -117,12 +119,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div id="boxDescricao" class="hide">
       <div class="mini">O que exatamente você quer divulgar nessa imagem? <span style="color:var(--gold)">*</span></div>
       <textarea id="fBriefing" style="min-height:100px" placeholder="Ex: a regata dry fit — tecido leve, seca rápido e não gruda no corpo mesmo no treino pesado"></textarea>
-      <div class="soon-note">⚠️ A IA <b>nunca inventa</b> preço, promoção ou característica que você não escreveu aqui.</div>
     </div>
   </div>
 
   <button class="btn-gold" id="btnIdeias" onclick="gerarIdeias()">✨ GERAR 4 IDEIAS</button>
-  <div class="soon-note">A IA cria 4 ângulos publicitários diferentes a partir da sua foto e da sua descrição.</div>
 
   <!-- ══ TELA 3 — 4 IDEIAS ══ -->
   <div id="telaIdeias" class="hide">
@@ -135,10 +135,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ TELA 4 — STORYBOARD ══ -->
   <div id="telaStory" class="hide">
     <div class="sec-title">Passo 3 · 🎬 A história em 4 cenas</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Cada cena tem 8s. A fala precisa ter entre <b>145 e 160 caracteres</b> pra caber no tempo sem arrastar.</div>
     <div id="boxStory"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
-      <button class="btn-ghost" onclick="ajustarTodasFalas()">✨ Ajustar todas as falas</button>
       <button class="btn-ghost" onclick="copiarHistoria()">📋 Copiar história</button>
     </div>
     <button class="btn-gold" id="btnImagens" onclick="gerarImagens()">🎨 GERAR AS 4 IMAGENS</button>
@@ -148,21 +146,16 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ TELA 5 — IMAGENS ══ -->
   <div id="telaImagens" class="hide">
     <div class="sec-title">Passo 4 · 🖼️ Aprove as imagens</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">A cena 1 aprovada vira o <b>Visual Master</b>: as outras reaproveitam o estilo dela pra não haver deriva visual.</div>
     <div id="boxImagens"></div>
   </div>
 
   <!-- ══ TELA 6 — VÍDEOS ══ -->
-  <div id="telaVideos" class="hide">
-    <div class="sec-title">Passo 5 · 🎥 Os 4 clipes de 8s</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Cada clipe anima a imagem aprovada e fala a fala daquela cena. Leva alguns minutos por clipe.</div>
-    <div id="boxVideos"></div>
-  </div>
+  <div id="telaVideos" class="hide"><div id="boxVideos"></div></div>
 
   <!-- ══ TELA 7 — TRILHA ══ -->
   <div id="telaTrilha" class="hide">
     <div class="step">
-      <div class="step-head"><div class="step-num">6</div><div class="step-title">Trilha sonora (32s)</div></div>
+      <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 5 · Trilha sonora (32s)</div></div>
       <div class="step-hint">Escolha uma faixa ou envie uma música. O sistema usa até <b>32 segundos</b> e mantém a trilha abaixo das falas.</div>
       <div id="trilhasGrid" class="trilhas-grid"></div>
       <div class="tsep">— ou envie a sua —</div>
@@ -175,8 +168,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <div class="chip" data-v="medio">🔊 Médio</div>
       </div>
     </div>
-    <button class="btn-gold" id="btnFinal" onclick="finalizar()">✨ FINALIZAR VÍDEO DE 32s</button>
+    <button class="btn-gold" id="btnFinal" onclick="finalizar()">🎬 GERAR VÍDEO</button>
     <div class="soon-note" id="notaFinal"></div>
+    <div id="progresso" style="margin-top:.9rem"></div>
   </div>
 
   <!-- ══ RESULTADO ══ -->
@@ -204,6 +198,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
 const FALA_MIN = 145, FALA_MAX = 160, FALA_IDEAL = [150, 155];
+const FALA_HARD_MIN = 140;   // limite DURO que dispara o alerta vermelho (a geração ainda mira 145-160)
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -347,16 +342,21 @@ function renderIdeias(){
     const d=document.createElement('div'); d.className='cc'+(i===conceitoIdx?' sel':'');
     d.innerHTML =
       '<span class="cc-ang">'+(ROTULO_ANG[c.angle]||c.angle||('IDEIA '+c.id))+'</span>'+
-      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+' — '+esc(c.title)+'</div>'+
-      (c.scene      ?'<div class="cc-lin"><b>[CENA]</b><br>'+esc(c.scene)+'</div>':'')+
-      (c.environment?'<div class="cc-lin"><b>[AMBIENTE]</b><br>'+esc(c.environment)+'</div>':'')+
-      (c.action     ?'<div class="cc-lin"><b>[AÇÃO]</b><br>'+esc(c.action)+'</div>':'')+
-      (c.dialogue   ?'<div class="cc-lin"><b>[FALA]</b><br>“'+esc(c.dialogue)+'”</div>':'')+
+      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+'</div>'+
+      '<input type="text" data-ci="'+i+'" data-cf="title" value="'+escA(c.title)+'" placeholder="Título da ideia"/>'+
+      '<div class="mini">[CENA]</div><textarea data-ci="'+i+'" data-cf="scene" style="min-height:52px">'+esc(c.scene)+'</textarea>'+
+      '<div class="mini">[AMBIENTE]</div><textarea data-ci="'+i+'" data-cf="environment" style="min-height:44px">'+esc(c.environment)+'</textarea>'+
+      '<div class="mini">[AÇÃO]</div><textarea data-ci="'+i+'" data-cf="action" style="min-height:56px">'+esc(c.action)+'</textarea>'+
+      '<div class="mini">[FALA]</div><textarea data-ci="'+i+'" data-cf="dialogue" style="min-height:52px">'+esc(c.dialogue)+'</textarea>'+
       '<div class="btn-row" style="margin-top:.7rem">'+
         '<button class="btn-gold" style="flex:1" onclick="escolherConceito('+i+')">'+(i===conceitoIdx?'✅ Escolhida':'✅ Selecionar')+'</button>'+
         '<button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="trocarConceito('+i+')">🔄 Gerar outra</button>'+
       '</div>';
     box.appendChild(d);
+  });
+  // o atendente pode reescrever qualquer parte da ideia antes de selecionar
+  box.querySelectorAll('[data-ci]').forEach(function(el){
+    el.addEventListener('input', function(){ conceitos[+el.dataset.ci][el.dataset.cf] = el.value; });
   });
 }
 async function trocarConceito(i){
@@ -435,34 +435,35 @@ function renderStory(){
       (s.emotion?('<div class="cc-lin"><b>Emoção:</b> '+esc(s.emotion)+'</div>'):'')+
       '<div class="mini">🗣️ Fala desta cena</div>'+
       '<textarea data-fa="'+i+'" style="min-height:78px">'+esc(s.dialogue)+'</textarea>'+
-      '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.4rem;flex-wrap:wrap">'+
-        '<span class="cont '+e.cls+'" data-cc="'+i+'">'+e.txt+'</span>'+
-        '<button class="btn-ghost" style="flex:0 0 auto;min-width:190px;padding:.45rem .8rem;font-size:12.5px" onclick="ajustarFala('+i+')">✨ Ajustar para 145–160</button>'+
-      '</div>'+
-      (Object.keys(s.final_state||{}).length?('<div class="est"><b>Termina assim →</b> '+esc(JSON.stringify(s.final_state))+'</div>'):'');
+      '<div class="alerta hide" data-al="'+i+'"></div>';
     box.appendChild(d);
   });
   box.querySelectorAll('[data-fa]').forEach(function(el){
     el.addEventListener('input', function(){
       const i=+el.dataset.fa; story.scenes[i].dialogue = el.value;
       story.scenes[i].dialogue_characters = contarCaracteres(el.value);
-      const n=contarCaracteres(el.value), e=estadoFala(n);
-      const tag=document.querySelector('[data-cc="'+i+'"]');
-      if(tag){ tag.className='cont '+e.cls; tag.textContent=e.txt; }
-      el.closest('.sb').classList.toggle('ok', falaValida(el.value));
-      atualizarBotaoImagens();
+      alertaFala(i); atualizarBotaoImagens();
     });
   });
+  story.scenes.forEach(function(s,i){ alertaFala(i); });
   atualizarBotaoImagens();
+}
+// Só aparece quando o atendente ESTOURA o limite — sem contador ocupando a tela.
+function alertaFala(i){
+  const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
+  const n = contarCaracteres(story.scenes[i].dialogue);
+  const card = el.closest('.sb');
+  if(n > FALA_MAX){ el.className='alerta'; el.innerHTML='⛔ Passou do limite: <b>'+n+' caracteres</b>. O máximo é <b>'+FALA_MAX+'</b> — encurte a frase.'; if(card) card.classList.remove('ok'); return; }
+  if(n < FALA_HARD_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta demais: <b>'+n+' caracteres</b>. O mínimo é <b>'+FALA_HARD_MIN+'</b> — alongue a frase.'; if(card) card.classList.remove('ok'); return; }
+  el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
 }
 function atualizarBotaoImagens(){
   if(!story) return;
-  const ruins = story.scenes.filter(s=>!falaValida(s.dialogue)).length;
+  // bloqueia só no limite DURO (140-160); dentro disso segue sem encher a tela de aviso
+  const ruins = story.scenes.filter(s=>{ const n=contarCaracteres(s.dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; }).length;
   const btn=document.getElementById('btnImagens'); const nota=document.getElementById('notaImagens');
   btn.disabled = ruins>0;
-  nota.innerHTML = ruins>0
-    ? ('⛔ '+ruins+' fala(s) fora de 145–160. Corrija ou clique em "Ajustar" pra liberar a produção.')
-    : ('✅ Todas as falas válidas. Cada imagem custa centavos — dá pra refazer só a que não gostar.');
+  nota.innerHTML = ruins>0 ? ('⛔ Corrija a(s) fala(s) marcada(s) em vermelho pra liberar a produção.') : '';
 }
 async function ajustarFala(i, silencioso){
   const s = story.scenes[i]; if(!s) return;
@@ -500,7 +501,8 @@ async function gerarImagens(){
   visualMaster = story.scenes[0].image_url;
   const outras = story.scenes.map((s,i)=>i).filter(i=>i>0 && !story.scenes[i].image_url);
   if(outras.length) await Promise.all(outras.map(i=>gerarImagem(i)));
-  toast('✅ Imagens prontas! Aprove uma a uma.');
+  toast('✅ Imagens prontas! Se gostou, é só gerar o vídeo.');
+  if(story.scenes.every(s=>s.image_url)){ mostrar('telaTrilha'); rolarPara('telaTrilha'); }
 }
 async function gerarImagem(i){
   const s = story.scenes[i]; if(!s) return;
@@ -523,60 +525,28 @@ function renderImagens(){
     const n=contarCaracteres(s.dialogue), e=estadoFala(n);
     const st = s.image_status==='gerando' ? '<span class="stt s-run">⏳ gerando…</span>'
             : s.image_status==='erro'    ? '<span class="stt s-err">⚠️ erro</span>'
-            : s.image_approved           ? '<span class="stt s-ok">✅ aprovada</span>'
-            : s.image_url                ? '<span class="stt s-run">👀 aguardando aprovação</span>'
+            : s.image_url                ? '<span class="stt s-ok">✅ pronta</span>'
             : '<span class="stt s-wait">aguardando</span>';
     const img = s.image_url ? '<img class="cena-img" src="data:image/jpeg;base64,'+s.image_url+'"/>'
                             : '<div class="cena-ph">'+(s.image_status==='gerando'?'⏳ desenhando…':'sem imagem')+'</div>';
-    const d=document.createElement('div'); d.className='sb'+(s.image_approved?' ok':'');
+    const d=document.createElement('div'); d.className='sb'+(s.image_url?' ok':'');
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">'+(PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'</div>'+st+'</div>'+
       img+
       '<div class="cc-lin" style="margin-top:.4rem">🗣️ '+esc(s.dialogue)+'</div>'+
       '<span class="cont '+e.cls+'">'+e.txt+'</span>'+
-      '<div class="btn-row" style="margin-top:.6rem">'+
-        '<button class="btn-gold" style="flex:1" onclick="aprovarImagem('+i+')"'+(!s.image_url||s.image_approved?' disabled':'')+'>✅ Aprovar</button>'+
-        '<button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="gerarImagem('+i+')"'+(s.image_status==='gerando'?' disabled':'')+'>🔄 Gerar de novo</button>'+
-      '</div>'+
       '<div class="mini">✏️ O que mudar nesta imagem (opcional)</div>'+
-      '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>';
+      '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>'+
+      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="gerarImagem('+i+')"'+(s.image_status==='gerando'?' disabled':'')+'>🔄 Gerar de novo</button>';
     box.appendChild(d);
   });
   box.querySelectorAll('[data-aj]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.aj]._ajuste = el.value; }));
 }
-function aprovarImagem(i){
-  const s=story.scenes[i]; if(!s||!s.image_url) return;
-  s.image_approved = true;
-  if(i===0) visualMaster = s.image_url;
-  renderImagens();
-  const faltam = story.scenes.filter(x=>!x.image_approved).length;
-  if(faltam){ toast('✅ Cena '+(i+1)+' aprovada. Faltam '+faltam+'.'); return; }
-  toast('✅ Todas aprovadas! Agora os vídeos.');
-  mostrar('telaVideos'); renderVideos(); rolarPara('telaVideos');
-}
+// Não existe mais botão "aprovar": se o atendente não pediu pra mudar nada, está aprovado.
+// Assim que as 4 imagens existem, o último passo (trilha + gerar vídeo) aparece.
 
 // ══ TELA 6 — VÍDEOS ══
-function renderVideos(){
-  const box=document.getElementById('boxVideos'); box.innerHTML='';
-  story.scenes.forEach(function(s,i){
-    const st = s.video_status==='gerando' ? '<span class="stt s-run">⏳ gerando (2-4 min)…</span>'
-            : s.video_status==='erro'    ? '<span class="stt s-err">⚠️ erro</span>'
-            : s.video_url                ? '<span class="stt s-ok">✅ pronto</span>'
-            : '<span class="stt s-wait">aguardando</span>';
-    const d=document.createElement('div'); d.className='sb'+(s.video_url?' ok':'');
-    d.innerHTML =
-      '<div class="sb-head"><div class="sb-n">'+(PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'</div>'+st+'</div>'+
-      (s.video_url ? '<video src="'+s.video_url+'" controls playsinline></video>'
-                   : (s.image_url ? '<img class="cena-img" src="data:image/jpeg;base64,'+s.image_url+'"/>' : ''))+
-      '<div class="cc-lin" style="margin-top:.4rem">🗣️ '+esc(s.dialogue)+'</div>'+
-      '<div class="btn-row" style="margin-top:.6rem">'+
-        '<button class="btn-gold" style="flex:1" onclick="gerarVideo('+i+')"'+(s.video_status==='gerando'?' disabled':'')+'>'+(s.video_url?'🔄 Gerar de novo':'🎥 GERAR VÍDEO — 8s')+'</button>'+
-      '</div>';
-    box.appendChild(d);
-  });
-  const prontos = story.scenes.filter(s=>s.video_url).length;
-  if(prontos===story.scenes.length){ mostrar('telaTrilha'); }
-}
+function renderVideos(){ pintarProgresso(); }
 async function gerarVideo(i){
   const s=story.scenes[i]; if(!s||!s.image_url){ toast('Aprove a imagem primeiro.'); return; }
   s.video_status='gerando'; s.video_url=''; renderVideos();
@@ -632,14 +602,32 @@ async function onMusica(ev){
 }
 
 // ══ MONTAGEM FINAL ══
+// Um botão só: gera os 4 clipes de 8s e já monta o vídeo de 32s pra download.
+function pintarProgresso(){
+  const box=document.getElementById('progresso'); if(!box||!story) return;
+  box.innerHTML = story.scenes.map(function(s,i){
+    const ic = s.video_url ? '✅' : (s.video_status==='gerando' ? '<span class="spin" style="border-top-color:var(--gold)"></span>' : (s.video_status==='erro' ? '⚠️' : '⏳'));
+    const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando…' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
+    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+'</div>';
+  }).join('') + (montando ? '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo de 32s…</b></div>' : '');
+}
+let montando = false;
 async function finalizar(){
-  const clips = story.scenes.map(s=>s.video_url).filter(Boolean);
-  if(clips.length < story.scenes.length){ toast('🎥 Gere todos os clipes antes.'); return; }
-  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nFinalizar SEM música de fundo?')) return;
+  if(!story || !story.scenes.every(s=>s.image_url)){ toast('🖼️ Gere as imagens antes.'); return; }
+  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
   const btn=document.getElementById('btnFinal'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando…';
-  document.getElementById('notaFinal').textContent='Juntando as 4 cenas, aplicando a trilha e equalizando…';
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
+  document.getElementById('notaFinal').textContent='Isso leva alguns minutos. Pode deixar a aba aberta.';
+  montando=false; pintarProgresso();
   try{
+    // 1) os 4 clipes de 8s, todos ao mesmo tempo
+    const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].video_url);
+    if(faltam.length) await Promise.all(faltam.map(i=>gerarVideo(i)));
+    const clips = story.scenes.map(s=>s.video_url).filter(Boolean);
+    if(clips.length < story.scenes.length) throw new Error('alguma cena não ficou pronta — clique de novo pra tentar as que faltaram');
+    // 2) montagem
+    montando=true; pintarProgresso();
+    btn.innerHTML='<span class="spin"></span>Montando o vídeo…';
     const r = await api('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, musicVolume: volTrilha }) });
     const d = await r.json();
@@ -652,6 +640,8 @@ async function finalizar(){
         videoFinalUrl = d2.url;
         document.getElementById('videoFinal').src = d2.url;
         document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
+        montando=false; pintarProgresso();
+        document.getElementById('notaFinal').textContent='';
         mostrar('telaFinal'); rolarPara('telaFinal'); toast('🎉 Vídeo de 32s pronto!');
         return;
       }
@@ -659,7 +649,7 @@ async function finalizar(){
     }
     throw new Error('a montagem demorou demais');
   } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaFinal').textContent='⚠️ '+e.message; }
-  finally { btn.disabled=false; btn.innerHTML=old; }
+  finally { montando=false; pintarProgresso(); btn.disabled=false; btn.innerHTML=old; }
 }
 function baixarFinal(){
   if(!videoFinalUrl) return;
