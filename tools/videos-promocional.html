@@ -46,6 +46,10 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .mini{font-size:11.5px;color:var(--text-dim);margin:.55rem 0 .2rem}
 .soon-note{font-size:12px;color:var(--text-dim);margin-top:.5rem;line-height:1.45}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
+/* leitura da foto pela IA (passo 1) */
+.leitura{background:var(--bg-input);border:.5px solid var(--border);border-left:2.5px solid var(--gold);border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
+.opt{background:var(--bg-card);border:.5px solid var(--border-bright);color:var(--gold);border-radius:999px;padding:.35rem .8rem;font-size:12.5px;cursor:pointer;user-select:none;transition:all .15s}
+.opt:hover{background:rgba(201,168,76,.14)}
 /* cards de conceito */
 .cc{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
 .cc.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
@@ -97,78 +101,32 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="page-sub">Briefing → 4 ideias → história de 4 cenas → imagens → vídeos → <b>vídeo final de 32s</b>. Você informa, escolhe e aprova; o resto é com a IA.</div>
   </div>
 
-  <!-- ══ TELA 1 — BRIEFING ══ -->
+  <!-- ══ PASSO 1 — O PRODUTO (foto → a IA lê e sugere → você descreve) ══ -->
   <div class="step">
-    <div class="step-head"><div class="step-num">1</div><div class="step-title">Briefing</div></div>
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">O produto</div></div>
     <div class="mini">Cliente / empresa</div>
     <input type="text" id="fCliente" placeholder="Ex: Body Club Fitness"/>
-    <div class="mini">Nicho <span style="color:var(--gold)">*</span></div>
-    <input type="text" id="fNicho" placeholder="Ex: academia, restaurante, moda, pet shop, odontologia"/>
-    <div class="mini">Produto ou serviço divulgado <span style="color:var(--gold)">*</span></div>
-    <input type="text" id="fProduto" placeholder="Ex: Regata Dry Fit Body Club"/>
-    <div class="mini">O que o cliente quer divulgar? <span style="color:var(--gold)">*</span></div>
-    <textarea id="fBriefing" style="min-height:130px" placeholder="Cole aqui a mensagem do cliente. Explique o produto, diferenciais, promoção, público, objetivo e qualquer informação importante."></textarea>
-    <div class="mini" style="margin-top:.9rem">Tom da história</div>
-    <div class="chips" id="chipsTom">
-      <div class="chip on" data-v="automatico">✨ Automático</div>
-      <div class="chip" data-v="engracado">😄 Engraçado</div>
-      <div class="chip" data-v="emocional">💙 Emocional</div>
-      <div class="chip" data-v="debochado">😏 Debochado</div>
-      <div class="chip" data-v="premium">👑 Premium</div>
-      <div class="chip" data-v="energico">⚡ Enérgico</div>
-      <div class="chip" data-v="informativo">📋 Informativo</div>
-    </div>
-    <div class="soon-note">⚠️ A IA <b>nunca inventa</b> preço, promoção ou característica que você não escreveu aqui.</div>
-  </div>
 
-  <!-- ══ TELA 2 — REFERÊNCIAS ══ -->
-  <div class="step">
-    <div class="step-head"><div class="step-num">2</div><div class="step-title">Referências</div></div>
-    <div class="step-hint">Tudo que você subir vira <b>elemento protegido</b>: a IA preserva forma, cores, embalagem, logo e rosto em todas as cenas.</div>
+    <div class="mini" style="margin-top:.9rem">Foto do produto <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">Suba a foto do que vai ser divulgado. A IA lê a imagem e te diz o que dá pra anunciar ali.</div>
+    <div class="thumbs" id="thProduto"></div>
+    <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
 
-    <div class="mini">Quem é o protagonista?</div>
-    <div class="chips" id="chipsProt" style="margin-bottom:1rem">
-      <div class="chip on" data-v="automatico">✨ Automático</div>
-      <div class="chip" data-v="produto_humanizado">🧃 Produto humanizado</div>
-      <div class="chip" data-v="pessoa">🧑 Pessoa / personagem</div>
-      <div class="chip" data-v="mascote">🐻 Mascote / animal</div>
-      <div class="chip" data-v="produto_real">📦 Produto real (sem humanizar)</div>
-    </div>
+    <div id="leituraIA" class="hide"></div>
 
-    <div class="up-cat">
-      <div class="up-cat-head">📦 Produto principal <span style="color:var(--text-dim)">(obrigatório quando há produto físico)</span></div>
-      <div class="thumbs" id="thProduto"></div>
-      <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
-    </div>
-
-    <div class="up-cat">
-      <div class="up-cat-head">🏠 Ambiente <span style="color:var(--text-dim)">(opcional, até 4)</span></div>
-      <div class="thumbs" id="thAmbiente"></div>
-      <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
-      <div class="chips" style="margin-top:.5rem">
-        <div class="chip" id="chipPreservar" onclick="togglePreservar()">📌 Preservar este ambiente nas cenas</div>
-      </div>
-    </div>
-
-    <div class="up-cat">
-      <div class="up-cat-head">👥 Personagens</div>
-      <div id="persBox"></div>
-      <button class="btn-ghost" style="width:100%" onclick="addPersonagem()">+ Adicionar personagem</button>
-    </div>
-
-    <div class="up-cat">
-      <div class="up-cat-head">🏷️ Logo <span style="color:var(--text-dim)">(elemento protegido)</span></div>
-      <div class="thumbs" id="thLogo"></div>
-      <label class="up-btn">+ Logo<input type="file" accept="image/*" hidden onchange="onPick(event,'logo')"/></label>
+    <div id="boxDescricao" class="hide">
+      <div class="mini">O que exatamente você quer divulgar nessa imagem? <span style="color:var(--gold)">*</span></div>
+      <textarea id="fBriefing" style="min-height:100px" placeholder="Ex: a regata dry fit — tecido leve, seca rápido e não gruda no corpo mesmo no treino pesado"></textarea>
+      <div class="soon-note">⚠️ A IA <b>nunca inventa</b> preço, promoção ou característica que você não escreveu aqui.</div>
     </div>
   </div>
 
   <button class="btn-gold" id="btnIdeias" onclick="gerarIdeias()">✨ GERAR 4 IDEIAS</button>
-  <div class="soon-note">A IA lê o briefing e as referências, monta a Bíblia Visual e cria 4 ângulos publicitários diferentes.</div>
+  <div class="soon-note">A IA cria 4 ângulos publicitários diferentes a partir da sua foto e da sua descrição.</div>
 
   <!-- ══ TELA 3 — 4 IDEIAS ══ -->
   <div id="telaIdeias" class="hide">
-    <div class="sec-title">💡 Escolha um caminho</div>
+    <div class="sec-title">Passo 2 · 💡 Escolha a ideia</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Quatro mecanismos diferentes — não são variações da mesma coisa.</div>
     <div id="boxIdeias"></div>
     <div class="btn-row"><button class="btn-ghost" onclick="copiarIdeias()">📋 Copiar as 4 (briefing do cliente)</button></div>
@@ -176,7 +134,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <!-- ══ TELA 4 — STORYBOARD ══ -->
   <div id="telaStory" class="hide">
-    <div class="sec-title">🎬 A história em 4 cenas</div>
+    <div class="sec-title">Passo 3 · 🎬 A história em 4 cenas</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Cada cena tem 8s. A fala precisa ter entre <b>145 e 160 caracteres</b> pra caber no tempo sem arrastar.</div>
     <div id="boxStory"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
@@ -189,14 +147,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <!-- ══ TELA 5 — IMAGENS ══ -->
   <div id="telaImagens" class="hide">
-    <div class="sec-title">🖼️ Aprove as imagens</div>
+    <div class="sec-title">Passo 4 · 🖼️ Aprove as imagens</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">A cena 1 aprovada vira o <b>Visual Master</b>: as outras reaproveitam o estilo dela pra não haver deriva visual.</div>
     <div id="boxImagens"></div>
   </div>
 
   <!-- ══ TELA 6 — VÍDEOS ══ -->
   <div id="telaVideos" class="hide">
-    <div class="sec-title">🎥 Os 4 clipes de 8s</div>
+    <div class="sec-title">Passo 5 · 🎥 Os 4 clipes de 8s</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Cada clipe anima a imagem aprovada e fala a fala daquela cena. Leva alguns minutos por clipe.</div>
     <div id="boxVideos"></div>
   </div>
@@ -204,7 +162,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ TELA 7 — TRILHA ══ -->
   <div id="telaTrilha" class="hide">
     <div class="step">
-      <div class="step-head"><div class="step-num">7</div><div class="step-title">Trilha sonora (32s)</div></div>
+      <div class="step-head"><div class="step-num">6</div><div class="step-title">Trilha sonora (32s)</div></div>
       <div class="step-hint">Escolha uma faixa ou envie uma música. O sistema usa até <b>32 segundos</b> e mantém a trilha abaixo das falas.</div>
       <div id="trilhasGrid" class="trilhas-grid"></div>
       <div class="tsep">— ou envie a sua —</div>
@@ -263,7 +221,7 @@ function rolarPara(id){ document.getElementById(id).scrollIntoView({behavior:'sm
 
 // ── Estado do projeto ──
 const projectId = 'hist_' + Date.now();
-let tom = 'automatico', protMode = 'automatico', preservarAmbiente = false, volTrilha = 'auto';
+let volTrilha = 'auto';
 let refs = { product:[], environment:[], characters:[], logo:[] };
 let brief = null, visualBible = null, conceitos = [], conceitoIdx = -1;
 let story = null;                 // { summary, scenes:[4] }
@@ -290,8 +248,37 @@ async function onPick(ev, cat){
     try { refs[cat].push(await fileToOptimizedImage(f)); } catch(e){ toast('⚠️ Não consegui ler a imagem'); }
   }
   renderThumbs(cat);
+  if (cat==='product' && refs.product.length) analisarFoto();   // a IA lê a foto assim que ela chega
 }
-const BOX = { product:'thProduto', environment:'thAmbiente', logo:'thLogo' };
+const BOX = { product:'thProduto' };   // só o produto tem uploader na tela agora
+
+// ── PASSO 1: a IA lê a foto e sugere, direto, o que dá pra divulgar ali ──
+let leitura = null;
+async function analisarFoto(){
+  if(!refs.product.length) return;
+  const box=document.getElementById('leituraIA'); box.classList.remove('hide');
+  box.innerHTML='<div class="leitura"><span class="spin" style="border-top-color:var(--gold)"></span>Lendo a imagem…</div>';
+  try{
+    const r=await api('/histAnalisarFoto',{ method:'POST', body: JSON.stringify({ fotos: refs.product.map(f=>({ base64:f.base64, mimeType:f.mimeType })) }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'não consegui ler a imagem');
+    leitura=d; custoUSD += (d.aiCostUSD||0);
+    box.innerHTML =
+      '<div class="leitura"><b>Recebi a foto ✅</b>'+
+      (d.viu?('<div style="margin-top:.35rem;color:var(--text-mid)">👀 '+esc(d.viu)+'</div>'):'')+
+      '<div style="margin-top:.6rem">Agora me diga: <b>o que exatamente você quer divulgar nessa imagem?</b></div>'+
+      (d.opcoes && d.opcoes.length ? ('<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.35rem">'+
+        d.opcoes.map(o=>'<span class="opt" onclick="usarOpcao(this)">'+esc(o)+'</span>').join('')+'</div>'+
+        '<div class="soon-note">Toque numa sugestão pra usar, ou escreva do seu jeito.</div>') : '')+
+      '</div>';
+  }catch(e){ box.innerHTML='<div class="leitura">⚠️ '+esc(e.message)+' — escreva você mesmo o que quer divulgar.</div>'; }
+  document.getElementById('boxDescricao').classList.remove('hide');
+}
+function usarOpcao(el){
+  const ta=document.getElementById('fBriefing'); const v=el.textContent.trim();
+  ta.value = ta.value.trim() ? (ta.value.trim().replace(/[,\s]*$/,'')+', '+v) : v;
+  ta.focus();
+}
 function renderThumbs(cat){
   const box = document.getElementById(BOX[cat]); if(!box) return;
   box.innerHTML='';
@@ -302,43 +289,8 @@ function renderThumbs(cat){
     box.appendChild(d);
   });
 }
-function togglePreservar(){
-  preservarAmbiente = !preservarAmbiente;
-  document.getElementById('chipPreservar').classList.toggle('on', preservarAmbiente);
-}
-
-// ── Personagens (quantidade dinâmica) ──
-function addPersonagem(){
-  if (refs.characters.length >= 4){ toast('Máximo de 4 personagens.'); return; }
-  refs.characters.push({ nome:'', obs:'', foto:null });
-  renderPers();
-}
-function renderPers(){
-  const box=document.getElementById('persBox'); box.innerHTML='';
-  refs.characters.forEach(function(p,i){
-    const d=document.createElement('div'); d.className='cc'; d.style.padding='.8rem';
-    d.innerHTML =
-      '<div style="display:flex;gap:.7rem;align-items:flex-start">'+
-        (p.foto ? '<img src="'+p.foto.thumbUrl+'" style="width:62px;height:82px;object-fit:cover;border-radius:8px;border:.5px solid var(--border);flex:0 0 auto"/>'
-                : '<div style="width:62px;height:82px;flex:0 0 auto;border-radius:8px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:10.5px">sem foto</div>')+
-        '<div style="flex:1;min-width:0">'+
-          '<input type="text" data-pn="'+i+'" placeholder="Nome (ex: Gegê)" value="'+escA(p.nome)+'"/>'+
-          '<input type="text" data-po="'+i+'" style="margin-top:.4rem" placeholder="Observação (opcional)" value="'+escA(p.obs)+'"/>'+
-          '<label class="up-btn" style="margin-top:.4rem">'+(p.foto?'🔄 Trocar foto':'+ Foto')+'<input type="file" accept="image/*" hidden onchange="onPickPers(event,'+i+')"/></label>'+
-        '</div>'+
-        '<button class="btn-ghost" style="flex:0 0 auto;min-width:40px;padding:.4rem .6rem" onclick="rmPersonagem('+i+')">✕</button>'+
-      '</div>';
-    box.appendChild(d);
-  });
-  box.querySelectorAll('[data-pn]').forEach(el=>el.addEventListener('input',()=>{ refs.characters[+el.dataset.pn].nome = el.value; }));
-  box.querySelectorAll('[data-po]').forEach(el=>el.addEventListener('input',()=>{ refs.characters[+el.dataset.po].obs = el.value; }));
-}
-async function onPickPers(ev, i){
-  const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
-  try { refs.characters[i].foto = await fileToOptimizedImage(f); renderPers(); }
-  catch(e){ toast('⚠️ Não consegui ler a imagem'); }
-}
-function rmPersonagem(i){ refs.characters.splice(i,1); renderPers(); }
+// Nicho, tom, modo do protagonista, ambiente/personagens/logo separados: REMOVIDOS da tela (11/08).
+// O fluxo agora é foto → a IA lê → o atendente descreve. O resto a IA deduz da imagem + da descrição.
 
 // ── Chips genéricos ──
 function ligarChips(id, cb){
@@ -349,8 +301,6 @@ function ligarChips(id, cb){
     });
   });
 }
-ligarChips('chipsTom', v=>{ tom=v; });
-ligarChips('chipsProt', v=>{ protMode=v; });
 ligarChips('chipsVol', v=>{ volTrilha=v; });
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
@@ -362,21 +312,21 @@ function refsPayload(){
   };
 }
 function briefPayload(){
+  // nicho e produto vêm da LEITURA da foto (a IA deduz) — não são mais campos na tela
   return {
     client: document.getElementById('fCliente').value.trim(),
-    niche: document.getElementById('fNicho').value.trim(),
-    product: document.getElementById('fProduto').value.trim(),
+    niche: '',
+    product: (leitura && leitura.principal) || '',
     briefing: document.getElementById('fBriefing').value.trim(),
-    tone: tom, protagonistMode: protMode, preserveEnvironment: preservarAmbiente
+    tone: 'automatico', protagonistMode: 'automatico', preserveEnvironment: false
   };
 }
 
 // ══ TELA 3 — 4 IDEIAS ══
 async function gerarIdeias(){
   const b = briefPayload();
-  if(!b.niche){ toast('✍️ Informe o nicho.'); return; }
-  if(!b.product){ toast('✍️ Informe o produto ou serviço.'); return; }
-  if(!b.briefing){ toast('📝 Cole o briefing do cliente.'); return; }
+  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return; }
+  if(!b.briefing){ toast('📝 Escreva o que você quer divulgar nessa imagem.'); return; }
   const btn=document.getElementById('btnIdeias'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando 4 ideias…';
   try{
@@ -397,11 +347,11 @@ function renderIdeias(){
     const d=document.createElement('div'); d.className='cc'+(i===conceitoIdx?' sel':'');
     d.innerHTML =
       '<span class="cc-ang">'+(ROTULO_ANG[c.angle]||c.angle||('IDEIA '+c.id))+'</span>'+
-      '<div class="cc-tit">'+esc(c.title)+'</div>'+
-      (c.summary?'<div class="cc-lin"><b>Resumo:</b> '+esc(c.summary)+'</div>':'')+
-      (c.emotion?'<div class="cc-lin"><b>Emoção:</b> '+esc(c.emotion)+'</div>':'')+
-      (c.hook?'<div class="cc-lin"><b>Hook:</b> '+esc(c.hook)+'</div>':'')+
-      (c.promise?'<div class="cc-lin"><b>Promessa:</b> '+esc(c.promise)+'</div>':'')+
+      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+' — '+esc(c.title)+'</div>'+
+      (c.scene      ?'<div class="cc-lin"><b>[CENA]</b><br>'+esc(c.scene)+'</div>':'')+
+      (c.environment?'<div class="cc-lin"><b>[AMBIENTE]</b><br>'+esc(c.environment)+'</div>':'')+
+      (c.action     ?'<div class="cc-lin"><b>[AÇÃO]</b><br>'+esc(c.action)+'</div>':'')+
+      (c.dialogue   ?'<div class="cc-lin"><b>[FALA]</b><br>“'+esc(c.dialogue)+'”</div>':'')+
       '<div class="btn-row" style="margin-top:.7rem">'+
         '<button class="btn-gold" style="flex:1" onclick="escolherConceito('+i+')">'+(i===conceitoIdx?'✅ Escolhida':'✅ Selecionar')+'</button>'+
         '<button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="trocarConceito('+i+')">🔄 Gerar outra</button>'+
@@ -430,8 +380,11 @@ function copiarIdeias(){
   if(!conceitos.length) return;
   const sep='\n'+'--------------------------------------'+'\n\n';
   const txt = conceitos.map(function(c,k){
-    return '💡 IDEIA '+(k+1)+' — '+(ROTULO_ANG[c.angle]||'')+'\n'+(c.title||'')+'\n\n'+
-      (c.summary?('Resumo: '+c.summary+'\n'):'')+(c.hook?('Hook: '+c.hook+'\n'):'')+(c.promise?('Promessa: '+c.promise+'\n'):'');
+    return '💡 Ideia '+String(k+1).padStart(2,'0')+' — '+(c.title||'')+'\n\n'+
+      (c.scene?('[CENA]\n'+c.scene+'\n\n'):'')+
+      (c.environment?('[AMBIENTE]\n'+c.environment+'\n\n'):'')+
+      (c.action?('[AÇÃO]\n'+c.action+'\n\n'):'')+
+      (c.dialogue?('[FALA]\n"'+c.dialogue+'"\n'):'');
   }).join(sep) + '\n\n👉 Qual dessas você prefere?';
   copiar(txt, '📋 As 4 ideias copiadas!');
 }
@@ -586,13 +539,10 @@ function renderImagens(){
         '<button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="gerarImagem('+i+')"'+(s.image_status==='gerando'?' disabled':'')+'>🔄 Gerar de novo</button>'+
       '</div>'+
       '<div class="mini">✏️ O que mudar nesta imagem (opcional)</div>'+
-      '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>'+
-      '<details class="adv"><summary>⚙️ Opções avançadas — prompt da imagem</summary>'+
-        '<textarea data-ip="'+i+'">'+esc(s.image_prompt)+'</textarea></details>';
+      '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>';
     box.appendChild(d);
   });
   box.querySelectorAll('[data-aj]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.aj]._ajuste = el.value; }));
-  box.querySelectorAll('[data-ip]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.ip].image_prompt = el.value; }));
 }
 function aprovarImagem(i){
   const s=story.scenes[i]; if(!s||!s.image_url) return;
@@ -621,12 +571,9 @@ function renderVideos(){
       '<div class="cc-lin" style="margin-top:.4rem">🗣️ '+esc(s.dialogue)+'</div>'+
       '<div class="btn-row" style="margin-top:.6rem">'+
         '<button class="btn-gold" style="flex:1" onclick="gerarVideo('+i+')"'+(s.video_status==='gerando'?' disabled':'')+'>'+(s.video_url?'🔄 Gerar de novo':'🎥 GERAR VÍDEO — 8s')+'</button>'+
-      '</div>'+
-      '<details class="adv"><summary>⚙️ Opções avançadas — prompt do vídeo</summary>'+
-        '<textarea data-vp="'+i+'" placeholder="(vazio = a plataforma monta sozinha a partir da cena)">'+esc(s._videoPromptEdit||'')+'</textarea></details>';
+      '</div>';
     box.appendChild(d);
   });
-  box.querySelectorAll('[data-vp]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.vp]._videoPromptEdit = el.value; }));
   const prontos = story.scenes.filter(s=>s.video_url).length;
   if(prontos===story.scenes.length){ mostrar('telaTrilha'); }
 }
@@ -722,7 +669,6 @@ function baixarFinal(){
 function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link copiado!'); }
 
 // ── início ──
-renderPers();
 carregarTrilhas();
 </script>
 </body>
