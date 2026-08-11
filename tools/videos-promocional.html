@@ -45,6 +45,26 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .thumb .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1}
 .mini{font-size:11.5px;color:var(--text-dim);margin:.55rem 0 .2rem}
 .soon-note{font-size:12px;color:var(--text-dim);margin-top:.5rem;line-height:1.45}
+/* abas Criar / Projetos / Resultados */
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem;overflow-x:auto}
+.tabbtn{flex:1;min-width:104px;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:var(--radius);padding:.65rem .5rem;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tabbtn.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* salvar o projeto (branco com letra preta, no topo) */
+.btn-salvar{width:100%;background:#fff;color:#111;border:none;border-radius:var(--radius);padding:.8rem 1rem;font-size:14.5px;font-weight:600;cursor:pointer;margin-bottom:.7rem}
+.btn-salvar:hover{filter:brightness(.94)}
+.btn-salvar:disabled{opacity:.6;cursor:not-allowed}
+/* cards de projeto salvo / resultado */
+.pj{display:flex;gap:.75rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:.8rem;margin-bottom:.7rem;align-items:center}
+.pj-th{width:56px;height:74px;border-radius:8px;object-fit:cover;background:var(--bg-input);flex-shrink:0}
+.pj-in{flex:1;min-width:0}
+.pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
+.pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
+.pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+.pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
+/* refazer 1 cena no editor de cortes */
+.btn-refaz{width:100%;margin-top:.4rem;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
 /* leitura da foto pela IA (passo 1) */
 .leitura{background:var(--bg-input);border:.5px solid var(--border);border-left:2.5px solid var(--gold);border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
@@ -121,6 +141,18 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="page-title">📣 Vídeo Promocional</div>
     <div class="page-sub">Briefing → 4 ideias → história de 4 cenas → imagens → vídeos → <b>vídeo final de 32s</b>. Você informa, escolhe e aprova; o resto é com a IA.</div>
   </div>
+
+  <!-- abas: criar × projetos salvos × vídeos prontos -->
+  <div class="tabs">
+    <button class="tabbtn on" data-aba="criar"      onclick="abrirAba('criar')">✨ Criar</button>
+    <button class="tabbtn"    data-aba="projetos"   onclick="abrirAba('projetos')">📁 Projetos</button>
+    <button class="tabbtn"    data-aba="resultados" onclick="abrirAba('resultados')">🎬 Resultados</button>
+  </div>
+
+  <div id="abaCriar">
+  <!-- salvar o projeto a qualquer momento (aparece assim que tem o nome do cliente) -->
+  <button class="btn-salvar hide" id="btnSalvar" onclick="salvarProjeto()">💾 Salvar projeto</button>
+  <div class="soon-note" id="notaSalvar"></div>
 
   <!-- barra de passos (o wizard anda na horizontal, um passo por vez) -->
   <div class="wzbar" id="wzbar"></div>
@@ -216,6 +248,21 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="soon-note" id="custoFinal"></div>
     </div>
   </div>
+  </div><!-- /abaCriar -->
+
+  <!-- ══ ABA PROJETOS: trabalhos salvos, ainda sem vídeo ══ -->
+  <div id="abaProjetos" class="hide">
+    <div class="sec-title">📁 Projetos salvos</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
+    <div id="listaProjetos"><div class="pj-vazio">Carregando…</div></div>
+  </div>
+
+  <!-- ══ ABA RESULTADOS: vídeos prontos (dá pra editar e refazer uma cena) ══ -->
+  <div id="abaResultados" class="hide">
+    <div class="sec-title">🎬 Resultados</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você pode refazer só uma cena.</div>
+    <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -278,7 +325,8 @@ function pintarBarra(){
 }
 
 // ── Estado do projeto ──
-const projectId = 'hist_' + Date.now();
+let projectId = 'hist_' + Date.now();
+let salvoEm = '';                 // última vez que salvou (mostrado embaixo do botão)
 // volume da trilha: SEMPRE automático (o seletor saiu da tela)
 let refs = { product:[], environment:[], characters:[], logo:[] };
 let brief = null, visualBible = null, conceitos = [], conceitoIdx = -1;
@@ -286,6 +334,126 @@ let story = null;                 // { summary, scenes:[4] }
 let visualMaster = null;          // base64 da 1ª imagem aprovada
 let trilhas = [], trilhaSel = null, musica = null;
 let videoFinalUrl = '', custoUSD = 0;
+
+// ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
+function abrirAba(nome){
+  ['criar','projetos','resultados'].forEach(function(a){
+    const el=document.getElementById('aba'+a.charAt(0).toUpperCase()+a.slice(1));
+    if(el) el.classList.toggle('hide', a!==nome);
+  });
+  document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.aba===nome); });
+  if(nome!=='criar') carregarProjetos();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+// o botão Salvar só aparece depois que tem o nome do cliente
+function checarSalvar(){
+  const nome=(document.getElementById('fCliente')||{}).value||'';
+  const bt=document.getElementById('btnSalvar'); if(bt) bt.classList.toggle('hide', !nome.trim());
+}
+// tudo o que precisa voltar quando o projeto for reaberto
+function estadoAtual(){
+  return {
+    cliente: (document.getElementById('fCliente')||{}).value||'',
+    briefing: (document.getElementById('fBriefing')||{}).value||'',
+    passo: passoAtual, passoMax: passoMax,
+    leitura: leitura, refsProduto: refs.product.map(p=>p.base64||p.url||''),
+    visualBible: visualBible, conceitos: conceitos, conceitoIdx: conceitoIdx,
+    story: story, trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
+  };
+}
+async function salvarProjeto(silencioso){
+  const est=estadoAtual();
+  if(!est.cliente.trim()){ if(!silencioso) toast('✍️ Escreva o nome do cliente antes de salvar.'); return false; }
+  const bt=document.getElementById('btnSalvar'); const old=bt?bt.innerHTML:'';
+  if(bt && !silencioso){ bt.disabled=true; bt.innerHTML='<span class="spin"></span>Salvando…'; }
+  try{
+    const r=await api('/histSalvar',{ method:'POST', body: JSON.stringify({ projectId, estado: est }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao salvar');
+    projectId=d.projectId||projectId; salvoEm=d.atualizadoEm||'';
+    const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='💾 Salvo em '+salvoEm+' — está na aba Projetos.';
+    if(!silencioso) toast('💾 Projeto salvo!');
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); return false; }
+  finally{ if(bt && !silencioso){ bt.disabled=false; bt.innerHTML=old; } }
+}
+function pjCard(p, tipo){
+  const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
+  const sub = tipo==='res'
+    ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+(p.custoBRL?(' · ~R$'+p.custoBRL.toFixed(2)):''))
+    : ('parou no passo '+p.passoMax+' de 5 · '+esc(p.atualizadoEm||''));
+  const bts = tipo==='res'
+    ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
+      '<button onclick="window.open(\''+escA(p.videoUrl)+'\',\'_blank\')">⬇️ Baixar</button>'
+    : '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">▶ Continuar</button>';
+  return '<div class="pj">'+th+
+    '<div class="pj-in"><div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
+      '<div class="pj-sb">'+sub+'</div></div>'+
+    '<div class="pj-bt">'+bts+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
+}
+async function carregarProjetos(){
+  const lp=document.getElementById('listaProjetos'), lr=document.getElementById('listaResultados');
+  try{
+    const r=await api('/histProjetos'); const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    lp.innerHTML = d.projetos.length ? d.projetos.map(p=>pjCard(p,'proj')).join('')
+      : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>';
+    lr.innerHTML = d.resultados.length ? d.resultados.map(p=>pjCard(p,'res')).join('')
+      : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 7 dias.</div>';
+  }catch(e){
+    const m='<div class="pj-vazio">⚠️ '+esc(e.message)+'</div>';
+    if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
+  }
+}
+async function abrirProjeto(id){
+  toast('📂 Abrindo…');
+  try{
+    const r=await api('/histAbrir',{ method:'POST', body: JSON.stringify({ projectId:id }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    const p=d.projeto;
+    projectId = p.projectId;
+    document.getElementById('fCliente').value = p.cliente||'';
+    document.getElementById('fBriefing').value = p.briefing||'';
+    leitura = p.leitura||null; visualBible = p.visualBible||null;
+    conceitos = p.conceitos||[]; conceitoIdx = (typeof p.conceitoIdx==='number')?p.conceitoIdx:-1;
+    story = p.story||null; custoUSD = Number(p.custoUSD)||0;
+    trilhaSel = p.trilha||null; musica=null;
+    videoFinalUrl = p.videoUrl||'';
+    // fotos do produto voltam como URL do R2
+    refs.product = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
+    visualMaster = (story && story.scenes && story.scenes[0] && story.scenes[0].image_url) || null;
+    // repinta o que existir
+    if(leitura) pintarLeitura();
+    renderThumbs('product');
+    if(conceitos.length) renderIdeias();
+    if(story) renderStory();
+    if(story && story.scenes.some(s=>s.image_url)) renderImagens();
+    if(story && story.scenes.every(s=>s.video_url)){
+      document.getElementById('editorCortes').classList.remove('hide'); renderCortes();
+    }
+    if(videoFinalUrl){
+      document.getElementById('videoFinal').src = videoFinalUrl;
+      document.getElementById('custoFinal').innerHTML='💰 Custo até aqui: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b>.';
+    }
+    passoMax = Math.max(1, p.passoMax||1);
+    abrirAba('criar'); checarSalvar();
+    irPara(Math.max(1, Math.min(passoMax, p.passo||1)));
+    const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='💾 Salvo em '+(p.atualizadoEm||'')+'.';
+    toast('✅ Projeto aberto — continue de onde parou.');
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+async function apagarProjeto(id){
+  if(!confirm('Apagar este projeto? Não dá pra desfazer.')) return;
+  try{
+    const r=await api('/histApagar',{ method:'POST', body: JSON.stringify({ projectId:id }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    toast('🗑️ Apagado.'); carregarProjetos();
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+// imagem pode estar em base64 (projeto novo) ou URL do R2 (projeto reaberto)
+function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : ('data:image/jpeg;base64,'+t); }
 
 // ── Upload de imagens ──
 function readFileAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
@@ -321,16 +489,23 @@ async function analisarFoto(){
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'não consegui ler a imagem');
     leitura=d; custoUSD += (d.aiCostUSD||0);
-    box.innerHTML =
-      '<div class="leitura"><b>Recebi a foto ✅</b>'+
-      (d.viu?('<div style="margin-top:.35rem;color:var(--text-mid)">👀 '+esc(d.viu)+'</div>'):'')+
-      '<div style="margin-top:.6rem">Agora me diga: <b>o que exatamente você quer divulgar nessa imagem?</b></div>'+
-      (d.opcoes && d.opcoes.length ? ('<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.35rem">'+
-        d.opcoes.map(o=>'<span class="opt" onclick="usarOpcao(this)">'+esc(o)+'</span>').join('')+'</div>'+
-        '<div class="soon-note">Toque numa sugestão pra usar, ou escreva do seu jeito.</div>') : '')+
-      '</div>';
+    pintarLeitura();
   }catch(e){ box.innerHTML='<div class="leitura">⚠️ '+esc(e.message)+' — escreva você mesmo o que quer divulgar.</div>'; }
   document.getElementById('boxDescricao').classList.remove('hide');
+}
+// pinta o que a IA leu na foto (usado ao analisar e ao reabrir um projeto salvo)
+function pintarLeitura(){
+  const box=document.getElementById('leituraIA'); const d=leitura; if(!box||!d) return;
+  box.classList.remove('hide');
+  box.innerHTML =
+    '<div class="leitura"><b>Recebi a foto ✅</b>'+
+    (d.viu?('<div style="margin-top:.35rem;color:var(--text-mid)">👀 '+esc(d.viu)+'</div>'):'')+
+    '<div style="margin-top:.6rem">Agora me diga: <b>o que exatamente você quer divulgar nessa imagem?</b></div>'+
+    (d.opcoes && d.opcoes.length ? ('<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.35rem">'+
+      d.opcoes.map(o=>'<span class="opt" onclick="usarOpcao(this)">'+esc(o)+'</span>').join('')+'</div>'+
+      '<div class="soon-note">Toque numa sugestão pra usar, ou escreva do seu jeito.</div>') : '')+
+    '</div>';
+  const bd=document.getElementById('boxDescricao'); if(bd) bd.classList.remove('hide');
 }
 function usarOpcao(el){
   const ta=document.getElementById('fBriefing'); const v=el.textContent.trim();
@@ -363,13 +538,15 @@ function ligarChips(id, cb){
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
 function refsPayload(){
-  const lim = a=>a.map(f=>({ base64:f.base64, mimeType:f.mimeType }));
+  // projeto reaberto: a foto volta como URL do R2 (sem base64) — manda a URL
+  const lim = a=>a.map(f=>(f.base64 ? { base64:f.base64, mimeType:f.mimeType } : { url:f.url, mimeType:f.mimeType||'image/jpeg' }));
   return {
     product: lim(refs.product), environment: lim(refs.environment), logo: lim(refs.logo),
     characters: refs.characters.filter(p=>p.foto).map(p=>({ nome:p.nome||'', obs:p.obs||'', foto:{ base64:p.foto.base64, mimeType:p.foto.mimeType } }))
   };
 }
 function briefPayload(){
+  // (projeto reaberto: as fotos do produto voltam como URL do R2)
   // nicho e produto vêm da LEITURA da foto (a IA deduz) — não são mais campos na tela
   return {
     client: document.getElementById('fCliente').value.trim(),
@@ -615,7 +792,7 @@ function renderImagens(){
             : s.image_status==='erro'    ? '<span class="stt s-err">⚠️ erro</span>'
             : s.image_url                ? '<span class="stt s-ok">✅ pronta</span>'
             : '<span class="stt s-wait">aguardando</span>';
-    const img = s.image_url ? '<img class="cena-img" src="data:image/jpeg;base64,'+s.image_url+'"/>'
+    const img = s.image_url ? '<img class="cena-img" src="'+escA(imgSrc(s.image_url))+'"/>'
                             : '<div class="cena-ph">'+(s.image_status==='gerando'?'⏳ desenhando…':'sem imagem')+'</div>';
     const d=document.createElement('div'); d.className='sb'+(s.image_url?' ok':'');
     d.innerHTML =
@@ -750,7 +927,8 @@ function renderCortes(){
         '</div>'+
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
-      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="verTrecho('+i+')">▶ Ver só o trecho que vai entrar</button>';
+      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="verTrecho('+i+')">▶ Ver só o trecho que vai entrar</button>'+
+      '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer só esta cena (US$ 0,40)</button>';
     box.appendChild(d);
     ligarTrim(d, i);
   });
@@ -817,6 +995,22 @@ function verTrecho(i){
 }
 
 
+// Refaz UMA cena só — o atendente paga apenas essa (US$ 0,40), não as quatro.
+async function refazerCena(i){
+  const s=story.scenes[i]; if(!s) return;
+  if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
+  const card=document.querySelector('#boxCortes [data-cena="'+i+'"]');
+  const bt=card?card.querySelector('.btn-refaz'):null; const old=bt?bt.innerHTML:'';
+  if(bt){ bt.disabled=true; bt.innerHTML='<span class="spin"></span>Refazendo… (2-4 min)'; }
+  s.video_url=''; s.cortaIni=0; s.cortaFim=0;
+  try{
+    await gerarVideo(i);
+    if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
+    renderCortes(); toast('✅ Cena '+(i+1)+' refeita!');
+    salvarProjeto(true);
+  }catch(e){ toast('⚠️ '+e.message); if(bt){ bt.disabled=false; bt.innerHTML=old; } }
+}
+
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
 async function finalizar(){
   if(!story || !story.scenes.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
@@ -841,6 +1035,7 @@ async function finalizar(){
         montando=false; pintarProgresso();
         document.getElementById('notaMontagem').textContent='';
         document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal'); toast('🎉 Vídeo pronto!');
+        salvarProjeto(true);   // cai sozinho na aba Resultados
         return;
       }
       if(d2.ok && d2.status==='failed') throw new Error('a montagem falhou');
@@ -859,6 +1054,10 @@ function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link c
 // ── início ──
 pintarBarra();
 carregarTrilhas();
+(function(){
+  const c=document.getElementById('fCliente');
+  if(c){ c.addEventListener('input', checarSalvar); checarSalvar(); }
+})();
 </script>
 </body>
 </html>
