@@ -72,13 +72,23 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .est{font-size:11.5px;color:var(--text-dim);background:var(--bg-input);border-radius:6px;padding:.4rem .55rem;margin-top:.4rem;line-height:1.45;word-break:break-word}
 .alerta{background:rgba(230,90,90,.12);border:.5px solid rgba(230,90,90,.5);color:#E87070;border-radius:var(--radius);padding:.55rem .7rem;margin-top:.5rem;font-size:12.5px;line-height:1.45}
 .prog-item{display:flex;align-items:center;gap:.6rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .7rem;margin-bottom:.45rem;font-size:13px;color:var(--text-mid)}
+/* editor de corte da cena — barra de tempo com alças arrastáveis */
+.trim{margin-top:.7rem}
+.trim-bar{position:relative;height:48px;background:repeating-linear-gradient(90deg,var(--bg-input) 0 9px,rgba(255,255,255,.03) 9px 10px);border:.5px solid var(--border);border-radius:8px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
+.trim-fora{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.62)}
+.trim-sel{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,rgba(201,168,76,.30),rgba(201,168,76,.14));border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
+.trim-h{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:3}
+.trim-h::after{content:'';width:7px;height:64%;background:var(--gold);border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
+.trim-cur{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.9;pointer-events:none;z-index:2}
+.trim-lab{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--gold);font-weight:600;margin-top:.4rem;gap:.5rem;flex-wrap:wrap}
+.trim-dur{color:var(--text-mid);font-weight:500}
 /* barra de passos do wizard (horizontal, com setinhas) */
 .wzbar{display:flex;align-items:center;gap:.25rem;overflow-x:auto;padding:.1rem 0 .7rem;margin-bottom:.4rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .wzbar::-webkit-scrollbar{display:none}
 .wzp{display:flex;align-items:center;gap:.4rem;flex:0 0 auto;background:var(--bg-card);border:.5px solid var(--border);color:var(--text-dim);border-radius:999px;padding:.4rem .75rem;font-size:12.5px;cursor:default;white-space:nowrap;transition:all .15s}
 .wzp.liberado{cursor:pointer;color:var(--text-mid);border-color:var(--border-bright)}
 .wzp.atual{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:700}
-.wzp.feito{color:#6FD08C;border-color:rgba(90,190,120,.45)}
+.wzp.feito{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-color:transparent;font-weight:600;cursor:pointer}
 .wzn{font-family:'Cinzel',serif;font-weight:700}
 .wzseta{flex:0 0 auto;color:var(--text-dim);font-size:13px}
 /* imagens/vídeos */
@@ -142,7 +152,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="telaIdeias" class="hide">
     <div class="sec-title">Passo 2 · 💡 Escolha a ideia</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.7rem">Quatro mecanismos diferentes — não são variações da mesma coisa.</div>
-    <div class="btn-row" style="margin-bottom:.9rem"><button class="btn-ghost" onclick="copiarIdeias()">📋 Copiar as 4 (briefing do cliente)</button></div>
+    <button class="btn-gold" onclick="copiarIdeias()" style="margin-bottom:.9rem">📋 Copiar as 4 (briefing do cliente)</button>
     <div id="avisoHistoria" class="hide"></div>
     <div id="boxIdeias"></div>
   </div>
@@ -258,7 +268,9 @@ function liberar(n){ passoMax = Math.max(passoMax, n); irPara(n); }
 function pintarBarra(){
   const bar=document.getElementById('wzbar'); if(!bar) return;
   bar.innerHTML = PASSOS.map(function(p,k){
-    const cls = 'wzp' + (p.n===passoAtual ? ' atual' : (p.n<=passoMax ? ' liberado' : '')) + (p.n<passoMax ? ' feito' : '');
+    // estados mutuamente exclusivos: atual (dourado) > feito (verde) > liberado > travado.
+    // Antes 'atual' e 'feito' podiam coincidir e o verde sobrescrevia o dourado do passo atual.
+    const cls = 'wzp' + (p.n===passoAtual ? ' atual' : (p.n<passoMax ? ' feito' : (p.n<=passoMax ? ' liberado' : '')));
     return (k ? '<span class="wzseta">→</span>' : '') +
       '<div class="'+cls+'" onclick="irPara('+p.n+')"><span class="wzn">'+p.n+'</span> '+p.rot+'</div>';
   }).join('');
@@ -712,47 +724,99 @@ async function gerarCenas(){
   } finally { btn.disabled=false; btn.innerHTML=old; }
 }
 // Editor de corte por cena — resolve a alucinação que o Veo às vezes coloca no fim do clipe.
+// Editor de corte por cena: barra de tempo com duas alças. Arrastar move o vídeo JUNTO,
+// então dá pra ver o frame exato onde o corte cai (resolve a alucinação que o Veo põe no fim).
+const CLIPE_SEG = 8;
+function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.round((s%1)*10)); }
 function renderCortes(){
   const box=document.getElementById('boxCortes'); if(!box||!story) return;
   box.innerHTML='';
   story.scenes.forEach(function(s,i){
     if(!s.video_url) return;
-    const ini=Number(s.cortaIni||0), fim=Number(s.cortaFim||0);
-    const dur=Math.max(1, 8-ini-fim);
-    const d=document.createElement('div'); d.className='sb';
+    if(typeof s.cortaIni!=='number') s.cortaIni=0;
+    if(typeof s.cortaFim!=='number') s.cortaFim=0;
+    const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
     d.innerHTML =
-      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'">'+dur.toFixed(1)+'s</span></div>'+
-      '<video src="'+s.video_url+'" controls playsinline preload="metadata"></video>'+
-      '<div class="mini">✂️ Cortar do início: <b data-li="'+i+'">'+ini.toFixed(1)+'s</b></div>'+
-      '<input type="range" data-ci="'+i+'" min="0" max="3" step="0.1" value="'+ini+'" style="width:100%"/>'+
-      '<div class="mini">✂️ Cortar do fim: <b data-lf="'+i+'">'+fim.toFixed(1)+'s</b></div>'+
-      '<input type="range" data-cf2="'+i+'" min="0" max="3" step="0.1" value="'+fim+'" style="width:100%"/>'+
+      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
+      '<video src="'+s.video_url+'" playsinline preload="auto" controls></video>'+
+      '<div class="trim">'+
+        '<div class="trim-bar" data-bar="'+i+'">'+
+          '<div class="trim-fora" data-fe="'+i+'" style="left:0"></div>'+
+          '<div class="trim-fora" data-fd="'+i+'" style="right:0"></div>'+
+          '<div class="trim-sel"  data-sel="'+i+'"></div>'+
+          '<div class="trim-cur"  data-cur="'+i+'" style="left:0"></div>'+
+          '<div class="trim-h" data-h="ini" data-hi="'+i+'"></div>'+
+          '<div class="trim-h" data-h="fim" data-hf="'+i+'"></div>'+
+        '</div>'+
+        '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
+      '</div>'+
       '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="verTrecho('+i+')">▶ Ver só o trecho que vai entrar</button>';
     box.appendChild(d);
+    ligarTrim(d, i);
   });
-  const upd=(i)=>{
-    const s=story.scenes[i];
-    const ini=Number(s.cortaIni||0), fim=Number(s.cortaFim||0);
-    const li=box.querySelector('[data-li="'+i+'"]'), lf=box.querySelector('[data-lf="'+i+'"]'), du=box.querySelector('[data-dur="'+i+'"]');
-    if(li) li.textContent=ini.toFixed(1)+'s'; if(lf) lf.textContent=fim.toFixed(1)+'s';
-    if(du) du.textContent=Math.max(1, 8-ini-fim).toFixed(1)+'s';
-    const tot=story.scenes.reduce((a,x)=>a+Math.max(1, 8-Number(x.cortaIni||0)-Number(x.cortaFim||0)),0);
-    document.getElementById('notaMontagem').textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
-  };
-  box.querySelectorAll('[data-ci]').forEach(el=>el.addEventListener('input',function(){ const i=+el.dataset.ci; story.scenes[i].cortaIni=parseFloat(el.value)||0; upd(i); }));
-  box.querySelectorAll('[data-cf2]').forEach(el=>el.addEventListener('input',function(){ const i=+el.dataset.cf2; story.scenes[i].cortaFim=parseFloat(el.value)||0; upd(i); }));
-  story.scenes.forEach((s,i)=>{ if(s.video_url) upd(i); });
+  story.scenes.forEach(function(s,i){ if(s.video_url) pintarTrim(i); });
 }
-// toca só o pedaço que vai entrar na montagem, pro atendente conferir o corte
+function pintarTrim(i){
+  const s=story.scenes[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
+  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
+  const pi=(ini/CLIPE_SEG*100), pf=(fim/CLIPE_SEG*100);
+  const q=(sel)=>box.querySelector(sel+'="'+i+'"]');
+  const fe=q('[data-fe'), fd=q('[data-fd'), se=q('[data-sel'), hi=q('[data-hi'), hf=q('[data-hf');
+  if(fe) fe.style.width=pi+'%';
+  if(fd) fd.style.width=(100-pf)+'%';
+  if(se){ se.style.left=pi+'%'; se.style.width=(pf-pi)+'%'; }
+  if(hi) hi.style.left=pi+'%';
+  if(hf) hf.style.left=pf+'%';
+  const ti=q('[data-ti'), tf=q('[data-tf'), td=q('[data-td'), du=q('[data-dur');
+  if(ti) ti.textContent=mmss(ini)+' (início)';
+  if(tf) tf.textContent=mmss(fim)+' (fim)';
+  if(td) td.textContent='corte: '+(ini>0?('-'+ini.toFixed(1)+'s no início '):'')+(s.cortaFim>0?('-'+Number(s.cortaFim).toFixed(1)+'s no fim'):'')+(ini===0&&!s.cortaFim?'sem corte':'');
+  if(du) du.textContent=(fim-ini).toFixed(1)+'s';
+  const tot=story.scenes.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
+  const nm=document.getElementById('notaMontagem'); if(nm) nm.textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
+}
+function ligarTrim(card, i){
+  const bar=card.querySelector('[data-bar]'), video=card.querySelector('video');
+  const cur=card.querySelector('[data-cur]');
+  const tempoDoX=(x)=>{ const r=bar.getBoundingClientRect(); return Math.max(0, Math.min(CLIPE_SEG, ((x-r.left)/r.width)*CLIPE_SEG)); };
+  const seek=(t)=>{ try{ video.currentTime=t; }catch(e){} };
+  let arrastando=null;
+  const mover=(ev)=>{
+    if(!arrastando) return;
+    const t=tempoDoX(ev.clientX); const s=story.scenes[i];
+    if(arrastando==='ini') s.cortaIni=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1));
+    else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
+    pintarTrim(i);
+    seek(arrastando==='ini' ? Number(s.cortaIni) : CLIPE_SEG-Number(s.cortaFim));   // vídeo acompanha a alça
+  };
+  const soltar=(ev)=>{ if(!arrastando) return; arrastando=null; try{ bar.releasePointerCapture(ev.pointerId); }catch(e){} };
+  card.querySelectorAll('.trim-h').forEach(function(h){
+    h.addEventListener('pointerdown', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      arrastando = h.dataset.h; video.pause();
+      try{ bar.setPointerCapture(ev.pointerId); }catch(e){}
+    });
+  });
+  bar.addEventListener('pointermove', mover);
+  bar.addEventListener('pointerup', soltar);
+  bar.addEventListener('pointercancel', soltar);
+  // clicar na barra = pular pra aquele ponto do vídeo (igual ao editor de áudio)
+  bar.addEventListener('pointerdown', function(ev){ if(arrastando) return; video.pause(); seek(tempoDoX(ev.clientX)); });
+  // marcador branco acompanha a reprodução
+  video.addEventListener('timeupdate', function(){ if(cur) cur.style.left=((video.currentTime||0)/CLIPE_SEG*100)+'%'; });
+}
+// toca só o pedaço que vai entrar na montagem
 function verTrecho(i){
-  const s=story.scenes[i]; const box=document.getElementById('boxCortes');
-  const vids=box.querySelectorAll('video'); const v=vids[Array.from(box.querySelectorAll('.sb')).findIndex(el=>el.querySelector('.sb-n').textContent==='CENA '+(i+1))] || vids[i];
-  if(!v) return;
-  const ini=Number(s.cortaIni||0), fim=8-Number(s.cortaFim||0);
-  v.currentTime=ini; v.play();
+  const card=document.querySelector('#boxCortes [data-cena="'+i+'"]'); if(!card) return;
+  const v=card.querySelector('video'); const s=story.scenes[i];
+  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
+  try{ v.currentTime=ini; }catch(e){}
+  v.play();
   const parar=()=>{ if(v.currentTime>=fim){ v.pause(); v.removeEventListener('timeupdate',parar); } };
   v.addEventListener('timeupdate',parar);
 }
+
+
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
 async function finalizar(){
   if(!story || !story.scenes.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
