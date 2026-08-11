@@ -141,9 +141,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ TELA 3 — 4 IDEIAS ══ -->
   <div id="telaIdeias" class="hide">
     <div class="sec-title">Passo 2 · 💡 Escolha a ideia</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Quatro mecanismos diferentes — não são variações da mesma coisa.</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.7rem">Quatro mecanismos diferentes — não são variações da mesma coisa.</div>
+    <div class="btn-row" style="margin-bottom:.9rem"><button class="btn-ghost" onclick="copiarIdeias()">📋 Copiar as 4 (briefing do cliente)</button></div>
+    <div id="avisoHistoria" class="hide"></div>
     <div id="boxIdeias"></div>
-    <div class="btn-row"><button class="btn-ghost" onclick="copiarIdeias()">📋 Copiar as 4 (briefing do cliente)</button></div>
   </div>
 
   <!-- ══ TELA 4 — STORYBOARD ══ -->
@@ -161,6 +162,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="telaImagens" class="hide">
     <div class="sec-title">Passo 4 · 🖼️ Aprove as imagens</div>
     <div id="boxImagens"></div>
+    <button class="btn-gold" id="btnAprovarImgs" onclick="aprovarImagens()" style="margin-top:.4rem">✅ APROVAR IMAGENS</button>
+    <div class="soon-note" id="notaAprovar"></div>
   </div>
 
   <!-- ══ TELA 6 — VÍDEOS ══ -->
@@ -175,16 +178,20 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="tsep">— ou envie a sua —</div>
       <label class="up-btn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusica(event)"/></label>
       <div id="musicaNome" class="soon-note"></div>
-      <div class="mini" style="margin-top:.8rem">Volume da trilha</div>
-      <div class="chips" id="chipsVol">
-        <div class="chip on" data-v="auto">✨ Automático</div>
-        <div class="chip" data-v="baixo">🔉 Baixo</div>
-        <div class="chip" data-v="medio">🔊 Médio</div>
-      </div>
     </div>
-    <button class="btn-gold" id="btnFinal" onclick="finalizar()">🎬 GERAR VÍDEO</button>
-    <div class="soon-note" id="notaFinal"></div>
+
+    <button class="btn-gold" id="btnCenas" onclick="gerarCenas()">🎥 GERAR CENAS</button>
+    <div class="soon-note" id="notaFinal">Cada cena vira um clipe de 8s. Depois você confere e apara o que precisar.</div>
     <div id="progresso" style="margin-top:.9rem"></div>
+
+    <!-- editor de corte: aparece com os clipes prontos -->
+    <div id="editorCortes" class="hide">
+      <div class="sec-title" style="margin-top:1.4rem">✂️ Confira e apare as cenas</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O motor às vezes inventa uma transição no fim. Corte o pedacinho ruim antes de montar.</div>
+      <div id="boxCortes"></div>
+      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.4rem">🎬 GERAR VÍDEO</button>
+      <div class="soon-note" id="notaMontagem"></div>
+    </div>
   </div>
 
   <!-- ══ RESULTADO ══ -->
@@ -260,7 +267,7 @@ function pintarBarra(){
 
 // ── Estado do projeto ──
 const projectId = 'hist_' + Date.now();
-let volTrilha = 'auto';
+// volume da trilha: SEMPRE automático (o seletor saiu da tela)
 let refs = { product:[], environment:[], characters:[], logo:[] };
 let brief = null, visualBible = null, conceitos = [], conceitoIdx = -1;
 let story = null;                 // { summary, scenes:[4] }
@@ -340,7 +347,7 @@ function ligarChips(id, cb){
     });
   });
 }
-ligarChips('chipsVol', v=>{ volTrilha=v; });
+// (nenhum grupo de chips na tela agora — ligarChips fica pronto pra reuso)
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
 function refsPayload(){
@@ -418,7 +425,12 @@ async function trocarConceito(i){
 }
 async function escolherConceito(i){
   conceitoIdx = i; renderIdeias();
-  await gerarHistoria();
+  // aviso no TOPO enquanto a IA monta a história (leva alguns segundos)
+  const av=document.getElementById('avisoHistoria');
+  av.className='leitura'; av.innerHTML='<span class="spin" style="border-top-color:var(--gold)"></span><b>Construindo história…</b> montando as 4 cenas e ajustando as falas.';
+  window.scrollTo({top:0,behavior:'smooth'});
+  try { await gerarHistoria(); }
+  finally { av.className='hide'; av.innerHTML=''; }
 }
 function copiarIdeias(){
   if(!conceitos.length) return;
@@ -448,10 +460,12 @@ async function gerarHistoria(){
     const d = await r.json();
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     story = d.story; custoUSD += (d.aiCostUSD||0);
+    // o servidor já entrega as 4 falas dentro do limite; se ainda escapar alguma, conserta aqui,
+    // em paralelo e sem pedir nada ao atendente.
+    const fora = story.scenes.map((s,i)=>i).filter(i=>{ const n=contarCaracteres(story.scenes[i].dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; });
+    if(fora.length) await Promise.all(fora.map(i=>ajustarFala(i, true)));
     renderStory(); liberar(3);
-    const inval = (d.falasInvalidas||[]);
-    if(inval.length){ toast('⚙️ Ajustando '+inval.length+' fala(s) fora da faixa…'); await ajustarTodasFalas(true); }
-    else toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
+    toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
   } catch(e){ toast('⚠️ '+e.message); }
 }
 const PAPEL = [
@@ -551,9 +565,19 @@ async function gerarImagens(){
   }
   if(story.scenes[0].image_url) visualMaster = story.scenes[0].image_url;
   const ok = story.scenes.filter(s=>s.image_url).length;
-  toast(ok===story.scenes.length ? '✅ Imagens prontas! Se gostou, é só gerar o vídeo.'
+  toast(ok===story.scenes.length ? '✅ Imagens prontas! Confira e aprove no fim da página.'
                                  : ('⚠️ '+ok+' de '+story.scenes.length+' prontas — use "Gerar de novo" nas que faltaram.'));
-  if(ok===story.scenes.length) liberar(5);
+  // fica NO PASSO 4 até o atendente aprovar (botão no rodapé)
+}
+// Só aqui o wizard avança pro passo 5.
+function aprovarImagens(){
+  const faltam = story.scenes.map((s,i)=>s.image_url?null:(i+1)).filter(Boolean);
+  if(faltam.length){
+    document.getElementById('notaAprovar').innerHTML = '⛔ Falta a imagem da(s) cena(s) '+faltam.join(', ')+' — use "Gerar de novo".';
+    toast('⛔ Ainda faltam imagens.'); return;
+  }
+  document.getElementById('notaAprovar').innerHTML='';
+  liberar(5);
 }
 async function gerarImagem(i){
   const s = story.scenes[i]; if(!s) return;
@@ -665,24 +689,81 @@ function pintarProgresso(){
   }).join('') + (montando ? '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo de 32s…</b></div>' : '');
 }
 let montando = false;
-async function finalizar(){
-  if(!story || !story.scenes.every(s=>s.image_url)){ toast('🖼️ Gere as imagens antes.'); return; }
-  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
-  const btn=document.getElementById('btnFinal'); const old=btn.innerHTML;
+// PASSO 5-A: gera os 4 clipes de 8s (todos ao mesmo tempo). Custo: US$ 0,40 por cena.
+async function gerarCenas(){
+  if(!story || !story.scenes.every(s=>s.image_url)){ toast('🖼️ Aprove as imagens antes.'); return; }
+  const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
-  document.getElementById('notaFinal').textContent='Isso leva alguns minutos. Pode deixar a aba aberta.';
-  montando=false; pintarProgresso();
+  document.getElementById('notaFinal').textContent='Cada cena leva 2-4 minutos. Pode deixar a aba aberta.';
+  pintarProgresso();
   try{
-    // 1) os 4 clipes de 8s, todos ao mesmo tempo
     const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].video_url);
     if(faltam.length) await Promise.all(faltam.map(i=>gerarVideo(i)));
-    const clips = story.scenes.map(s=>s.video_url).filter(Boolean);
-    if(clips.length < story.scenes.length) throw new Error('alguma cena não ficou pronta — clique de novo pra tentar as que faltaram');
-    // 2) montagem
-    montando=true; pintarProgresso();
-    btn.innerHTML='<span class="spin"></span>Montando o vídeo…';
+    const prontas = story.scenes.filter(s=>s.video_url).length;
+    if(prontas < story.scenes.length){
+      document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+story.scenes.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
+      toast('⚠️ Faltaram cenas — clique de novo.'); return;
+    }
+    document.getElementById('notaFinal').textContent='';
+    document.getElementById('editorCortes').classList.remove('hide');
+    renderCortes();
+    toast('✅ Cenas prontas! Confira e apare o que precisar.');
+    rolarPara('editorCortes');
+  } finally { btn.disabled=false; btn.innerHTML=old; }
+}
+// Editor de corte por cena — resolve a alucinação que o Veo às vezes coloca no fim do clipe.
+function renderCortes(){
+  const box=document.getElementById('boxCortes'); if(!box||!story) return;
+  box.innerHTML='';
+  story.scenes.forEach(function(s,i){
+    if(!s.video_url) return;
+    const ini=Number(s.cortaIni||0), fim=Number(s.cortaFim||0);
+    const dur=Math.max(1, 8-ini-fim);
+    const d=document.createElement('div'); d.className='sb';
+    d.innerHTML =
+      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'">'+dur.toFixed(1)+'s</span></div>'+
+      '<video src="'+s.video_url+'" controls playsinline preload="metadata"></video>'+
+      '<div class="mini">✂️ Cortar do início: <b data-li="'+i+'">'+ini.toFixed(1)+'s</b></div>'+
+      '<input type="range" data-ci="'+i+'" min="0" max="3" step="0.1" value="'+ini+'" style="width:100%"/>'+
+      '<div class="mini">✂️ Cortar do fim: <b data-lf="'+i+'">'+fim.toFixed(1)+'s</b></div>'+
+      '<input type="range" data-cf2="'+i+'" min="0" max="3" step="0.1" value="'+fim+'" style="width:100%"/>'+
+      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="verTrecho('+i+')">▶ Ver só o trecho que vai entrar</button>';
+    box.appendChild(d);
+  });
+  const upd=(i)=>{
+    const s=story.scenes[i];
+    const ini=Number(s.cortaIni||0), fim=Number(s.cortaFim||0);
+    const li=box.querySelector('[data-li="'+i+'"]'), lf=box.querySelector('[data-lf="'+i+'"]'), du=box.querySelector('[data-dur="'+i+'"]');
+    if(li) li.textContent=ini.toFixed(1)+'s'; if(lf) lf.textContent=fim.toFixed(1)+'s';
+    if(du) du.textContent=Math.max(1, 8-ini-fim).toFixed(1)+'s';
+    const tot=story.scenes.reduce((a,x)=>a+Math.max(1, 8-Number(x.cortaIni||0)-Number(x.cortaFim||0)),0);
+    document.getElementById('notaMontagem').textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
+  };
+  box.querySelectorAll('[data-ci]').forEach(el=>el.addEventListener('input',function(){ const i=+el.dataset.ci; story.scenes[i].cortaIni=parseFloat(el.value)||0; upd(i); }));
+  box.querySelectorAll('[data-cf2]').forEach(el=>el.addEventListener('input',function(){ const i=+el.dataset.cf2; story.scenes[i].cortaFim=parseFloat(el.value)||0; upd(i); }));
+  story.scenes.forEach((s,i)=>{ if(s.video_url) upd(i); });
+}
+// toca só o pedaço que vai entrar na montagem, pro atendente conferir o corte
+function verTrecho(i){
+  const s=story.scenes[i]; const box=document.getElementById('boxCortes');
+  const vids=box.querySelectorAll('video'); const v=vids[Array.from(box.querySelectorAll('.sb')).findIndex(el=>el.querySelector('.sb-n').textContent==='CENA '+(i+1))] || vids[i];
+  if(!v) return;
+  const ini=Number(s.cortaIni||0), fim=8-Number(s.cortaFim||0);
+  v.currentTime=ini; v.play();
+  const parar=()=>{ if(v.currentTime>=fim){ v.pause(); v.removeEventListener('timeupdate',parar); } };
+  v.addEventListener('timeupdate',parar);
+}
+// PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
+async function finalizar(){
+  if(!story || !story.scenes.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
+  const btn=document.getElementById('btnFinal'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…';
+  montando=true; pintarProgresso();
+  try{
+    const clips = story.scenes.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
     const r = await api('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
-      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, musicVolume: volTrilha }) });
+      musicUrl: trilhaSel?trilhaSel.url:null, music: musica }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     for(let t=0;t<80;t++){
@@ -694,14 +775,14 @@ async function finalizar(){
         document.getElementById('videoFinal').src = d2.url;
         document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
         montando=false; pintarProgresso();
-        document.getElementById('notaFinal').textContent='';
-        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal'); toast('🎉 Vídeo de 32s pronto!');
+        document.getElementById('notaMontagem').textContent='';
+        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal'); toast('🎉 Vídeo pronto!');
         return;
       }
       if(d2.ok && d2.status==='failed') throw new Error('a montagem falhou');
     }
     throw new Error('a montagem demorou demais');
-  } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaFinal').textContent='⚠️ '+e.message; }
+  } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaMontagem').textContent='⚠️ '+e.message; }
   finally { montando=false; pintarProgresso(); btn.disabled=false; btn.innerHTML=old; }
 }
 function baixarFinal(){
