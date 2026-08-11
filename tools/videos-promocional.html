@@ -601,7 +601,7 @@ function renderImagens(){
 function renderVideos(){ pintarProgresso(); }
 async function gerarVideo(i){
   const s=story.scenes[i]; if(!s||!s.image_url){ toast('Aprove a imagem primeiro.'); return; }
-  s.video_status='gerando'; s.video_url=''; renderVideos();
+  s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
   try{
     const resumoAnterior = i>0 ? JSON.stringify(story.scenes[i-1].final_state||{}) : '';
     const r = await api('/histVideoStart', { method:'POST', body: JSON.stringify({
@@ -611,11 +611,11 @@ async function gerarVideo(i){
     if(!d.ok) throw new Error(d.error||'Falha ao disparar o vídeo');
     custoUSD += (d.custoUSD||0);
     await acompanharVideo(i, d.predictionId);
-  } catch(e){ s.video_status='erro'; renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); }
+  } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); }
 }
 async function acompanharVideo(i, predictionId){
   const s=story.scenes[i];
-  for(let t=0;t<90;t++){
+  for(let t=0;t<60;t++){
     await new Promise(r=>setTimeout(r, 8000));
     try{
       const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
@@ -623,9 +623,9 @@ async function acompanharVideo(i, predictionId){
       if(!d.ok){ continue; }
       if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
       if(d.status==='failed'){ throw new Error(d.error||'o motor falhou'); }
-    } catch(e){ s.video_status='erro'; renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); return; }
+    } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); return; }
   }
-  s.video_status='erro'; renderVideos(); toast('⚠️ Cena '+(i+1)+' demorou demais — gere de novo.');
+  s.video_status='erro'; s.video_error='o motor demorou demais (mais de 8 min)'; renderVideos(); toast('⚠️ Cena '+(i+1)+' demorou demais.');
 }
 
 // ══ TELA 7 — TRILHA ══
@@ -659,8 +659,9 @@ function pintarProgresso(){
   const box=document.getElementById('progresso'); if(!box||!story) return;
   box.innerHTML = story.scenes.map(function(s,i){
     const ic = s.video_url ? '✅' : (s.video_status==='gerando' ? '<span class="spin" style="border-top-color:var(--gold)"></span>' : (s.video_status==='erro' ? '⚠️' : '⏳'));
-    const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando…' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
-    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+'</div>';
+    const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando… (2-4 min)' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
+    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+'</div>'+
+           (s.video_error ? ('<div class="alerta" style="margin-top:-.25rem;margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error)+'</div>') : '');
   }).join('') + (montando ? '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo de 32s…</b></div>' : '');
 }
 let montando = false;
