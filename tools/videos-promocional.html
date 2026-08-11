@@ -72,6 +72,15 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .est{font-size:11.5px;color:var(--text-dim);background:var(--bg-input);border-radius:6px;padding:.4rem .55rem;margin-top:.4rem;line-height:1.45;word-break:break-word}
 .alerta{background:rgba(230,90,90,.12);border:.5px solid rgba(230,90,90,.5);color:#E87070;border-radius:var(--radius);padding:.55rem .7rem;margin-top:.5rem;font-size:12.5px;line-height:1.45}
 .prog-item{display:flex;align-items:center;gap:.6rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .7rem;margin-bottom:.45rem;font-size:13px;color:var(--text-mid)}
+/* barra de passos do wizard (horizontal, com setinhas) */
+.wzbar{display:flex;align-items:center;gap:.25rem;overflow-x:auto;padding:.1rem 0 .7rem;margin-bottom:.4rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.wzbar::-webkit-scrollbar{display:none}
+.wzp{display:flex;align-items:center;gap:.4rem;flex:0 0 auto;background:var(--bg-card);border:.5px solid var(--border);color:var(--text-dim);border-radius:999px;padding:.4rem .75rem;font-size:12.5px;cursor:default;white-space:nowrap;transition:all .15s}
+.wzp.liberado{cursor:pointer;color:var(--text-mid);border-color:var(--border-bright)}
+.wzp.atual{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:700}
+.wzp.feito{color:#6FD08C;border-color:rgba(90,190,120,.45)}
+.wzn{font-family:'Cinzel',serif;font-weight:700}
+.wzseta{flex:0 0 auto;color:var(--text-dim);font-size:13px}
 /* imagens/vídeos */
 .cena-img{width:100%;max-width:190px;border-radius:10px;border:.5px solid var(--border);display:block;margin:0 auto .4rem;background:var(--bg-input)}
 .cena-ph{width:100%;max-width:190px;aspect-ratio:2/3;border-radius:10px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;text-align:center;padding:.5rem;margin:0 auto .4rem}
@@ -103,7 +112,11 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="page-sub">Briefing → 4 ideias → história de 4 cenas → imagens → vídeos → <b>vídeo final de 32s</b>. Você informa, escolhe e aprova; o resto é com a IA.</div>
   </div>
 
+  <!-- barra de passos (o wizard anda na horizontal, um passo por vez) -->
+  <div class="wzbar" id="wzbar"></div>
+
   <!-- ══ PASSO 1 — O PRODUTO (foto → a IA lê e sugere → você descreve) ══ -->
+  <div id="p1">
   <div class="step">
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Produto</div></div>
     <div class="mini">Cliente / empresa</div>
@@ -123,6 +136,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 
   <button class="btn-gold" id="btnIdeias" onclick="gerarIdeias()">✨ GERAR 4 IDEIAS</button>
+  </div><!-- /p1 -->
 
   <!-- ══ TELA 3 — 4 IDEIAS ══ -->
   <div id="telaIdeias" class="hide">
@@ -211,8 +225,38 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function escA(s){ return esc(s).replace(/"/g,'&quot;'); }
 function contarCaracteres(t){ return Array.from(String(t||'').trim()).length; }
 function falaValida(t){ const n=contarCaracteres(t); return n>=FALA_MIN && n<=FALA_MAX; }
-function mostrar(id){ document.getElementById(id).classList.remove('hide'); }
-function rolarPara(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
+function mostrar(id){ const el=document.getElementById(id); if(el) el.classList.remove('hide'); }
+function rolarPara(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
+
+// ── Wizard horizontal: um passo por vez, com a trilha de passos no topo ──
+const PASSOS = [
+  { n:1, id:'p1',          rot:'Produto'  },
+  { n:2, id:'telaIdeias',  rot:'Ideia'    },
+  { n:3, id:'telaStory',   rot:'História' },
+  { n:4, id:'telaImagens', rot:'Imagens'  },
+  { n:5, id:'telaTrilha',  rot:'Vídeo'    }
+];
+let passoAtual = 1, passoMax = 1;
+function irPara(n){
+  if(n < 1 || n > PASSOS.length || n > passoMax) return;
+  passoAtual = n;
+  PASSOS.forEach(function(p){ const el=document.getElementById(p.id); if(el) el.classList.toggle('hide', p.n !== n); });
+  // o vídeo pronto só aparece junto do último passo
+  const fin=document.getElementById('telaFinal');
+  if(fin) fin.classList.toggle('hide', !(n === 5 && videoFinalUrl));
+  pintarBarra();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function liberar(n){ passoMax = Math.max(passoMax, n); irPara(n); }
+function pintarBarra(){
+  const bar=document.getElementById('wzbar'); if(!bar) return;
+  bar.innerHTML = PASSOS.map(function(p,k){
+    const cls = 'wzp' + (p.n===passoAtual ? ' atual' : (p.n<=passoMax ? ' liberado' : '')) + (p.n<passoMax ? ' feito' : '');
+    return (k ? '<span class="wzseta">→</span>' : '') +
+      '<div class="'+cls+'" onclick="irPara('+p.n+')"><span class="wzn">'+p.n+'</span> '+p.rot+'</div>';
+  }).join('');
+  const at = bar.querySelector('.wzp.atual'); if(at && at.scrollIntoView) at.scrollIntoView({ block:'nearest', inline:'center' });
+}
 
 // ── Estado do projeto ──
 const projectId = 'hist_' + Date.now();
@@ -330,7 +374,7 @@ async function gerarIdeias(){
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     brief=d.brief; visualBible=d.visualBible; conceitos=d.concepts; conceitoIdx=-1;
     custoUSD += (d.aiCostUSD||0);
-    renderIdeias(); mostrar('telaIdeias'); rolarPara('telaIdeias');
+    renderIdeias(); liberar(2);
     toast('✅ 4 ideias criadas! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
   } catch(e){ toast('⚠️ '+e.message); }
   finally { btn.disabled=false; btn.innerHTML=old; }
@@ -404,7 +448,7 @@ async function gerarHistoria(){
     const d = await r.json();
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     story = d.story; custoUSD += (d.aiCostUSD||0);
-    renderStory(); mostrar('telaStory'); rolarPara('telaStory');
+    renderStory(); liberar(3);
     const inval = (d.falasInvalidas||[]);
     if(inval.length){ toast('⚙️ Ajustando '+inval.length+' fala(s) fora da faixa…'); await ajustarTodasFalas(true); }
     else toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
@@ -494,29 +538,37 @@ function copiarHistoria(){
 // ══ TELA 5 — IMAGENS ══
 async function gerarImagens(){
   if(!story) return;
-  mostrar('telaImagens'); renderImagens(); rolarPara('telaImagens');
-  // Cena 1 primeiro (ela vira o VISUAL MASTER); as outras em paralelo reaproveitando o estilo dela.
-  if(!story.scenes[0].image_url){ await gerarImagem(0); }
-  if(!story.scenes[0].image_url){ toast('⚠️ A cena 1 falhou — tente de novo.'); return; }
-  visualMaster = story.scenes[0].image_url;
-  const outras = story.scenes.map((s,i)=>i).filter(i=>i>0 && !story.scenes[i].image_url);
-  if(outras.length) await Promise.all(outras.map(i=>gerarImagem(i)));
-  toast('✅ Imagens prontas! Se gostou, é só gerar o vídeo.');
-  if(story.scenes.every(s=>s.image_url)){ mostrar('telaTrilha'); rolarPara('telaTrilha'); }
+  liberar(4); renderImagens();
+  // AS 4 DE UMA VEZ. Quem falhar é refeito sozinho logo em seguida (a OpenAI às vezes recusa
+  // uma da rajada por limite de taxa) — assim o atendente não precisa ficar clicando.
+  const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].image_url);
+  if(faltam.length) await Promise.all(faltam.map(i=>gerarImagem(i)));
+  const erradas = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].image_url);
+  if(erradas.length){
+    toast('⏳ '+erradas.length+' cena(s) falharam — tentando de novo…');
+    await new Promise(r=>setTimeout(r,2500));
+    await Promise.all(erradas.map(i=>gerarImagem(i)));
+  }
+  if(story.scenes[0].image_url) visualMaster = story.scenes[0].image_url;
+  const ok = story.scenes.filter(s=>s.image_url).length;
+  toast(ok===story.scenes.length ? '✅ Imagens prontas! Se gostou, é só gerar o vídeo.'
+                                 : ('⚠️ '+ok+' de '+story.scenes.length+' prontas — use "Gerar de novo" nas que faltaram.'));
+  if(ok===story.scenes.length) liberar(5);
 }
 async function gerarImagem(i){
   const s = story.scenes[i]; if(!s) return;
-  s.image_status='gerando'; renderImagens();
+  s.image_status='gerando'; s.image_error=''; renderImagens();
   try{
     const r = await api('/histImagem', { method:'POST', body: JSON.stringify({
       imagePrompt: s.image_prompt, references: refsPayload(), cena: i+1,
+      // o Visual Master só entra quando a cena 1 JÁ existe (nas regerações) — na 1ª rodada as 4 saem juntas
       visualMaster: (i>0 ? visualMaster : null), ajuste: s._ajuste||'' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na imagem');
-    s.image_url = d.base64; s.image_status='pronta'; s.image_approved=false;
+    s.image_url = d.base64; s.image_status='pronta';
     custoUSD += (d.custoUSD||0);
     if(i===0) visualMaster = d.base64;
-  } catch(e){ s.image_status='erro'; toast('⚠️ Cena '+(i+1)+': '+e.message); }
+  } catch(e){ s.image_status='erro'; s.image_error = String(e.message||'').slice(0,220); }
   finally { renderImagens(); }
 }
 function renderImagens(){
@@ -534,7 +586,7 @@ function renderImagens(){
       '<div class="sb-head"><div class="sb-n">'+(PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'</div>'+st+'</div>'+
       img+
       '<div class="cc-lin" style="margin-top:.4rem">🗣️ '+esc(s.dialogue)+'</div>'+
-      '<span class="cont '+e.cls+'">'+e.txt+'</span>'+
+      (s.image_error ? ('<div class="alerta">⚠️ '+esc(s.image_error)+'</div>') : '')+
       '<div class="mini">✏️ O que mudar nesta imagem (opcional)</div>'+
       '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>'+
       '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="gerarImagem('+i+')"'+(s.image_status==='gerando'?' disabled':'')+'>🔄 Gerar de novo</button>';
@@ -642,7 +694,7 @@ async function finalizar(){
         document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
         montando=false; pintarProgresso();
         document.getElementById('notaFinal').textContent='';
-        mostrar('telaFinal'); rolarPara('telaFinal'); toast('🎉 Vídeo de 32s pronto!');
+        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal'); toast('🎉 Vídeo de 32s pronto!');
         return;
       }
       if(d2.ok && d2.status==='failed') throw new Error('a montagem falhou');
@@ -659,6 +711,7 @@ function baixarFinal(){
 function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link copiado!'); }
 
 // ── início ──
+pintarBarra();
 carregarTrilhas();
 </script>
 </body>
