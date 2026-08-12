@@ -66,14 +66,12 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 /* refazer 1 cena no editor de cortes */
 .btn-refaz{width:100%;margin-top:.4rem;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
-/* leitura da foto pela IA (passo 1) */
-.leitura{background:var(--bg-input);border:.5px solid var(--border);border-left:2.5px solid var(--gold);border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
-.opt{background:var(--bg-card);border:.5px solid var(--border-bright);color:var(--gold);border-radius:999px;padding:.35rem .8rem;font-size:12.5px;cursor:pointer;user-select:none;transition:all .15s}
-.opt:hover{background:rgba(201,168,76,.14)}
+/* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
+.aviso-ok{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
+.aviso-ok b{color:#fff}
 /* cards de conceito */
 .cc{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
 .cc.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
-.cc-ang{display:inline-block;background:var(--bg-input);border:.5px solid var(--border);color:var(--gold);border-radius:6px;padding:.2rem .55rem;font-size:11px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.04em}
 .cc-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:16px;font-weight:700;margin:.5rem 0}
 .cc-lin{font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:.35rem}
 .cc-lin b{color:var(--text-dim);font-weight:500}
@@ -165,13 +163,16 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <input type="text" id="fCliente" placeholder="Ex: Body Club Fitness"/>
 
     <div class="mini" style="margin-top:.9rem">Foto do produto <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">Suba a foto do que vai ser divulgado.</div>
+    <div class="step-hint">O que vai ser divulgado.</div>
     <div class="thumbs" id="thProduto"></div>
     <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
 
-    <div id="leituraIA" class="hide"></div>
+    <div class="mini" style="margin-top:.9rem">Foto do ambiente <span style="color:var(--text-dim)">(opcional)</span></div>
+    <div class="step-hint">O lugar onde a cena acontece — loja, academia, cozinha, balcão.</div>
+    <div class="thumbs" id="thAmbiente"></div>
+    <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
 
-    <div id="boxDescricao" class="hide">
+    <div id="boxDescricao" style="margin-top:.9rem">
       <div class="mini">O que exatamente você quer divulgar nessa imagem? <span style="color:var(--gold)">*</span></div>
       <textarea id="fBriefing" style="min-height:100px" placeholder="Ex: a regata dry fit — tecido leve, seca rápido e não gruda no corpo mesmo no treino pesado"></textarea>
     </div>
@@ -189,23 +190,26 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div id="boxIdeias"></div>
   </div>
 
-  <!-- ══ TELA 4 — STORYBOARD ══ -->
+  <!-- ══ PASSO 3 — IMAGENS (12/08: vêm ANTES da história) ══ -->
+  <div id="telaImagens" class="hide">
+    <div class="sec-title">Passo 3 · 🖼️ As 4 imagens</div>
+    <button class="btn-gold" id="btnImagens" onclick="gerarImagens()">🎨 GERAR AS 4 IMAGENS</button>
+    <div class="soon-note" id="notaImagens"></div>
+    <div id="boxImagens" style="margin-top:.9rem"></div>
+    <button class="btn-gold hide" id="btnAprovarImgs" onclick="aprovarImagens()" style="margin-top:.4rem">✅ APROVAR IMAGENS E ESCREVER A HISTÓRIA</button>
+    <div class="soon-note" id="notaAprovar"></div>
+  </div>
+
+  <!-- ══ PASSO 4 — HISTÓRIA (as falas, escritas olhando as imagens prontas) ══ -->
   <div id="telaStory" class="hide">
-    <div class="sec-title">Passo 3 · 🎬 A história em 4 cenas</div>
+    <div class="sec-title">Passo 4 · 🎬 A história em 4 cenas</div>
+    <div id="avisoFalas" class="hide"></div>
     <div id="boxStory"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
       <button class="btn-ghost" onclick="copiarHistoria()">📋 Copiar história</button>
     </div>
-    <button class="btn-gold" id="btnImagens" onclick="gerarImagens()">🎨 GERAR AS 4 IMAGENS</button>
-    <div class="soon-note" id="notaImagens"></div>
-  </div>
-
-  <!-- ══ TELA 5 — IMAGENS ══ -->
-  <div id="telaImagens" class="hide">
-    <div class="sec-title">Passo 4 · 🖼️ Aprove as imagens</div>
-    <div id="boxImagens"></div>
-    <button class="btn-gold" id="btnAprovarImgs" onclick="aprovarImagens()" style="margin-top:.4rem">✅ APROVAR IMAGENS</button>
-    <div class="soon-note" id="notaAprovar"></div>
+    <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎵 IR PARA O VÍDEO</button>
+    <div class="soon-note" id="notaStory"></div>
   </div>
 
   <!-- ══ TELA 6 — VÍDEOS ══ -->
@@ -296,8 +300,8 @@ function rolarPara(id){ const el=document.getElementById(id); if(el) el.scrollIn
 const PASSOS = [
   { n:1, id:'p1',          rot:'Produto'  },
   { n:2, id:'telaIdeias',  rot:'Ideia'    },
-  { n:3, id:'telaStory',   rot:'História' },
-  { n:4, id:'telaImagens', rot:'Imagens'  },
+  { n:3, id:'telaImagens', rot:'Imagens'  },
+  { n:4, id:'telaStory',   rot:'História' },
   { n:5, id:'telaTrilha',  rot:'Vídeo'    }
 ];
 let passoAtual = 1, passoMax = 1;
@@ -356,7 +360,8 @@ function estadoAtual(){
     cliente: (document.getElementById('fCliente')||{}).value||'',
     briefing: (document.getElementById('fBriefing')||{}).value||'',
     passo: passoAtual, passoMax: passoMax,
-    leitura: leitura, refsProduto: refs.product.map(p=>p.base64||p.url||''),
+    refsProduto: refs.product.map(p=>p.base64||p.url||''),
+    refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
     visualBible: visualBible, conceitos: conceitos, conceitoIdx: conceitoIdx,
     story: story, trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
   };
@@ -415,20 +420,20 @@ async function abrirProjeto(id){
     projectId = p.projectId;
     document.getElementById('fCliente').value = p.cliente||'';
     document.getElementById('fBriefing').value = p.briefing||'';
-    leitura = p.leitura||null; visualBible = p.visualBible||null;
+    visualBible = p.visualBible||null;
     conceitos = p.conceitos||[]; conceitoIdx = (typeof p.conceitoIdx==='number')?p.conceitoIdx:-1;
     story = p.story||null; custoUSD = Number(p.custoUSD)||0;
     trilhaSel = p.trilha||null; musica=null;
     videoFinalUrl = p.videoUrl||'';
     // fotos do produto voltam como URL do R2
-    refs.product = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
+    refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
+    refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     visualMaster = (story && story.scenes && story.scenes[0] && story.scenes[0].image_url) || null;
     // repinta o que existir
-    if(leitura) pintarLeitura();
-    renderThumbs('product');
+    renderThumbs('product'); renderThumbs('environment');
     if(conceitos.length) renderIdeias();
-    if(story) renderStory();
     if(story && story.scenes.some(s=>s.image_url)) renderImagens();
+    if(story && story.scenes.some(s=>s.dialogue)) renderStory();
     if(story && story.scenes.every(s=>s.video_url)){
       document.getElementById('editorCortes').classList.remove('hide'); renderCortes();
     }
@@ -474,44 +479,12 @@ async function onPick(ev, cat){
     try { refs[cat].push(await fileToOptimizedImage(f)); } catch(e){ toast('⚠️ Não consegui ler a imagem'); }
   }
   renderThumbs(cat);
-  if (cat==='product' && refs.product.length) analisarFoto();   // a IA lê a foto assim que ela chega
 }
-const BOX = { product:'thProduto' };   // só o produto tem uploader na tela agora
+const BOX = { product:'thProduto', environment:'thAmbiente' };   // produto + ambiente têm uploader na tela
 
-// ── PASSO 1: a IA lê a foto e sugere, direto, o que dá pra divulgar ali ──
-let leitura = null;
-async function analisarFoto(){
-  if(!refs.product.length) return;
-  const box=document.getElementById('leituraIA'); box.classList.remove('hide');
-  box.innerHTML='<div class="leitura"><span class="spin" style="border-top-color:var(--gold)"></span>Lendo a imagem…</div>';
-  try{
-    const r=await api('/histAnalisarFoto',{ method:'POST', body: JSON.stringify({ fotos: refs.product.map(f=>({ base64:f.base64, mimeType:f.mimeType })) }) });
-    const d=await r.json();
-    if(!d.ok) throw new Error(d.error||'não consegui ler a imagem');
-    leitura=d; custoUSD += (d.aiCostUSD||0);
-    pintarLeitura();
-  }catch(e){ box.innerHTML='<div class="leitura">⚠️ '+esc(e.message)+' — escreva você mesmo o que quer divulgar.</div>'; }
-  document.getElementById('boxDescricao').classList.remove('hide');
-}
-// pinta o que a IA leu na foto (usado ao analisar e ao reabrir um projeto salvo)
-function pintarLeitura(){
-  const box=document.getElementById('leituraIA'); const d=leitura; if(!box||!d) return;
-  box.classList.remove('hide');
-  box.innerHTML =
-    '<div class="leitura"><b>Recebi a foto ✅</b>'+
-    (d.viu?('<div style="margin-top:.35rem;color:var(--text-mid)">👀 '+esc(d.viu)+'</div>'):'')+
-    '<div style="margin-top:.6rem">Agora me diga: <b>o que exatamente você quer divulgar nessa imagem?</b></div>'+
-    (d.opcoes && d.opcoes.length ? ('<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.35rem">'+
-      d.opcoes.map(o=>'<span class="opt" onclick="usarOpcao(this)">'+esc(o)+'</span>').join('')+'</div>'+
-      '<div class="soon-note">Toque numa sugestão pra usar, ou escreva do seu jeito.</div>') : '')+
-    '</div>';
-  const bd=document.getElementById('boxDescricao'); if(bd) bd.classList.remove('hide');
-}
-function usarOpcao(el){
-  const ta=document.getElementById('fBriefing'); const v=el.textContent.trim();
-  ta.value = ta.value.trim() ? (ta.value.trim().replace(/[,\s]*$/,'')+', '+v) : v;
-  ta.focus();
-}
+// PASSO 1 (12/08): a leitura automática da foto pela IA foi REMOVIDA a pedido do Thiago.
+// Agora é só upload de produto + ambiente e o atendente escreve o que quer divulgar.
+// A rota /histAnalisarFoto continua existindo no Worker, mas ninguém mais a chama.
 function renderThumbs(cat){
   const box = document.getElementById(BOX[cat]); if(!box) return;
   box.innerHTML='';
@@ -551,7 +524,7 @@ function briefPayload(){
   return {
     client: document.getElementById('fCliente').value.trim(),
     niche: '',
-    product: (leitura && leitura.principal) || '',
+    product: '',
     briefing: document.getElementById('fBriefing').value.trim(),
     tone: 'automatico', protagonistMode: 'automatico', preserveEnvironment: false
   };
@@ -575,14 +548,13 @@ async function gerarIdeias(){
   } catch(e){ toast('⚠️ '+e.message); }
   finally { btn.disabled=false; btn.innerHTML=old; }
 }
-const ROTULO_ANG = { problema_confronto:'PROBLEMA / CONFRONTO', beneficio_demonstracao:'BENEFÍCIO / DEMONSTRAÇÃO', exagero_absurdo:'EXAGERO / ABSURDO', desejo_transformacao:'DESEJO / TRANSFORMAÇÃO' };
+// As 4 personalidades são FIXAS (12/08) — o título já vem pronto do Worker ("O açaí dá bronca").
 function renderIdeias(){
   const box=document.getElementById('boxIdeias'); box.innerHTML='';
   conceitos.forEach(function(c,i){
     const d=document.createElement('div'); d.className='cc'+(i===conceitoIdx?' sel':'');
     d.innerHTML =
-      '<span class="cc-ang">'+(ROTULO_ANG[c.angle]||c.angle||('IDEIA '+c.id))+'</span>'+
-      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+'</div>'+
+      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+' —</div>'+
       '<input type="text" data-ci="'+i+'" data-cf="title" value="'+escA(c.title)+'" placeholder="Título da ideia"/>'+
       '<div class="mini">[CENA]</div><textarea data-ci="'+i+'" data-cf="scene" style="min-height:52px">'+esc(c.scene)+'</textarea>'+
       '<div class="mini">[AMBIENTE]</div><textarea data-ci="'+i+'" data-cf="environment" style="min-height:44px">'+esc(c.environment)+'</textarea>'+
@@ -616,7 +588,7 @@ async function escolherConceito(i){
   conceitoIdx = i; renderIdeias();
   // aviso no TOPO enquanto a IA monta a história (leva alguns segundos)
   const av=document.getElementById('avisoHistoria');
-  av.className='leitura'; av.innerHTML='<span class="spin" style="border-top-color:var(--gold)"></span><b>Construindo história…</b> montando as 4 cenas e ajustando as falas.';
+  av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Construindo história…</b> montando as 4 cenas e ajustando as falas.';
   window.scrollTo({top:0,behavior:'smooth'});
   try { await gerarHistoria(); }
   finally { av.className='hide'; av.innerHTML=''; }
@@ -641,20 +613,17 @@ function copiar(txt, msg){
 }
 
 // ══ TELA 4 — STORYBOARD ══
+// Monta as 4 CENAS (sem fala — a fala nasce no passo 4, depois das imagens) e leva pro passo 3.
 async function gerarHistoria(){
   const c = conceitos[conceitoIdx]; if(!c){ toast('Escolha uma ideia.'); return; }
-  toast('🎬 Montando a história de 4 cenas…');
+  toast('🎬 Montando as 4 cenas…');
   try{
     const r = await api('/histHistoria', { method:'POST', body: JSON.stringify({ brief, visualBible, concept:c, references: refsPayload() }) });
     const d = await r.json();
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     story = d.story; custoUSD += (d.aiCostUSD||0);
-    // o servidor já entrega as 4 falas dentro do limite; se ainda escapar alguma, conserta aqui,
-    // em paralelo e sem pedir nada ao atendente.
-    const fora = story.scenes.map((s,i)=>i).filter(i=>{ const n=contarCaracteres(story.scenes[i].dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; });
-    if(fora.length) await Promise.all(fora.map(i=>ajustarFala(i, true)));
-    renderStory(); liberar(3);
-    toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
+    renderImagens(); liberar(3);
+    toast('✅ Cenas prontas — agora gere as imagens.');
   } catch(e){ toast('⚠️ '+e.message); }
 }
 const PAPEL = [
@@ -677,9 +646,8 @@ function renderStory(){
     const d=document.createElement('div'); d.className='sb'+(falaValida(s.dialogue)?' ok':'');
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">'+p.t+'</div><span class="badge badge-fn">'+p.b+'</span></div>'+
-      (s.visual_description?('<div class="cc-lin"><b>Cena:</b> '+esc(s.visual_description)+'</div>'):'')+
+      (s.image_url?('<img class="cena-img" src="'+escA(imgSrc(s.image_url))+'"/>'):'')+
       (s.action?('<div class="cc-lin"><b>Ação:</b> '+esc(s.action)+'</div>'):'')+
-      (s.emotion?('<div class="cc-lin"><b>Emoção:</b> '+esc(s.emotion)+'</div>'):'')+
       '<div class="mini">🗣️ Fala desta cena</div>'+
       '<textarea data-fa="'+i+'" style="min-height:78px">'+esc(s.dialogue)+'</textarea>'+
       '<div class="alerta hide" data-al="'+i+'"></div>';
@@ -708,9 +676,9 @@ function atualizarBotaoImagens(){
   if(!story) return;
   // bloqueia só no limite DURO (140-160); dentro disso segue sem encher a tela de aviso
   const ruins = story.scenes.filter(s=>{ const n=contarCaracteres(s.dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; }).length;
-  const btn=document.getElementById('btnImagens'); const nota=document.getElementById('notaImagens');
-  btn.disabled = ruins>0;
-  nota.innerHTML = ruins>0 ? ('⛔ Corrija a(s) fala(s) marcada(s) em vermelho pra liberar a produção.') : '';
+  const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaStory');
+  if(btn) btn.disabled = ruins>0;
+  if(nota) nota.innerHTML = ruins>0 ? ('⛔ Corrija a(s) fala(s) marcada(s) em vermelho pra liberar a produção.') : '';
 }
 async function ajustarFala(i, silencioso){
   const s = story.scenes[i]; if(!s) return;
@@ -741,7 +709,12 @@ function copiarHistoria(){
 // ══ TELA 5 — IMAGENS ══
 async function gerarImagens(){
   if(!story) return;
-  liberar(4); renderImagens();
+  const btn=document.getElementById('btnImagens'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Desenhando as 4 cenas…';
+  try{ await gerarImagensInterno(); } finally { btn.disabled=false; btn.innerHTML=old; }
+}
+async function gerarImagensInterno(){
+  renderImagens();
   // AS 4 DE UMA VEZ. Quem falhar é refeito sozinho logo em seguida (a OpenAI às vezes recusa
   // uma da rajada por limite de taxa) — assim o atendente não precisa ficar clicando.
   const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].image_url);
@@ -756,16 +729,37 @@ async function gerarImagens(){
   const ok = story.scenes.filter(s=>s.image_url).length;
   toast(ok===story.scenes.length ? '✅ Imagens prontas! Confira e aprove no fim da página.'
                                  : ('⚠️ '+ok+' de '+story.scenes.length+' prontas — use "Gerar de novo" nas que faltaram.'));
-  // fica NO PASSO 4 até o atendente aprovar (botão no rodapé)
+  // fica NO PASSO 3 até o atendente aprovar (botão no rodapé)
 }
-// Só aqui o wizard avança pro passo 5.
-function aprovarImagens(){
+// Imagens aprovadas → a IA escreve as falas OLHANDO as imagens que de fato saíram → passo 4.
+async function aprovarImagens(){
   const faltam = story.scenes.map((s,i)=>s.image_url?null:(i+1)).filter(Boolean);
   if(faltam.length){
     document.getElementById('notaAprovar').innerHTML = '⛔ Falta a imagem da(s) cena(s) '+faltam.join(', ')+' — use "Gerar de novo".';
     toast('⛔ Ainda faltam imagens.'); return;
   }
   document.getElementById('notaAprovar').innerHTML='';
+  const btn=document.getElementById('btnAprovarImgs'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Escrevendo a história…';
+  liberar(4);
+  const av=document.getElementById('avisoFalas');
+  av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Escrevendo a história…</b> a IA está olhando as 4 imagens pra criar as falas.';
+  try{
+    const r = await api('/histFalas', { method:'POST', body: JSON.stringify({
+      brief, concept: conceitos[conceitoIdx]||{}, scenes: story.scenes }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    d.scenes.forEach(function(nova,i){ if(story.scenes[i]){ story.scenes[i].dialogue = nova.dialogue||''; story.scenes[i].dialogue_characters = nova.dialogue_characters||0; } });
+    custoUSD += (d.aiCostUSD||0);
+    renderStory();
+    toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
+  } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaStory').innerHTML='⚠️ '+esc(e.message)+' — volte ao passo 3 e clique de novo.'; }
+  finally { av.className='hide'; av.innerHTML=''; btn.disabled=false; btn.innerHTML=old; }
+}
+// Passo 4 → passo 5 (trilha + vídeo)
+function irParaVideo(){
+  const ruins = story.scenes.filter(s=>{ const n=contarCaracteres(s.dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; }).length;
+  if(ruins){ toast('⛔ Corrija as falas em vermelho.'); return; }
   liberar(5);
 }
 async function gerarImagem(i){
@@ -787,7 +781,6 @@ async function gerarImagem(i){
 function renderImagens(){
   const box=document.getElementById('boxImagens'); box.innerHTML='';
   story.scenes.forEach(function(s,i){
-    const n=contarCaracteres(s.dialogue), e=estadoFala(n);
     const st = s.image_status==='gerando' ? '<span class="stt s-run">⏳ gerando…</span>'
             : s.image_status==='erro'    ? '<span class="stt s-err">⚠️ erro</span>'
             : s.image_url                ? '<span class="stt s-ok">✅ pronta</span>'
@@ -798,7 +791,7 @@ function renderImagens(){
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">'+(PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'</div>'+st+'</div>'+
       img+
-      '<div class="cc-lin" style="margin-top:.4rem">🗣️ '+esc(s.dialogue)+'</div>'+
+      (s.action ? ('<div class="cc-lin" style="margin-top:.4rem">'+esc(s.action)+'</div>') : '')+
       (s.image_error ? ('<div class="alerta">⚠️ '+esc(s.image_error)+'</div>') : '')+
       '<div class="mini">✏️ O que mudar nesta imagem (opcional)</div>'+
       '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>'+
@@ -806,6 +799,8 @@ function renderImagens(){
     box.appendChild(d);
   });
   box.querySelectorAll('[data-aj]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.aj]._ajuste = el.value; }));
+  const bt=document.getElementById('btnAprovarImgs');
+  if(bt) bt.classList.toggle('hide', !story.scenes.every(x=>x.image_url));
 }
 // Não existe mais botão "aprovar": se o atendente não pediu pra mudar nada, está aprovado.
 // Assim que as 4 imagens existem, o último passo (trilha + gerar vídeo) aparece.
