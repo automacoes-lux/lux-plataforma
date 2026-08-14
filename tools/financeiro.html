@@ -287,9 +287,15 @@ input[type="file"]{display:none}
 .nf.wait{background:rgba(212,175,55,.12);color:var(--gold);border:.5px solid rgba(212,175,55,.35)}
 .nf.err{background:rgba(248,81,73,.12);color:#f85149;border:.5px solid rgba(248,81,73,.35)}
 .nf.off{background:rgba(255,255,255,.05);color:var(--text-dim);border:.5px solid var(--border)}
+/* nota emitida mas o emissor não devolve o arquivo (falha do provedor) */
+.nf.pdf{background:rgba(219,109,40,.14);color:#e0873f;border:.5px solid rgba(219,109,40,.4)}
+.nf-chip.pdf b{color:#e0873f}
 .nf-baixar{margin-left:4px;color:inherit;text-decoration:none;font-size:13px;line-height:1;opacity:.85}
 .nf-baixar:hover{opacity:1}
 .rn-at{display:none;color:var(--gold-dim)}   /* nome do atendente na linha de baixo: só no celular */
+.rn-data{display:none;color:var(--text-dim)} /* data na linha de baixo: só no celular */
+/* Aba "Ver atendente": Nome | Nota | Data | Hora | Valor */
+.rec-item.temnf{grid-template-columns:minmax(0,1fr) 128px 82px 42px 88px}
 /* Resumo das notas acima da lista */
 .nf-resumo{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px}
 .nf-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 11px;border-radius:10px;border:.5px solid var(--border);background:rgba(255,255,255,.02);color:var(--text-dim)}
@@ -319,6 +325,11 @@ input[type="file"]{display:none}
   .rec-item.feed .rd{display:none}
   .rec-item.head.feed span:nth-child(2){display:none}
   .rn-at{display:inline}
+  /* "Ver atendente" no celular: a coluna Data some (vai pra linha de baixo) */
+  .rec-item.temnf{grid-template-columns:minmax(0,1fr) 36px 40px 76px}
+  .rec-item.temnf .rd{display:none}
+  .rec-item.temnf.head span:nth-child(3){display:none}
+  .rn-data{display:inline}
   .nf-txt{display:none}
   .nf{padding:3px 5px;gap:2px}
 }
@@ -1400,7 +1411,7 @@ function avRenderMonth(me, start, end){
 async function avLoadMe(silent){
   const cont=document.getElementById('avConta');
   if(!silent){ cont.innerHTML='<div class="card"><div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div></div>'; document.getElementById('avRec').innerHTML=''; }
-  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?${avQS()}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); avRenderConta(d.me); avRenderRec(d.recebimentos||[]); }
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?${avQS()}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); await avNfCarregar(); avRenderConta(d.me); avRenderRec(d.recebimentos||[]); }
   catch(err){ if(!silent) cont.innerHTML=`<div class="card"><div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div></div>`; }
 }
 function avRenderConta(me){
@@ -1427,12 +1438,25 @@ function avRenderConta(me){
   html+=`</div>`;
   cont.innerHTML=html;
 }
+// Notas da aba "Ver atendente" (período próprio; só faz sentido quando inclui hoje)
+let avNfMapa={};
+async function avNfCarregar(){
+  const hoje=ymd(new Date());
+  if(!(avFromCur<=hoje && hoje<=avToCur)){ avNfMapa={}; return; }
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/notas?date=${encodeURIComponent(hoje)}`);
+    const d=await r.json();
+    avNfMapa=(d&&d.ok&&!d.naoConfigurado)?(d.porE2e||{}):{};
+  }catch(e){ avNfMapa={}; }
+}
 function avRenderRec(recebimentos){
   const cont=document.getElementById('avRec');
+  const temNf=Object.keys(avNfMapa).length>0;
+  const cls=temNf?'rec-item temnf':'rec-item';
   let html=`<div class="card"><div class="card-title">🧾 Recebimentos (${recebimentos.length})</div>`;
   if(recebimentos.length){
-    html+=`<div class="rec-box"><div class="rec-item head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>`;
-    html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}${t.doc?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc)}</small>`:''}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=`<div class="rec-box"><div class="${cls} head"><span>Nome</span>${temNf?'<span style="text-align:left">Nota fiscal</span>':''}<span>Data</span><span>Hora</span><span>Valor</span></div>`;
+    html+=recebimentos.map(t=>`<div class="${cls}"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc||'')}<span class="rn-data">${t.doc?' · ':''}${fmtDBR(t.data)}</span></small></div>${temNf?`<div style="text-align:left;min-width:0">${nfSelo(t.e2e,avNfMapa)}</div>`:''}<div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
     html+=`</div>`;
   } else { html+=`<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum recebimento neste período.</div></div>`; }
   html+=`</div>`;
@@ -1572,15 +1596,17 @@ async function nfCarregar(silent){
   finally{ nfCarregando = false; }
 }
 
-// selo de uma linha
-function nfSelo(e2e){
-  const n = e2e && nfMapa[e2e];
+// selo de uma linha. `mapa` permite usar outro conjunto (a aba "Ver atendente"
+// tem período próprio, então carrega o dela em avNfMapa).
+function nfSelo(e2e, mapa){
+  const n = e2e && (mapa || nfMapa)[e2e];
   if (!n) return '';
   // o <span class="nf-txt"> some no celular (fica só o ícone + o ⬇)
   if (n.situacao === 'disponivel')
     return `<span class="nf ok" title="Nota ${escapeHtml(n.numero||'')} emitida — clique no ⬇ para baixar">✓<span class="nf-txt"> Disponível</span>`
          + `<a class="nf-baixar" href="${WORKER_URL}${n.pdf}" target="_blank" rel="noopener" title="Baixar a nota em PDF">⬇</a></span>`;
   if (n.situacao === 'gerando')   return '<span class="nf wait" title="Emitida normalmente em poucos minutos">⏳<span class="nf-txt"> Gerando nota</span></span>';
+  if (n.situacao === 'sem_pdf')   return '<span class="nf pdf" title="A nota FOI emitida (o atendente marcou o ✅), mas o emissor não devolve o arquivo PDF. Falha do sistema de notas — avisar o Anderson.">📄<span class="nf-txt"> Sem PDF</span></span>';
   if (n.situacao === 'cancelada') return '<span class="nf off">✕<span class="nf-txt"> Cancelada</span></span>';
   return `<span class="nf err" title="${escapeHtml(n.motivo||('Passou de '+nfLimite+' min do pagamento e a nota não saiu'))}">⚠<span class="nf-txt"> Erro</span></span>`;
 }
@@ -1595,6 +1621,7 @@ function nfPintaResumo(){
     + `<span class="nf-chip wait">Gerando <b>${r.gerando||0}</b></span>`
     + `<span class="nf-chip err" onclick="nfAlternarErros()" title="Clique para ver quem ficou sem nota">`
     + `Com erro <b>${r.erro||0}</b> ${nfErrosAberto?'▲':'▼'}</span>`
+    + (r.sem_pdf ? `<span class="nf-chip pdf" title="Notas que FORAM emitidas mas o emissor não devolve o PDF — falha do sistema de notas, avisar o Anderson">Sem PDF <b>${r.sem_pdf}</b></span>` : '')
     + (r.cancelada ? `<span class="nf-chip">Canceladas <b>${r.cancelada}</b></span>` : '');
 }
 
