@@ -279,8 +279,35 @@ input[type="file"]{display:none}
 .rec-busca .cnt{font-size:12px;color:var(--gold-dim);white-space:nowrap}
 .rec-busca .x{display:none;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
 .rec-busca .x:hover{color:var(--text)}
-/* Feed "ao vivo": Cliente | Atendente | Hora | Valor (2ª coluna é nome, largura livre) */
-.rec-item.feed{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) 42px 88px}
+/* Feed "ao vivo": Cliente | Atendente | Nota | Hora | Valor (2ª coluna é nome, largura livre) */
+.rec-item.feed{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) 132px 42px 88px}
+/* Selo da nota fiscal */
+.nf{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.01em}
+.nf.ok{background:rgba(46,160,67,.14);color:#3fb950;border:.5px solid rgba(63,185,80,.35)}
+.nf.wait{background:rgba(212,175,55,.12);color:var(--gold);border:.5px solid rgba(212,175,55,.35)}
+.nf.err{background:rgba(248,81,73,.12);color:#f85149;border:.5px solid rgba(248,81,73,.35)}
+.nf.off{background:rgba(255,255,255,.05);color:var(--text-dim);border:.5px solid var(--border)}
+.nf-baixar{margin-left:4px;color:inherit;text-decoration:none;font-size:13px;line-height:1;opacity:.85}
+.nf-baixar:hover{opacity:1}
+/* Resumo das notas acima da lista */
+.nf-resumo{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px}
+.nf-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 11px;border-radius:10px;border:.5px solid var(--border);background:rgba(255,255,255,.02);color:var(--text-dim)}
+.nf-chip b{font-size:14px}
+.nf-chip.ok b{color:#3fb950}
+.nf-chip.wait b{color:var(--gold)}
+.nf-chip.err{cursor:pointer;border-color:rgba(248,81,73,.35)}
+.nf-chip.err b{color:#f85149}
+.nf-chip.err:hover{background:rgba(248,81,73,.08)}
+.nf-erros{border:.5px solid rgba(248,81,73,.3);border-radius:var(--radius);padding:11px 13px;margin:0 0 10px;background:rgba(248,81,73,.04);font-size:13px}
+.nf-erros .lin{display:grid;grid-template-columns:minmax(0,1fr) 92px 62px;gap:8px;padding:6px 0;border-bottom:.5px solid rgba(255,255,255,.05);align-items:center}
+.nf-erros .lin:last-child{border-bottom:none}
+.nf-erros .culpa{font-size:11px;padding:2px 7px;border-radius:999px;white-space:nowrap;text-align:center}
+.nf-erros .culpa.at{background:rgba(212,175,55,.14);color:var(--gold)}
+.nf-erros .culpa.sis{background:rgba(248,81,73,.14);color:#f85149}
+@media (max-width:640px){
+  .rec-item.feed{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) 112px 40px 78px}
+  .nf-erros .lin{grid-template-columns:minmax(0,1fr) 78px;}
+}
 /* Celular: aperta as colunas fixas e o espaçamento pra sobrar mais espaço pro Nome */
 @media (max-width:480px){
   .rec-item{grid-template-columns:minmax(0,1fr) 80px 42px 80px;gap:6px;padding:10px 10px}
@@ -367,6 +394,8 @@ input[type="file"]{display:none}
       <div class="section-sub">Por atendente</div>
       <div id="avoPorAtend"><div class="bd-note">—</div></div>
       <div class="section-sub">Recebimentos (mais recentes primeiro)</div>
+      <div class="nf-resumo" id="nfResumo" style="display:none"></div>
+      <div class="nf-erros" id="nfErros" style="display:none"></div>
       <div class="rec-busca">
         <span class="ico">🔍</span>
         <input id="avoBusca" type="text" autocomplete="off" placeholder="Buscar pagador por nome, CPF/CNPJ ou valor…" oninput="avoFiltrar()" onkeydown="if(event.key==='Escape')avoLimparBusca()"/>
@@ -1490,6 +1519,10 @@ async function setFechamentoDia(arg){
   document.getElementById('avoBtnHoje').classList.toggle('active', d===hoje);
   document.getElementById('avoBtnOntem').classList.toggle('active', d===ontem);
   aovivoLoad();
+  // notas do dia novo: zera o que era do dia anterior antes de consultar
+  nfMapa={}; nfResumoDado=null; nfErrosAberto=false;
+  document.getElementById('nfErros').style.display='none';
+  nfCarregar(true);
   loadMpAdmin();   // vendas Mercado Pago dos atendentes no dia escolhido
   // rascunho primeiro: correção sua tem prioridade sobre o automático (Meta/Rotator)
   let st=null;
@@ -1498,7 +1531,7 @@ async function setFechamentoDia(arg){
   if(rc.anuncioUSD==null) puxarAnuncioMeta(true);            // sem correção → puxa do Meta
   if(!(Array.isArray(rc.percentuais)&&rc.percentuais.length)) puxarAtendimentoRotator(true);   // sem correção → puxa do Rotator
 }
-function aovivoStart(){ aovivoLoad(); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(aovivoLoad,15000); }
+function aovivoStart(){ aovivoLoad(); nfCarregar(true); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(()=>{ aovivoLoad(); nfCarregar(true); },15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }
 async function aovivoLoad(){
   if(aovivoLoading) return; aovivoLoading=true;
@@ -1509,6 +1542,108 @@ async function aovivoLoad(){
   }catch(e){ /* silencioso */ }
   finally{ aovivoLoading=false; }
 }
+// ── NOTA FISCAL ───────────────────────────────────────────────────────
+// A nota só é emitida quando o atendente reage com ✅ no comprovante, lá no
+// WhatsApp. Aqui só CONSULTAMOS o resultado (rota /financeiro/notas) e mostramos
+// o selo ao lado de cada pagador. Guardado em nfMapa (e2e -> situação).
+let nfMapa = {}, nfResumoDado = null, nfLimite = 45, nfCarregando = false, nfErrosAberto = false;
+
+async function nfCarregar(silent){
+  const dia = avoDate || ymd(new Date());
+  if (nfCarregando) return; nfCarregando = true;
+  try{
+    const r = await window.__luxFetch(`${WORKER_URL}/financeiro/notas?date=${encodeURIComponent(dia)}`);
+    const d = await r.json();
+    if (d && d.ok && !d.naoConfigurado){
+      nfMapa = d.porE2e || {}; nfResumoDado = d.resumo || null; nfLimite = d.limiteMin || 45;
+      nfPintaResumo();
+      if (avoUltimo) aovivoRender(avoUltimo);      // repinta os selos na lista
+    }
+  }catch(e){ if(!silent) console.log('notas:', e.message); }
+  finally{ nfCarregando = false; }
+}
+
+// selo de uma linha
+function nfSelo(e2e){
+  const n = e2e && nfMapa[e2e];
+  if (!n) return '';
+  if (n.situacao === 'disponivel')
+    return `<span class="nf ok" title="Nota ${escapeHtml(n.numero||'')} emitida">✓ Disponível`
+         + `<a class="nf-baixar" href="${WORKER_URL}${n.pdf}" target="_blank" rel="noopener" title="Baixar a nota em PDF">⬇</a></span>`;
+  if (n.situacao === 'gerando')   return '<span class="nf wait" title="Emitida normalmente em poucos minutos">⏳ Gerando nota</span>';
+  if (n.situacao === 'cancelada') return '<span class="nf off">Cancelada</span>';
+  return `<span class="nf err" title="${escapeHtml(n.motivo||('Passou de '+nfLimite+' min sem sair'))}">⚠ Erro</span>`;
+}
+
+function nfPintaResumo(){
+  const box = document.getElementById('nfResumo');
+  if (!box || !nfResumoDado){ if(box) box.style.display='none'; return; }
+  const r = nfResumoDado;
+  box.style.display = 'flex';
+  box.innerHTML =
+      `<span class="nf-chip ok">Notas disponíveis <b>${r.disponivel||0}</b></span>`
+    + `<span class="nf-chip wait">Gerando <b>${r.gerando||0}</b></span>`
+    + `<span class="nf-chip err" onclick="nfAlternarErros()" title="Clique para ver quem ficou sem nota">`
+    + `Com erro <b>${r.erro||0}</b> ${nfErrosAberto?'▲':'▼'}</span>`
+    + (r.cancelada ? `<span class="nf-chip">Canceladas <b>${r.cancelada}</b></span>` : '');
+}
+
+function nfAlternarErros(){
+  nfErrosAberto = !nfErrosAberto;
+  nfPintaResumo();
+  const box = document.getElementById('nfErros');
+  if (!nfErrosAberto){ box.style.display='none'; return; }
+  box.style.display = 'block';
+  nfListarErros();
+}
+
+// Lista os sem-nota e vai buscando, atendente por atendente, DE QUEM foi a culpa:
+// o WhatsApp diz se houve ✅ perto da hora do Pix.
+async function nfListarErros(){
+  const box = document.getElementById('nfErros');
+  const erros = Object.entries(nfMapa).filter(([,v]) => v.situacao === 'erro')
+    .map(([e2e,v]) => ({ e2e, ...v }))
+    .sort((a,b)=> String(a.atendente||'').localeCompare(String(b.atendente||'')) || String(a.hora).localeCompare(String(b.hora)));
+  if (!erros.length){ box.innerHTML = '<div style="color:var(--text-dim)">Nenhuma nota com erro neste dia. 🎉</div>'; return; }
+
+  const ats = [...new Set(erros.map(e => e.atendente).filter(Boolean))];
+  const linha = e => `<div class="lin" id="nfe-${e.e2e}">`
+      + `<div>${escapeHtml(e.pagador||'(sem nome)')}<small style="display:block;color:var(--text-dim);font-size:11px">`
+      + `${escapeHtml(e.atendente||'—')} · ${escapeHtml(e.hora||'')} · ${fmtBRL(e.valorBRL)}</small></div>`
+      + `<div class="culpa" data-culpa>conferindo…</div><div style="text-align:right;color:var(--text-dim);font-size:11px">${escapeHtml(e.hora||'')}</div></div>`;
+  box.innerHTML = `<div style="font-weight:600;margin-bottom:8px">${erros.length} pagamento(s) sem nota `
+    + `<small style="font-weight:400;color:var(--text-dim)">— passou de ${nfLimite} min do pagamento</small></div>`
+    + erros.map(linha).join('')
+    + `<div style="margin-top:9px;font-size:11px;color:var(--text-dim)" id="nfErrosNota">Conferindo no WhatsApp de quem foi a falta…</div>`;
+
+  // consulta 1 atendente por vez (é pesado: varre as conversas do dia)
+  const dia = avoDate || ymd(new Date());
+  let semMarca = 0, marcados = 0;
+  for (const at of ats){
+    try{
+      const r = await window.__luxFetch(`${WORKER_URL}/financeiro/notas/diagnostico?date=${encodeURIComponent(dia)}&atendente=${encodeURIComponent(at)}`);
+      const d = await r.json();
+      if (!d || !d.ok) throw new Error((d&&d.error)||'falhou');
+      (d.linhas||[]).forEach(l => {
+        const el = document.querySelector('#nfe-'+CSS.escape(l.e2e)+' [data-culpa]');
+        if (!el) return;
+        if (l.culpa === 'sem_marcacao'){ semMarca++; el.className='culpa at';  el.textContent='sem ✅'; el.title='O atendente não marcou o comprovante com ✅ — por isso a nota nunca foi pedida.'; }
+        else if (l.culpa === 'marcado'){ marcados++; el.className='culpa sis'; el.textContent='✅ '+(l.hora||''); el.title='Marcado com ✅ às '+(l.hora||'')+' ('+(l.cliente||'')+') e mesmo assim a nota não saiu — falha no sistema do Anderson.'; }
+        else { el.className='culpa'; el.textContent='—'; }
+      });
+      if (!d.conectado){
+        const av = document.getElementById('nfErrosNota');
+        if (av) av.innerHTML += `<br>⚠ O WhatsApp de <b>${escapeHtml(at)}</b> está desconectado no painel — não deu para conferir as marcações dele.`;
+      }
+    }catch(e){
+      document.querySelectorAll('.nf-erros [data-culpa]').forEach(el=>{ if(el.textContent==='conferindo…'){ el.textContent='—'; el.className='culpa'; } });
+    }
+  }
+  const fim = document.getElementById('nfErrosNota');
+  if (fim) fim.innerHTML = `<b>${semMarca}</b> sem o ✅ do atendente (dá para corrigir marcando) · `
+    + `<b>${marcados}</b> foram marcados e a nota não saiu (falha do sistema — avisar o Anderson).`;
+}
+
 // ── Busca nos Recebimentos ────────────────────────────────────────────
 // A tabela se redesenha sozinha a cada 15s; por isso o termo fica guardado aqui
 // (o <input> está FORA do #avoFeed) e o último retorno fica em avoUltimo, pra
@@ -1559,8 +1694,8 @@ function aovivoRender(d){
     fe.innerHTML='<div class="state-msg"><span class="icon">🔍</span><div>Nenhum pagador encontrado para <b>'+escapeHtml(avoBusca)+'</b>.</div></div>';
     return;
   }
-  fe.innerHTML=`<div class="rec-box"><div class="rec-item head feed"><span>Cliente</span><span style="text-align:left">Atendente</span><span>Hora</span><span>Valor</span></div>`+
-    achados.map(t=>`<div class="rec-item feed"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}${(t.doc||t.info)?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc||'')}${(t.doc&&t.info)?' · ':''}${escapeHtml(t.info||'')}</small>`:''}</div><div class="rd" style="text-align:left;color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
+  fe.innerHTML=`<div class="rec-box"><div class="rec-item head feed"><span>Cliente</span><span style="text-align:left">Atendente</span><span style="text-align:left">Nota fiscal</span><span>Hora</span><span>Valor</span></div>`+
+    achados.map(t=>`<div class="rec-item feed"><div class="rn">${escapeHtml(t.pagador||'(sem nome)')}${(t.doc||t.info)?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc||'')}${(t.doc&&t.info)?' · ':''}${escapeHtml(t.info||'')}</small>`:''}</div><div class="rd" style="text-align:left;color:var(--gold-dim)">${escapeHtml(t.atendente||'—')}</div><div style="text-align:left;min-width:0">${nfSelo(t.e2e)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('')+
     '</div>';
 }
 async function aovivoApagar(){

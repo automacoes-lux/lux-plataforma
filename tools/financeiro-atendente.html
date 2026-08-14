@@ -101,6 +101,20 @@ body{
 .rec-item .rn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .rec-item .rd,.rec-item .rh{color:var(--text-dim);text-align:right;font-variant-numeric:tabular-nums}
 .rec-item .rv{color:var(--ok);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+/* Nota fiscal: coluna a mais (Nome | Nota | Data | Hora | Valor) */
+.rec-item.temnf{grid-template-columns:minmax(0,1fr) 128px 82px 42px 88px}
+.nf{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.nf.ok{background:rgba(46,160,67,.14);color:#3fb950;border:.5px solid rgba(63,185,80,.35)}
+.nf.wait{background:rgba(212,175,55,.12);color:var(--gold);border:.5px solid rgba(212,175,55,.35)}
+.nf.err{background:rgba(248,81,73,.12);color:#f85149;border:.5px solid rgba(248,81,73,.35)}
+.nf.off{background:rgba(255,255,255,.05);color:var(--text-dim);border:.5px solid var(--border)}
+.nf-baixar{margin-left:4px;color:inherit;text-decoration:none;font-size:13px;line-height:1;opacity:.85}
+.nf-baixar:hover{opacity:1}
+.nf-aviso{font-size:12px;color:var(--text-dim);margin:0 0 8px;padding:8px 11px;border:.5px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)}
+.nf-aviso b{color:var(--gold)}
+@media (max-width:480px){
+  .rec-item.temnf{grid-template-columns:minmax(0,1fr) 112px 74px 40px 78px;gap:6px;padding:10px 10px}
+}
 /* Celular: aperta as colunas fixas e o espaçamento pra sobrar mais espaço pro Nome */
 @media (max-width:480px){
   .rec-item{grid-template-columns:minmax(0,1fr) 80px 42px 80px;gap:6px;padding:10px 10px}
@@ -301,7 +315,7 @@ async function loadTudo(){ const rg=rangeFor(mode,ref); curFrom=rg[0]; curTo=rg[
 async function loadMe(silent){
   const cont=document.getElementById('contaContainer');
   if(!silent){ cont.innerHTML='<div class="state-msg"><span class="icon">⏳</span><div>Carregando…</div></div>'; document.getElementById('recContainer').innerHTML=''; }
-  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); renderConta(d.me); renderRecebimentos(d.recebimentos||[]); }
+  try{ const r=await window.__luxFetch(`${WORKER_URL}/financeiro/me?from=${curFrom}&to=${curTo}`); const d=await r.json(); if(!d.ok) throw new Error(d.error||'Erro'); await nfCarregar(); renderConta(d.me); renderRecebimentos(d.recebimentos||[]); }
   catch(err){ if(!silent) cont.innerHTML=`<div class="state-msg"><span class="icon">⚠️</span><div>${escapeHtml(err.message)}</div></div>`; }
 }
 function renderConta(me){
@@ -332,12 +346,42 @@ function renderConta(me){
   html+=`</div>`;
   cont.innerHTML=html;
 }
+// ── NOTA FISCAL ──────────────────────────────────────────────────────
+// Só CONSULTA a situação (o Worker fala com o sistema do Anderson). A nota é
+// emitida quando o atendente reage com ✅ no comprovante, lá no WhatsApp.
+let nfMapa={}, nfSemNota=0, nfLimite=45;
+async function nfCarregar(){
+  const hoje = ymd(new Date());
+  // só faz sentido para o dia de hoje (é quando dá para correr atrás da nota)
+  if(!(curFrom<=hoje && hoje<=curTo)){ nfMapa={}; nfSemNota=0; return; }
+  try{
+    const r=await window.__luxFetch(`${WORKER_URL}/financeiro/notas?date=${encodeURIComponent(hoje)}`);
+    const d=await r.json();
+    if(d && d.ok && !d.naoConfigurado){
+      nfMapa=d.porE2e||{}; nfLimite=d.limiteMin||45;
+      nfSemNota=Object.values(nfMapa).filter(v=>v.situacao==='erro'||v.situacao==='gerando').length;
+    }
+  }catch(e){ /* silencioso: a tela funciona sem a nota */ }
+}
+function nfSelo(e2e){
+  const n = e2e && nfMapa[e2e];
+  if(!n) return '';
+  if(n.situacao==='disponivel')
+    return `<span class="nf ok" title="Nota ${escapeHtml(n.numero||'')} — clique para baixar">✓ Disponível`
+         + `<a class="nf-baixar" href="${WORKER_URL}${n.pdf}" target="_blank" rel="noopener" title="Baixar a nota em PDF">⬇</a></span>`;
+  if(n.situacao==='gerando')   return '<span class="nf wait" title="Sai em poucos minutos depois do ✅">⏳ Gerando</span>';
+  if(n.situacao==='cancelada') return '<span class="nf off">Cancelada</span>';
+  return `<span class="nf err" title="${escapeHtml(n.motivo||('Passou de '+nfLimite+' min sem sair. Confira se você reagiu com ✅ no comprovante.'))}">⚠ Sem nota</span>`;
+}
 function renderRecebimentos(recebimentos){
   const cont=document.getElementById('recContainer');
+  const temNf = Object.keys(nfMapa).length > 0;
+  const cls = temNf ? 'rec-item temnf' : 'rec-item';
   let html=`<div class="card"><div class="card-title">🧾 Meus recebimentos (${recebimentos.length})</div>`;
+  if(temNf && nfSemNota>0) html+=`<div class="nf-aviso">⚠ <b>${nfSemNota}</b> pagamento(s) sem nota fiscal. A nota só é emitida quando você reage com <b>✅</b> no comprovante que o cliente manda no WhatsApp.</div>`;
   if(recebimentos.length){
-    html+=`<div class="rec-box"><div class="rec-item head"><span>Nome</span><span>Data</span><span>Hora</span><span>Valor</span></div>`;
-    html+=recebimentos.map(t=>`<div class="rec-item"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}${t.doc?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc)}</small>`:''}</div><div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
+    html+=`<div class="rec-box"><div class="${cls} head"><span>Nome</span>${temNf?'<span style="text-align:left">Nota fiscal</span>':''}<span>Data</span><span>Hora</span><span>Valor</span></div>`;
+    html+=recebimentos.map(t=>`<div class="${cls}"><div class="rn">${escapeHtml(t.nome||'(sem nome)')}${t.doc?`<small style="display:block;color:var(--text-dim);font-size:11px">${escapeHtml(t.doc)}</small>`:''}</div>${temNf?`<div style="text-align:left;min-width:0">${nfSelo(t.e2e)}</div>`:''}<div class="rd">${fmtDBR(t.data)}</div><div class="rh">${escapeHtml(t.hora||'')}</div><div class="rv">${fmtBRL(t.valorBRL)}</div></div>`).join('');
     html+=`</div>`;
   } else {
     html+=`<div class="state-msg" style="padding:1.6rem 1rem"><div>Nenhum recebimento neste período.</div></div>`;
