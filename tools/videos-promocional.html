@@ -623,7 +623,11 @@ async function gerarHistoria(){
     if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
     story = d.story; custoUSD += (d.aiCostUSD||0);
     renderImagens(); liberar(3);
-    toast('✅ Cenas prontas — agora gere as imagens.');
+    toast('✅ Cenas prontas — desenhando as imagens…');
+    // ⚠️ DISPARA SOZINHO (14/08). Antes da inversão dos passos, escolher a ideia já levava direto pras
+    // imagens; depois da inversão passou a exigir um clique que ninguém avisava — o Thiago ficou 15 min
+    // olhando "aguardando" achando que tinha travado. O botão continua ali pra refazer.
+    gerarImagens();
   } catch(e){ toast('⚠️ '+e.message); }
 }
 const PAPEL = [
@@ -813,6 +817,11 @@ function renderImagens(){
   box.querySelectorAll('[data-aj]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.aj]._ajuste = el.value; }));
   const bt=document.getElementById('btnAprovarImgs');
   if(bt) bt.classList.toggle('hide', !story.scenes.every(x=>x.image_url));
+  // se nenhuma imagem existe e nada está rodando, deixa CLARO que falta apertar o botão
+  const nota=document.getElementById('notaImagens');
+  const parado = story.scenes.every(x=>!x.image_url && x.image_status!=='gerando');
+  const btG=document.getElementById('btnImagens');
+  if(nota && parado && btG && !btG.disabled) nota.innerHTML='👆 Clique em <b>GERAR AS 4 IMAGENS</b> aí em cima para começar.';
 }
 // Não existe mais botão "aprovar": se o atendente não pediu pra mudar nada, está aprovado.
 // Assim que as 4 imagens existem, o último passo (trilha + gerar vídeo) aparece.
