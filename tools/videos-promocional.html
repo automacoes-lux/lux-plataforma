@@ -707,25 +707,36 @@ function copiarHistoria(){
 }
 
 // ══ TELA 5 — IMAGENS ══
+// Cada imagem leva ~85s no gpt-image-1.5 (medido). Sem relógio na tela o atendente acha que travou.
 async function gerarImagens(){
   if(!story) return;
   const btn=document.getElementById('btnImagens'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Desenhando as 4 cenas…';
-  try{ await gerarImagensInterno(); } finally { btn.disabled=false; btn.innerHTML=old; }
+  const nota=document.getElementById('notaImagens');
+  btn.disabled=true;
+  const t0=Date.now();
+  const relogio=setInterval(function(){
+    const s=Math.round((Date.now()-t0)/1000);
+    const prontas=story.scenes.filter(x=>x.image_url).length;
+    btn.innerHTML='<span class="spin"></span>Desenhando cena '+Math.min(4,prontas+1)+' de 4… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    if(nota) nota.innerHTML='🎨 '+prontas+' de 4 prontas. As cenas saem <b>uma de cada vez</b>, cada uma continuando a anterior — leva de <b>5 a 7 minutos</b> no total. Pode deixar a aba aberta.';
+  }, 1000);
+  try{ await gerarImagensInterno(); }
+  finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; if(nota) nota.innerHTML=''; }
 }
+// ⚠️ EM SÉRIE, NÃO EM PARALELO (14/08, pedido do Thiago). A cena 2 é gerada olhando a 1, a 3 olhando
+// a 2 e a 4 olhando a 3 — assim as quatro conversam entre si e o vídeo não fica destoando. Era em
+// paralelo (mais rápido), mas cada imagem nascia sem saber como a anterior tinha ficado.
 async function gerarImagensInterno(){
   renderImagens();
-  // AS 4 DE UMA VEZ. Quem falhar é refeito sozinho logo em seguida (a OpenAI às vezes recusa
-  // uma da rajada por limite de taxa) — assim o atendente não precisa ficar clicando.
-  const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].image_url);
-  if(faltam.length) await Promise.all(faltam.map(i=>gerarImagem(i)));
-  const erradas = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].image_url);
-  if(erradas.length){
-    toast('⏳ '+erradas.length+' cena(s) falharam — tentando de novo…');
-    await new Promise(r=>setTimeout(r,2500));
-    await Promise.all(erradas.map(i=>gerarImagem(i)));
+  for(let i=0; i<story.scenes.length; i++){
+    if(story.scenes[i].image_url) continue;              // já existe: não paga de novo
+    await gerarImagem(i);
+    if(!story.scenes[i].image_url){                      // falhou: uma segunda chance antes de seguir
+      await new Promise(r=>setTimeout(r,2500));
+      await gerarImagem(i);
+    }
+    if(i===0 && story.scenes[0].image_url) visualMaster = story.scenes[0].image_url;
   }
-  if(story.scenes[0].image_url) visualMaster = story.scenes[0].image_url;
   const ok = story.scenes.filter(s=>s.image_url).length;
   toast(ok===story.scenes.length ? '✅ Imagens prontas! Confira e aprove no fim da página.'
                                  : ('⚠️ '+ok+' de '+story.scenes.length+' prontas — use "Gerar de novo" nas que faltaram.'));
@@ -766,10 +777,11 @@ async function gerarImagem(i){
   const s = story.scenes[i]; if(!s) return;
   s.image_status='gerando'; s.image_error=''; renderImagens();
   try{
+    // visualMaster = cena 1 (identidade da história) · cenaAnterior = cena i-1 (continuidade direta)
+    const anterior = i>0 ? (story.scenes[i-1].image_url || null) : null;
     const r = await api('/histImagem', { method:'POST', body: JSON.stringify({
       imagePrompt: s.image_prompt, references: refsPayload(), cena: i+1,
-      // o Visual Master só entra quando a cena 1 JÁ existe (nas regerações) — na 1ª rodada as 4 saem juntas
-      visualMaster: (i>0 ? visualMaster : null), ajuste: s._ajuste||'' }) });
+      visualMaster: (i>0 ? visualMaster : null), cenaAnterior: anterior, ajuste: s._ajuste||'' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na imagem');
     s.image_url = d.base64; s.image_status='pronta';
