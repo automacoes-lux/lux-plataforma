@@ -279,8 +279,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 // ═══════════════════════════════════════════════════════════════════════════════
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
-const FALA_MIN = 145, FALA_MAX = 160, FALA_IDEAL = [150, 155];
-const FALA_HARD_MIN = 140;   // limite DURO que dispara o alerta vermelho (a geração ainda mira 145-160)
+const FALA_MIN = 130, FALA_MAX = 150, FALA_IDEAL = [135, 145];   // faixa encurtada em 14/08 (era 145-160)
+const FALA_HARD_MIN = 125;   // limite DURO que dispara o alerta vermelho (a geração ainda mira 130-150)
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -1021,7 +1021,7 @@ async function finalizar(){
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     for(let t=0;t<80;t++){
       await new Promise(x=>setTimeout(x, 6000));
-      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD }) });
+      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD, segundos:d.segundos }) });
       const d2 = await r2.json();
       if(d2.ok && d2.status==='done' && d2.url){
         videoFinalUrl = d2.url;
