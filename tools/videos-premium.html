@@ -708,8 +708,9 @@ const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto
 const COMPACT_ABOVE_MB = 95;        // vídeo acima disso é compactado no navegador (1080p, sem áudio) antes de subir
 
 // Estimativa de custo (números reais no cost.js do Worker)
-const EST_USD_CENA    = 0.11;      // cartoon (gpt-image medium)
-const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (motor oficial 19/07; era 0.06 no InfiniteTalk)
+const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
+const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (solo)
+const EST_USD_LIPSEC_DUO = 0.06;   // dupla canta no InfiniteTalk 720p (membros estáveis) — 2× o solo
 const EST_USD_MATTESEC = 0.0042;   // recorte BRIA, por segundo
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
 const EST_CAMBIO      = 5.18;
@@ -2370,7 +2371,8 @@ function renderStoryboard() {
   const durEl = document.getElementById('sbDur');
   if (durEl) durEl.textContent = fmtTime(D);
 
-  const usd = EST_USD_CENA + D * (EST_USD_LIPSEC + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
+  const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;   // dupla = InfiniteTalk (2×)
+  const usd = EST_USD_CENA + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + lipsync + recorte + montagem
   const brl = usd * EST_CAMBIO;
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
@@ -2460,6 +2462,7 @@ async function gerarClipe() {
       clientName: document.getElementById('clientName').value.trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
+      tipo: avatarTipo,   // dupla/personagemDupla → o canto roda no InfiniteTalk (membros estáveis)
       avatarCalib: avatarCalib,
       avScale: avScale,
       backgrounds: bgs,
