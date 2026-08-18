@@ -705,12 +705,12 @@ const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto
 // (13/07, incidente Diogo/Pousada) 60–95MB agora sobe o ORIGINAL direto (o Worker aceita 100MB) — a
 // compactação em tempo real congelava se a atendente trocasse de aba (74% do clipe parado no arquivo).
 // Só compacta o que NÃO CABE no teto do Cloudflare, com abort em aba oculta + análise anti-travada.
-const COMPACT_ABOVE_MB = 95;        // vídeo acima disso é compactado no navegador (1080p, sem áudio) antes de subir
+const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes de 44-91MB somaram 364MB e o render estourou memória)
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
 const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (solo)
-const EST_USD_LIPSEC_DUO = 0.06;   // dupla canta no InfiniteTalk 720p (membros estáveis) — 2× o solo
+const EST_USD_LIPSEC_DUO = 0.03;   // dupla voltou ao MultiTalk 18/08 — mesmo preço do solo
 const EST_USD_MATTESEC = 0.0042;   // recorte BRIA, por segundo
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
 const EST_CAMBIO      = 5.18;
