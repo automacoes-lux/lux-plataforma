@@ -397,15 +397,10 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="card-title">Quem vai cantar</div>
       <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original e <b>não pode ser trocado</b> na edição — ele já cantou a música deste vídeo. Para usar outro avatar, crie um <b>vídeo novo</b>.</div>
 
-      <!-- Tipo do avatar: 2 vias separadas — Pessoa (foto de gente) x Personagem/Produto (mascote do produto) -->
-      <div class="avatar-tipo-seg" id="avatarTipoSeg">
-        <button type="button" class="seg-btn active" data-tipo="pessoa" onclick="setAvatarTipo('pessoa')">🧑 Pessoa</button>
-        <button type="button" class="seg-btn" data-tipo="dupla" onclick="setAvatarTipo('dupla')">👥 Pessoa Dupla</button>
-        <button type="button" class="seg-btn" data-tipo="personagem" onclick="setAvatarTipo('personagem')">🍢 Personagem</button>
-        <button type="button" class="seg-btn" data-tipo="personagemDupla" onclick="setAvatarTipo('personagemDupla')">🎭 Personagem Dupla</button>
-      </div>
+      <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
+           pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
 
-      <div class="card-hint" id="avatarHint">Foto nítida do cliente, <b style="color:var(--text-mid)">de corpo inteiro</b> (os pés precisam aparecer — o avatar canta em pé num palco). O avatar preserva o rosto, a roupa e o uniforme exatamente como na foto. Pode <b style="color:var(--text-mid)">colar</b> a foto aqui (Ctrl+V).</div>
+      <div class="card-hint" id="avatarHint">Envie a <b style="color:var(--text-mid)">Imagem 1</b> — pessoa, personagem, produto ou animal (se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra). Vai ser uma <b style="color:var(--text-mid)">DUPLA</b>? Ou mande 1 foto com os dois juntos, ou use a <b style="color:var(--text-mid)">Imagem 2</b> pro segundo cantor. A IA preserva rosto, roupa, logo e cores exatamente como na imagem. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
@@ -413,15 +408,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
           <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
-          <span id="clientPhotoLabel">Enviar ou colar a foto</span>
+          <span id="clientPhotoLabel">Enviar ou colar a Imagem 1</span>
         </div>
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*" hidden/>
       <!-- Dupla: 2º espaço de foto (opcional — só aparece no modo Dupla) -->
-      <div class="thumb-row" id="clientPhoto2Row" style="display:none;margin-top:8px">
+      <div class="thumb-row" id="clientPhoto2Row" style="margin-top:8px">
         <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhoto2Input').click()">
-          <span class="big">🧑‍🤝‍🧑</span>
-          <span>2ª pessoa (opcional)</span>
+          <span class="big">🖼️</span>
+          <span>Imagem 2 (opcional — segundo cantor da dupla)</span>
         </div>
       </div>
       <input type="file" id="clientPhoto2Input" accept="image/*" hidden/>
@@ -722,7 +717,7 @@ const PENDING_KEY = 'lux_avatar_pending';
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
 let clientPhoto2 = null;           // Dupla: 2ª foto (opcional — quando o atendente manda 1 de cada pessoa)
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
-let avatarTipo = 'pessoa';         // via do Passo 1: 'pessoa' (foto de gente) | 'personagem' (produto/mascote: espetinho, fruta, pizza…)
+let avatarTipo = 'universal';   // UI universal 19/08: sem tipos — o prompt universal detecta pela imagem
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
@@ -861,7 +856,7 @@ function renderClientPhoto() {
   }
   row.innerHTML =
     '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Foto do cliente"/>' +
-    '<div class="tag">' + (avatarTipo === 'dupla' ? 'Pessoa 1' : avatarTipo === 'personagemDupla' ? '1º' : 'Cantor(a)') + '</div>' +
+    '<div class="tag">Imagem 1</div>' +
     '<button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
 }
 function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
@@ -881,9 +876,8 @@ async function setClientPhoto2FromFile(file) {
 }
 function renderClientPhoto2() {
   const row = document.getElementById('clientPhoto2Row'); if (!row) return;
-  const ehPersDupla = (avatarTipo === 'personagemDupla');
-  const lblEmpty = ehPersDupla ? '2ª foto — pessoa ou personagem (opcional)' : '2ª pessoa (opcional)';
-  const tag = ehPersDupla ? '2º' : 'Pessoa 2';
+  const lblEmpty = 'Imagem 2 (opcional — segundo cantor da dupla)';
+  const tag = 'Imagem 2';
   if (!clientPhoto2) {
     row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhoto2Input\').click()"><span class="big">🧑‍🤝‍🧑</span><span>' + lblEmpty + '</span></div>';
     return;
@@ -907,7 +901,7 @@ function refreshAvatarUI() {
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
-  const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? '' : 'none';   // 2ª foto nas duplas (Dupla e Personagem Dupla)
+  const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = '';   // Imagem 2 sempre disponível (UI universal 19/08)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
   const okBadge = document.getElementById('avatarApproved');
@@ -978,6 +972,7 @@ const AVATAR_HINTS = {
   personagemDupla: 'Dois cantando <b style="color:var(--text-mid)">lado a lado</b>, cada um com microfone — pode <b style="color:var(--text-mid)">misturar</b>: pessoa + personagem, ou dois personagens (ex.: gato + cachorro, ou dois mascotes). A IA <b style="color:var(--text-mid)">preserva cada foto do jeito que é</b> (pessoa continua pessoa, personagem continua personagem), só coloca cantando de corpo inteiro. <b style="color:var(--text-mid)">2 formas</b>: 1 foto com os dois juntos, OU 1 foto de cada (use o 2º espaço que aparece).'
 };
 function setAvatarTipo(t) {
+  return;   // UI universal 19/08: seleção de tipo removida (função mantida p/ compat)
   if (editState) return;   // no modo edição o avatar é travado (vem do original)
   avatarTipo = ['pessoa', 'dupla', 'personagem', 'personagemDupla'].includes(t) ? t : 'pessoa';
   document.querySelectorAll('#avatarTipoSeg .seg-btn').forEach(b => {
@@ -1003,14 +998,14 @@ function setAvatarTipo(t) {
 }
 
 async function gerarAvatar() {
-  if (!clientPhoto) { toast(avatarTipo === 'personagem' ? 'Envie a foto do produto primeiro.' : (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? 'Envie a foto (dos dois juntos, ou a 1ª) primeiro.' : 'Envie a foto do cliente primeiro.'); return; }
+  if (!clientPhoto) { toast('Envie a Imagem 1 primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
     const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
-    if ((avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') && clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };
+    if (clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
