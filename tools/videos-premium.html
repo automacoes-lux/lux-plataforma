@@ -959,7 +959,9 @@ function normalizarAvatarPes(b64) {
           if (d > TH) { fsx += x; fsn++; }
         }
         const footCX = fsn ? fsx / fsn : (minX + maxX) / 2;
-        const s = (NORM_HEIGHT * H) / (maxY - minY);   // escala p/ altura padrão
+        // escala p/ altura padrão, MAS com teto de LARGURA 70% (19/08): duplas/braços abertos não podem
+        // encostar nas bordas — garante matematicamente as margens laterais (~15%) que o prompt pede.
+        const s = Math.min((NORM_HEIGHT * H) / (maxY - minY), (0.70 * W) / Math.max(1, maxX - minX));
         const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
         const ox = oc.getContext('2d');
         ox.fillStyle = 'rgb(' + bg[0] + ',' + bg[1] + ',' + bg[2] + ')'; ox.fillRect(0, 0, W, H);   // fundo igual
