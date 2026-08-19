@@ -581,7 +581,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="editor-overlay" id="calibOverlay">
   <div class="editor-box">
     <h3>📐 Posição no palco</h3>
-    <div class="hint">Deixe os <b style="color:var(--text-mid)">pés do avatar no meio do disco</b>. Arraste o avatar ou use as setas. A linha dourada marca o centro.</div>
+    <div class="hint">Deixe os <b style="color:var(--text-mid)">pés do avatar no meio do disco</b> (arraste ou use as setas). Em <b style="color:var(--text-mid)">Posição no vídeo</b>, mova o avatar E o palco juntos pra esquerda/direita — bom pra não tapar as fotos de trás (fica melhor com o avatar menor).</div>
     <canvas id="calibCanvas" width="270" height="480" style="touch-action:none;cursor:grab;background:#1a1a1a;border-radius:10px;display:block;margin:0 auto"></canvas>
     <div class="calib-pad">
       <button type="button" class="calib-arrow" onclick="calibMove(0,-1)" title="subir">▲</button>
@@ -598,6 +598,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <button type="button" class="avsize-btn" onclick="avScaleChange(-1)" title="diminuir">−</button>
         <span class="avsize-val" id="avSizeVal">100%</span>
         <button type="button" class="avsize-btn" onclick="avScaleChange(1)" title="aumentar">+</button>
+      </div>
+    </div>
+    <div class="avsize-row">
+      <span class="avsize-lbl">Posição no vídeo</span>
+      <div class="avsize-ctrl">
+        <button type="button" class="avsize-btn" onclick="calibPosNudge(-1)" title="um pouco pra esquerda">◀</button>
+        <button type="button" class="avsize-btn" onclick="calibPos(-1)" title="lado esquerdo" style="width:auto;padding:0 10px">Esq.</button>
+        <button type="button" class="avsize-btn" onclick="calibPos(0)" title="centro" style="width:auto;padding:0 10px">Centro</button>
+        <button type="button" class="avsize-btn" onclick="calibPos(1)" title="lado direito" style="width:auto;padding:0 10px">Dir.</button>
+        <button type="button" class="avsize-btn" onclick="calibPosNudge(1)" title="um pouco pra direita">▶</button>
       </div>
     </div>
     <div class="editor-actions">
@@ -1011,7 +1021,7 @@ async function gerarAvatar() {
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
     const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
     avatarPreview = { cartoonBase64: normB64, approved: false };
-    avatarCalib = { dx: 0, dy: 0 };   // novo avatar → calibração de posição zerada
+    avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     refreshAvatarUI();
@@ -1042,7 +1052,7 @@ function baixarAvatar() {
 // O atendente vê o avatar JÁ em cima do palco (igual ao vídeo) e arrasta/seta até centralizar.
 // dx/dy viram o offset do avatar no Shotstack. Como o InfiniteTalk preserva o enquadramento,
 // o que ele calibra aqui bate no vídeo final. Fórmula validada contra render real (<0,5% de erro).
-let avatarCalib = { dx: 0, dy: 0 };
+let avatarCalib = { dx: 0, dy: 0, px: 0 };   // dx/dy = ajuste fino do avatar; px = POSIÇÃO do conjunto (avatar+palco) no vídeo
 let avScale = 0.85;          // tamanho do avatar no palco (0.51 = −40% … 0.85 = padrão/máx)
 const AVSCALE_MAX = 0.85, AVSCALE_MIN = 0.51, AVSCALE_STEP = 0.0425;   // 100%→60%, passo de ~5%
 let _calibCut = null;        // canvas do avatar recortado (fundo transparente)
@@ -1092,8 +1102,8 @@ function drawCalib() {
   const x = cv.getContext('2d'); const cw = cv.width, ch = cv.height, sc = cw / 1080;
   x.clearRect(0, 0, cw, ch);
   x.fillStyle = '#2b2b2b'; x.fillRect(0, 0, cw, ch);
-  if (_palcoImg) _drawAsset(x, _palcoImg, 'none', 0.73, 0, -0.16, sc);
-  if (_calibCut) _drawAsset(x, _calibCut, 'contain', avScale, avatarCalib.dx, 0.04 + avatarCalib.dy, sc);
+  if (_palcoImg) _drawAsset(x, _palcoImg, 'none', 0.73, (avatarCalib.px || 0), -0.16, sc);   // palco acompanha a posição
+  if (_calibCut) _drawAsset(x, _calibCut, 'contain', avScale, avatarCalib.dx + (avatarCalib.px || 0), 0.04 + avatarCalib.dy, sc);
   x.strokeStyle = 'rgba(212,175,55,.6)'; x.lineWidth = 1;
   x.beginPath(); x.moveTo(Math.round(cw / 2) + .5, 0); x.lineTo(Math.round(cw / 2) + .5, ch); x.stroke();
 }
@@ -1116,7 +1126,8 @@ function _setupCalibDrag() {
 let _calibSnap = null;   // snapshot p/ o Cancelar desfazer de verdade (antes, arrastar e cancelar mantinha a mudança)
 async function abrirCalib() {
   if (!avatarPreview || !avatarPreview.cartoonBase64) { toast('Gere o avatar primeiro.'); return; }
-  _calibSnap = { dx: avatarCalib.dx, dy: avatarCalib.dy, sc: avScale };
+  _calibSnap = { dx: avatarCalib.dx, dy: avatarCalib.dy, px: (avatarCalib.px || 0), sc: avScale };
+  avatarCalib.px = avatarCalib.px || 0;   // pedidos antigos não têm px
   try {
     const img = await loadImg('data:image/png;base64,' + avatarPreview.cartoonBase64);
     _calibCut = _recortarAvatar(img);
@@ -1132,7 +1143,11 @@ function calibMove(sx, sy) {
   avatarCalib.dy = Math.max(-0.5, Math.min(0.5, avatarCalib.dy - sy * CALIB_STEP));   // sy=1 (descer) → dy diminui
   drawCalib();
 }
-function calibReset() { avatarCalib = { dx: 0, dy: 0 }; drawCalib(); }
+function calibReset() { avatarCalib = { dx: 0, dy: 0, px: 0 }; drawCalib(); }
+// Posição do CONJUNTO (avatar+palco) no vídeo: presets Esq/Centro/Dir + ajuste fino (19/08 — clientes
+// reclamavam do avatar central tapando as fotos; com avatar menor dá pra encostar bem no canto).
+function calibPos(lado) { avatarCalib.px = lado * 0.22; drawCalib(); }
+function calibPosNudge(dir) { avatarCalib.px = Math.max(-0.3, Math.min(0.3, (avatarCalib.px || 0) + dir * 0.02)); drawCalib(); }
 // Seletor de tamanho do avatar (– / +). Vai de 100% (0.85, padrão/máx) até 60% (0.51, −40%).
 function avScaleChange(dir) {
   avScale = Math.max(AVSCALE_MIN, Math.min(AVSCALE_MAX, avScale + dir * AVSCALE_STEP));
@@ -2687,7 +2702,7 @@ function aplicarModoEdicao(d) {
 function resetCreateForm() {
   clientPhoto = null; clientPhoto2 = null; avatarPreview = null;
   try { renderClientPhoto2(); } catch (e) {}
-  avatarCalib = { dx: 0, dy: 0 }; avScale = AVSCALE_MAX;
+  avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
