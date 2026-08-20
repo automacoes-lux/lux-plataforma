@@ -400,26 +400,20 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
            pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
 
-      <div class="card-hint" id="avatarHint">Envie a <b style="color:var(--text-mid)">Imagem 1</b> — pessoa, personagem, produto ou animal (se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra). Vai ser uma <b style="color:var(--text-mid)">DUPLA</b>? Ou mande 1 foto com os dois juntos, ou use a <b style="color:var(--text-mid)">Imagem 2</b> pro segundo cantor. A IA preserva rosto, roupa, logo e cores exatamente como na imagem. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
+      <div class="card-hint" id="avatarHint">Um botão só: envie <b style="color:var(--text-mid)">até 2 imagens</b> — <b style="color:var(--text-mid)">1 imagem</b> = um avatar; <b style="color:var(--text-mid)">2 imagens</b> = dupla (um cantor de cada imagem; ou mande 1 foto com os dois juntos). Vale pessoa, personagem, produto ou animal — se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra. A IA preserva rosto, roupa, logo e cores. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
       </div>
+      <!-- UM botão só (19/08): até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
+           as miniaturas + o tile de adicionar enquanto houver vaga. -->
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
           <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
-          <span id="clientPhotoLabel">Enviar ou colar a Imagem 1</span>
+          <span id="clientPhotoLabel">Enviar ou colar as imagens (1 ou 2)</span>
         </div>
       </div>
-      <input type="file" id="clientPhotoInput" accept="image/*" hidden/>
-      <!-- Dupla: 2º espaço de foto (opcional — só aparece no modo Dupla) -->
-      <div class="thumb-row" id="clientPhoto2Row" style="margin-top:8px">
-        <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhoto2Input').click()">
-          <span class="big">🖼️</span>
-          <span>Imagem 2 (opcional — segundo cantor da dupla)</span>
-        </div>
-      </div>
-      <input type="file" id="clientPhoto2Input" accept="image/*" hidden/>
+      <input type="file" id="clientPhotoInput" accept="image/*" multiple hidden/>
 
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
@@ -833,10 +827,15 @@ async function fileToOptimizedImage(file, keepPng) {
 // PASSO 1 — foto do cliente
 // ───────────────────────────────────────────────
 document.getElementById('clientPhotoInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (file) await setClientPhotoFromFile(file);
+  const files = Array.from(e.target.files || []).slice(0, 2); e.target.value = '';
+  for (const f of files) await addAvatarImage(f);
 });
+// preenche a PRÓXIMA vaga (1ª, depois 2ª) — um botão só pra até 2 imagens (UI 19/08)
+async function addAvatarImage(file) {
+  if (!clientPhoto) { await setClientPhotoFromFile(file); return; }
+  if (!clientPhoto2) { await setClientPhoto2FromFile(file); return; }
+  toast('Máximo de 2 imagens — remova uma (✕) pra trocar.');
+}
 
 // Colar a foto (Ctrl+V) — pega a 1ª imagem da área de transferência
 window.addEventListener('paste', async (e) => {
@@ -844,7 +843,7 @@ window.addEventListener('paste', async (e) => {
   const item = Array.from(e.clipboardData.items || []).find(it => it.type && it.type.indexOf('image') === 0);
   if (!item) return;
   const file = item.getAsFile();
-  if (file) { e.preventDefault(); await setClientPhotoFromFile(file); }
+  if (file) { e.preventDefault(); await addAvatarImage(file); }
 });
 
 async function setClientPhotoFromFile(file) {
@@ -859,23 +858,19 @@ async function setClientPhotoFromFile(file) {
 }
 
 function renderClientPhoto() {
-  const row = document.getElementById('clientPhotoRow');
-  if (!clientPhoto) {
-    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>Enviar ou colar a foto</span></div>';
-    return;
+  const row = document.getElementById('clientPhotoRow'); if (!row) return;
+  let html = '';
+  if (clientPhoto) html += '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Imagem 1"/><div class="tag">Imagem 1</div><button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
+  if (clientPhoto2) html += '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="Imagem 2"/><div class="tag">Imagem 2</div><button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
+  if (!clientPhoto || !clientPhoto2) {
+    const lbl = !clientPhoto ? 'Enviar ou colar as imagens (1 ou 2)' : 'Adicionar a 2ª imagem (opcional — vira dupla)';
+    html += '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>' + lbl + '</span></div>';
   }
-  row.innerHTML =
-    '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Foto do cliente"/>' +
-    '<div class="tag">Imagem 1</div>' +
-    '<button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
+  row.innerHTML = html;
 }
 function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
 
 // ── Dupla: 2ª foto (opcional) ──
-document.getElementById('clientPhoto2Input').addEventListener('change', async (e) => {
-  const file = e.target.files[0]; e.target.value = '';
-  if (file) await setClientPhoto2FromFile(file);
-});
 async function setClientPhoto2FromFile(file) {
   try {
     const opt = await fileToOptimizedImage(file, false);
@@ -884,19 +879,7 @@ async function setClientPhoto2FromFile(file) {
     renderClientPhoto2(); refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
 }
-function renderClientPhoto2() {
-  const row = document.getElementById('clientPhoto2Row'); if (!row) return;
-  const lblEmpty = 'Imagem 2 (opcional — segundo cantor da dupla)';
-  const tag = 'Imagem 2';
-  if (!clientPhoto2) {
-    row.innerHTML = '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhoto2Input\').click()"><span class="big">🧑‍🤝‍🧑</span><span>' + lblEmpty + '</span></div>';
-    return;
-  }
-  row.innerHTML =
-    '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="2ª foto"/>' +
-    '<div class="tag">' + tag + '</div>' +
-    '<button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
-}
+function renderClientPhoto2() { renderClientPhoto(); }   // UI de 1 botão (19/08): tudo no render combinado
 function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
 
 // ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
@@ -961,7 +944,7 @@ function normalizarAvatarPes(b64) {
         const footCX = fsn ? fsx / fsn : (minX + maxX) / 2;
         // escala p/ altura padrão, MAS com teto de LARGURA 70% (19/08): duplas/braços abertos não podem
         // encostar nas bordas — garante matematicamente as margens laterais (~15%) que o prompt pede.
-        const s = Math.min((NORM_HEIGHT * H) / (maxY - minY), (0.70 * W) / Math.max(1, maxX - minX));
+        const s = Math.min((NORM_HEIGHT * H) / (maxY - minY), (0.64 * W) / Math.max(1, maxX - minX));   // 0.70→0.64 (19/08: braço animado balança além do desenho — folga extra p/ solo E dupla)
         const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
         const ox = oc.getContext('2d');
         ox.fillStyle = 'rgb(' + bg[0] + ',' + bg[1] + ',' + bg[2] + ')'; ox.fillRect(0, 0, W, H);   // fundo igual
