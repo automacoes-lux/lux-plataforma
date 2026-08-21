@@ -505,7 +505,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
       <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar da <b style="color:var(--text-mid)">duração da música</b> (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
+      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. A <b style="color:var(--gold)">1ª foto é a CAPA</b>: aparece <b>parada</b> (sem movimento); as demais ganham o movimento normal. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar da <b style="color:var(--text-mid)">duração da música</b> (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
       <button type="button" class="btn-expand-ia" id="btnExpandIA" onclick="toggleExpandIA()">✨ Expansão com IA — <span id="expandIAState">desligada</span></button>
       <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligada, a IA <b style="color:#2ecc71">expande e melhora todas as FOTOS</b> pro formato do vídeo (9:16): continua o cenário de verdade pra cima e pra baixo, sem borrão. Vídeos passam normal, sem mexer. Custo: ~R$ 0,07 por foto.</div>
       <div class="thumb-row" id="scenesRow"></div>
@@ -1616,7 +1616,7 @@ function renderScenes() {
   let html = '';
   scenes.forEach((s, i) => {
     const isVid = s.kind === 'video';
-    const tag = isVid ? '🎬 Vídeo' : 'Foto ' + (i + 1);
+    const tag = isVid ? '🎬 Vídeo' : (i === 0 ? '📌 Foto da capa' : 'Foto ' + (i + 1));   // 1ª mídia FOTO = capa (sai parada no vídeo)
     const editBtn = isVid
       ? '<button class="edit" title="Editar vídeo (corte + 9:16)" onclick="openVideoEditor(\'' + s.id + '\')">✏️</button>'
       : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
