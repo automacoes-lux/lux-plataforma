@@ -131,13 +131,13 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 #toast.show{transform:translateX(-50%) translateY(0)}
 .hide{display:none}
 </style>
-</head>
+
 <body>
 
 <div class="container">
   <div class="page-head">
     <div class="page-title">📣 Vídeo Promocional</div>
-    <div class="page-sub">Briefing → 4 ideias → história de 4 cenas → imagens → vídeos → <b>vídeo final de 32s</b>. Você informa, escolhe e aprova; o resto é com a IA.</div>
+    <div class="page-sub">Personagem → roteiro publicitário → <b>vídeo de 32s</b>. Você manda as fotos e as informações do cliente; a IA monta a campanha.</div>
   </div>
 
   <!-- abas: criar × projetos salvos × vídeos prontos -->
@@ -148,103 +148,99 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 
   <div id="abaCriar">
-  <!-- salvar o projeto a qualquer momento (aparece assim que tem o nome do cliente) -->
   <button class="btn-salvar hide" id="btnSalvar" onclick="salvarProjeto()">💾 Salvar projeto</button>
   <div class="soon-note" id="notaSalvar"></div>
 
-  <!-- barra de passos (o wizard anda na horizontal, um passo por vez) -->
   <div class="wzbar" id="wzbar"></div>
 
-  <!-- ══ PASSO 1 — O PRODUTO (foto → a IA lê e sugere → você descreve) ══ -->
+  <!-- ══════════ PASSO 1 — O PERSONAGEM ══════════ -->
   <div id="p1">
   <div class="step">
-    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Produto</div></div>
+    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Personagem</div></div>
+
     <div class="mini">Cliente / empresa</div>
-    <input type="text" id="fCliente" placeholder="Ex: Body Club Fitness"/>
+    <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
 
     <div class="mini" style="margin-top:.9rem">Foto do produto <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">O que vai ser divulgado.</div>
+    <div class="step-hint">O que vai virar o personagem.</div>
     <div class="thumbs" id="thProduto"></div>
     <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
 
     <div class="mini" style="margin-top:.9rem">Foto do ambiente <span style="color:var(--text-dim)">(opcional)</span></div>
-    <div class="step-hint">O lugar onde a cena acontece — loja, academia, cozinha, balcão.</div>
+    <div class="step-hint">O lugar do cliente — o personagem vai aparecer dentro dele.</div>
     <div class="thumbs" id="thAmbiente"></div>
     <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
 
-    <div id="boxDescricao" style="margin-top:.9rem">
-      <div class="mini">O que exatamente você quer divulgar nessa imagem? <span style="color:var(--gold)">*</span></div>
-      <textarea id="fBriefing" style="min-height:100px" placeholder="Ex: a regata dry fit — tecido leve, seca rápido e não gruda no corpo mesmo no treino pesado"></textarea>
+    <button class="btn-gold" id="btnPersonagem" onclick="gerarPersonagem()" style="margin-top:1rem">🧍 GERAR PERSONAGEM</button>
+    <div class="soon-note" id="notaPersonagem"></div>
+
+    <!-- o personagem gerado: aprovar com o cliente ou refazer -->
+    <div id="boxPersonagem" class="hide" style="margin-top:1rem">
+      <img id="imgPersonagem" class="cena-img"/>
+      <div class="btn-row" style="margin-top:.6rem">
+        <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
+        <button class="btn-ghost" onclick="gerarPersonagem()">🔄 Gerar de novo</button>
+      </div>
+      <div class="mini" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
+      <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
     </div>
   </div>
 
-  <button class="btn-gold" id="btnIdeias" onclick="gerarIdeias()">✨ GERAR 4 IDEIAS</button>
+  <div class="step">
+    <div class="step-head"><div class="step-title">Informações do cliente</div></div>
+    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta a campanha.</div>
+    <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
+  </div>
+
+  <button class="btn-gold" id="btnRoteiro" onclick="gerarRoteiro()">📝 GERAR ROTEIRO</button>
+  <div class="soon-note" id="notaRoteiro"></div>
   </div><!-- /p1 -->
 
-  <!-- ══ TELA 3 — 4 IDEIAS ══ -->
-  <div id="telaIdeias" class="hide">
-    <div class="sec-title">Passo 2 · 💡 Escolha a ideia</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.7rem">Quatro mecanismos diferentes — não são variações da mesma coisa.</div>
-    <button class="btn-gold" onclick="copiarIdeias()" style="margin-bottom:.9rem">📋 Copiar as 4 (briefing do cliente)</button>
-    <div id="avisoHistoria" class="hide"></div>
-    <div id="boxIdeias"></div>
-  </div>
-
-  <!-- ══ PASSO 3 — IMAGENS (12/08: vêm ANTES da história) ══ -->
-  <div id="telaImagens" class="hide">
-    <div class="sec-title">Passo 3 · 🖼️ As 4 imagens</div>
-    <button class="btn-gold" id="btnImagens" onclick="gerarImagens()">🎨 GERAR AS 4 IMAGENS</button>
-    <div class="soon-note" id="notaImagens"></div>
-    <div id="boxImagens" style="margin-top:.9rem"></div>
-    <button class="btn-gold hide" id="btnAprovarImgs" onclick="aprovarImagens()" style="margin-top:.4rem">✅ APROVAR IMAGENS E ESCREVER A HISTÓRIA</button>
-    <div class="soon-note" id="notaAprovar"></div>
-  </div>
-
-  <!-- ══ PASSO 4 — HISTÓRIA (as falas, escritas olhando as imagens prontas) ══ -->
-  <div id="telaStory" class="hide">
-    <div class="sec-title">Passo 4 · 🎬 A história em 4 cenas</div>
-    <div id="avisoFalas" class="hide"></div>
-    <div id="boxStory"></div>
+  <!-- ══════════ PASSO 2 — O ROTEIRO ══════════ -->
+  <div id="telaRoteiro" class="hide">
+    <div class="sec-title">Passo 2 · 📝 O roteiro da campanha</div>
+    <div id="avisoRoteiro" class="hide"></div>
+    <div id="boxCampanha"></div>
+    <div id="boxRoteiro"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
-      <button class="btn-ghost" onclick="copiarHistoria()">📋 Copiar história</button>
+      <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro</button>
+      <button class="btn-ghost" onclick="outroRoteiro()">✨ Gerar outro roteiro</button>
     </div>
-    <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎵 IR PARA O VÍDEO</button>
-    <div class="soon-note" id="notaStory"></div>
+    <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎬 GERAR VÍDEO</button>
+    <div class="soon-note" id="notaFalas"></div>
   </div>
 
-  <!-- ══ TELA 6 — VÍDEOS ══ -->
-  <div id="telaVideos" class="hide"><div id="boxVideos"></div></div>
-
-  <!-- ══ TELA 7 — TRILHA ══ -->
+  <!-- ══════════ PASSO 3 — O VÍDEO ══════════ -->
   <div id="telaTrilha" class="hide">
+    <div class="sec-title">Passo 3 · 🎵 Trilha e vídeo</div>
     <div class="step">
-      <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 5 · Trilha sonora (32s)</div></div>
+      <div class="step-head"><div class="step-title">Trilha sonora</div></div>
       <div class="step-hint">Escolha uma faixa ou envie uma música. O sistema usa até <b>32 segundos</b> e mantém a trilha abaixo das falas.</div>
-      <div id="trilhasGrid" class="trilhas-grid"></div>
-      <div class="tsep">— ou envie a sua —</div>
-      <label class="up-btn" style="margin-bottom:.6rem">+ Subir música (MP3)<input type="file" accept="audio/mpeg,audio/mp3,.mp3" hidden onchange="onMusica(event)"/></label>
-      <div id="musicaNome" class="soon-note"></div>
+      <div id="boxTrilhas" class="chips"></div>
+      <div class="mini" style="margin-top:.8rem">— ou envie a sua —</div>
+      <label class="up-btn">+ Subir música (MP3)<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/></label>
+      <div class="mini" id="musicaNome"></div>
     </div>
 
     <button class="btn-gold" id="btnCenas" onclick="gerarCenas()">🎥 GERAR CENAS</button>
     <div class="soon-note" id="notaFinal">Cada cena vira um clipe de 8s. Depois você confere e apara o que precisar.</div>
-    <div id="progresso" style="margin-top:.9rem"></div>
+    <div id="progresso" style="margin-top:.8rem"></div>
 
     <!-- editor de corte: aparece com os clipes prontos -->
     <div id="editorCortes" class="hide">
-      <div class="sec-title" style="margin-top:1.4rem">✂️ Confira e apare as cenas</div>
+      <div class="sec-title">✂️ Confira e apare as cenas</div>
       <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O motor às vezes inventa uma transição no fim. Corte o pedacinho ruim antes de montar.</div>
       <div id="boxCortes"></div>
-      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.4rem">🎬 GERAR VÍDEO</button>
+      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 GERAR VÍDEO</button>
       <div class="soon-note" id="notaMontagem"></div>
     </div>
   </div>
 
-  <!-- ══ RESULTADO ══ -->
+  <!-- vídeo pronto -->
   <div id="telaFinal" class="hide">
     <div class="sec-title">✅ Vídeo pronto</div>
     <div class="step">
-      <video id="videoFinal" controls playsinline></video>
+      <video id="videoFinal" controls playsinline style="width:100%;border-radius:var(--radius)"></video>
       <div class="btn-row" style="margin-top:.8rem">
         <button class="btn-ghost" onclick="baixarFinal()">⬇️ Baixar vídeo</button>
         <button class="btn-ghost" onclick="copiarLinkFinal()">🔗 Copiar link</button>
@@ -254,14 +250,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
   </div><!-- /abaCriar -->
 
-  <!-- ══ ABA PROJETOS: trabalhos salvos, ainda sem vídeo ══ -->
+  <!-- ══ ABA PROJETOS ══ -->
   <div id="abaProjetos" class="hide">
     <div class="sec-title">📁 Projetos salvos</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
     <div id="listaProjetos"><div class="pj-vazio">Carregando…</div></div>
   </div>
 
-  <!-- ══ ABA RESULTADOS: vídeos prontos (dá pra editar e refazer uma cena) ══ -->
+  <!-- ══ ABA RESULTADOS ══ -->
   <div id="abaResultados" class="hide">
     <div class="sec-title">🎬 Resultados</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você pode refazer só uma cena.</div>
@@ -269,18 +265,19 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 </div>
 
-<div id="toast"></div>
+<div class="toast" id="toast"></div>
 
-<script src="../js/auth-iframe.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
-// LUX VÍDEO PROMOCIONAL — wizard de histórias (briefing → 4 ideias → 4 cenas de 8s → 32s)
-// BRIEFING → REFERÊNCIAS → 4 CONCEITOS → HISTÓRIA (4 cenas) → IMAGENS → VÍDEOS → TRILHA → 32s
+// VÍDEO PROMOCIONAL — motor de ROTEIRO PUBLICITÁRIO (24/08/2026)
+// 3 passos: 1) personagem no ambiente real · 2) roteiro de 4 cenas · 3) vídeo.
+// As 4 cenas saem da MESMA imagem do personagem (decisão do Thiago em 24/08):
+// mais barato, mais consistente e sem o risco de deriva entre cenas.
+// Regras do roteiro: lux-videos-premium/docs/REGRAS-ROTEIRO-PUBLICITARIO.md
 // ═══════════════════════════════════════════════════════════════════════════════
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
-const FALA_MIN = 130, FALA_MAX = 150, FALA_IDEAL = [135, 145];   // faixa encurtada em 14/08 (era 145-160)
-const FALA_HARD_MIN = 125;   // limite DURO que dispara o alerta vermelho (a geração ainda mira 130-150)
+const PALAVRAS_MIN = 14, PALAVRAS_MAX = 20;      // regra 19: a fala tem que caber em 8s com folga
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -291,27 +288,24 @@ function api(path, opts){
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3800); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escA(s){ return esc(s).replace(/"/g,'&quot;'); }
-function contarCaracteres(t){ return Array.from(String(t||'').trim()).length; }
-function falaValida(t){ const n=contarCaracteres(t); return n>=FALA_MIN && n<=FALA_MAX; }
+function contarPalavras(t){ return String(t||'').trim().split(/\s+/).filter(Boolean).length; }
 function mostrar(id){ const el=document.getElementById(id); if(el) el.classList.remove('hide'); }
 function rolarPara(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
+function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : ('data:image/jpeg;base64,'+t); }
 
-// ── Wizard horizontal: um passo por vez, com a trilha de passos no topo ──
+// ── Wizard: 3 passos ──
 const PASSOS = [
-  { n:1, id:'p1',          rot:'Produto'  },
-  { n:2, id:'telaIdeias',  rot:'Ideia'    },
-  { n:3, id:'telaImagens', rot:'Imagens'  },
-  { n:4, id:'telaStory',   rot:'História' },
-  { n:5, id:'telaTrilha',  rot:'Vídeo'    }
+  { n:1, id:'p1',          rot:'Personagem' },
+  { n:2, id:'telaRoteiro', rot:'Roteiro'    },
+  { n:3, id:'telaTrilha',  rot:'Vídeo'      }
 ];
 let passoAtual = 1, passoMax = 1;
 function irPara(n){
   if(n < 1 || n > PASSOS.length || n > passoMax) return;
   passoAtual = n;
   PASSOS.forEach(function(p){ const el=document.getElementById(p.id); if(el) el.classList.toggle('hide', p.n !== n); });
-  // o vídeo pronto só aparece junto do último passo
   const fin=document.getElementById('telaFinal');
-  if(fin) fin.classList.toggle('hide', !(n === 5 && videoFinalUrl));
+  if(fin) fin.classList.toggle('hide', !(n === 3 && videoFinalUrl));
   pintarBarra();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -319,8 +313,6 @@ function liberar(n){ passoMax = Math.max(passoMax, n); irPara(n); }
 function pintarBarra(){
   const bar=document.getElementById('wzbar'); if(!bar) return;
   bar.innerHTML = PASSOS.map(function(p,k){
-    // estados mutuamente exclusivos: atual (dourado) > feito (verde) > liberado > travado.
-    // Antes 'atual' e 'feito' podiam coincidir e o verde sobrescrevia o dourado do passo atual.
     const cls = 'wzp' + (p.n===passoAtual ? ' atual' : (p.n<passoMax ? ' feito' : (p.n<=passoMax ? ' liberado' : '')));
     return (k ? '<span class="wzseta">→</span>' : '') +
       '<div class="'+cls+'" onclick="irPara('+p.n+')"><span class="wzn">'+p.n+'</span> '+p.rot+'</div>';
@@ -328,14 +320,13 @@ function pintarBarra(){
   const at = bar.querySelector('.wzp.atual'); if(at && at.scrollIntoView) at.scrollIntoView({ block:'nearest', inline:'center' });
 }
 
-// ── Estado do projeto ──
-let projectId = 'hist_' + Date.now();
-let salvoEm = '';                 // última vez que salvou (mostrado embaixo do botão)
-// volume da trilha: SEMPRE automático (o seletor saiu da tela)
+// ── Estado ──
+let projectId = 'promo_' + Date.now();
+let salvoEm = '';
 let refs = { product:[], environment:[], characters:[], logo:[] };
-let brief = null, visualBible = null, conceitos = [], conceitoIdx = -1;
-let story = null;                 // { summary, scenes:[4] }
-let visualMaster = null;          // base64 da 1ª imagem aprovada
+let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) — a referência dos 4 clipes
+let campanha = null;              // { marca, objetivo, tom, argumento }
+let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
 let trilhas = [], trilhaSel = null, musica = null;
 let videoFinalUrl = '', custoUSD = 0;
 
@@ -349,12 +340,10 @@ function abrirAba(nome){
   if(nome!=='criar') carregarProjetos();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
-// o botão Salvar só aparece depois que tem o nome do cliente
 function checarSalvar(){
   const nome=(document.getElementById('fCliente')||{}).value||'';
   const bt=document.getElementById('btnSalvar'); if(bt) bt.classList.toggle('hide', !nome.trim());
 }
-// tudo o que precisa voltar quando o projeto for reaberto
 function estadoAtual(){
   return {
     cliente: (document.getElementById('fCliente')||{}).value||'',
@@ -362,8 +351,9 @@ function estadoAtual(){
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
-    visualBible: visualBible, conceitos: conceitos, conceitoIdx: conceitoIdx,
-    story: story, trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
+    personagem: personagemImg,
+    campanha: campanha, cenas: cenas,
+    trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
   };
 }
 async function salvarProjeto(silencioso){
@@ -386,7 +376,7 @@ function pjCard(p, tipo){
   const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
   const sub = tipo==='res'
     ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+(p.custoBRL?(' · ~R$'+p.custoBRL.toFixed(2)):''))
-    : ('parou no passo '+p.passoMax+' de 5 · '+esc(p.atualizadoEm||''));
+    : ('parou no passo '+p.passoMax+' de 3 · '+esc(p.atualizadoEm||''));
   const bts = tipo==='res'
     ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
       '<button onclick="window.open(\''+escA(p.videoUrl)+'\',\'_blank\')">⬇️ Baixar</button>'
@@ -420,26 +410,23 @@ async function abrirProjeto(id){
     projectId = p.projectId;
     document.getElementById('fCliente').value = p.cliente||'';
     document.getElementById('fBriefing').value = p.briefing||'';
-    visualBible = p.visualBible||null;
-    conceitos = p.conceitos||[]; conceitoIdx = (typeof p.conceitoIdx==='number')?p.conceitoIdx:-1;
-    story = p.story||null; custoUSD = Number(p.custoUSD)||0;
-    trilhaSel = p.trilha||null; musica=null;
-    videoFinalUrl = p.videoUrl||'';
-    // fotos do produto voltam como URL do R2
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
-    visualMaster = (story && story.scenes && story.scenes[0] && story.scenes[0].image_url) || null;
-    // repinta o que existir
+    personagemImg = p.personagem||'';
+    campanha = p.campanha||null;
+    cenas = Array.isArray(p.cenas) ? p.cenas : [];
+    custoUSD = Number(p.custoUSD)||0;
+    trilhaSel = p.trilha||null; musica=null;
+    videoFinalUrl = p.videoUrl||'';
     renderThumbs('product'); renderThumbs('environment');
-    if(conceitos.length) renderIdeias();
-    if(story && story.scenes.some(s=>s.image_url)) renderImagens();
-    if(story && story.scenes.some(s=>s.dialogue)) renderStory();
-    if(story && story.scenes.every(s=>s.video_url)){
+    if(personagemImg) pintarPersonagem();
+    if(cenas.length) renderRoteiro();
+    if(cenas.length && cenas.every(s=>s.video_url)){
       document.getElementById('editorCortes').classList.remove('hide'); renderCortes();
     }
     if(videoFinalUrl){
       document.getElementById('videoFinal').src = videoFinalUrl;
-      document.getElementById('custoFinal').innerHTML='💰 Custo até aqui: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b>.';
+      document.getElementById('custoFinal').innerHTML='💰 Custo até aqui: <b>~R$'+(custoUSD*5.22).toFixed(2)+'</b>.';
     }
     passoMax = Math.max(1, p.passoMax||1);
     abrirAba('criar'); checarSalvar();
@@ -457,10 +444,177 @@ async function apagarProjeto(id){
     toast('🗑️ Apagado.'); carregarProjetos();
   }catch(e){ toast('⚠️ '+e.message); }
 }
-// imagem pode estar em base64 (projeto novo) ou URL do R2 (projeto reaberto)
-function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : ('data:image/jpeg;base64,'+t); }
 
-// ── Upload de imagens ──
+
+// ══════════════════ PASSO 1 — O PERSONAGEM ══════════════════
+function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
+function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
+
+async function gerarPersonagem(){
+  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return; }
+  const btn=document.getElementById('btnPersonagem'); const old=btn.innerHTML;
+  const nota=document.getElementById('notaPersonagem');
+  const ajuste=(document.getElementById('fAjustePers')||{}).value||'';
+  const t0=Date.now();
+  btn.disabled=true;
+  const relogio=setInterval(function(){
+    const s=Math.round((Date.now()-t0)/1000);
+    btn.innerHTML='<span class="spin"></span>Desenhando… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  },1000);
+  if(nota) nota.innerHTML='🎨 Leva de 1 a 2 minutos. Pode deixar a aba aberta.';
+  try{
+    const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
+      client: clienteNome(), briefing: briefTexto(), references: refsPayload(),
+      ajuste: ajuste, imagemAnterior: (ajuste && personagemImg) ? personagemImg : '' }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
+    personagemImg = d.base64; custoUSD += (d.custoUSD||0);
+    pintarPersonagem();
+    if(nota) nota.innerHTML='';
+    toast('✅ Personagem pronto! Baixe pra aprovar com o cliente ou ajuste aí embaixo.');
+    rolarPara('boxPersonagem');
+  }catch(e){ toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); }
+  finally{ clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
+}
+function pintarPersonagem(){
+  const box=document.getElementById('boxPersonagem'); if(!box) return;
+  document.getElementById('imgPersonagem').src = imgSrc(personagemImg);
+  box.classList.remove('hide');
+}
+function baixarPersonagem(){
+  if(!personagemImg) return;
+  const a=document.createElement('a');
+  a.href=imgSrc(personagemImg);
+  a.download=(clienteNome()||'personagem').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem.jpg';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('⬇️ Imagem baixada.');
+}
+
+// ══════════════════ PASSO 2 — O ROTEIRO ══════════════════
+async function gerarRoteiro(ajuste){
+  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return; }
+  const btn=document.getElementById('btnRoteiro'); const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Escrevendo a campanha…'; }
+  const av=document.getElementById('avisoRoteiro');
+  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Montando a campanha…</b> a IA está lendo as informações do cliente e escrevendo as 4 cenas.'; }
+  try{
+    const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
+      client: clienteNome(), briefing: briefTexto(), personagem: personagemImg,
+      ajuste: String(ajuste||'') }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
+    renderRoteiro(); liberar(2);
+    toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
+  }catch(e){ toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
+}
+async function outroRoteiro(){
+  const dir = prompt('Quer dar alguma direção para a nova versão? (pode deixar em branco)\n\nEx: mais engraçado, foque na promoção, fale menos do horário');
+  if(dir === null) return;   // cancelou
+  await gerarRoteiro(dir);
+}
+const PAPEL_ROT = ['GANCHO','PRODUTO / SERVIÇO','DIFERENCIAL / OFERTA','FECHAMENTO + CTA'];
+function renderRoteiro(){
+  const cab=document.getElementById('boxCampanha');
+  if(cab && campanha){
+    cab.innerHTML = '<div class="cc">'+
+      '<div class="cc-tit">🎯 '+esc(campanha.marca||'')+'</div>'+
+      (campanha.objetivo?('<div class="cc-lin"><b>Objetivo:</b> '+esc(campanha.objetivo)+'</div>'):'')+
+      (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+
+      (campanha.argumento?('<div class="cc-lin"><b>Argumento principal:</b> '+esc(campanha.argumento)+'</div>'):'')+
+      '</div>';
+  }
+  const box=document.getElementById('boxRoteiro'); if(!box) return;
+  box.innerHTML='';
+  cenas.forEach(function(s,i){
+    const n=contarPalavras(s.fala); const ok = n>=PALAVRAS_MIN && n<=PALAVRAS_MAX;
+    const d=document.createElement('div'); d.className='sb'+(ok?' ok':'');
+    d.innerHTML =
+      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="badge badge-fn">'+(PAPEL_ROT[i]||'')+'</span></div>'+
+      (personagemImg?('<img class="cena-img" src="'+escA(imgSrc(personagemImg))+'"/>'):'')+
+      (s.descricao?('<div class="cc-lin">'+esc(s.descricao)+'</div>'):'')+
+      '<div class="mini">🗣️ Fala desta cena</div>'+
+      '<textarea data-fa="'+i+'" style="min-height:70px">'+esc(s.fala)+'</textarea>'+
+      '<div class="alerta hide" data-al="'+i+'"></div>';
+    box.appendChild(d);
+  });
+  box.querySelectorAll('[data-fa]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.fa; cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      alertaFala(i); atualizarBotaoVideo();
+    });
+  });
+  cenas.forEach(function(s,i){ alertaFala(i); });
+  atualizarBotaoVideo();
+}
+// alerta só quando a fala não cabe nos 8 segundos
+function alertaFala(i){
+  const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
+  const n = contarPalavras(cenas[i].fala); const card = el.closest('.sb');
+  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — encurte pra caber nos 8 segundos.'; if(card) card.classList.remove('ok'); return; }
+  if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta: <b>'+n+' palavras</b>. O mínimo é <b>'+PALAVRAS_MIN+'</b> — o personagem vai falar arrastado.'; if(card) card.classList.remove('ok'); return; }
+  el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
+}
+function atualizarBotaoVideo(){
+  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+  const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaFalas');
+  if(btn) btn.disabled = ruins>0;
+  if(nota) nota.innerHTML = ruins>0 ? '⛔ Ajuste a(s) fala(s) marcada(s) em vermelho pra liberar a produção.' : '';
+}
+function copiarRoteiro(){
+  if(!cenas.length) return;
+  let t='CAMPANHA — '+((campanha&&campanha.marca)||'')+'\n';
+  if(campanha){
+    if(campanha.objetivo)  t+='Objetivo: '+campanha.objetivo+'\n';
+    if(campanha.tom)       t+='Tom: '+campanha.tom+'\n';
+    if(campanha.argumento) t+='Principal argumento: '+campanha.argumento+'\n';
+  }
+  t+='\n';
+  cenas.forEach(function(s,i){
+    t += 'CENA '+(i+1)+' — '+(PAPEL_ROT[i]||'')+' | 8 SEGUNDOS\n';
+    if(s.descricao) t += s.descricao+'\n';
+    t += 'FALA: "'+(s.fala||'')+'"\n\n';
+  });
+  copiar(t.trim(), '📋 Roteiro copiado!');
+}
+function irParaVideo(){
+  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+  if(ruins){ toast('⛔ Ajuste as falas em vermelho.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  liberar(3);
+}
+
+// ══════════════════ PASSO 3 — OS CLIPES ══════════════════
+// ⚠️ TODAS as cenas usam a MESMA imagem do personagem (decisão de 24/08).
+async function gerarVideo(i){
+  const s=cenas[i]; if(!s) return;
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
+  try{
+    const r = await api('/histVideoStart', { method:'POST', body: JSON.stringify({
+      projectId, imageBase64: personagemImg, scene: s }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
+    custoUSD += (d.custoUSD||0);
+    await acompanharVideo(i, d.predictionId);
+  } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); }
+}
+async function acompanharVideo(i, predictionId){
+  const s=cenas[i];
+  for(let t=0;t<80;t++){
+    await new Promise(r=>setTimeout(r, 6000));
+    try{
+      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
+      const d = await r.json();
+      if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
+      if(d.status==='failed'){ throw new Error(d.error||'a cena falhou no motor de vídeo'); }
+    }catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); return; }
+  }
+  s.video_status='erro'; s.video_error='demorou demais (mais de 8 minutos)'; renderVideos();
+}
+
+
 function readFileAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
 async function fileToOptimizedImage(file){
   const dataUrl = await readFileAsDataURL(file);
@@ -518,93 +672,8 @@ function refsPayload(){
     characters: refs.characters.filter(p=>p.foto).map(p=>({ nome:p.nome||'', obs:p.obs||'', foto:{ base64:p.foto.base64, mimeType:p.foto.mimeType } }))
   };
 }
-function briefPayload(){
-  // (projeto reaberto: as fotos do produto voltam como URL do R2)
-  // nicho e produto vêm da LEITURA da foto (a IA deduz) — não são mais campos na tela
-  return {
-    client: document.getElementById('fCliente').value.trim(),
-    niche: '',
-    product: '',
-    briefing: document.getElementById('fBriefing').value.trim(),
-    tone: 'automatico', protagonistMode: 'automatico', preserveEnvironment: false
-  };
-}
 
-// ══ TELA 3 — 4 IDEIAS ══
-async function gerarIdeias(){
-  const b = briefPayload();
-  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return; }
-  if(!b.briefing){ toast('📝 Escreva o que você quer divulgar nessa imagem.'); return; }
-  const btn=document.getElementById('btnIdeias'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando 4 ideias…';
-  try{
-    const r = await api('/histConceitos', { method:'POST', body: JSON.stringify(Object.assign({}, b, { references: refsPayload() })) });
-    const d = await r.json();
-    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
-    brief=d.brief; visualBible=d.visualBible; conceitos=d.concepts; conceitoIdx=-1;
-    custoUSD += (d.aiCostUSD||0);
-    renderIdeias(); liberar(2);
-    toast('✅ 4 ideias criadas! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
-  } catch(e){ toast('⚠️ '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML=old; }
-}
-// As 4 personalidades são FIXAS (12/08) — o título já vem pronto do Worker ("O açaí dá bronca").
-function renderIdeias(){
-  const box=document.getElementById('boxIdeias'); box.innerHTML='';
-  conceitos.forEach(function(c,i){
-    const d=document.createElement('div'); d.className='cc'+(i===conceitoIdx?' sel':'');
-    d.innerHTML =
-      '<div class="cc-tit">💡 Ideia '+String(i+1).padStart(2,'0')+' —</div>'+
-      '<input type="text" data-ci="'+i+'" data-cf="title" value="'+escA(c.title)+'" placeholder="Título da ideia"/>'+
-      '<div class="mini">[CENA]</div><textarea data-ci="'+i+'" data-cf="scene" style="min-height:52px">'+esc(c.scene)+'</textarea>'+
-      '<div class="mini">[AMBIENTE]</div><textarea data-ci="'+i+'" data-cf="environment" style="min-height:44px">'+esc(c.environment)+'</textarea>'+
-      '<div class="mini">[AÇÃO]</div><textarea data-ci="'+i+'" data-cf="action" style="min-height:56px">'+esc(c.action)+'</textarea>'+
-      '<div class="mini">[FALA]</div><textarea data-ci="'+i+'" data-cf="dialogue" style="min-height:52px">'+esc(c.dialogue)+'</textarea>'+
-      '<div class="btn-row" style="margin-top:.7rem">'+
-        '<button class="btn-gold" style="flex:1" onclick="escolherConceito('+i+')">'+(i===conceitoIdx?'✅ Escolhida':'✅ Selecionar')+'</button>'+
-        '<button class="btn-ghost" style="flex:0 0 auto;min-width:130px" onclick="trocarConceito('+i+')">🔄 Gerar outra</button>'+
-      '</div>';
-    box.appendChild(d);
-  });
-  // o atendente pode reescrever qualquer parte da ideia antes de selecionar
-  box.querySelectorAll('[data-ci]').forEach(function(el){
-    el.addEventListener('input', function(){ conceitos[+el.dataset.ci][el.dataset.cf] = el.value; });
-  });
-}
-async function trocarConceito(i){
-  const c = conceitos[i]; if(!c) return;
-  const btns = document.querySelectorAll('#boxIdeias button'); btns.forEach(b=>b.disabled=true);
-  toast('🔄 Gerando outra ideia no lugar da '+c.id+'…');
-  try{
-    const r = await api('/histConceitos', { method:'POST', body: JSON.stringify(Object.assign({}, briefPayload(), {
-      references: refsPayload(), trocarId: c.id, conceitosAtuais: conceitos })) });
-    const d = await r.json();
-    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
-    if(d.concepts && d.concepts[0]){ conceitos[i] = d.concepts[0]; if(conceitoIdx===i) conceitoIdx=-1; custoUSD += (d.aiCostUSD||0); renderIdeias(); toast('✅ Ideia trocada!'); }
-  } catch(e){ toast('⚠️ '+e.message); }
-  finally { document.querySelectorAll('#boxIdeias button').forEach(b=>b.disabled=false); }
-}
-async function escolherConceito(i){
-  conceitoIdx = i; renderIdeias();
-  // aviso no TOPO enquanto a IA monta a história (leva alguns segundos)
-  const av=document.getElementById('avisoHistoria');
-  av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Construindo história…</b> montando as 4 cenas e ajustando as falas.';
-  window.scrollTo({top:0,behavior:'smooth'});
-  try { await gerarHistoria(); }
-  finally { av.className='hide'; av.innerHTML=''; }
-}
-function copiarIdeias(){
-  if(!conceitos.length) return;
-  const sep='\n'+'--------------------------------------'+'\n\n';
-  const txt = conceitos.map(function(c,k){
-    return '💡 Ideia '+String(k+1).padStart(2,'0')+' — '+(c.title||'')+'\n\n'+
-      (c.scene?('[CENA]\n'+c.scene+'\n\n'):'')+
-      (c.environment?('[AMBIENTE]\n'+c.environment+'\n\n'):'')+
-      (c.action?('[AÇÃO]\n'+c.action+'\n\n'):'')+
-      (c.dialogue?('[FALA]\n"'+c.dialogue+'"\n'):'');
-  }).join(sep) + '\n\n👉 Qual dessas você prefere?';
-  copiar(txt, '📋 As 4 ideias copiadas!');
-}
+
 function copiar(txt, msg){
   const done=()=>toast(msg);
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(()=>fb());
@@ -612,252 +681,7 @@ function copiar(txt, msg){
   function fb(){ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');done();}catch(e){} document.body.removeChild(ta); }
 }
 
-// ══ TELA 4 — STORYBOARD ══
-// Monta as 4 CENAS (sem fala — a fala nasce no passo 4, depois das imagens) e leva pro passo 3.
-async function gerarHistoria(){
-  const c = conceitos[conceitoIdx]; if(!c){ toast('Escolha uma ideia.'); return; }
-  toast('🎬 Montando as 4 cenas…');
-  try{
-    const r = await api('/histHistoria', { method:'POST', body: JSON.stringify({ brief, visualBible, concept:c, references: refsPayload() }) });
-    const d = await r.json();
-    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
-    story = d.story; custoUSD += (d.aiCostUSD||0);
-    renderImagens(); liberar(3);
-    toast('✅ Cenas prontas — desenhando as imagens…');
-    // ⚠️ DISPARA SOZINHO (14/08). Antes da inversão dos passos, escolher a ideia já levava direto pras
-    // imagens; depois da inversão passou a exigir um clique que ninguém avisava — o Thiago ficou 15 min
-    // olhando "aguardando" achando que tinha travado. O botão continua ali pra refazer.
-    gerarImagens();
-  } catch(e){ toast('⚠️ '+e.message); }
-}
-const PAPEL = [
-  { t:'CENA 1 — HOOK',           b:'Começo / conflito' },
-  { t:'CENA 2 — DESENVOLVIMENTO', b:'Continuação da Cena 1' },
-  { t:'CENA 3 — VIRADA',          b:'Escalada / surpresa' },
-  { t:'CENA 4 — FINAL',           b:'Resolução + CTA' }
-];
-function estadoFala(n){
-  if(n < FALA_MIN) return { cls:'c-curta', txt:n+' caracteres — Muito curta' };
-  if(n > FALA_MAX) return { cls:'c-longa', txt:n+' caracteres — Muito longa' };
-  if(n >= FALA_IDEAL[0] && n <= FALA_IDEAL[1]) return { cls:'c-ideal', txt:n+' caracteres — Ideal ✓' };
-  return { cls:'c-ok', txt:n+' caracteres — Válida' };
-}
-function renderStory(){
-  const box=document.getElementById('boxStory'); box.innerHTML='';
-  story.scenes.forEach(function(s,i){
-    const n = contarCaracteres(s.dialogue); const e = estadoFala(n);
-    const p = PAPEL[i] || { t:'CENA '+(i+1), b:'' };
-    const d=document.createElement('div'); d.className='sb'+(falaValida(s.dialogue)?' ok':'');
-    d.innerHTML =
-      '<div class="sb-head"><div class="sb-n">'+p.t+'</div><span class="badge badge-fn">'+p.b+'</span></div>'+
-      (s.image_url?('<img class="cena-img" src="'+escA(imgSrc(s.image_url))+'"/>'):'')+
-      (s.action?('<div class="cc-lin"><b>Ação:</b> '+esc(s.action)+'</div>'):'')+
-      '<div class="mini">🗣️ Fala desta cena</div>'+
-      '<textarea data-fa="'+i+'" style="min-height:78px">'+esc(s.dialogue)+'</textarea>'+
-      '<div class="alerta hide" data-al="'+i+'"></div>';
-    box.appendChild(d);
-  });
-  box.querySelectorAll('[data-fa]').forEach(function(el){
-    el.addEventListener('input', function(){
-      const i=+el.dataset.fa; story.scenes[i].dialogue = el.value;
-      story.scenes[i].dialogue_characters = contarCaracteres(el.value);
-      alertaFala(i); atualizarBotaoImagens();
-    });
-  });
-  story.scenes.forEach(function(s,i){ alertaFala(i); });
-  atualizarBotaoImagens();
-}
-// Só aparece quando o atendente ESTOURA o limite — sem contador ocupando a tela.
-function alertaFala(i){
-  const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
-  const n = contarCaracteres(story.scenes[i].dialogue);
-  const card = el.closest('.sb');
-  if(n > FALA_MAX){ el.className='alerta'; el.innerHTML='⛔ Passou do limite: <b>'+n+' caracteres</b>. O máximo é <b>'+FALA_MAX+'</b> — encurte a frase.'; if(card) card.classList.remove('ok'); return; }
-  if(n < FALA_HARD_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta demais: <b>'+n+' caracteres</b>. O mínimo é <b>'+FALA_HARD_MIN+'</b> — alongue a frase.'; if(card) card.classList.remove('ok'); return; }
-  el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
-}
-function atualizarBotaoImagens(){
-  if(!story) return;
-  // bloqueia só no limite DURO (140-160); dentro disso segue sem encher a tela de aviso
-  const ruins = story.scenes.filter(s=>{ const n=contarCaracteres(s.dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; }).length;
-  const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaStory');
-  if(btn) btn.disabled = ruins>0;
-  if(nota) nota.innerHTML = ruins>0 ? ('⛔ Corrija a(s) fala(s) marcada(s) em vermelho pra liberar a produção.') : '';
-}
-async function ajustarFala(i, silencioso){
-  const s = story.scenes[i]; if(!s) return;
-  if(!silencioso) toast('✨ Reescrevendo a fala da cena '+(i+1)+'…');
-  try{
-    const r = await api('/histFala', { method:'POST', body: JSON.stringify({ scene: s }) });
-    const d = await r.json();
-    if(!d.ok){ toast('⚠️ '+(d.error||'Erro')); return; }
-    s.dialogue = d.dialogue; s.dialogue_characters = d.dialogue_characters; custoUSD += (d.aiCostUSD||0);
-    renderStory();
-    if(!silencioso) toast(d.valida ? ('✅ Fala ajustada ('+d.dialogue_characters+' caracteres)') : ('⚠️ Ficou em '+d.dialogue_characters+' — ajuste na mão'));
-  } catch(e){ toast('⚠️ '+e.message); }
-}
-async function ajustarTodasFalas(silencioso){
-  const alvos = story.scenes.map((s,i)=>falaValida(s.dialogue)?null:i).filter(x=>x!==null);
-  if(!alvos.length){ toast('✅ Todas as falas já estão na faixa.'); return; }
-  for(const i of alvos) await ajustarFala(i, true);
-  const restam = story.scenes.filter(s=>!falaValida(s.dialogue)).length;
-  toast(restam? ('⚠️ '+restam+' fala(s) ainda fora — ajuste na mão.') : '✅ Todas as falas dentro de 145–160!');
-}
-function copiarHistoria(){
-  if(!story) return;
-  let t='🎬 '+(story.summary||'')+'\n\n';
-  story.scenes.forEach(function(s,i){ t += (PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'\n'+(s.visual_description||'')+'\n🗣️ '+(s.dialogue||'')+'\n\n'; });
-  copiar(t.trim(), '📋 História copiada!');
-}
 
-// ══ TELA 5 — IMAGENS ══
-// Cada imagem leva ~85s no gpt-image-1.5 (medido). Sem relógio na tela o atendente acha que travou.
-async function gerarImagens(){
-  if(!story) return;
-  const btn=document.getElementById('btnImagens'); const old=btn.innerHTML;
-  const nota=document.getElementById('notaImagens');
-  btn.disabled=true;
-  const t0=Date.now();
-  const relogio=setInterval(function(){
-    const s=Math.round((Date.now()-t0)/1000);
-    const prontas=story.scenes.filter(x=>x.image_url).length;
-    btn.innerHTML='<span class="spin"></span>Desenhando cena '+Math.min(4,prontas+1)+' de 4… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-    if(nota) nota.innerHTML='🎨 '+prontas+' de 4 prontas. As cenas saem <b>uma de cada vez</b>, cada uma continuando a anterior — leva cerca de <b>7 minutos</b> no total. Pode deixar a aba aberta.';
-  }, 1000);
-  try{ await gerarImagensInterno(); }
-  finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; if(nota) nota.innerHTML=''; }
-}
-// ⚠️ EM SÉRIE, NÃO EM PARALELO (14/08, pedido do Thiago). A cena 2 é gerada olhando a 1, a 3 olhando
-// a 2 e a 4 olhando a 3 — assim as quatro conversam entre si e o vídeo não fica destoando. Era em
-// paralelo (mais rápido), mas cada imagem nascia sem saber como a anterior tinha ficado.
-async function gerarImagensInterno(){
-  renderImagens();
-  for(let i=0; i<story.scenes.length; i++){
-    if(story.scenes[i].image_url) continue;              // já existe: não paga de novo
-    await gerarImagem(i);
-    if(!story.scenes[i].image_url){                      // falhou: uma segunda chance antes de seguir
-      await new Promise(r=>setTimeout(r,2500));
-      await gerarImagem(i);
-    }
-    if(i===0 && story.scenes[0].image_url) visualMaster = story.scenes[0].image_url;
-  }
-  const ok = story.scenes.filter(s=>s.image_url).length;
-  toast(ok===story.scenes.length ? '✅ Imagens prontas! Confira e aprove no fim da página.'
-                                 : ('⚠️ '+ok+' de '+story.scenes.length+' prontas — use "Gerar de novo" nas que faltaram.'));
-  // fica NO PASSO 3 até o atendente aprovar (botão no rodapé)
-}
-// Imagens aprovadas → a IA escreve as falas OLHANDO as imagens que de fato saíram → passo 4.
-async function aprovarImagens(){
-  const faltam = story.scenes.map((s,i)=>s.image_url?null:(i+1)).filter(Boolean);
-  if(faltam.length){
-    document.getElementById('notaAprovar').innerHTML = '⛔ Falta a imagem da(s) cena(s) '+faltam.join(', ')+' — use "Gerar de novo".';
-    toast('⛔ Ainda faltam imagens.'); return;
-  }
-  document.getElementById('notaAprovar').innerHTML='';
-  const btn=document.getElementById('btnAprovarImgs'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Escrevendo a história…';
-  liberar(4);
-  const av=document.getElementById('avisoFalas');
-  av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Escrevendo a história…</b> a IA está olhando as 4 imagens pra criar as falas.';
-  try{
-    const r = await api('/histFalas', { method:'POST', body: JSON.stringify({
-      brief, concept: conceitos[conceitoIdx]||{}, scenes: story.scenes }) });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'Erro');
-    d.scenes.forEach(function(nova,i){ if(story.scenes[i]){ story.scenes[i].dialogue = nova.dialogue||''; story.scenes[i].dialogue_characters = nova.dialogue_characters||0; } });
-    custoUSD += (d.aiCostUSD||0);
-    renderStory();
-    toast('✅ História pronta! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
-  } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaStory').innerHTML='⚠️ '+esc(e.message)+' — volte ao passo 3 e clique de novo.'; }
-  finally { av.className='hide'; av.innerHTML=''; btn.disabled=false; btn.innerHTML=old; }
-}
-// Passo 4 → passo 5 (trilha + vídeo)
-function irParaVideo(){
-  const ruins = story.scenes.filter(s=>{ const n=contarCaracteres(s.dialogue); return n<FALA_HARD_MIN || n>FALA_MAX; }).length;
-  if(ruins){ toast('⛔ Corrija as falas em vermelho.'); return; }
-  liberar(5);
-}
-async function gerarImagem(i){
-  const s = story.scenes[i]; if(!s) return;
-  s.image_status='gerando'; s.image_error=''; renderImagens();
-  try{
-    // visualMaster = cena 1 (identidade da história) · cenaAnterior = cena i-1 (continuidade direta)
-    const anterior = i>0 ? (story.scenes[i-1].image_url || null) : null;
-    const r = await api('/histImagem', { method:'POST', body: JSON.stringify({
-      imagePrompt: s.image_prompt, references: refsPayload(), cena: i+1,
-      visualMaster: (i>0 ? visualMaster : null), cenaAnterior: anterior, ajuste: s._ajuste||'' }) });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'Falha na imagem');
-    s.image_url = d.base64; s.image_status='pronta';
-    custoUSD += (d.custoUSD||0);
-    if(i===0) visualMaster = d.base64;
-  } catch(e){ s.image_status='erro'; s.image_error = String(e.message||'').slice(0,220); }
-  finally { renderImagens(); }
-}
-function renderImagens(){
-  const box=document.getElementById('boxImagens'); box.innerHTML='';
-  story.scenes.forEach(function(s,i){
-    const st = s.image_status==='gerando' ? '<span class="stt s-run">⏳ gerando…</span>'
-            : s.image_status==='erro'    ? '<span class="stt s-err">⚠️ erro</span>'
-            : s.image_url                ? '<span class="stt s-ok">✅ pronta</span>'
-            : '<span class="stt s-wait">aguardando</span>';
-    const img = s.image_url ? '<img class="cena-img" src="'+escA(imgSrc(s.image_url))+'"/>'
-                            : '<div class="cena-ph">'+(s.image_status==='gerando'?'⏳ desenhando…':'sem imagem')+'</div>';
-    const d=document.createElement('div'); d.className='sb'+(s.image_url?' ok':'');
-    d.innerHTML =
-      '<div class="sb-head"><div class="sb-n">'+(PAPEL[i]?PAPEL[i].t:('CENA '+(i+1)))+'</div>'+st+'</div>'+
-      img+
-      (s.action ? ('<div class="cc-lin" style="margin-top:.4rem">'+esc(s.action)+'</div>') : '')+
-      (s.image_error ? ('<div class="alerta">⚠️ '+esc(s.image_error)+'</div>') : '')+
-      '<div class="mini">✏️ O que mudar nesta imagem (opcional)</div>'+
-      '<input type="text" data-aj="'+i+'" placeholder="Ex: aproxime o produto, deixe o fundo mais claro" value="'+escA(s._ajuste||'')+'"/>'+
-      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="gerarImagem('+i+')"'+(s.image_status==='gerando'?' disabled':'')+'>🔄 Gerar de novo</button>';
-    box.appendChild(d);
-  });
-  box.querySelectorAll('[data-aj]').forEach(el=>el.addEventListener('input',()=>{ story.scenes[+el.dataset.aj]._ajuste = el.value; }));
-  const bt=document.getElementById('btnAprovarImgs');
-  if(bt) bt.classList.toggle('hide', !story.scenes.every(x=>x.image_url));
-  // se nenhuma imagem existe e nada está rodando, deixa CLARO que falta apertar o botão
-  const nota=document.getElementById('notaImagens');
-  const parado = story.scenes.every(x=>!x.image_url && x.image_status!=='gerando');
-  const btG=document.getElementById('btnImagens');
-  if(nota && parado && btG && !btG.disabled) nota.innerHTML='👆 Clique em <b>GERAR AS 4 IMAGENS</b> aí em cima para começar.';
-}
-// Não existe mais botão "aprovar": se o atendente não pediu pra mudar nada, está aprovado.
-// Assim que as 4 imagens existem, o último passo (trilha + gerar vídeo) aparece.
-
-// ══ TELA 6 — VÍDEOS ══
-function renderVideos(){ pintarProgresso(); }
-async function gerarVideo(i){
-  const s=story.scenes[i]; if(!s||!s.image_url){ toast('Aprove a imagem primeiro.'); return; }
-  s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
-  try{
-    const resumoAnterior = i>0 ? JSON.stringify(story.scenes[i-1].final_state||{}) : '';
-    const r = await api('/histVideoStart', { method:'POST', body: JSON.stringify({
-      projectId, imageBase64: s.image_url, scene: s, resumoAnterior,
-      videoPromptEdit: s._videoPromptEdit||'' }) });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'Falha ao disparar o vídeo');
-    custoUSD += (d.custoUSD||0);
-    await acompanharVideo(i, d.predictionId);
-  } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); }
-}
-async function acompanharVideo(i, predictionId){
-  const s=story.scenes[i];
-  for(let t=0;t<60;t++){
-    await new Promise(r=>setTimeout(r, 8000));
-    try{
-      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
-      const d = await r.json();
-      if(!d.ok){ continue; }
-      if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
-      if(d.status==='failed'){ throw new Error(d.error||'o motor falhou'); }
-    } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); return; }
-  }
-  s.video_status='erro'; s.video_error='o motor demorou demais (mais de 8 min)'; renderVideos(); toast('⚠️ Cena '+(i+1)+' demorou demais.');
-}
-
-// ══ TELA 7 — TRILHA ══
 async function carregarTrilhas(){
   try{
     const r = await api('/promoTrilhas'); const d = await r.json();
@@ -885,8 +709,8 @@ async function onMusica(ev){
 // ══ MONTAGEM FINAL ══
 // Um botão só: gera os 4 clipes de 8s e já monta o vídeo de 32s pra download.
 function pintarProgresso(){
-  const box=document.getElementById('progresso'); if(!box||!story) return;
-  box.innerHTML = story.scenes.map(function(s,i){
+  const box=document.getElementById('progresso'); if(!box||!cenas.length) return;
+  box.innerHTML = cenas.map(function(s,i){
     const ic = s.video_url ? '✅' : (s.video_status==='gerando' ? '<span class="spin" style="border-top-color:var(--gold)"></span>' : (s.video_status==='erro' ? '⚠️' : '⏳'));
     const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando… (2-4 min)' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
     return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+'</div>'+
@@ -896,17 +720,18 @@ function pintarProgresso(){
 let montando = false;
 // PASSO 5-A: gera os 4 clipes de 8s (todos ao mesmo tempo). Custo: US$ 0,40 por cena.
 async function gerarCenas(){
-  if(!story || !story.scenes.every(s=>s.image_url)){ toast('🖼️ Aprove as imagens antes.'); return; }
+  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
   document.getElementById('notaFinal').textContent='Cada cena leva 2-4 minutos. Pode deixar a aba aberta.';
   pintarProgresso();
   try{
-    const faltam = story.scenes.map((s,i)=>i).filter(i=>!story.scenes[i].video_url);
+    const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
     if(faltam.length) await Promise.all(faltam.map(i=>gerarVideo(i)));
-    const prontas = story.scenes.filter(s=>s.video_url).length;
-    if(prontas < story.scenes.length){
-      document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+story.scenes.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
+    const prontas = cenas.filter(s=>s.video_url).length;
+    if(prontas < cenas.length){
+      document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
       toast('⚠️ Faltaram cenas — clique de novo.'); return;
     }
     document.getElementById('notaFinal').textContent='';
@@ -922,9 +747,9 @@ async function gerarCenas(){
 const CLIPE_SEG = 8;
 function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.round((s%1)*10)); }
 function renderCortes(){
-  const box=document.getElementById('boxCortes'); if(!box||!story) return;
+  const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
   box.innerHTML='';
-  story.scenes.forEach(function(s,i){
+  cenas.forEach(function(s,i){
     if(!s.video_url) return;
     if(typeof s.cortaIni!=='number') s.cortaIni=0;
     if(typeof s.cortaFim!=='number') s.cortaFim=0;
@@ -948,10 +773,10 @@ function renderCortes(){
     box.appendChild(d);
     ligarTrim(d, i);
   });
-  story.scenes.forEach(function(s,i){ if(s.video_url) pintarTrim(i); });
+  cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); });
 }
 function pintarTrim(i){
-  const s=story.scenes[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
+  const s=cenas[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
   const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
   const pi=(ini/CLIPE_SEG*100), pf=(fim/CLIPE_SEG*100);
   const q=(sel)=>box.querySelector(sel+'="'+i+'"]');
@@ -966,7 +791,7 @@ function pintarTrim(i){
   if(tf) tf.textContent=mmss(fim)+' (fim)';
   if(td) td.textContent='corte: '+(ini>0?('-'+ini.toFixed(1)+'s no início '):'')+(s.cortaFim>0?('-'+Number(s.cortaFim).toFixed(1)+'s no fim'):'')+(ini===0&&!s.cortaFim?'sem corte':'');
   if(du) du.textContent=(fim-ini).toFixed(1)+'s';
-  const tot=story.scenes.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
+  const tot=cenas.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
   const nm=document.getElementById('notaMontagem'); if(nm) nm.textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
 }
 function ligarTrim(card, i){
@@ -977,7 +802,7 @@ function ligarTrim(card, i){
   let arrastando=null;
   const mover=(ev)=>{
     if(!arrastando) return;
-    const t=tempoDoX(ev.clientX); const s=story.scenes[i];
+    const t=tempoDoX(ev.clientX); const s=cenas[i];
     if(arrastando==='ini') s.cortaIni=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1));
     else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
     pintarTrim(i);
@@ -1002,7 +827,7 @@ function ligarTrim(card, i){
 // toca só o pedaço que vai entrar na montagem
 function verTrecho(i){
   const card=document.querySelector('#boxCortes [data-cena="'+i+'"]'); if(!card) return;
-  const v=card.querySelector('video'); const s=story.scenes[i];
+  const v=card.querySelector('video'); const s=cenas[i];
   const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
   try{ v.currentTime=ini; }catch(e){}
   v.play();
@@ -1013,7 +838,7 @@ function verTrecho(i){
 
 // Refaz UMA cena só — o atendente paga apenas essa (US$ 0,40), não as quatro.
 async function refazerCena(i){
-  const s=story.scenes[i]; if(!s) return;
+  const s=cenas[i]; if(!s) return;
   if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
   const card=document.querySelector('#boxCortes [data-cena="'+i+'"]');
   const bt=card?card.querySelector('.btn-refaz'):null; const old=bt?bt.innerHTML:'';
@@ -1029,13 +854,13 @@ async function refazerCena(i){
 
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
 async function finalizar(){
-  if(!story || !story.scenes.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
   const btn=document.getElementById('btnFinal'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…';
   montando=true; pintarProgresso();
   try{
-    const clips = story.scenes.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
+    const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
     const r = await api('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica }) });
     const d = await r.json();
@@ -1066,6 +891,9 @@ function baixarFinal(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link copiado!'); }
+
+
+
 
 // ── início ──
 pintarBarra();
