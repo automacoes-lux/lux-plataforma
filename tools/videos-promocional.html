@@ -761,16 +761,32 @@ function pintarProgresso(){
 }
 let montando = false;
 // PASSO 5-A: gera os 4 clipes de 8s (todos ao mesmo tempo). Custo: US$ 0,40 por cena.
+// ⚠️ a imagem do personagem sobe UMA vez e as 4 cenas usam a MESMA URL (25/08). Antes cada cena
+// mandava o base64 inteiro e o R2 recusava a escrita simultânea no mesmo objeto (erro 10058).
+async function subirPersonagem(){
+  if(!personagemImg) return '';
+  if(/^https?:\/\//.test(personagemImg)) return personagemImg;   // já é URL (projeto reaberto)
+  try{
+    const r = await api('/promoPersonagemUp', { method:'POST', body: JSON.stringify({ projectId, base64: personagemImg }) });
+    const d = await r.json();
+    if(d.ok && d.url){ personagemImg = d.url; return d.url; }
+  }catch(e){}
+  return personagemImg;   // se falhar, segue com o base64 (o backend ainda aceita)
+}
 async function gerarCenas(){
   if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  await subirPersonagem();
   const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
   document.getElementById('notaFinal').textContent='Cada cena leva 2-4 minutos. Pode deixar a aba aberta.';
   pintarProgresso();
   try{
     const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
-    if(faltam.length) await Promise.all(faltam.map(i=>gerarVideo(i)));
+    // dispara em paralelo, mas com 1,2s entre um e outro: a rajada simultânea derrubava a 1ª cena
+    if(faltam.length) await Promise.all(faltam.map(function(i,k){
+      return new Promise(function(res){ setTimeout(function(){ gerarVideo(i).then(res); }, k*1200); });
+    }));
     const prontas = cenas.filter(s=>s.video_url).length;
     if(prontas < cenas.length){
       document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
