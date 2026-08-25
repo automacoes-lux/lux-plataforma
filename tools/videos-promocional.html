@@ -216,7 +216,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step">
       <div class="step-head"><div class="step-title">Trilha sonora</div></div>
       <div class="step-hint">Escolha uma faixa ou envie uma música. O sistema usa até <b>32 segundos</b> e mantém a trilha abaixo das falas.</div>
-      <div id="boxTrilhas" class="chips"></div>
+      <div id="trilhasGrid" class="trilhas-grid"></div>
       <div class="mini" style="margin-top:.8rem">— ou envie a sua —</div>
       <label class="up-btn">+ Subir música (MP3)<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/></label>
       <div class="mini" id="musicaNome"></div>
@@ -495,9 +495,9 @@ function baixarPersonagem(){
 async function gerarRoteiro(ajuste){
   if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return; }
   const btn=document.getElementById('btnRoteiro'); const old=btn?btn.innerHTML:'';
-  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Escrevendo a campanha…'; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando o roteiro…'; }
   const av=document.getElementById('avisoRoteiro');
-  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Montando a campanha…</b> a IA está lendo as informações do cliente e escrevendo as 4 cenas.'; }
+  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
   try{
     const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
       client: clienteNome(), briefing: briefTexto(), personagem: personagemImg,
@@ -587,6 +587,9 @@ function irParaVideo(){
 }
 
 // ══════════════════ PASSO 3 — OS CLIPES ══════════════════
+// ⚠️ ficou de fora na remontagem de 24/08 e quebrava a geração logo no 1º clipe: gerarVideo() chama
+// renderVideos() antes de bater na API, dava ReferenceError e as 4 cenas ficavam paradas em "na fila".
+function renderVideos(){ pintarProgresso(); }
 // ⚠️ TODAS as cenas usam a MESMA imagem do personagem (decisão de 24/08).
 async function gerarVideo(i){
   const s=cenas[i]; if(!s) return;
