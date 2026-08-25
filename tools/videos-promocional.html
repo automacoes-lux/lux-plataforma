@@ -866,8 +866,10 @@ function desenharOnda(i){
     ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
     ctx.fillRect(x, (A-h)/2, 1, h);
   }
-  if(a.fimFala < CLIPE_SEG - 0.05){
-    const x = Math.round(a.fimFala/CLIPE_SEG*L);
+  // o risco branco marca o fim da fala da TRANSCRIÇÃO (mais confiável que o pico de energia)
+  const marca = (cenas[i]._fimFala !== undefined && cenas[i]._fimFala !== null) ? cenas[i]._fimFala : a.fimFala;
+  if(marca < CLIPE_SEG - 0.05){
+    const x = Math.round(marca/CLIPE_SEG*L);
     ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(x,0,1,A);
   }
 }
@@ -903,25 +905,53 @@ function renderCortes(){
   prepararAudios();
 }
 
-// ouve os 4 clipes e já deixa cortado — o atendente só confere
+// ⚠️ O CORTE VEM DA TRANSCRIÇÃO (25/08), não da energia do áudio.
+// Medir energia cortava no ÚLTIMO SOM — e o Veo às vezes inventa um resmungo, um "hã" ou um ruído
+// DEPOIS da fala, o que jogava o corte pra frente e deixava a sujeira entrar. Agora o Worker
+// transcreve o clipe com marcação por palavra (whisper-1) e devolve onde termina a ÚLTIMA PALAVRA
+// DO ROTEIRO — que nós conhecemos. O que vier depois é ignorado de propósito. Custa R$0,017 o vídeo.
+// A onda continua sendo desenhada (a partir do áudio) só pra o atendente CONFERIR visualmente.
 async function prepararAudios(){
   for(let i=0;i<cenas.length;i++){
     const s=cenas[i]; if(!s.video_url) continue;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
-    if(s._audio){ desenharOnda(i); continue; }
-    if(nota) nota.innerHTML='🎧 Ouvindo o áudio pra achar o fim da fala…';
-    const a = await analisarAudio(s.video_url);
-    if(!a){ if(nota) nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — se o fim ficar estranho, arraste a alça.'; continue; }
-    s._audio = a;
-    if(!s._cortouManual){
-      const alvo = Math.min(CLIPE_SEG, a.fimFala + FOLGA_POS_FALA);
+    if(!s._audio){                                  // a onda é só desenho
+      const a = await analisarAudio(s.video_url);
+      if(a){ s._audio = a; desenharOnda(i); }
+    } else desenharOnda(i);
+
+    if(s._fimFala === undefined){
+      if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
+      try{
+        const r = await api('/promoFimDaFala', { method:'POST', body: JSON.stringify({ url:s.video_url, fala:s.fala||'' }) });
+        const d = await r.json();
+        if(!d.ok) throw new Error(d.error||'falha na transcrição');
+        s._fimFala = Number(d.fimFala);
+        s._palavra = d.palavra || '';
+        custoUSD += (d.custoUSD||0);
+      }catch(e){
+        s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
+        s._porEnergia = true;
+      }
+    }
+    if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
+      const alvo = Math.min(CLIPE_SEG, s._fimFala + FOLGA_POS_FALA);
       const corte = Math.max(0, CLIPE_SEG - alvo);
       s.cortaFim = corte > 0.15 ? Number(corte.toFixed(2)) : 0;
     }
     desenharOnda(i); pintarTrim(i);
-    if(nota) nota.innerHTML = s.cortaFim
-      ? ('✂️ Fala até <b>'+a.fimFala.toFixed(1)+'s</b> — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim. Arraste a alça se quiser mudar.')
-      : ('🎧 A fala vai até o fim (<b>'+a.fimFala.toFixed(1)+'s</b>) — não há sobra pra cortar.');
+    if(nota){
+      if(s._fimFala === null || s._fimFala === undefined){
+        nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — arraste a alça se o fim ficar estranho.';
+      } else if(s.cortaFim){
+        nota.innerHTML = '✂️ A fala termina em <b>'+s._fimFala.toFixed(1)+'s</b>'+
+          (s._palavra?(' (na palavra "'+esc(s._palavra)+'")'):'')+
+          ' — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim.'+
+          (s._porEnergia?' <i>(pelo som, não pela transcrição)</i>':'');
+      } else {
+        nota.innerHTML = '🎧 A fala vai até <b>'+s._fimFala.toFixed(1)+'s</b> — não sobra nada pra cortar.';
+      }
+    }
   }
 }
 
