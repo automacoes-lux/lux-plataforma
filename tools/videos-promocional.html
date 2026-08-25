@@ -288,7 +288,11 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 // ═══════════════════════════════════════════════════════════════════════════════
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
-const PALAVRAS_MIN = 14, PALAVRAS_MAX = 20;      // regra 19: a fala tem que caber em 8s com folga
+// ⚠️ MEDIDO (25/08): cada palavra falada leva ~0,47s no Veo, e o clipe tem 8s FIXOS (pedir
+// duration:6 não adianta, a WaveSpeed devolve 8,00s do mesmo jeito). 12 palavras ≈ 5,6s de fala,
+// sobrando ~2s pra cortar o último pedaço, que é onde o Veo distorce. Com o antigo 14-20, uma
+// fala de 20 palavras pedia ~9,4s e estourava o clipe. Tem que bater com o Worker (ROT_PALAVRAS_*).
+const PALAVRAS_MIN = 8, PALAVRAS_MAX = 12;
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -591,7 +595,7 @@ function renderRoteiro(){
 function alertaFala(i){
   const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala); const card = el.closest('.sb');
-  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — encurte pra caber nos 8 segundos.'; if(card) card.classList.remove('ok'); return; }
+  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — cada palavra leva meio segundo, e passando disso a fala é cortada no meio no vídeo.'; if(card) card.classList.remove('ok'); return; }
   if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta: <b>'+n+' palavras</b>. O mínimo é <b>'+PALAVRAS_MIN+'</b> — o personagem vai falar arrastado.'; if(card) card.classList.remove('ok'); return; }
   el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
 }
@@ -949,7 +953,12 @@ async function prepararAudios(){
           ' — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim.'+
           (s._porEnergia?' <i>(pelo som, não pela transcrição)</i>':'');
       } else {
-        nota.innerHTML = '🎧 A fala vai até <b>'+s._fimFala.toFixed(1)+'s</b> — não sobra nada pra cortar.';
+        // sem sobra = fala longa demais. Medimos: cada palavra come ~0,5s e o clipe tem 8s fixos.
+        // Nesse caso o último segundo (onde o Veo costuma distorcer) fica no vídeo, e o atendente
+        // precisa saber que a solução é ENCURTAR A FALA e refazer a cena — não arrastar a alça.
+        nota.innerHTML = '⚠️ A fala ocupa o clipe inteiro (vai até <b>'+s._fimFala.toFixed(1)+'s</b> de 8s), '+
+          'então não dá pra cortar o finalzinho. Se o fim da cena ficou estranho, <b>encurte a fala</b> '+
+          'no passo anterior (frases de 8 a 12 palavras) e gere a cena de novo.';
       }
     }
   }
