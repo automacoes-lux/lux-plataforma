@@ -94,6 +94,10 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .trim{margin-top:.7rem}
 .trim-bar{position:relative;height:48px;background:repeating-linear-gradient(90deg,var(--bg-input) 0 9px,rgba(255,255,255,.03) 9px 10px);border:.5px solid var(--border);border-radius:8px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
 /* onda do audio dentro da barra de corte (25/08) */
+/* cenas do roteiro dentro de um bloco unico (25/08) */
+.cena-rot{border-top:.5px solid var(--border);padding-top:.8rem;margin-top:.8rem}
+.cena-rot:first-of-type{border-top:none;padding-top:0;margin-top:.2rem}
+.cena-rot.ok .sb-n{color:var(--gold)}
 .trim-onda{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 /* ajuste fino do corte, em passos de 0,1s */
 .fino{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
@@ -163,7 +167,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══════════ PASSO 1 — O PERSONAGEM ══════════ -->
   <div id="p1">
   <div class="step">
-    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Personagem</div></div>
+    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
 
     <div class="mini">Cliente / empresa</div>
     <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
@@ -178,19 +182,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="thumbs" id="thAmbiente"></div>
     <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
 
-    <button class="btn-gold" id="btnPersonagem" onclick="gerarPersonagem()" style="margin-top:1rem">🧍 GERAR PERSONAGEM</button>
-    <div class="soon-note" id="notaPersonagem"></div>
-
-    <!-- o personagem gerado: aprovar com o cliente ou refazer -->
-    <div id="boxPersonagem" class="hide" style="margin-top:1rem">
-      <img id="imgPersonagem" class="cena-img"/>
-      <div class="btn-row" style="margin-top:.6rem">
-        <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
-        <button class="btn-ghost" onclick="gerarPersonagem()">🔄 Gerar de novo</button>
-      </div>
-      <div class="mini" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
-      <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
-    </div>
   </div>
 
   <div class="step">
@@ -199,15 +190,29 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
   </div>
 
-  <button class="btn-gold" id="btnRoteiro" onclick="gerarRoteiro()">📝 GERAR ROTEIRO</button>
+  <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E ROTEIRO</button>
   <div class="soon-note" id="notaRoteiro"></div>
+  <div class="soon-note" id="notaPersonagem"></div>
   </div><!-- /p1 -->
 
   <!-- ══════════ PASSO 2 — O ROTEIRO ══════════ -->
   <div id="telaRoteiro" class="hide">
-    <div class="sec-title">Passo 2 · 📝 O roteiro da campanha</div>
+    <div class="sec-title">Passo 2 · 📝 Personagem e roteiro</div>
     <div id="avisoRoteiro" class="hide"></div>
     <div id="boxCampanha"></div>
+
+    <!-- o personagem: aprovar com o cliente ou refazer -->
+    <div id="boxPersonagem" class="step hide">
+      <div class="step-head"><div class="step-title">O personagem</div></div>
+      <img id="imgPersonagem" class="cena-img"/>
+      <div class="btn-row" style="margin-top:.6rem">
+        <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
+        <button class="btn-ghost" id="btnPersonagem" onclick="gerarPersonagem()">🔄 Gerar de novo</button>
+      </div>
+      <div class="mini" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
+      <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
+    </div>
+
     <div id="boxRoteiro"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
       <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro</button>
@@ -221,10 +226,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="telaTrilha" class="hide">
     <div class="sec-title">Passo 3 · 🎵 Trilha e vídeo</div>
     <div class="step">
-      <div class="step-head"><div class="step-title">Trilha sonora</div></div>
-      <div class="step-hint">Escolha uma faixa ou envie uma música. O sistema usa até <b>32 segundos</b> e mantém a trilha abaixo das falas.</div>
-      <div id="trilhasGrid" class="trilhas-grid"></div>
-      <div class="mini" style="margin-top:.8rem">— ou envie a sua —</div>
+      <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
+      <div class="step-hint">Suba um MP3. Ele entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
       <label class="up-btn">+ Subir música (MP3)<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/></label>
       <div class="mini" id="musicaNome"></div>
     </div>
@@ -303,8 +306,8 @@ function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : (
 
 // ── Wizard: 3 passos ──
 const PASSOS = [
-  { n:1, id:'p1',          rot:'Personagem' },
-  { n:2, id:'telaRoteiro', rot:'Roteiro'    },
+  { n:1, id:'p1',          rot:'Briefing'            },
+  { n:2, id:'telaRoteiro', rot:'Personagem e roteiro' },
   { n:3, id:'telaTrilha',  rot:'Vídeo'      }
 ];
 let passoAtual = 1, passoMax = 1;
@@ -454,22 +457,48 @@ async function apagarProjeto(id){
 }
 
 
-// ══════════════════ PASSO 1 — O PERSONAGEM ══════════════════
-function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
-function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
-
-async function gerarPersonagem(){
+// ══════════════════ PASSO 1 — BRIEFING (personagem + roteiro juntos) ══════════════════
+// ⚠️ Os dois saem EM PARALELO (25/08): são coisas independentes — o roteiro é só texto e a
+// imagem é o gpt-image. Antes o atendente esperava a imagem (1-2 min) pra só então pedir o
+// roteiro. Agora um botão só dispara os dois e a espera é a do mais lento, não a soma.
+async function gerarTudo(){
   if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return; }
-  const btn=document.getElementById('btnPersonagem'); const old=btn.innerHTML;
-  const nota=document.getElementById('notaPersonagem');
-  const ajuste=(document.getElementById('fAjustePers')||{}).value||'';
+  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return; }
+  const btn=document.getElementById('btnTudo'); const old=btn.innerHTML;
   const t0=Date.now();
   btn.disabled=true;
   const relogio=setInterval(function(){
-    const s=Math.round((Date.now()-t0)/1000);
-    btn.innerHTML='<span class="spin"></span>Desenhando… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    const seg=Math.round((Date.now()-t0)/1000);
+    btn.innerHTML='<span class="spin"></span>Criando… '+Math.floor(seg/60)+':'+String(seg%60).padStart(2,'0');
   },1000);
-  if(nota) nota.innerHTML='🎨 Leva de 1 a 2 minutos. Pode deixar a aba aberta.';
+  try{
+    const r = await Promise.all([ gerarPersonagem(true), gerarRoteiro('', true) ]);
+    const okPers=r[0], okRot=r[1];
+    if(okRot){ renderRoteiro(); liberar(2); }
+    if(okRot && okPers) toast('✅ Personagem e roteiro prontos!');
+    else if(okRot)      toast('⚠️ Roteiro pronto, mas a imagem falhou — use "Gerar de novo" no passo 2.');
+    else if(okPers)     toast('⚠️ Personagem pronto, mas o roteiro falhou — tente de novo.');
+  } finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
+}
+function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
+function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
+
+async function gerarPersonagem(silencioso){
+  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return false; }
+  const btn=silencioso?null:document.getElementById('btnPersonagem');
+  const old=btn?btn.innerHTML:'';
+  const nota=document.getElementById('notaPersonagem');
+  const ajuste=(document.getElementById('fAjustePers')||{}).value||'';
+  const t0=Date.now();
+  let relogio=null;
+  if(btn){
+    btn.disabled=true;
+    relogio=setInterval(function(){
+      const s=Math.round((Date.now()-t0)/1000);
+      btn.innerHTML='<span class="spin"></span>Desenhando… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    },1000);
+  }
+  if(nota) nota.innerHTML='🎨 Desenhando o personagem (1 a 2 minutos)…';
   try{
     const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
       client: clienteNome(), briefing: briefTexto(), references: refsPayload(),
@@ -479,10 +508,10 @@ async function gerarPersonagem(){
     personagemImg = d.base64; custoUSD += (d.custoUSD||0);
     pintarPersonagem();
     if(nota) nota.innerHTML='';
-    toast('✅ Personagem pronto! Baixe pra aprovar com o cliente ou ajuste aí embaixo.');
-    rolarPara('boxPersonagem');
-  }catch(e){ toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); }
-  finally{ clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
+    if(!silencioso){ toast('✅ Personagem pronto!'); rolarPara('boxPersonagem'); }
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
+  finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
 function pintarPersonagem(){
   const box=document.getElementById('boxPersonagem'); if(!box) return;
@@ -499,9 +528,9 @@ function baixarPersonagem(){
 }
 
 // ══════════════════ PASSO 2 — O ROTEIRO ══════════════════
-async function gerarRoteiro(ajuste){
-  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return; }
-  const btn=document.getElementById('btnRoteiro'); const old=btn?btn.innerHTML:'';
+async function gerarRoteiro(ajuste, silencioso){
+  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return false; }
+  const btn=silencioso?null:document.getElementById('btnTudo'); const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando o roteiro…'; }
   const av=document.getElementById('avisoRoteiro');
   if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
@@ -511,9 +540,9 @@ async function gerarRoteiro(ajuste){
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
-    renderRoteiro(); liberar(2);
-    toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')');
-  }catch(e){ toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); }
+    if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); return false; }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
 }
 async function outroRoteiro(){
@@ -532,20 +561,23 @@ function renderRoteiro(){
       (campanha.argumento?('<div class="cc-lin"><b>Argumento principal:</b> '+esc(campanha.argumento)+'</div>'):'')+
       '</div>';
   }
+  // ⚠️ as 4 cenas num BLOCO SÓ e SEM repetir a imagem (25/08): ela já está logo acima, e
+  // repeti-la 4 vezes deixava a tela quilométrica.
   const box=document.getElementById('boxRoteiro'); if(!box) return;
   box.innerHTML='';
+  const bloco=document.createElement('div'); bloco.className='step';
+  bloco.innerHTML='<div class="step-head"><div class="step-title">As 4 cenas</div></div>';
   cenas.forEach(function(s,i){
     const n=contarPalavras(s.fala); const ok = n>=PALAVRAS_MIN && n<=PALAVRAS_MAX;
-    const d=document.createElement('div'); d.className='sb'+(ok?' ok':'');
+    const d=document.createElement('div'); d.className='cena-rot'+(ok?' ok':'');
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="badge badge-fn">'+(PAPEL_ROT[i]||'')+'</span></div>'+
-      (personagemImg?('<img class="cena-img" src="'+escA(imgSrc(personagemImg))+'"/>'):'')+
       (s.descricao?('<div class="cc-lin">'+esc(s.descricao)+'</div>'):'')+
-      '<div class="mini">🗣️ Fala desta cena</div>'+
-      '<textarea data-fa="'+i+'" style="min-height:70px">'+esc(s.fala)+'</textarea>'+
+      '<textarea data-fa="'+i+'" style="min-height:64px">'+esc(s.fala)+'</textarea>'+
       '<div class="alerta hide" data-al="'+i+'"></div>';
-    box.appendChild(d);
+    bloco.appendChild(d);
   });
+  box.appendChild(bloco);
   box.querySelectorAll('[data-fa]').forEach(function(el){
     el.addEventListener('input', function(){
       const i=+el.dataset.fa; cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
@@ -692,28 +724,28 @@ function copiar(txt, msg){
 }
 
 
-async function carregarTrilhas(){
-  try{
-    const r = await api('/promoTrilhas'); const d = await r.json();
-    if(!d.ok) return;
-    trilhas = d.trilhas||[];
-    const g=document.getElementById('trilhasGrid'); g.innerHTML='';
-    trilhas.forEach(function(t){
-      const el=document.createElement('div'); el.className='trilha-item';
-      el.textContent='🎵 '+t.title;
-      el.onclick=function(){ trilhaSel=t; musica=null; document.getElementById('musicaNome').textContent='';
-        g.querySelectorAll('.trilha-item').forEach(x=>x.classList.remove('sel')); el.classList.add('sel'); };
-      g.appendChild(el);
-    });
-  } catch(e){}
-}
+// (a lista de trilhas prontas foi removida em 25/08 — agora é só upload de MP3)
+// ⚠️ SOBE NA HORA (25/08). Antes o MP3 ia em base64 dentro do JSON da montagem: um arquivo de
+// 3-5 minutos vira 5-9MB num único POST e a trilha não chegava no vídeo. Agora vai pro R2 assim
+// que o atendente escolhe, e a montagem manda só a URL.
 async function onMusica(ev){
   const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
-  const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
-  musica = { base64:b64 }; trilhaSel=null;
-  document.querySelectorAll('#trilhasGrid .trilha-item').forEach(x=>x.classList.remove('sel'));
-  document.getElementById('musicaNome').textContent = '🎵 '+f.name;
-  toast('✅ Música carregada.');
+  const nome=document.getElementById('musicaNome');
+  if(nome) nome.innerHTML='<span class="spin"></span> Enviando '+esc(f.name)+'…';
+  try{
+    const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+    const r = await api('/promoMusicaUp', { method:'POST', body: JSON.stringify({ projectId, base64:b64, tipo:f.type||'' }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'falha ao enviar');
+    trilhaSel = { id:'up', title:f.name, url:d.url };
+    musica = null;
+    if(nome) nome.innerHTML='🎵 '+esc(f.name)+' <span style="color:var(--text-dim)">('+(d.bytes/1048576).toFixed(1)+'MB, enviada ✅)</span>';
+    toast('✅ Música enviada.');
+  }catch(e){
+    trilhaSel=null; musica=null;
+    if(nome) nome.innerHTML='⚠️ '+esc(e.message);
+    toast('⚠️ '+e.message);
+  }
 }
 
 // ══ MONTAGEM FINAL ══
@@ -757,16 +789,17 @@ async function gerarCenas(){
 const CLIPE_SEG = 8;
 function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.round((s%1)*10)); }
 // ═══════════════════════════════════════════════════════════════════════════════
-// EDITOR DE CORTE COM ONDA DE ÁUDIO (25/08) — pedido do Thiago
-// A barra deixa de ser uma faixa cega: mostra a ONDA do áudio, marca onde a fala
-// termina e já vem PRÉ-CORTADA 0,5s depois da última fala. O atendente só confere.
-// Como funciona: o clipe é baixado pelo Worker (/promoClipeAudio, que devolve com
-// CORS — o R2 público não devolve), decodificado no navegador com a Web Audio API,
-// e viram (a) um envelope de energia pra desenhar e (b) o instante da última fala.
+// EDITOR DE CORTE (25/08 v2) — corte AUTOMÁTICO, tela limpa
+// O atendente não precisa fazer nada: o sistema ouve o áudio, acha o fim da fala e
+// já corta 0,5s depois. A barra mostra a onda pra ele conferir e, se quiser, arrastar.
+// ⚠️ O critério de "fim da fala" mudou: 10% do pico dava 8,0s em clipes com ruído de
+// fundo (o Veo entrega bastante) — o corte nunca acontecia. Agora o limiar sai da
+// distância entre o SILÊNCIO do próprio clipe (percentil 20) e a FALA (percentil 95),
+// e exige 100ms seguidos acima dele pra contar como fala.
 // ═══════════════════════════════════════════════════════════════════════════════
-const FOLGA_POS_FALA = 0.5;          // segundos mantidos depois da última fala
+const FOLGA_POS_FALA = 0.5;
 let audioCtx = null;
-const analiseCache = {};             // url -> { dur, fimFala, env:[0..1] }
+const analiseCache = {};
 
 async function analisarAudio(url){
   if(analiseCache[url]) return analiseCache[url];
@@ -776,26 +809,31 @@ async function analisarAudio(url){
     if(!r.ok) throw new Error('http '+r.status);
     const buf = await audioCtx.decodeAudioData(await r.arrayBuffer());
     const ch = buf.getChannelData(0), sr = buf.sampleRate, dur = buf.duration;
-    const JAN = Math.max(1, Math.round(sr*0.02));           // janelas de 20ms
+    const JAN = Math.max(1, Math.round(sr*0.02));
     const env = [];
     for(let p=0; p<ch.length; p+=JAN){
       let soma=0, n=0;
       for(let k=p; k<p+JAN && k<ch.length; k++){ soma += ch[k]*ch[k]; n++; }
       env.push(Math.sqrt(soma/Math.max(1,n)));
     }
-    const pico = Math.max.apply(null, env) || 1;
-    const norm = env.map(v=>v/pico);
-    // última janela com energia de FALA (10% do pico) — ignora respiração e ruído de fundo
-    let ult = -1;
-    for(let j=norm.length-1; j>=0; j--){ if(norm[j] > 0.10){ ult = j; break; } }
-    const fimFala = ult<0 ? dur : Math.min(dur, (ult+1)*0.02);
-    const res = { dur, fimFala, env: norm };
+    const ord = env.slice().sort((a,b)=>a-b);
+    const piso = ord[Math.floor(ord.length*0.20)] || 0;      // o "silêncio" deste clipe
+    const alto = ord[Math.floor(ord.length*0.95)] || 1;      // a fala
+    const lim  = piso + (alto-piso)*0.22;
+    const SUST = 5;                                          // 100ms seguidos = fala de verdade
+    let fimFala = dur;
+    for(let j=env.length-SUST; j>=0; j--){
+      let todos = true;
+      for(let k=j; k<j+SUST; k++){ if(env[k] <= lim){ todos = false; break; } }
+      if(todos){ fimFala = Math.min(dur, (j+SUST)*0.02); break; }
+    }
+    const pico = alto || 1;
+    const res = { dur, fimFala, env: env.map(v=>Math.min(1, v/pico)) };
     analiseCache[url] = res;
     return res;
   }catch(e){ return null; }
 }
 
-// desenha a onda dentro da barra (canvas leve, redesenha junto com o corte)
 function desenharOnda(i){
   const cv = document.querySelector('#boxCortes [data-onda="'+i+'"]'); if(!cv) return;
   const a = cenas[i] && cenas[i]._audio; if(!a) return;
@@ -806,16 +844,13 @@ function desenharOnda(i){
   const ini = Number(cenas[i].cortaIni||0), fim = CLIPE_SEG - Number(cenas[i].cortaFim||0);
   const n = a.env.length;
   for(let x=0; x<L; x++){
-    const j = Math.floor(x/L*n);
-    const v = a.env[j]||0;
+    const v = a.env[Math.floor(x/L*n)]||0;
     const h = Math.max(1, v*(A-6));
     const t = (x/L)*CLIPE_SEG;
-    const dentro = t>=ini && t<=fim;
-    ctx.fillStyle = dentro ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
+    ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
     ctx.fillRect(x, (A-h)/2, 1, h);
   }
-  // risco branco onde a fala termina
-  if(a.fimFala < CLIPE_SEG){
+  if(a.fimFala < CLIPE_SEG - 0.05){
     const x = Math.round(a.fimFala/CLIPE_SEG*L);
     ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(x,0,1,A);
   }
@@ -843,20 +878,7 @@ function renderCortes(){
         '</div>'+
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
-      '<div class="fino">'+
-        '<span class="fino-rot">Início</span>'+
-        '<button onclick="ajustar('+i+',\'ini\',-0.1)">−0,1s</button>'+
-        '<button onclick="ajustar('+i+',\'ini\',0.1)">+0,1s</button>'+
-        '<span class="fino-rot" style="margin-left:auto">Fim</span>'+
-        '<button onclick="ajustar('+i+',\'fim\',-0.1)">−0,1s</button>'+
-        '<button onclick="ajustar('+i+',\'fim\',0.1)">+0,1s</button>'+
-      '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
-      '<div class="btn-row" style="margin-top:.5rem">'+
-        '<button class="btn-ghost" onclick="verTrecho('+i+')">▶ Ver o trecho</button>'+
-        '<button class="btn-ghost" onclick="cortarNaFala('+i+')">✂️ Cortar após a fala</button>'+
-        '<button class="btn-ghost" onclick="semCorte('+i+')">↺ Sem corte</button>'+
-      '</div>'+
       '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer só esta cena (US$ 0,40)</button>';
     box.appendChild(d);
     ligarTrim(d, i);
@@ -865,7 +887,7 @@ function renderCortes(){
   prepararAudios();
 }
 
-// baixa e analisa os áudios em sequência; ao terminar cada um, já pré-corta
+// ouve os 4 clipes e já deixa cortado — o atendente só confere
 async function prepararAudios(){
   for(let i=0;i<cenas.length;i++){
     const s=cenas[i]; if(!s.video_url) continue;
@@ -873,44 +895,20 @@ async function prepararAudios(){
     if(s._audio){ desenharOnda(i); continue; }
     if(nota) nota.innerHTML='🎧 Ouvindo o áudio pra achar o fim da fala…';
     const a = await analisarAudio(s.video_url);
-    if(!a){ if(nota) nota.innerHTML='⚠️ Não consegui ler o áudio — corte na mão se precisar.'; continue; }
+    if(!a){ if(nota) nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — se o fim ficar estranho, arraste a alça.'; continue; }
     s._audio = a;
-    // só pré-corta se ainda não houver corte manual
-    if(!s._cortouManual && !s.cortaFim){
+    if(!s._cortouManual){
       const alvo = Math.min(CLIPE_SEG, a.fimFala + FOLGA_POS_FALA);
       const corte = Math.max(0, CLIPE_SEG - alvo);
-      s.cortaFim = corte > 0.15 ? Number(corte.toFixed(2)) : 0;   // corte insignificante não vale a pena
+      s.cortaFim = corte > 0.15 ? Number(corte.toFixed(2)) : 0;
     }
     desenharOnda(i); pintarTrim(i);
     if(nota) nota.innerHTML = s.cortaFim
-      ? ('✂️ A fala termina em <b>'+a.fimFala.toFixed(1)+'s</b> — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim (0,5s de respiro). Confira e ajuste se quiser.')
-      : ('🎧 A fala vai até <b>'+a.fimFala.toFixed(1)+'s</b> — não precisou cortar.');
+      ? ('✂️ Fala até <b>'+a.fimFala.toFixed(1)+'s</b> — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim. Arraste a alça se quiser mudar.')
+      : ('🎧 A fala vai até o fim (<b>'+a.fimFala.toFixed(1)+'s</b>) — não há sobra pra cortar.');
   }
 }
 
-// botões de ajuste fino e atalhos
-function ajustar(i, qual, delta){
-  const s=cenas[i]; if(!s) return;
-  s._cortouManual = true;
-  if(qual==='ini') s.cortaIni = Math.max(0, Math.min(Number(s.cortaIni||0)+delta, CLIPE_SEG-Number(s.cortaFim||0)-1));
-  else             s.cortaFim = Math.max(0, Math.min(Number(s.cortaFim||0)+delta, CLIPE_SEG-Number(s.cortaIni||0)-1));
-  s.cortaIni=Number(Number(s.cortaIni).toFixed(2)); s.cortaFim=Number(Number(s.cortaFim).toFixed(2));
-  pintarTrim(i); desenharOnda(i);
-}
-function cortarNaFala(i){
-  const s=cenas[i]; const a=s&&s._audio;
-  if(!a){ toast('Ainda não li o áudio desta cena.'); return; }
-  const alvo = Math.min(CLIPE_SEG, a.fimFala + FOLGA_POS_FALA);
-  s.cortaFim = Number(Math.max(0, CLIPE_SEG - alvo).toFixed(2));
-  s._cortouManual = true;
-  pintarTrim(i); desenharOnda(i);
-  toast('✂️ Corte 0,5s após a fala (que termina em '+a.fimFala.toFixed(1)+'s).');
-}
-function semCorte(i){
-  const s=cenas[i]; if(!s) return;
-  s.cortaIni=0; s.cortaFim=0; s._cortouManual=true;
-  pintarTrim(i); desenharOnda(i);
-}
 function pintarTrim(i){
   const s=cenas[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
   const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
@@ -1035,7 +1033,6 @@ function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link c
 
 // ── início ──
 pintarBarra();
-carregarTrilhas();
 (function(){
   const c=document.getElementById('fCliente');
   if(c){ c.addEventListener('input', checarSalvar); checarSalvar(); }
