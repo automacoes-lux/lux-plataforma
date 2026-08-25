@@ -1055,7 +1055,13 @@ function baixarAvatar() {
 // o que ele calibra aqui bate no vídeo final. Fórmula validada contra render real (<0,5% de erro).
 let avatarCalib = { dx: 0, dy: 0, px: 0 };   // dx/dy = ajuste fino do avatar; px = POSIÇÃO do conjunto (avatar+palco) no vídeo
 let avScale = 0.85;          // tamanho do avatar no palco (0.51 = −40% … 0.85 = padrão/máx)
-const AVSCALE_MAX = 0.85, AVSCALE_MIN = 0.51, AVSCALE_STEP = 0.0425;   // 100%→60%, passo de ~5%
+const AVSCALE_MAX = 0.85, AVSCALE_MIN = 0.34, AVSCALE_STEP = 0.0425;   // 100%→40%, passo de 5% (faixa ampliada 25/08: avatar tapava as fotos)
+// PALCO acompanha o TAMANHO do avatar (mesma fórmula do Worker): escala proporcional + offset que mantém
+// o centro do disco sempre no mesmo ponto (onde ficam os pés). Em 100% devolve 0,73/−0,16 = o de sempre.
+function palcoGeom(avSc) {
+  const scale = Number((0.73 * (Number(avSc) / AVSCALE_MAX)).toFixed(4));
+  return { scale, y: Number((0.0531 - 0.2919 * scale).toFixed(4)) };
+}
 let _calibCut = null;        // canvas do avatar recortado (fundo transparente)
 let _palcoImg = null;        // Image do palco.png
 let _calibDragReady = false;
@@ -1103,7 +1109,8 @@ function drawCalib() {
   const x = cv.getContext('2d'); const cw = cv.width, ch = cv.height, sc = cw / 1080;
   x.clearRect(0, 0, cw, ch);
   x.fillStyle = '#2b2b2b'; x.fillRect(0, 0, cw, ch);
-  if (_palcoImg) _drawAsset(x, _palcoImg, 'none', 0.73, (avatarCalib.px || 0), -0.16, sc);   // palco acompanha a posição
+  const _pg = palcoGeom(avScale);
+  if (_palcoImg) _drawAsset(x, _palcoImg, 'none', _pg.scale, (avatarCalib.px || 0), _pg.y, sc);   // palco acompanha a posição E o tamanho
   if (_calibCut) _drawAsset(x, _calibCut, 'contain', avScale, avatarCalib.dx + (avatarCalib.px || 0), 0.04 + avatarCalib.dy, sc);
   x.strokeStyle = 'rgba(212,175,55,.6)'; x.lineWidth = 1;
   x.beginPath(); x.moveTo(Math.round(cw / 2) + .5, 0); x.lineTo(Math.round(cw / 2) + .5, ch); x.stroke();
@@ -2538,7 +2545,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, fotoExpandCount: contarExpandidas() };
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas() };   // avScale: a edição também aplica o tamanho novo (25/08)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;

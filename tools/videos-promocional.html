@@ -812,13 +812,20 @@ function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math
 // ═══════════════════════════════════════════════════════════════════════════════
 // EDITOR DE CORTE (25/08 v2) — corte AUTOMÁTICO, tela limpa
 // O atendente não precisa fazer nada: o sistema ouve o áudio, acha o fim da fala e
-// já corta 0,5s depois. A barra mostra a onda pra ele conferir e, se quiser, arrastar.
+// já corta RENTE ao fim da última palavra. A barra mostra a onda pra ele conferir e arrastar.
 // ⚠️ O critério de "fim da fala" mudou: 10% do pico dava 8,0s em clipes com ruído de
 // fundo (o Veo entrega bastante) — o corte nunca acontecia. Agora o limiar sai da
 // distância entre o SILÊNCIO do próprio clipe (percentil 20) e a FALA (percentil 95),
 // e exige 100ms seguidos acima dele pra contar como fala.
 // ═══════════════════════════════════════════════════════════════════════════════
-const FOLGA_POS_FALA = 0.5;
+// ⚠️ FOLGA depois da última palavra — era 0,5s e o Thiago pediu pra apertar (25/08): meio segundo
+// de sobra já pegava o começo das oscilações do Veo, que é justamente o que a gente quer jogar fora.
+// Por que 0,15s e não ZERO: a marca de tempo do Whisper cai numa grade de ~20-40ms, e a última
+// palavra tem uma cauda curta (a vogal decaindo). Cortar exatamente no número faz a palavra soar
+// truncada. Medimos: a marca de fim DAS PALAVRAS DO MEIO é só a fronteira pra próxima palavra
+// (fim de uma == início da seguinte em 11 de 13 pares), mas a ÚLTIMA não tem seguinte — ali o
+// número é acústico de verdade. Daí dar pra chegar tão perto sem comer a fala.
+const FOLGA_POS_FALA = 0.15;
 let audioCtx = null;
 const analiseCache = {};
 
@@ -942,7 +949,9 @@ async function prepararAudios(){
     if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
       const alvo = Math.min(CLIPE_SEG, s._fimFala + FOLGA_POS_FALA);
       const corte = Math.max(0, CLIPE_SEG - alvo);
-      s.cortaFim = corte > 0.15 ? Number(corte.toFixed(2)) : 0;
+      // o piso também caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
+      // cortes pequenos que agora valem a pena fazer.
+      s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
     }
     desenharOnda(i); pintarTrim(i);
     if(nota){
