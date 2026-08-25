@@ -93,6 +93,13 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 /* editor de corte da cena — barra de tempo com alças arrastáveis */
 .trim{margin-top:.7rem}
 .trim-bar{position:relative;height:48px;background:repeating-linear-gradient(90deg,var(--bg-input) 0 9px,rgba(255,255,255,.03) 9px 10px);border:.5px solid var(--border);border-radius:8px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
+/* onda do audio dentro da barra de corte (25/08) */
+.trim-onda{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+/* ajuste fino do corte, em passos de 0,1s */
+.fino{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+.fino-rot{font-size:11.5px;color:var(--text-dim)}
+.fino button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.35rem .6rem;font-size:12.5px;cursor:pointer;font-family:inherit}
+.fino button:hover{border-color:var(--gold-dim);color:var(--text)}
 .trim-fora{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.62)}
 .trim-sel{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,rgba(201,168,76,.30),rgba(201,168,76,.14));border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
 .trim-h{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:3}
@@ -500,8 +507,7 @@ async function gerarRoteiro(ajuste){
   if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
   try{
     const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
-      client: clienteNome(), briefing: briefTexto(), personagem: personagemImg,
-      ajuste: String(ajuste||'') }) });
+      briefing: briefTexto(), ajuste: String(ajuste||'') }) });   // sem imagem: o roteiro é só texto
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
@@ -520,7 +526,7 @@ function renderRoteiro(){
   const cab=document.getElementById('boxCampanha');
   if(cab && campanha){
     cab.innerHTML = '<div class="cc">'+
-      '<div class="cc-tit">🎯 '+esc(campanha.marca||'')+'</div>'+
+      (campanha.marca?('<div class="cc-tit">🎯 '+esc(campanha.marca)+'</div>'):'<div class="cc-tit">🎯 Campanha</div>')+
       (campanha.objetivo?('<div class="cc-lin"><b>Objetivo:</b> '+esc(campanha.objetivo)+'</div>'):'')+
       (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+
       (campanha.argumento?('<div class="cc-lin"><b>Argumento principal:</b> '+esc(campanha.argumento)+'</div>'):'')+
@@ -750,6 +756,71 @@ async function gerarCenas(){
 // então dá pra ver o frame exato onde o corte cai (resolve a alucinação que o Veo põe no fim).
 const CLIPE_SEG = 8;
 function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.round((s%1)*10)); }
+// ═══════════════════════════════════════════════════════════════════════════════
+// EDITOR DE CORTE COM ONDA DE ÁUDIO (25/08) — pedido do Thiago
+// A barra deixa de ser uma faixa cega: mostra a ONDA do áudio, marca onde a fala
+// termina e já vem PRÉ-CORTADA 0,5s depois da última fala. O atendente só confere.
+// Como funciona: o clipe é baixado pelo Worker (/promoClipeAudio, que devolve com
+// CORS — o R2 público não devolve), decodificado no navegador com a Web Audio API,
+// e viram (a) um envelope de energia pra desenhar e (b) o instante da última fala.
+// ═══════════════════════════════════════════════════════════════════════════════
+const FOLGA_POS_FALA = 0.5;          // segundos mantidos depois da última fala
+let audioCtx = null;
+const analiseCache = {};             // url -> { dur, fimFala, env:[0..1] }
+
+async function analisarAudio(url){
+  if(analiseCache[url]) return analiseCache[url];
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const r = await api('/promoClipeAudio?u='+encodeURIComponent(url));
+    if(!r.ok) throw new Error('http '+r.status);
+    const buf = await audioCtx.decodeAudioData(await r.arrayBuffer());
+    const ch = buf.getChannelData(0), sr = buf.sampleRate, dur = buf.duration;
+    const JAN = Math.max(1, Math.round(sr*0.02));           // janelas de 20ms
+    const env = [];
+    for(let p=0; p<ch.length; p+=JAN){
+      let soma=0, n=0;
+      for(let k=p; k<p+JAN && k<ch.length; k++){ soma += ch[k]*ch[k]; n++; }
+      env.push(Math.sqrt(soma/Math.max(1,n)));
+    }
+    const pico = Math.max.apply(null, env) || 1;
+    const norm = env.map(v=>v/pico);
+    // última janela com energia de FALA (10% do pico) — ignora respiração e ruído de fundo
+    let ult = -1;
+    for(let j=norm.length-1; j>=0; j--){ if(norm[j] > 0.10){ ult = j; break; } }
+    const fimFala = ult<0 ? dur : Math.min(dur, (ult+1)*0.02);
+    const res = { dur, fimFala, env: norm };
+    analiseCache[url] = res;
+    return res;
+  }catch(e){ return null; }
+}
+
+// desenha a onda dentro da barra (canvas leve, redesenha junto com o corte)
+function desenharOnda(i){
+  const cv = document.querySelector('#boxCortes [data-onda="'+i+'"]'); if(!cv) return;
+  const a = cenas[i] && cenas[i]._audio; if(!a) return;
+  const L = cv.clientWidth||600, A = cv.height=44;
+  cv.width = L;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,L,A);
+  const ini = Number(cenas[i].cortaIni||0), fim = CLIPE_SEG - Number(cenas[i].cortaFim||0);
+  const n = a.env.length;
+  for(let x=0; x<L; x++){
+    const j = Math.floor(x/L*n);
+    const v = a.env[j]||0;
+    const h = Math.max(1, v*(A-6));
+    const t = (x/L)*CLIPE_SEG;
+    const dentro = t>=ini && t<=fim;
+    ctx.fillStyle = dentro ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
+    ctx.fillRect(x, (A-h)/2, 1, h);
+  }
+  // risco branco onde a fala termina
+  if(a.fimFala < CLIPE_SEG){
+    const x = Math.round(a.fimFala/CLIPE_SEG*L);
+    ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(x,0,1,A);
+  }
+}
+
 function renderCortes(){
   const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
   box.innerHTML='';
@@ -763,21 +834,82 @@ function renderCortes(){
       '<video src="'+s.video_url+'" playsinline preload="auto" controls></video>'+
       '<div class="trim">'+
         '<div class="trim-bar" data-bar="'+i+'">'+
+          '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
           '<div class="trim-fora" data-fe="'+i+'" style="left:0"></div>'+
           '<div class="trim-fora" data-fd="'+i+'" style="right:0"></div>'+
-          '<div class="trim-sel"  data-sel="'+i+'"></div>'+
           '<div class="trim-cur"  data-cur="'+i+'" style="left:0"></div>'+
           '<div class="trim-h" data-h="ini" data-hi="'+i+'"></div>'+
           '<div class="trim-h" data-h="fim" data-hf="'+i+'"></div>'+
         '</div>'+
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
-      '<button class="btn-ghost" style="width:100%;margin-top:.5rem" onclick="verTrecho('+i+')">▶ Ver só o trecho que vai entrar</button>'+
+      '<div class="fino">'+
+        '<span class="fino-rot">Início</span>'+
+        '<button onclick="ajustar('+i+',\'ini\',-0.1)">−0,1s</button>'+
+        '<button onclick="ajustar('+i+',\'ini\',0.1)">+0,1s</button>'+
+        '<span class="fino-rot" style="margin-left:auto">Fim</span>'+
+        '<button onclick="ajustar('+i+',\'fim\',-0.1)">−0,1s</button>'+
+        '<button onclick="ajustar('+i+',\'fim\',0.1)">+0,1s</button>'+
+      '</div>'+
+      '<div class="soon-note" data-auto="'+i+'"></div>'+
+      '<div class="btn-row" style="margin-top:.5rem">'+
+        '<button class="btn-ghost" onclick="verTrecho('+i+')">▶ Ver o trecho</button>'+
+        '<button class="btn-ghost" onclick="cortarNaFala('+i+')">✂️ Cortar após a fala</button>'+
+        '<button class="btn-ghost" onclick="semCorte('+i+')">↺ Sem corte</button>'+
+      '</div>'+
       '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer só esta cena (US$ 0,40)</button>';
     box.appendChild(d);
     ligarTrim(d, i);
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); });
+  prepararAudios();
+}
+
+// baixa e analisa os áudios em sequência; ao terminar cada um, já pré-corta
+async function prepararAudios(){
+  for(let i=0;i<cenas.length;i++){
+    const s=cenas[i]; if(!s.video_url) continue;
+    const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
+    if(s._audio){ desenharOnda(i); continue; }
+    if(nota) nota.innerHTML='🎧 Ouvindo o áudio pra achar o fim da fala…';
+    const a = await analisarAudio(s.video_url);
+    if(!a){ if(nota) nota.innerHTML='⚠️ Não consegui ler o áudio — corte na mão se precisar.'; continue; }
+    s._audio = a;
+    // só pré-corta se ainda não houver corte manual
+    if(!s._cortouManual && !s.cortaFim){
+      const alvo = Math.min(CLIPE_SEG, a.fimFala + FOLGA_POS_FALA);
+      const corte = Math.max(0, CLIPE_SEG - alvo);
+      s.cortaFim = corte > 0.15 ? Number(corte.toFixed(2)) : 0;   // corte insignificante não vale a pena
+    }
+    desenharOnda(i); pintarTrim(i);
+    if(nota) nota.innerHTML = s.cortaFim
+      ? ('✂️ A fala termina em <b>'+a.fimFala.toFixed(1)+'s</b> — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim (0,5s de respiro). Confira e ajuste se quiser.')
+      : ('🎧 A fala vai até <b>'+a.fimFala.toFixed(1)+'s</b> — não precisou cortar.');
+  }
+}
+
+// botões de ajuste fino e atalhos
+function ajustar(i, qual, delta){
+  const s=cenas[i]; if(!s) return;
+  s._cortouManual = true;
+  if(qual==='ini') s.cortaIni = Math.max(0, Math.min(Number(s.cortaIni||0)+delta, CLIPE_SEG-Number(s.cortaFim||0)-1));
+  else             s.cortaFim = Math.max(0, Math.min(Number(s.cortaFim||0)+delta, CLIPE_SEG-Number(s.cortaIni||0)-1));
+  s.cortaIni=Number(Number(s.cortaIni).toFixed(2)); s.cortaFim=Number(Number(s.cortaFim).toFixed(2));
+  pintarTrim(i); desenharOnda(i);
+}
+function cortarNaFala(i){
+  const s=cenas[i]; const a=s&&s._audio;
+  if(!a){ toast('Ainda não li o áudio desta cena.'); return; }
+  const alvo = Math.min(CLIPE_SEG, a.fimFala + FOLGA_POS_FALA);
+  s.cortaFim = Number(Math.max(0, CLIPE_SEG - alvo).toFixed(2));
+  s._cortouManual = true;
+  pintarTrim(i); desenharOnda(i);
+  toast('✂️ Corte 0,5s após a fala (que termina em '+a.fimFala.toFixed(1)+'s).');
+}
+function semCorte(i){
+  const s=cenas[i]; if(!s) return;
+  s.cortaIni=0; s.cortaFim=0; s._cortouManual=true;
+  pintarTrim(i); desenharOnda(i);
 }
 function pintarTrim(i){
   const s=cenas[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
@@ -795,6 +927,7 @@ function pintarTrim(i){
   if(tf) tf.textContent=mmss(fim)+' (fim)';
   if(td) td.textContent='corte: '+(ini>0?('-'+ini.toFixed(1)+'s no início '):'')+(s.cortaFim>0?('-'+Number(s.cortaFim).toFixed(1)+'s no fim'):'')+(ini===0&&!s.cortaFim?'sem corte':'');
   if(du) du.textContent=(fim-ini).toFixed(1)+'s';
+  if(typeof desenharOnda==='function') desenharOnda(i);   // a onda pinta o trecho escolhido em dourado
   const tot=cenas.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
   const nm=document.getElementById('notaMontagem'); if(nm) nm.textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
 }
@@ -807,6 +940,7 @@ function ligarTrim(card, i){
   const mover=(ev)=>{
     if(!arrastando) return;
     const t=tempoDoX(ev.clientX); const s=cenas[i];
+    s._cortouManual = true;   // mexeu na mão: o pré-corte automático não mexe mais nesta cena
     if(arrastando==='ini') s.cortaIni=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1));
     else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
     pintarTrim(i);
