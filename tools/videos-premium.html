@@ -193,6 +193,14 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .btn-expand-ia:hover{background:rgba(46,204,113,.18)}
 .btn-expand-ia.on{background:#2ecc71;color:#0d0d0f;box-shadow:0 0 14px rgba(46,204,113,.45)}
 .btn-expand-ia:disabled{opacity:.6;cursor:wait}
+/* TRANSIÇÕES — interruptor dourado (ligado por padrão; desligado = corte seco) */
+.btn-trans{
+  display:block;width:100%;margin:10px 0 4px;padding:13px 16px;border-radius:var(--radius);
+  font-size:14px;font-weight:700;letter-spacing:.2px;cursor:pointer;
+  background:var(--gold);border:1px solid var(--gold);color:#0d0d0f;transition:background .15s,color .15s;
+}
+.btn-trans.off{background:transparent;color:var(--text-dim);border-color:var(--border-bright)}
+.btn-trans.off:hover{border-color:var(--gold);color:var(--gold)}
 .thumb .exp-badge{position:absolute;top:4px;left:4px;background:rgba(46,204,113,.92);color:#0d0d0f;font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:8px;z-index:2}
 
 /* EDITOR DE CORTE (1:00) */
@@ -508,6 +516,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. A <b style="color:var(--gold)">1ª foto é a CAPA</b>: aparece <b>parada</b> (sem movimento); as demais ganham o movimento normal. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar da <b style="color:var(--text-mid)">duração da música</b> (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
       <button type="button" class="btn-expand-ia" id="btnExpandIA" onclick="toggleExpandIA()">✨ Expansão com IA — <span id="expandIAState">desligada</span></button>
       <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligada, a IA <b style="color:#2ecc71">expande e melhora todas as FOTOS</b> pro formato do vídeo (9:16): continua o cenário de verdade pra cima e pra baixo, sem borrão. Vídeos passam normal, sem mexer. Custo: ~R$ 0,07 por foto.</div>
+      <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligadas (padrão), as cenas entram com fade/wipe. <b>Desligadas</b>, todas as imagens entram em <b style="color:var(--text-mid)">corte seco</b>, uma atrás da outra. A <b>1ª imagem é sempre corte seco</b> (pra capa do WhatsApp não sair preta).</div>
       <div class="thumb-row" id="scenesRow"></div>
       <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
       <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
@@ -741,6 +751,7 @@ let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
 let expandIA = false;              // Passo 3: botão "Expansão com IA" ligado (expande as FOTOS pra 9:16 real)
+let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let logo = null;
 let pollTimer = null;
 let ed = null;                     // editor 9:16: { i, img, minScale, maxScale, scale, offX, offY, dragging, lastX, lastY }
@@ -1975,6 +1986,20 @@ async function toggleExpandIA() {
   }
   renderScenes(); renderStoryboard();
 }
+// ── TRANSIÇÕES (Passo 3) ────────────────────────────────────────────────────
+// Ligadas (padrão) = cada cena entra com fade/wipe. Desligadas = corte seco em TODAS.
+// A 1ª cena é SEMPRE corte seco (senão o WhatsApp pega o 1º frame preto como capa).
+function toggleTransicoes() {
+  transicoes = !transicoes;
+  setTransBtn();
+  toast(transicoes ? '🎞️ Transições ligadas.' : '✂️ Corte seco: as cenas vão trocar sem transição.');
+}
+function setTransBtn() {
+  const b = document.getElementById('btnTrans');
+  const s = document.getElementById('transState');
+  if (b) b.classList.toggle('off', !transicoes);
+  if (s) s.textContent = transicoes ? 'LIGADAS' : 'DESLIGADAS (corte seco)';
+}
 function setExpandBtn() {
   const btn = document.getElementById('btnExpandIA');
   const st  = document.getElementById('expandIAState');
@@ -2545,7 +2570,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas() };   // avScale: a edição também aplica o tamanho novo (25/08)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas(), semTransicao: !transicoes };   // avScale/semTransicao: a edição também aplica tamanho e transições novos (25/08)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2570,6 +2595,7 @@ async function gerarClipe() {
       backgrounds: bgs,
       bgExpected: scenes.length,
       fotoExpandCount: contarExpandidas(),   // Expansão com IA (Passo 3) — cobrança por foto expandida
+      semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
     };
@@ -2799,6 +2825,7 @@ function resetCreateForm() {
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
   expandIA = false; setExpandBtn();
+  transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
@@ -2817,6 +2844,7 @@ function sairEdicao() {
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
   expandIA = false; setExpandBtn();
+  transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   aplicarModoEdicao(null);
