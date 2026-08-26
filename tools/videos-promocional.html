@@ -193,6 +193,15 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
   </div>
 
+  <div class="step">
+    <div class="step-head"><div class="step-title">Voz do personagem</div></div>
+    <div class="step-hint">Vale para as 4 cenas. Escolha aqui em vez de deixar a IA adivinhar pelo personagem.</div>
+    <div class="chips" id="chipsVoz">
+      <div class="chip on" data-v="masculina">Voz masculina</div>
+      <div class="chip" data-v="feminina">Voz feminina</div>
+    </div>
+  </div>
+
   <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E ROTEIRO</button>
   <div class="soon-note" id="notaRoteiro"></div>
   <div class="soon-note" id="notaPersonagem"></div>
@@ -367,6 +376,7 @@ function estadoAtual(){
   return {
     cliente: (document.getElementById('fCliente')||{}).value||'',
     briefing: (document.getElementById('fBriefing')||{}).value||'',
+    sexoVoz: sexoVoz,
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
@@ -429,6 +439,11 @@ async function abrirProjeto(id){
     projectId = p.projectId;
     document.getElementById('fCliente').value = p.cliente||'';
     document.getElementById('fBriefing').value = p.briefing||'';
+    // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido)
+    sexoVoz = (p.campanha && p.campanha.sexoVoz) || p.sexoVoz || 'masculina';
+    document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
+      c.classList.toggle('on', c.dataset.v === sexoVoz);
+    });
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     personagemImg = p.personagem||'';
@@ -544,7 +559,7 @@ async function gerarRoteiro(ajuste, silencioso){
   if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
   try{
     const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
-      briefing: briefTexto(), ajuste: String(ajuste||'') }) });   // sem imagem: o roteiro é só texto
+      briefing: briefTexto(), ajuste: String(ajuste||''), sexoVoz: sexoVoz }) });   // sem imagem: o roteiro é só texto
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
@@ -570,7 +585,7 @@ function renderRoteiro(){
       // ⚠️ A VOZ é da CAMPANHA, não da cena: a MESMA descrição vai nos 4 prompts do Veo. Sem isso
       // ele sorteia um timbre por clipe e uma das 4 cenas sai com outra voz. Editável: mudar aqui
       // muda as 4 cenas de uma vez (ex.: trocar "male" por "female").
-      '<div class="cc-lin"><b>🎙️ Voz (igual nas 4 cenas):</b></div>'+
+      '<div class="cc-lin"><b>🎙️ Voz '+((campanha.sexoVoz||sexoVoz)==='feminina'?'feminina':'masculina')+' (igual nas 4 cenas):</b></div>'+
       '<textarea id="vozCampanha" class="cc-voz" rows="2" placeholder="Descreva a voz em inglês — ex.: one single adult female voice, approximately 30 years old, native Brazilian Portuguese...">'+esc(campanha.voz||'')+'</textarea>'+
       '<div class="cc-obs">Mudou a voz? Gere as cenas de novo pra valer.</div>'+
       '</div>';
@@ -652,7 +667,8 @@ async function gerarVideo(i){
   try{
     // a voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre
     const r = await api('/histVideoStart', { method:'POST', body: JSON.stringify({
-      projectId, imageBase64: personagemImg, scene: s, voz: (campanha && campanha.voz) || '' }) });
+      projectId, imageBase64: personagemImg, scene: s, voz: (campanha && campanha.voz) || '',
+      sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
     custoUSD += (d.custoUSD||0);
@@ -720,7 +736,12 @@ function ligarChips(id, cb){
     });
   });
 }
-// (nenhum grupo de chips na tela agora — ligarChips fica pronto pra reuso)
+// ⚠️ SEXO DA VOZ (25/08) — escolhido no briefing, NUNCA deduzido pela IA.
+// Um personagem CRIANÇA saiu com voz de mulher adulta porque a IA tentava inferir pelo desenho.
+// Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
+// no prompt negativo do Veo (o oposto do escolhido).
+let sexoVoz = 'masculina';
+ligarChips('chipsVoz', function(v){ sexoVoz = v; });
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
 function refsPayload(){
