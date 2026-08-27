@@ -138,6 +138,28 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .trilhas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin-bottom:.7rem}
 .trilha-item{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;cursor:pointer;font-size:13px;color:var(--text-mid)}
 .trilha-item.sel{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--text)}
+/* trilha = nome + botão de ouvir. O play é um botão separado de propósito: clicar no
+   corpo do item SELECIONA, clicar no ▶ só OUVE — senão não dá pra comparar sem trocar a escolha. */
+.trilha-item{display:flex;align-items:center;gap:.5rem;justify-content:space-between}
+.trilha-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trilha-play{flex:none;width:26px;height:26px;border-radius:50%;border:.5px solid var(--border);
+  background:var(--bg-card);color:var(--text-mid);font-size:11px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.trilha-play:hover{border-color:var(--gold);color:var(--gold)}
+.trilha-item.sel .trilha-play{border-color:var(--gold);color:var(--gold)}
+.trilha-play.tocando{background:var(--gold);color:#141414;border-color:transparent}
+.trilha-item.custom{border-style:dashed}
+/* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
+   Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
+@media(max-width:520px){
+  .trilhas-grid{grid-template-columns:1fr;gap:.35rem}
+  .trilha-item{padding:.45rem .55rem;font-size:12.5px}
+  .trilha-play{width:24px;height:24px}
+}
+.btn-baixar{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);
+  border-radius:var(--radius);padding:.3rem .7rem;font-size:12px;cursor:pointer;margin-left:.5rem}
+.btn-baixar:hover{border-color:var(--gold);color:var(--gold)}
+.prog-item{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 .tsep{text-align:center;color:var(--text-dim);font-size:12px;margin:.6rem 0}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(20,20,20,.3);border-top-color:#141414;border-radius:50%;animation:sp .7s linear infinite;margin-right:7px;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -239,8 +261,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="sec-title">Passo 3 · 🎵 Trilha e vídeo</div>
     <div class="step">
       <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
-      <div class="step-hint">Suba um MP3. Ele entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
-      <label class="up-btn">+ Subir música (MP3)<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/></label>
+      <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
+      <div class="trilhas-grid" id="trilhasGrid"></div>
+      <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
       <div class="mini" id="musicaNome"></div>
     </div>
 
@@ -334,6 +357,7 @@ function irPara(n){
   PASSOS.forEach(function(p){ const el=document.getElementById(p.id); if(el) el.classList.toggle('hide', p.n !== n); });
   const fin=document.getElementById('telaFinal');
   if(fin) fin.classList.toggle('hide', !(n === 3 && videoFinalUrl));
+  if(n === 3) carregarTrilhas();   // catálogo de trilhas; busca no Worker só na 1ª vez
   pintarBarra();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -451,6 +475,8 @@ async function abrirProjeto(id){
     cenas = Array.isArray(p.cenas) ? p.cenas : [];
     custoUSD = Number(p.custoUSD)||0;
     trilhaSel = p.trilha||null; musica=null;
+    if(trilhaSel) document.getElementById('musicaNome').textContent = '🎵 ' + (trilhaSel.title||'');
+    pintarTrilhas();
     videoFinalUrl = p.videoUrl||'';
     renderThumbs('product'); renderThumbs('environment');
     if(personagemImg) pintarPersonagem();
@@ -762,7 +788,72 @@ function copiar(txt, msg){
 }
 
 
-// (a lista de trilhas prontas foi removida em 25/08 — agora é só upload de MP3)
+// ══════════════════════════════════════════════════════════════════════════
+// TRILHAS PRONTAS (25/08) — 10 faixas fixas + a opção de subir a própria.
+// O catálogo vem do Worker (/promoTrilhas), não fica escrito aqui: assim dá pra
+// acrescentar faixa subindo o arquivo no R2 e redeployando o Worker, sem ninguém
+// precisar subir HTML no GitHub de novo.
+// ══════════════════════════════════════════════════════════════════════════
+let audioPreview = null, tocandoId = null;
+
+async function carregarTrilhas(){
+  const box = document.getElementById('trilhasGrid'); if(!box) return;
+  if(!trilhas.length){
+    try{
+      const r = await api('/promoTrilhas');
+      const d = await r.json();
+      if(d.ok) trilhas = d.trilhas||[];
+    }catch(e){ /* sem catálogo a tela continua funcionando com o upload */ }
+  }
+  pintarTrilhas();
+}
+
+function pintarTrilhas(){
+  const box = document.getElementById('trilhasGrid'); if(!box) return;
+  const selId = trilhaSel ? trilhaSel.id : null;
+  let html = trilhas.map(function(t){
+    return '<div class="trilha-item'+(selId===t.id?' sel':'')+'" data-id="'+esc(t.id)+'">'+
+             '<span class="trilha-nome">'+esc(t.titulo)+'</span>'+
+             '<button type="button" class="trilha-play'+(tocandoId===t.id?' tocando':'')+'" data-play="'+esc(t.id)+'">'+
+               (tocandoId===t.id?'❚❚':'▶')+
+             '</button>'+
+           '</div>';
+  }).join('');
+  // última opção: a trilha do próprio atendente
+  html += '<div class="trilha-item custom'+(selId==='up'?' sel':'')+'" data-id="__up">'+
+            '<span class="trilha-nome">'+(selId==='up' ? ('🎵 '+esc(trilhaSel.title)) : '+ Minha trilha (MP3)')+'</span>'+
+          '</div>';
+  box.innerHTML = html;
+
+  box.querySelectorAll('.trilha-item').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      if(ev.target.closest('.trilha-play')) return;          // o ▶ é só pra ouvir
+      const id = el.dataset.id;
+      if(id === '__up'){ document.getElementById('inpMusica').click(); return; }
+      const t = trilhas.find(x => x.id === id); if(!t) return;
+      trilhaSel = { id:t.id, title:t.titulo, url:t.url };
+      musica = null;
+      document.getElementById('musicaNome').textContent = '🎵 ' + t.titulo;
+      pintarTrilhas();
+    });
+  });
+  box.querySelectorAll('.trilha-play').forEach(function(b){
+    b.addEventListener('click', function(ev){ ev.stopPropagation(); ouvirTrilha(b.dataset.play); });
+  });
+}
+
+// toca UMA por vez — sem isso o atendente empilha três faixas e não compara nada
+function ouvirTrilha(id){
+  const t = trilhas.find(x => x.id === id); if(!t) return;
+  if(audioPreview){ audioPreview.pause(); audioPreview = null; }
+  if(tocandoId === id){ tocandoId = null; pintarTrilhas(); return; }   // 2º clique = parar
+  audioPreview = new Audio(t.url);
+  audioPreview.volume = 0.7;
+  audioPreview.addEventListener('ended', function(){ tocandoId = null; pintarTrilhas(); });
+  audioPreview.play().catch(function(){ toast('Não consegui tocar esta trilha.'); tocandoId = null; pintarTrilhas(); });
+  tocandoId = id;
+  pintarTrilhas();
+}
 // ⚠️ SOBE NA HORA (25/08). Antes o MP3 ia em base64 dentro do JSON da montagem: um arquivo de
 // 3-5 minutos vira 5-9MB num único POST e a trilha não chegava no vídeo. Agora vai pro R2 assim
 // que o atendente escolhe, e a montagem manda só a URL.
@@ -777,10 +868,11 @@ async function onMusica(ev){
     if(!d.ok) throw new Error(d.error||'falha ao enviar');
     trilhaSel = { id:'up', title:f.name, url:d.url };
     musica = null;
+    pintarTrilhas();
     if(nome) nome.innerHTML='🎵 '+esc(f.name)+' <span style="color:var(--text-dim)">('+(d.bytes/1048576).toFixed(1)+'MB, enviada ✅)</span>';
     toast('✅ Música enviada.');
   }catch(e){
-    trilhaSel=null; musica=null;
+    trilhaSel=null; musica=null; pintarTrilhas();
     if(nome) nome.innerHTML='⚠️ '+esc(e.message);
     toast('⚠️ '+e.message);
   }
@@ -793,9 +885,26 @@ function pintarProgresso(){
   box.innerHTML = cenas.map(function(s,i){
     const ic = s.video_url ? '✅' : (s.video_status==='gerando' ? '<span class="spin" style="border-top-color:var(--gold)"></span>' : (s.video_status==='erro' ? '⚠️' : '⏳'));
     const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando… (2-4 min)' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
-    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+'</div>'+
+    // ⚠️ o download passa pelo Worker (/promoBaixar), não pelo link direto do R2: o atributo
+    // download="" é IGNORADO em arquivo de outra origem, e o navegador ABRIA o vídeo numa aba.
+    const bt = s.video_url ? ('<button type="button" class="btn-baixar" data-baixar="'+i+'">⬇ Baixar</button>') : '';
+    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+bt+'</div>'+
            (s.video_error ? ('<div class="alerta" style="margin-top:-.25rem;margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error)+'</div>') : '');
   }).join('') + (montando ? '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo de 32s…</b></div>' : '');
+  box.querySelectorAll('[data-baixar]').forEach(function(b){
+    b.addEventListener('click', function(){ baixarCena(parseInt(b.dataset.baixar,10)); });
+  });
+}
+
+// baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
+// não virar uma pasta de "video.mp4", "video (1).mp4"...
+function baixarCena(i){
+  const s = cenas[i]; if(!s || !s.video_url) return;
+  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-cena-'+(i+1)+'.mp4';
+  const a = document.createElement('a');
+  a.href = WORKER_URL + '/promoBaixar?u=' + encodeURIComponent(s.video_url) + '&nome=' + encodeURIComponent(nome);
+  a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
 }
 let montando = false;
 // PASSO 5-A: gera os 4 clipes de 8s (todos ao mesmo tempo). Custo: US$ 0,40 por cena.
@@ -1121,7 +1230,11 @@ async function finalizar(){
 }
 function baixarFinal(){
   if(!videoFinalUrl) return;
-  const a=document.createElement('a'); a.href=videoFinalUrl; a.download='video-32s.mp4';
+  // mesmo motivo do baixarCena(): download="" não vale pra outra origem — vai pelo Worker
+  const nomeFinal=(clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-32s.mp4';
+  const a=document.createElement('a');
+  a.href=WORKER_URL+'/promoBaixar?u='+encodeURIComponent(videoFinalUrl)+'&nome='+encodeURIComponent(nomeFinal);
+  a.download=nomeFinal;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link copiado!'); }
