@@ -277,7 +277,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     </div>
 
     <button class="btn-gold" id="btnCenas" onclick="gerarVideoTudo()">🎬 GERAR VÍDEO</button>
-    <div class="soon-note" id="notaFinal">A IA gera as 4 cenas, corta o fim de cada uma sozinha e monta o vídeo. Leva de 8 a 15 minutos.</div>
+    <div class="soon-note" id="notaFinal">A IA gera as cenas, corta o fim de cada uma sozinha e monta o vídeo.</div>
     <div id="progresso" style="margin-top:.8rem"></div>
 
     <!-- ⚠️ O EDITOR SÓ APARECE SE O ATENDENTE PEDIR (27/08). O fluxo normal é um clique só:
@@ -352,6 +352,32 @@ function api(path, opts){
   if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
   return fetch(url, opts);
 }
+// ⚠️ RETENTATIVA DE REDE (27/08). "Failed to fetch" é a mensagem que o navegador dá quando o
+// pedido nem chega a sair — Wi-Fi oscilando, DNS, proxy, aba em segundo plano. O Worker já
+// retenta do lado dele (fetchRetry), mas o NAVEGADOR não tinha nada: as 4 cenas disparam juntas,
+// e um piscar de conexão derrubava as quatro de uma vez, cada uma custando o disparo perdido.
+// Retenta só falha de REDE (TypeError). Erro do servidor (401, 500...) devolve na hora — nesses
+// casos repetir não adianta e ainda pode cobrar duas vezes.
+async function apiRetry(path, opts, tentativas){
+  const max = tentativas || 3;
+  let ultimo;
+  for(let k=0; k<max; k++){
+    try{ return await api(path, opts); }
+    catch(e){
+      ultimo = e;
+      const ehRede = (e instanceof TypeError) || /failed to fetch|network|load failed/i.test(String(e.message||''));
+      if(!ehRede || k === max-1) break;
+      await new Promise(r=>setTimeout(r, 1500*(k+1)));   // 1,5s, depois 3s
+    }
+  }
+  throw new Error(traduzErroRede(ultimo));
+}
+function traduzErroRede(e){
+  const m = String((e&&e.message)||e||'erro');
+  if(/failed to fetch|network|load failed/i.test(m))
+    return 'sem conexão com o servidor (tentei 3 vezes) — confira a internet e clique de novo';
+  return m;
+}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3800); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escA(s){ return esc(s).replace(/"/g,'&quot;'); }
@@ -422,7 +448,7 @@ function estadoAtual(){
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
     personagem: personagemImg,
-    campanha: campanha, cenas: cenas,
+    campanha: campanha, cenas: cenas.map(cenaLimpa),
     trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
   };
 }
@@ -745,6 +771,14 @@ async function autoSalvar(){
 // ⚠️ ficou de fora na remontagem de 24/08 e quebrava a geração logo no 1º clipe: gerarVideo() chama
 // renderVideos() antes de bater na API, dava ReferenceError e as 4 cenas ficavam paradas em "na fila".
 function renderVideos(){ pintarProgresso(); }
+// A cena carrega, em memória, a análise do áudio (_audio.env = ~400 números por clipe, usada só
+// pra desenhar a onda). Isso não serve pro Worker nem pro projeto salvo — tira antes de enviar.
+function cenaLimpa(s){
+  const c = {};
+  for(const k in s){ if(k !== '_audio') c[k] = s[k]; }
+  return c;
+}
+
 // ⚠️ TODAS as cenas usam a MESMA imagem do personagem (decisão de 24/08).
 async function gerarVideo(i){
   const s=cenas[i]; if(!s) return;
@@ -752,14 +786,14 @@ async function gerarVideo(i){
   s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
   try{
     // a voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre
-    const r = await api('/histVideoStart', { method:'POST', body: JSON.stringify({
-      projectId, imageBase64: personagemImg, scene: s, voz: (campanha && campanha.voz) || '',
+    const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
+      projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
       sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
     custoUSD += (d.custoUSD||0);
     await acompanharVideo(i, d.predictionId);
-  } catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+e.message); }
+  } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
 }
 async function acompanharVideo(i, predictionId){
   const s=cenas[i];
@@ -939,26 +973,17 @@ async function onMusica(ev){
 
 // ══ MONTAGEM FINAL ══
 // Um botão só: gera os 4 clipes de 8s e já monta o vídeo de 32s pra download.
-// ⚠️ 27/08: era uma lista com "✅ Cena 1 — pronta [Baixar]" nas 4 linhas. Virou ruído depois que o
-// fluxo passou a ser um clique só — o atendente não decide nada com essa lista, e o download da
-// cena mora no editor agora. Ficou um contador de uma linha, que some quando tudo termina.
+// ⚠️ 27/08: este painel mostra SÓ ERRO. Já teve a lista "✅ Cena 1 — pronta [Baixar]" nas 4 linhas
+// e depois um contador "0 de 4 cenas prontas" — os dois viraram ruído quando o fluxo passou a ser
+// um clique só. Quem mostra que está trabalhando é o BOTÃO (Gerando Vídeo… → Montando o vídeo…) e
+// a nota de tempo estimado logo abaixo dele. Aqui só aparece o que o atendente precisa DECIDIR:
+// qual cena falhou e por quê.
 function pintarProgresso(){
   const box=document.getElementById('progresso'); if(!box||!cenas.length) return;
-  const prontas = cenas.filter(s=>s.video_url).length;
-  const erros   = cenas.filter(s=>s.video_status==='erro');
-  let html = '';
-  if(montando){
-    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo…</b></div>';
-  } else if(prontas < cenas.length){
-    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> '+
-           '<b>'+prontas+' de '+cenas.length+' cenas prontas</b> — cada uma leva de 2 a 4 minutos.</div>';
-  }
-  // erro continua aparecendo: aí sim o atendente precisa saber qual cena e por quê
-  erros.forEach(function(s,k){
-    const i = cenas.indexOf(s);
-    html += '<div class="alerta" style="margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error||'falhou')+'</div>';
-  });
-  box.innerHTML = html;
+  box.innerHTML = cenas.map(function(s,i){
+    if(s.video_status!=='erro') return '';
+    return '<div class="alerta" style="margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error||'falhou')+'</div>';
+  }).join('');
 }
 
 // baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
@@ -979,7 +1004,7 @@ async function subirPersonagem(){
   if(!personagemImg) return '';
   if(/^https?:\/\//.test(personagemImg)) return personagemImg;   // já é URL (projeto reaberto)
   try{
-    const r = await api('/promoPersonagemUp', { method:'POST', body: JSON.stringify({ projectId, base64: personagemImg }) });
+    const r = await apiRetry('/promoPersonagemUp', { method:'POST', body: JSON.stringify({ projectId, base64: personagemImg }) });
     const d = await r.json();
     if(d.ok && d.url){ personagemImg = d.url; return d.url; }
   }catch(e){}
@@ -990,8 +1015,8 @@ async function gerarCenas(){
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   await subirPersonagem();
   const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
-  document.getElementById('notaFinal').textContent='Cada cena leva 2-4 minutos. Pode deixar a aba aberta.';
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando Vídeo…';
+  document.getElementById('notaFinal').innerHTML='<span class="spin"></span> Tempo estimado de 2 a 5 minutos.';
   pintarProgresso();
   try{
     const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
@@ -1299,11 +1324,9 @@ async function gerarVideoTudo(){
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
 
-  const nf = document.getElementById('notaFinal');
   const ok = await gerarCenas();
   if(!ok) return;                                   // gerarCenas já avisou o que faltou
 
-  if(nf) nf.innerHTML='<span class="spin"></span> Ouvindo as cenas pra cortar o fim de cada uma…';
   await calcularCortes();                           // transcrição — não precisa do editor na tela
 
   await finalizar('btnCenas');
@@ -1330,7 +1353,7 @@ async function finalizar(btnId){
   montando=true; pintarProgresso();
   try{
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
-    const r = await api('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
+    const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
