@@ -567,7 +567,10 @@ async function loadFinanceiro() {
       { key: 'musica',         ic: '🎵', nm: 'Letras de Música' },
       { key: 'logo3d',         ic: '💎', nm: 'Logo 3D' },
       { key: 'videos',         ic: '🎬', nm: 'Vídeo Padrão' },
-      { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' }
+      { key: 'videos_premium', ic: '🤖', nm: 'Vídeo Premium' },
+      // ⚠️ 27/08: o Personagem Animado NÃO tinha linha própria — o custo dele caía dentro de
+      // "Vídeo Padrão" (o Worker gravava o resumo com a chave 'videos'). São produtos diferentes.
+      { key: 'videos_promocional', ic: '🐱', nm: 'Personagem Animado' }
     ];
 
     let html = `
