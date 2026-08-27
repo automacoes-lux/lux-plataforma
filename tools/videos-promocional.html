@@ -148,7 +148,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .trilha-play:hover{border-color:var(--gold);color:var(--gold)}
 .trilha-item.sel .trilha-play{border-color:var(--gold);color:var(--gold)}
 .trilha-play.tocando{background:var(--gold);color:#141414;border-color:transparent}
-.trilha-item.custom{border-style:dashed}
+/* "Adicionar Trilha" é AÇÃO, não é uma faixa: botão branco de texto preto, destacado das 10 */
+.trilha-item.custom{background:#fff;border-color:#fff;color:#141414;font-weight:600;justify-content:center}
+.trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414}
+.trilha-item.custom.sel{background:#fff;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
 /* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
    Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
 @media(max-width:520px){
@@ -194,32 +197,38 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div class="step">
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
 
-    <div class="mini">Cliente / empresa</div>
+    <div class="mini">Cliente / empresa <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">Só nomeia o projeto nas abas Projetos e Resultados — não entra no roteiro nem na imagem.</div>
     <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
 
-    <div class="mini" style="margin-top:.9rem">Foto do produto <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">O que vai virar o personagem.</div>
+    <div class="mini" style="margin-top:.9rem">Foto do personagem <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">O que vai virar o personagem: o produto do cliente, uma pessoa, uma criança, um pet ou um mascote que ele já tenha.</div>
     <div class="thumbs" id="thProduto"></div>
-    <label class="up-btn">+ Foto do produto<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
+    <label class="up-btn">+ Foto do personagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
 
     <div class="mini" style="margin-top:.9rem">Foto do ambiente <span style="color:var(--text-dim)">(opcional)</span></div>
     <div class="step-hint">O lugar do cliente — o personagem vai aparecer dentro dele.</div>
     <div class="thumbs" id="thAmbiente"></div>
     <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
 
+    <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
+    <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
+
   </div>
 
   <div class="step">
-    <div class="step-head"><div class="step-title">Informações do cliente</div></div>
+    <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
     <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta a campanha.</div>
     <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
   </div>
 
   <div class="step">
-    <div class="step-head"><div class="step-title">Voz do personagem</div></div>
+    <div class="step-head"><div class="step-title">Voz do personagem <span style="color:var(--gold)">*</span></div></div>
     <div class="step-hint">Vale para as 4 cenas. Escolha aqui em vez de deixar a IA adivinhar pelo personagem.</div>
+    <!-- ⚠️ nenhum vem marcado de propósito (27/08): com "masculina" pré-selecionado, o atendente
+         passava batido e a voz saía errada sem ninguém ter decidido nada. -->
     <div class="chips" id="chipsVoz">
-      <div class="chip on" data-v="masculina">Voz masculina</div>
+      <div class="chip" data-v="masculina">Voz masculina</div>
       <div class="chip" data-v="feminina">Voz feminina</div>
     </div>
   </div>
@@ -264,7 +273,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
       <div class="trilhas-grid" id="trilhasGrid"></div>
       <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
-      <div class="mini" id="musicaNome"></div>
+
     </div>
 
     <button class="btn-gold" id="btnCenas" onclick="gerarCenas()">🎥 GERAR CENAS</button>
@@ -401,6 +410,7 @@ function estadoAtual(){
   return {
     cliente: (document.getElementById('fCliente')||{}).value||'',
     briefing: (document.getElementById('fBriefing')||{}).value||'',
+    ambienteTexto: (document.getElementById('fAmbienteTxt')||{}).value||'',
     sexoVoz: sexoVoz,
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
@@ -464,10 +474,12 @@ async function abrirProjeto(id){
     projectId = p.projectId;
     document.getElementById('fCliente').value = p.cliente||'';
     document.getElementById('fBriefing').value = p.briefing||'';
-    // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido)
-    sexoVoz = (p.campanha && p.campanha.sexoVoz) || p.sexoVoz || 'masculina';
+    document.getElementById('fAmbienteTxt').value = p.ambienteTexto||'';
+    // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido).
+    // Projeto ANTIGO, salvo antes dos botões existirem, volta sem voz — e aí o briefing cobra.
+    sexoVoz = (p.campanha && p.campanha.sexoVoz) || p.sexoVoz || '';
     document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
-      c.classList.toggle('on', c.dataset.v === sexoVoz);
+      c.classList.toggle('on', !!sexoVoz && c.dataset.v === sexoVoz);
     });
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
@@ -476,7 +488,6 @@ async function abrirProjeto(id){
     cenas = Array.isArray(p.cenas) ? p.cenas : [];
     custoUSD = Number(p.custoUSD)||0;
     trilhaSel = p.trilha||null; musica=null;
-    if(trilhaSel) document.getElementById('musicaNome').textContent = '🎵 ' + (trilhaSel.title||'');
     pintarTrilhas();
     videoFinalUrl = p.videoUrl||'';
     renderThumbs('product'); renderThumbs('environment');
@@ -511,9 +522,27 @@ async function apagarProjeto(id){
 // ⚠️ Os dois saem EM PARALELO (25/08): são coisas independentes — o roteiro é só texto e a
 // imagem é o gpt-image. Antes o atendente esperava a imagem (1-2 min) pra só então pedir o
 // roteiro. Agora um botão só dispara os dois e a espera é a do mais lento, não a soma.
+function ambienteTexto(){ return ((document.getElementById('fAmbienteTxt')||{}).value||'').trim(); }
+
+// Cobra o briefing inteiro ANTES de gastar dinheiro: a imagem custa US$0,18 e o roteiro roda no
+// gpt-5.6-sol. Gerar com briefing pela metade era desperdício e produzia campanha genérica.
+// Devolve o campo que falta (ou '' se está tudo certo) e já foca nele.
+function faltaNoBriefing(){
+  if(!clienteNome())        return { msg:'✍️ Escreva o nome do cliente ou empresa.', el:'fCliente' };
+  if(!refs.product.length)  return { msg:'📸 Suba a foto do personagem.', el:null };
+  if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
+  if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };
+  return null;
+}
+
 async function gerarTudo(){
-  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return; }
-  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return; }
+  const falta = faltaNoBriefing();
+  if(falta){
+    toast(falta.msg);
+    const el = falta.el && document.getElementById(falta.el);
+    if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); if(el.focus) el.focus(); }
+    return;
+  }
   const btn=document.getElementById('btnTudo'); const old=btn.innerHTML;
   const t0=Date.now();
   btn.disabled=true;
@@ -524,7 +553,7 @@ async function gerarTudo(){
   try{
     const r = await Promise.all([ gerarPersonagem(true), gerarRoteiro('', true) ]);
     const okPers=r[0], okRot=r[1];
-    if(okRot){ renderRoteiro(); liberar(2); }
+    if(okRot){ renderRoteiro(); liberar(2); await autoSalvar(); }
     if(okRot && okPers) toast('✅ Personagem e roteiro prontos!');
     else if(okRot)      toast('⚠️ Roteiro pronto, mas a imagem falhou — use "Gerar de novo" no passo 2.');
     else if(okPers)     toast('⚠️ Personagem pronto, mas o roteiro falhou — tente de novo.');
@@ -551,7 +580,7 @@ async function gerarPersonagem(silencioso){
   if(nota) nota.innerHTML='🎨 Desenhando o personagem (1 a 2 minutos)…';
   try{
     const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
-      client: clienteNome(), briefing: briefTexto(), references: refsPayload(),
+      client: clienteNome(), briefing: briefTexto(), ambienteTexto: ambienteTexto(), references: refsPayload(),
       ajuste: ajuste, imagemAnterior: (ajuste && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
@@ -675,11 +704,23 @@ function copiarRoteiro(){
   });
   copiar(t.trim(), '📋 Roteiro copiado!');
 }
-function irParaVideo(){
+async function irParaVideo(){
   const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
   if(ruins){ toast('⛔ Ajuste as falas em vermelho.'); return; }
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   liberar(3);
+  await autoSalvar();
+}
+
+// ⚠️ AUTO-SAVE (27/08) — salva sozinho ao fim de cada etapa, com aviso na tela.
+// O atendente perdia trabalho caro (imagem + roteiro + clipes) por esquecer de clicar em Salvar.
+// Guarda o MESMO estado do botão manual, então "Continuar" na aba Projetos volta com tudo:
+// fotos, texto do ambiente, voz escolhida, personagem, roteiro, cenas, trilha e vídeo final.
+async function autoSalvar(){
+  if(!clienteNome()) return false;          // sem nome não dá pra salvar; o briefing já cobra isso
+  const ok = await salvarProjeto(true);     // silencioso: o aviso abaixo é o nosso
+  toast(ok ? '💾 Projeto salvo — está na aba Projetos.' : '⚠️ Não consegui salvar o projeto agora.');
+  return ok;
 }
 
 // ══════════════════ PASSO 3 — OS CLIPES ══════════════════
@@ -767,7 +808,7 @@ function ligarChips(id, cb){
 // Um personagem CRIANÇA saiu com voz de mulher adulta porque a IA tentava inferir pelo desenho.
 // Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
 // no prompt negativo do Veo (o oposto do escolhido).
-let sexoVoz = 'masculina';
+let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
 ligarChips('chipsVoz', function(v){ sexoVoz = v; });
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
@@ -795,7 +836,7 @@ function copiar(txt, msg){
 // acrescentar faixa subindo o arquivo no R2 e redeployando o Worker, sem ninguém
 // precisar subir HTML no GitHub de novo.
 // ══════════════════════════════════════════════════════════════════════════
-let audioPreview = null, tocandoId = null;
+let audioPreview = null, tocandoId = null, trilhaUpMsg = '';
 
 async function carregarTrilhas(){
   const box = document.getElementById('trilhasGrid'); if(!box) return;
@@ -821,8 +862,10 @@ function pintarTrilhas(){
            '</div>';
   }).join('');
   // última opção: a trilha do próprio atendente
+  const rotuloUp = trilhaUpMsg ? trilhaUpMsg
+                 : (selId==='up' ? esc(trilhaSel.title) : 'Adicionar Trilha');
   html += '<div class="trilha-item custom'+(selId==='up'?' sel':'')+'" data-id="__up">'+
-            '<span class="trilha-nome">'+(selId==='up' ? ('🎵 '+esc(trilhaSel.title)) : '+ Minha trilha (MP3)')+'</span>'+
+            '<span class="trilha-nome">'+rotuloUp+'</span>'+
           '</div>';
   box.innerHTML = html;
 
@@ -834,7 +877,6 @@ function pintarTrilhas(){
       const t = trilhas.find(x => x.id === id); if(!t) return;
       trilhaSel = { id:t.id, title:t.titulo, url:t.url };
       musica = null;
-      document.getElementById('musicaNome').textContent = '🎵 ' + t.titulo;
       pintarTrilhas();
     });
   });
@@ -860,21 +902,19 @@ function ouvirTrilha(id){
 // que o atendente escolhe, e a montagem manda só a URL.
 async function onMusica(ev){
   const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
-  const nome=document.getElementById('musicaNome');
-  if(nome) nome.innerHTML='<span class="spin"></span> Enviando '+esc(f.name)+'…';
+  trilhaUpMsg='<span class="spin"></span> Enviando…'; pintarTrilhas();
   try{
     const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
     const r = await api('/promoMusicaUp', { method:'POST', body: JSON.stringify({ projectId, base64:b64, tipo:f.type||'' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'falha ao enviar');
     trilhaSel = { id:'up', title:f.name, url:d.url };
-    musica = null;
+    musica = null; trilhaUpMsg='';
     pintarTrilhas();
-    if(nome) nome.innerHTML='🎵 '+esc(f.name)+' <span style="color:var(--text-dim)">('+(d.bytes/1048576).toFixed(1)+'MB, enviada ✅)</span>';
-    toast('✅ Música enviada.');
+    toast('✅ '+f.name+' enviada ('+(d.bytes/1048576).toFixed(1)+'MB).');
   }catch(e){
-    trilhaSel=null; musica=null; pintarTrilhas();
-    if(nome) nome.innerHTML='⚠️ '+esc(e.message);
+    trilhaSel=null; musica=null; trilhaUpMsg='';
+    pintarTrilhas();
     toast('⚠️ '+e.message);
   }
 }
@@ -938,12 +978,15 @@ async function gerarCenas(){
     const prontas = cenas.filter(s=>s.video_url).length;
     if(prontas < cenas.length){
       document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
-      toast('⚠️ Faltaram cenas — clique de novo.'); return;
+      await salvarProjeto(true);   // as que saíram já foram pagas — não perder
+      toast('⚠️ Faltaram cenas — clique de novo (você paga só as que faltam).'); return;
     }
     document.getElementById('notaFinal').textContent='';
     document.getElementById('editorCortes').classList.remove('hide');
     renderCortes();
-    toast('✅ Cenas prontas! Confira e apare o que precisar.');
+    // salva já: as 4 cenas custaram US$1,60 e fechar a aba aqui perdia tudo
+    await salvarProjeto(true);
+    toast('✅ Cenas prontas e projeto salvo! Confira e apare o que precisar.');
     rolarPara('editorCortes');
   } finally { btn.disabled=false; btn.innerHTML=old; }
 }
@@ -1219,8 +1262,9 @@ async function finalizar(){
         document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
         montando=false; pintarProgresso();
         document.getElementById('notaMontagem').textContent='';
-        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal'); toast('🎉 Vídeo pronto!');
-        salvarProjeto(true);   // cai sozinho na aba Resultados
+        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal');
+        await salvarProjeto(true);   // cai sozinho na aba Resultados
+        toast('🎉 Vídeo pronto e projeto salvo — está na aba Resultados.');
         return;
       }
       if(d2.ok && d2.status==='failed') throw new Error('a montagem falhou');
