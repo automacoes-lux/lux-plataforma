@@ -64,6 +64,9 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
 .pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
 /* refazer 1 cena no editor de cortes */
+/* refazendo: vermelho com letra branca, pra não passar despercebido */
+.btn-refaz.refazendo{background:#C0392B;border-color:#C0392B;color:#fff;font-weight:600}
+.btn-refaz.refazendo .spin{border-color:rgba(255,255,255,.35);border-top-color:#fff}
 .btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
 /* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
@@ -588,8 +591,11 @@ async function gerarTudo(){
   try{
     const r = await Promise.all([ gerarPersonagem(true), gerarRoteiro('', true) ]);
     const okPers=r[0], okRot=r[1];
-    if(okRot){ renderRoteiro(); liberar(2); await autoSalvar(); }
-    if(okRot && okPers) toast('✅ Personagem e roteiro prontos!');
+    // ⚠️ o auto-save é silencioso AQUI de propósito: o toast dele era apagado meio segundo depois
+    // pelo aviso de "personagem e roteiro prontos". Os dois viraram uma frase só.
+    let salvou = false;
+    if(okRot){ renderRoteiro(); liberar(2); salvou = await salvarProjeto(true); }
+    if(okRot && okPers) toast('✅ Personagem e roteiro prontos!' + (salvou ? ' 💾 Projeto salvo.' : ''));
     else if(okRot)      toast('⚠️ Roteiro pronto, mas a imagem falhou — use "Gerar de novo" no passo 2.');
     else if(okPers)     toast('⚠️ Personagem pronto, mas o roteiro falhou — tente de novo.');
   } finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
@@ -1122,7 +1128,20 @@ function renderCortes(){
   const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
   box.innerHTML='';
   cenas.forEach(function(s,i){
-    if(!s.video_url) return;
+    if(!s.video_url){
+      const f=document.createElement('div'); f.className='sb'; f.setAttribute('data-cena',i);
+      f.innerHTML =
+        '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div></div>'+
+        '<div class="alerta">⚠️ Esta cena ficou sem vídeo'+(s.video_error?(': '+esc(s.video_error)):'')+'. Ajuste a fala se precisar e clique em <b>Refazer</b>.</div>'+
+        '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
+        '<textarea data-faed="'+i+'" style="min-height:58px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+        '<div class="alerta hide" data-aled="'+i+'"></div>'+
+        '<div class="btn-row" style="margin-top:.4rem">'+
+          '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+        '</div>';
+      box.appendChild(f);
+      return;
+    }
     if(typeof s.cortaIni!=='number') s.cortaIni=0;
     if(typeof s.cortaFim!=='number') s.cortaFim=0;
     const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
@@ -1148,7 +1167,9 @@ function renderCortes(){
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="btn-row" style="margin-top:.4rem">'+
         '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
-        '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+        // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
+        // BAIXAR (é o primeiro da linha) e era ELE que virava "Refazendo…"
+        '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
       '</div>';
     box.appendChild(d);
     ligarTrim(d, i);
@@ -1301,16 +1322,17 @@ function verTrecho(i){
 async function refazerCena(i){
   const s=cenas[i]; if(!s) return;
   if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
-  const card=document.querySelector('#boxCortes [data-cena="'+i+'"]');
-  const bt=card?card.querySelector('.btn-refaz'):null; const old=bt?bt.innerHTML:'';
-  if(bt){ bt.disabled=true; bt.innerHTML='<span class="spin"></span>Refazendo… (2-4 min)'; }
+  const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
+  // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
+  // senão ele clica de novo e paga US$ 0,40 duas vezes. Volta ao normal quando o card re-renderiza.
+  if(bt){ bt.disabled=true; bt.classList.add('refazendo'); bt.innerHTML='<span class="spin"></span>Refazendo… (2-4 min)'; }
   s.video_url=''; s.cortaIni=0; s.cortaFim=0;
   try{
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     renderCortes(); toast('✅ Cena '+(i+1)+' refeita!');
     salvarProjeto(true);
-  }catch(e){ toast('⚠️ '+e.message); if(bt){ bt.disabled=false; bt.innerHTML=old; } }
+  }catch(e){ toast('⚠️ '+traduzErroRede(e)); if(bt){ bt.disabled=false; bt.classList.remove('refazendo'); bt.innerHTML=old; } }
 }
 
 // ⚠️ FLUXO DE UM CLIQUE (27/08) — pedido do Thiago.
