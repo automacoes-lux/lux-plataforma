@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Personagem Animado 🐱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../css/theme.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg-card:#121212;--bg-input:#1C1C1C;--bg-hover:#222;--text-mid:#B0A080}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;
+  background-image:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%)}
+.container{max-width:760px;margin:0 auto;padding:1.6rem 1.2rem 5rem}
+.page-head{margin-bottom:1.2rem}
+.page-title{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.page-sub{color:var(--text-dim);font-size:13.5px;margin-top:.4rem;line-height:1.5}
+.step{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.2rem;margin-bottom:1.1rem}
+.step-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.step-num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#141414;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif}
+.step-title{font-weight:600;font-size:15.5px;color:var(--text)}
+.step-hint{color:var(--text-dim);font-size:12.5px;margin:-.4rem 0 .8rem 0;line-height:1.45}
+input[type=text],textarea,select{width:100%;background:var(--bg-input);border:.5px solid var(--border);color:var(--text);border-radius:var(--radius);padding:.75rem .9rem;font-family:inherit;font-size:14.5px;outline:none}
+textarea{min-height:88px;resize:vertical;line-height:1.5}
+input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:999px;padding:.55rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;user-select:none}
+.chip.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+.btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
+.btn-gold:hover{filter:brightness(1.07)}
+.btn-gold:disabled{opacity:.55;cursor:not-allowed}
+.btn-ghost{flex:1;background:transparent;color:var(--text-mid);border:.5px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;font-size:14px;cursor:pointer}
+.btn-ghost:disabled{opacity:.5;cursor:not-allowed}
+.btn-row{display:flex;gap:.6rem;flex-wrap:wrap}
+.up-btn{display:inline-block;background:var(--bg-input);border:.5px dashed var(--border-bright);color:var(--text-mid);border-radius:var(--radius);padding:.7rem 1rem;font-size:13.5px;cursor:pointer;text-align:center;width:100%}
+.up-cat{margin-bottom:.9rem}
+.up-cat-head{font-size:12.5px;color:var(--text-mid);margin-bottom:.4rem}
+.thumbs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.thumb{position:relative;width:66px;height:88px;border-radius:8px;overflow:hidden;border:.5px solid var(--border)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1}
+.mini{font-size:11.5px;color:var(--text-dim);margin:.55rem 0 .2rem}
+.soon-note{font-size:12px;color:var(--text-dim);margin-top:.5rem;line-height:1.45}
+/* abas Criar / Projetos / Resultados */
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem;overflow-x:auto}
+.tabbtn{flex:1;min-width:104px;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:var(--radius);padding:.65rem .5rem;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tabbtn.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* salvar o projeto (branco com letra preta, no topo) */
+.btn-salvar{width:100%;background:#fff;color:#111;border:none;border-radius:var(--radius);padding:.8rem 1rem;font-size:14.5px;font-weight:600;cursor:pointer;margin-bottom:.7rem}
+.btn-salvar:hover{filter:brightness(.94)}
+.btn-salvar:disabled{opacity:.6;cursor:not-allowed}
+/* cards de projeto salvo / resultado */
+.pj{display:flex;gap:.75rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:.8rem;margin-bottom:.7rem;align-items:center}
+.pj-th{width:56px;height:74px;border-radius:8px;object-fit:cover;background:var(--bg-input);flex-shrink:0}
+.pj-in{flex:1;min-width:0}
+.pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
+.pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
+.pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+.pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
+/* refazer 1 cena no editor de cortes */
+.btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
+.sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
+/* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
+.aviso-ok{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
+.aviso-ok b{color:#fff}
+/* cards de conceito */
+.cc{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
+.cc.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
+.cc-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:16px;font-weight:700;margin:.5rem 0}
+.cc-lin{font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:.35rem}
+.cc-lin b{color:var(--text-dim);font-weight:500}
+/* voz da campanha: campo discreto, menor que os do formulário — é conferência, não digitação */
+.cc-voz{min-height:0;font-size:12px;line-height:1.45;padding:.5rem .65rem;margin:.15rem 0 .3rem}
+.cc-obs{font-size:11px;color:var(--text-dim);margin-bottom:.35rem}
+/* storyboard */
+.sb{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
+.sb.ok{border-color:rgba(90,190,120,.5)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+.sb-n{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;font-weight:700}
+.badge{display:inline-block;border-radius:6px;padding:.18rem .5rem;font-size:11px;font-weight:600}
+.badge-fn{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid)}
+.cont{font-size:12px;font-weight:600;padding:.18rem .5rem;border-radius:6px;display:inline-block}
+.c-curta{background:rgba(230,120,90,.16);color:#E8916E}
+.c-ok{background:rgba(201,168,76,.16);color:var(--gold)}
+.c-ideal{background:rgba(90,190,120,.16);color:#6FD08C}
+.c-longa{background:rgba(230,90,90,.16);color:#E87070}
+.est{font-size:11.5px;color:var(--text-dim);background:var(--bg-input);border-radius:6px;padding:.4rem .55rem;margin-top:.4rem;line-height:1.45;word-break:break-word}
+.alerta{background:rgba(230,90,90,.12);border:.5px solid rgba(230,90,90,.5);color:#E87070;border-radius:var(--radius);padding:.55rem .7rem;margin-top:.5rem;font-size:12.5px;line-height:1.45}
+.prog-item{display:flex;align-items:center;gap:.6rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .7rem;margin-bottom:.45rem;font-size:13px;color:var(--text-mid)}
+/* editor de corte da cena — barra de tempo com alças arrastáveis */
+.trim{margin-top:.7rem}
+.trim-bar{position:relative;height:48px;background:repeating-linear-gradient(90deg,var(--bg-input) 0 9px,rgba(255,255,255,.03) 9px 10px);border:.5px solid var(--border);border-radius:8px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
+/* onda do audio dentro da barra de corte (25/08) */
+/* cenas do roteiro dentro de um bloco unico (25/08) */
+.cena-rot{border-top:.5px solid var(--border);padding-top:.8rem;margin-top:.8rem}
+.cena-rot:first-of-type{border-top:none;padding-top:0;margin-top:.2rem}
+.cena-rot.ok .sb-n{color:var(--gold)}
+.trim-onda{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+/* ajuste fino do corte, em passos de 0,1s */
+.fino{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+.fino-rot{font-size:11.5px;color:var(--text-dim)}
+.fino button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.35rem .6rem;font-size:12.5px;cursor:pointer;font-family:inherit}
+.fino button:hover{border-color:var(--gold-dim);color:var(--text)}
+.trim-fora{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.62)}
+.trim-sel{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,rgba(201,168,76,.30),rgba(201,168,76,.14));border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
+.trim-h{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:3}
+.trim-h::after{content:'';width:7px;height:64%;background:var(--gold);border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
+.trim-cur{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.9;pointer-events:none;z-index:2}
+.trim-lab{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--gold);font-weight:600;margin-top:.4rem;gap:.5rem;flex-wrap:wrap}
+.trim-dur{color:var(--text-mid);font-weight:500}
+/* barra de passos do wizard (horizontal, com setinhas) */
+.wzbar{display:flex;align-items:center;gap:.25rem;overflow-x:auto;padding:.1rem 0 .7rem;margin-bottom:.4rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.wzbar::-webkit-scrollbar{display:none}
+.wzp{display:flex;align-items:center;gap:.4rem;flex:0 0 auto;background:var(--bg-card);border:.5px solid var(--border);color:var(--text-dim);border-radius:999px;padding:.4rem .75rem;font-size:12.5px;cursor:default;white-space:nowrap;transition:all .15s}
+.wzp.liberado{cursor:pointer;color:var(--text-mid);border-color:var(--border-bright)}
+.wzp.atual{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:700}
+.wzp.feito{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-color:transparent;font-weight:600;cursor:pointer}
+.wzn{font-family:'Cinzel',serif;font-weight:700}
+.wzseta{flex:0 0 auto;color:var(--text-dim);font-size:13px}
+/* imagens/vídeos */
+.cena-img{width:100%;max-width:190px;border-radius:10px;border:.5px solid var(--border);display:block;margin:0 auto .4rem;background:var(--bg-input)}
+.cena-ph{width:100%;max-width:190px;aspect-ratio:2/3;border-radius:10px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;text-align:center;padding:.5rem;margin:0 auto .4rem}
+.stt{font-size:11.5px;font-weight:600;border-radius:6px;padding:.18rem .5rem;display:inline-block}
+.s-wait{background:var(--bg-input);color:var(--text-dim)}
+.s-run{background:rgba(201,168,76,.16);color:var(--gold)}
+.s-ok{background:rgba(90,190,120,.16);color:#6FD08C}
+.s-err{background:rgba(230,90,90,.16);color:#E87070}
+.adv{margin-top:.6rem;border-top:.5px solid var(--border);padding-top:.5rem}
+.adv summary{cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none}
+.adv textarea{min-height:90px;font-size:11.5px;margin-top:.4rem}
+video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem auto 0;background:#000}
+.trilhas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin-bottom:.7rem}
+.trilha-item{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;cursor:pointer;font-size:13px;color:var(--text-mid)}
+.trilha-item.sel{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--text)}
+/* trilha = nome + botão de ouvir. O play é um botão separado de propósito: clicar no
+   corpo do item SELECIONA, clicar no ▶ só OUVE — senão não dá pra comparar sem trocar a escolha. */
+.trilha-item{display:flex;align-items:center;gap:.5rem;justify-content:space-between}
+.trilha-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trilha-play{flex:none;width:26px;height:26px;border-radius:50%;border:.5px solid var(--border);
+  background:var(--bg-card);color:var(--text-mid);font-size:11px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.trilha-play:hover{border-color:var(--gold);color:var(--gold)}
+.trilha-item.sel .trilha-play{border-color:var(--gold);color:var(--gold)}
+.trilha-play.tocando{background:var(--gold);color:#141414;border-color:transparent}
+/* "Adicionar Trilha" é AÇÃO, não é uma faixa: botão branco de texto preto, destacado das 10 */
+.trilha-item.custom{background:#fff;border-color:#fff;color:#141414;font-weight:600;justify-content:center}
+.trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414}
+.trilha-item.custom.sel{background:#fff;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+/* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
+   Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
+@media(max-width:520px){
+  .trilhas-grid{grid-template-columns:1fr;gap:.35rem}
+  .trilha-item{padding:.45rem .55rem;font-size:12.5px}
+  .trilha-play{width:24px;height:24px}
+}
+.btn-baixar{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);
+  border-radius:var(--radius);padding:.3rem .7rem;font-size:12px;cursor:pointer;margin-left:.5rem}
+.btn-baixar:hover{border-color:var(--gold);color:var(--gold)}
+.prog-item{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.tsep{text-align:center;color:var(--text-dim);font-size:12px;margin:.6rem 0}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(20,20,20,.3);border-top-color:#141414;border-radius:50%;animation:sp .7s linear infinite;margin-right:7px;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120%);background:var(--bg-card);border:.5px solid var(--border-bright);color:var(--text);padding:.8rem 1.1rem;border-radius:var(--radius);font-size:13.5px;z-index:90;transition:transform .25s;max-width:92vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.hide{display:none}
+</style>
+
+<body>
+
+<div class="container">
+  <div class="page-head">
+    <div class="page-title">🐱 Personagem Animado</div>
+    <div class="page-sub">Personagem → roteiro publicitário → <b>vídeo de 32s</b>. Você manda as fotos e as informações do cliente; a IA monta a campanha.</div>
+  </div>
+
+  <!-- abas: criar × projetos salvos × vídeos prontos -->
+  <div class="tabs">
+    <button class="tabbtn on" data-aba="criar"      onclick="abrirAba('criar')">✨ Criar</button>
+    <button class="tabbtn"    data-aba="projetos"   onclick="abrirAba('projetos')">📁 Projetos</button>
+    <button class="tabbtn"    data-aba="resultados" onclick="abrirAba('resultados')">🎬 Resultados</button>
+  </div>
+
+  <div id="abaCriar">
+  <button class="btn-salvar hide" id="btnSalvar" onclick="salvarProjeto()">💾 Salvar projeto</button>
+  <div class="soon-note" id="notaSalvar"></div>
+
+  <div class="wzbar" id="wzbar"></div>
+
+  <!-- ══════════ PASSO 1 — O PERSONAGEM ══════════ -->
+  <div id="p1">
+  <div class="step">
+    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
+
+    <div class="mini">Cliente / empresa <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">Só nomeia o projeto nas abas Projetos e Resultados — não entra no roteiro nem na imagem.</div>
+    <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
+
+    <div class="mini" style="margin-top:.9rem">Foto do personagem <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">O que vai virar o personagem: o produto do cliente, uma pessoa, uma criança, um pet ou um mascote que ele já tenha.</div>
+    <div class="thumbs" id="thProduto"></div>
+    <label class="up-btn">+ Foto do personagem<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'product')"/></label>
+
+    <div class="mini" style="margin-top:.9rem">Foto do ambiente <span style="color:var(--text-dim)">(opcional)</span></div>
+    <div class="step-hint">O lugar do cliente — o personagem vai aparecer dentro dele.</div>
+    <div class="thumbs" id="thAmbiente"></div>
+    <label class="up-btn">+ Foto do ambiente<input type="file" accept="image/*" multiple hidden onchange="onPick(event,'environment')"/></label>
+
+    <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
+    <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
+
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
+    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta a campanha.</div>
+    <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="step-title">Voz do personagem <span style="color:var(--gold)">*</span></div></div>
+    <div class="step-hint">Vale para as 4 cenas. Escolha aqui em vez de deixar a IA adivinhar pelo personagem.</div>
+    <!-- ⚠️ nenhum vem marcado de propósito (27/08): com "masculina" pré-selecionado, o atendente
+         passava batido e a voz saía errada sem ninguém ter decidido nada. -->
+    <div class="chips" id="chipsVoz">
+      <div class="chip" data-v="masculina">Voz masculina</div>
+      <div class="chip" data-v="feminina">Voz feminina</div>
+    </div>
+  </div>
+
+  <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E ROTEIRO</button>
+  <div class="soon-note" id="notaRoteiro"></div>
+  <div class="soon-note" id="notaPersonagem"></div>
+  </div><!-- /p1 -->
+
+  <!-- ══════════ PASSO 2 — O ROTEIRO ══════════ -->
+  <div id="telaRoteiro" class="hide">
+    <div class="sec-title">Passo 2 · 📝 Personagem e roteiro</div>
+    <div id="avisoRoteiro" class="hide"></div>
+    <div id="boxCampanha"></div>
+
+    <!-- o personagem: aprovar com o cliente ou refazer -->
+    <div id="boxPersonagem" class="step hide">
+      <div class="step-head"><div class="step-title">O personagem</div></div>
+      <img id="imgPersonagem" class="cena-img"/>
+      <div class="btn-row" style="margin-top:.6rem">
+        <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
+        <button class="btn-ghost" id="btnPersonagem" onclick="gerarPersonagem()">🔄 Gerar de novo</button>
+      </div>
+      <div class="mini" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
+      <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
+    </div>
+
+    <div id="boxRoteiro"></div>
+    <div class="btn-row" style="margin-bottom:.9rem">
+      <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro</button>
+      <button class="btn-ghost" onclick="outroRoteiro()">✨ Gerar outro roteiro</button>
+    </div>
+    <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎬 GERAR VÍDEO</button>
+    <div class="soon-note" id="notaFalas"></div>
+  </div>
+
+  <!-- ══════════ PASSO 3 — O VÍDEO ══════════ -->
+  <div id="telaTrilha" class="hide">
+    <div class="sec-title">Passo 3 · 🎵 Trilha e vídeo</div>
+    <div class="step">
+      <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
+      <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
+      <div class="trilhas-grid" id="trilhasGrid"></div>
+      <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
+
+    </div>
+
+    <button class="btn-gold" id="btnCenas" onclick="gerarVideoTudo()">🎬 GERAR VÍDEO</button>
+    <div class="soon-note" id="notaFinal">A IA gera as 4 cenas, corta o fim de cada uma sozinha e monta o vídeo. Leva de 8 a 15 minutos.</div>
+    <div id="progresso" style="margin-top:.8rem"></div>
+
+    <!-- ⚠️ O EDITOR SÓ APARECE SE O ATENDENTE PEDIR (27/08). O fluxo normal é um clique só:
+         gera as 4 cenas → corta o fim de cada uma pela transcrição → monta → entrega pronto.
+         Quem quiser mexer clica em "Editar" na tela do vídeo pronto e cai aqui, com os cortes
+         automáticos já aplicados e visíveis. -->
+    <div id="editorCortes" class="hide">
+      <div class="sec-title">✂️ As 4 cenas</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Os cortes do fim já foram feitos sozinhos. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
+      <div id="boxCortes"></div>
+      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO DE NOVO</button>
+      <div class="soon-note" id="notaMontagem"></div>
+    </div>
+  </div>
+
+  <!-- vídeo pronto -->
+  <div id="telaFinal" class="hide">
+    <div class="sec-title">✅ Vídeo pronto</div>
+    <div class="step">
+      <video id="videoFinal" controls playsinline style="width:100%;border-radius:var(--radius)"></video>
+      <div class="btn-row" style="margin-top:.8rem">
+        <button class="btn-ghost" onclick="abrirEditor()">✏️ Editar</button>
+        <button class="btn-ghost" onclick="baixarFinal()">⬇️ Baixar vídeo</button>
+      </div>
+      <div class="soon-note" id="custoFinal"></div>
+    </div>
+  </div>
+  </div><!-- /abaCriar -->
+
+  <!-- ══ ABA PROJETOS ══ -->
+  <div id="abaProjetos" class="hide">
+    <div class="sec-title">📁 Projetos salvos</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
+    <div id="listaProjetos"><div class="pj-vazio">Carregando…</div></div>
+  </div>
+
+  <!-- ══ ABA RESULTADOS ══ -->
+  <div id="abaResultados" class="hide">
+    <div class="sec-title">🎬 Resultados</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você pode refazer só uma cena.</div>
+    <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../js/auth-iframe.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// PERSONAGEM ANIMADO (nome de tela desde 27/08; arquivo, rota e Worker seguem
+// "videos-promocional"/lux-videos-premium) — motor de ROTEIRO PUBLICITÁRIO (24/08/2026)
+// 3 passos: 1) personagem no ambiente real · 2) roteiro de 4 cenas · 3) vídeo.
+// As 4 cenas saem da MESMA imagem do personagem (decisão do Thiago em 24/08):
+// mais barato, mais consistente e sem o risco de deriva entre cenas.
+// Regras do roteiro: lux-videos-premium/docs/REGRAS-ROTEIRO-PUBLICITARIO.md
+// ═══════════════════════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
+const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
+// ⚠️ MEDIDO (25/08): cada palavra falada leva ~0,47s no Veo, e o clipe tem 8s FIXOS (pedir
+// duration:6 não adianta, a WaveSpeed devolve 8,00s do mesmo jeito). O PISO subiu porque com
+// pouco texto o Veo ARRASTA a locução: 9 palavras = 0,59s por palavra (lento), 11 = 0,49s,
+// 13 = 0,46s (ritmo de comercial).
+// ⚠️ 13-16 é a faixa que o Thiago pediu em 27/08, e ela é APERTADA de propósito: 13 palavras já
+// bateram 6,90s no pior tiro medido, e no teste real dele a cena 2 terminou em 7,3s (sobrou só
+// 0,5s pra cortar). Com 16 palavras a fala pode passar de 7,5s e o corte do fim fica sem espaço —
+// é o preço de falas mais longas. Tem que bater com o Worker (ROT_PALAVRAS_*).
+const PALAVRAS_MIN = 13, PALAVRAS_MAX = 16;
+const LIMITES = { product: 4, environment: 4, logo: 1 };
+
+function api(path, opts){
+  const url = WORKER_URL + path;
+  if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
+  return fetch(url, opts);
+}
+// ⚠️ RETENTATIVA DE REDE (27/08). "Failed to fetch" é a mensagem que o navegador dá quando o
+// pedido nem chega a sair — Wi-Fi oscilando, DNS, proxy, aba em segundo plano. O Worker já
+// retenta do lado dele (fetchRetry), mas o NAVEGADOR não tinha nada: as 4 cenas disparam juntas,
+// e um piscar de conexão derrubava as quatro de uma vez, cada uma custando o disparo perdido.
+// Retenta só falha de REDE (TypeError). Erro do servidor (401, 500...) devolve na hora — nesses
+// casos repetir não adianta e ainda pode cobrar duas vezes.
+async function apiRetry(path, opts, tentativas){
+  const max = tentativas || 3;
+  let ultimo;
+  for(let k=0; k<max; k++){
+    try{ return await api(path, opts); }
+    catch(e){
+      ultimo = e;
+      const ehRede = (e instanceof TypeError) || /failed to fetch|network|load failed/i.test(String(e.message||''));
+      if(!ehRede || k === max-1) break;
+      await new Promise(r=>setTimeout(r, 1500*(k+1)));   // 1,5s, depois 3s
+    }
+  }
+  throw new Error(traduzErroRede(ultimo));
+}
+function traduzErroRede(e){
+  const m = String((e&&e.message)||e||'erro');
+  if(/failed to fetch|network|load failed/i.test(m))
+    return 'sem conexão com o servidor (tentei 3 vezes) — confira a internet e clique de novo';
+  return m;
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3800); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escA(s){ return esc(s).replace(/"/g,'&quot;'); }
+function contarPalavras(t){ return String(t||'').trim().split(/\s+/).filter(Boolean).length; }
+function mostrar(id){ const el=document.getElementById(id); if(el) el.classList.remove('hide'); }
+function rolarPara(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
+function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : ('data:image/jpeg;base64,'+t); }
+
+// ── Wizard: 3 passos ──
+const PASSOS = [
+  { n:1, id:'p1',          rot:'Briefing'            },
+  { n:2, id:'telaRoteiro', rot:'Personagem e roteiro' },
+  { n:3, id:'telaTrilha',  rot:'Vídeo'      }
+];
+let passoAtual = 1, passoMax = 1;
+function irPara(n){
+  if(n < 1 || n > PASSOS.length || n > passoMax) return;
+  passoAtual = n;
+  PASSOS.forEach(function(p){ const el=document.getElementById(p.id); if(el) el.classList.toggle('hide', p.n !== n); });
+  const fin=document.getElementById('telaFinal');
+  if(fin) fin.classList.toggle('hide', !(n === 3 && videoFinalUrl));
+  if(n === 3) carregarTrilhas();   // catálogo de trilhas; busca no Worker só na 1ª vez
+  pintarBarra();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function liberar(n){ passoMax = Math.max(passoMax, n); irPara(n); }
+function pintarBarra(){
+  const bar=document.getElementById('wzbar'); if(!bar) return;
+  bar.innerHTML = PASSOS.map(function(p,k){
+    const cls = 'wzp' + (p.n===passoAtual ? ' atual' : (p.n<passoMax ? ' feito' : (p.n<=passoMax ? ' liberado' : '')));
+    return (k ? '<span class="wzseta">→</span>' : '') +
+      '<div class="'+cls+'" onclick="irPara('+p.n+')"><span class="wzn">'+p.n+'</span> '+p.rot+'</div>';
+  }).join('');
+  const at = bar.querySelector('.wzp.atual'); if(at && at.scrollIntoView) at.scrollIntoView({ block:'nearest', inline:'center' });
+}
+
+// ── Estado ──
+let projectId = 'promo_' + Date.now();
+let salvoEm = '';
+let refs = { product:[], environment:[], characters:[], logo:[] };
+let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) — a referência dos 4 clipes
+let campanha = null;              // { marca, objetivo, tom, argumento }
+let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
+let trilhas = [], trilhaSel = null, musica = null;
+let videoFinalUrl = '', custoUSD = 0;
+
+// ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
+function abrirAba(nome){
+  ['criar','projetos','resultados'].forEach(function(a){
+    const el=document.getElementById('aba'+a.charAt(0).toUpperCase()+a.slice(1));
+    if(el) el.classList.toggle('hide', a!==nome);
+  });
+  document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.aba===nome); });
+  if(nome!=='criar') carregarProjetos();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function checarSalvar(){
+  const nome=(document.getElementById('fCliente')||{}).value||'';
+  const bt=document.getElementById('btnSalvar'); if(bt) bt.classList.toggle('hide', !nome.trim());
+}
+function estadoAtual(){
+  return {
+    cliente: (document.getElementById('fCliente')||{}).value||'',
+    briefing: (document.getElementById('fBriefing')||{}).value||'',
+    ambienteTexto: (document.getElementById('fAmbienteTxt')||{}).value||'',
+    sexoVoz: sexoVoz,
+    passo: passoAtual, passoMax: passoMax,
+    refsProduto: refs.product.map(p=>p.base64||p.url||''),
+    refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
+    personagem: personagemImg,
+    campanha: campanha, cenas: cenas.map(cenaLimpa),
+    trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
+  };
+}
+async function salvarProjeto(silencioso){
+  const est=estadoAtual();
+  if(!est.cliente.trim()){ if(!silencioso) toast('✍️ Escreva o nome do cliente antes de salvar.'); return false; }
+  const bt=document.getElementById('btnSalvar'); const old=bt?bt.innerHTML:'';
+  if(bt && !silencioso){ bt.disabled=true; bt.innerHTML='<span class="spin"></span>Salvando…'; }
+  try{
+    const r=await api('/histSalvar',{ method:'POST', body: JSON.stringify({ projectId, estado: est }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao salvar');
+    projectId=d.projectId||projectId; salvoEm=d.atualizadoEm||'';
+    const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='💾 Salvo em '+salvoEm+' — está na aba Projetos.';
+    if(!silencioso) toast('💾 Projeto salvo!');
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); return false; }
+  finally{ if(bt && !silencioso){ bt.disabled=false; bt.innerHTML=old; } }
+}
+function pjCard(p, tipo){
+  const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
+  const sub = tipo==='res'
+    ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+(p.custoBRL?(' · ~R$'+p.custoBRL.toFixed(2)):''))
+    : ('parou no passo '+p.passoMax+' de 3 · '+esc(p.atualizadoEm||''));
+  const bts = tipo==='res'
+    ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
+      '<button onclick="window.open(\''+escA(p.videoUrl)+'\',\'_blank\')">⬇️ Baixar</button>'
+    : '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">▶ Continuar</button>';
+  return '<div class="pj">'+th+
+    '<div class="pj-in"><div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
+      '<div class="pj-sb">'+sub+'</div></div>'+
+    '<div class="pj-bt">'+bts+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
+}
+async function carregarProjetos(){
+  const lp=document.getElementById('listaProjetos'), lr=document.getElementById('listaResultados');
+  try{
+    const r=await api('/histProjetos'); const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    lp.innerHTML = d.projetos.length ? d.projetos.map(p=>pjCard(p,'proj')).join('')
+      : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>';
+    lr.innerHTML = d.resultados.length ? d.resultados.map(p=>pjCard(p,'res')).join('')
+      : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 7 dias.</div>';
+  }catch(e){
+    const m='<div class="pj-vazio">⚠️ '+esc(e.message)+'</div>';
+    if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
+  }
+}
+async function abrirProjeto(id){
+  toast('📂 Abrindo…');
+  try{
+    const r=await api('/histAbrir',{ method:'POST', body: JSON.stringify({ projectId:id }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    const p=d.projeto;
+    projectId = p.projectId;
+    document.getElementById('fCliente').value = p.cliente||'';
+    document.getElementById('fBriefing').value = p.briefing||'';
+    document.getElementById('fAmbienteTxt').value = p.ambienteTexto||'';
+    // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido).
+    // Projeto ANTIGO, salvo antes dos botões existirem, volta sem voz — e aí o briefing cobra.
+    sexoVoz = (p.campanha && p.campanha.sexoVoz) || p.sexoVoz || '';
+    document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
+      c.classList.toggle('on', !!sexoVoz && c.dataset.v === sexoVoz);
+    });
+    refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
+    refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
+    personagemImg = p.personagem||'';
+    campanha = p.campanha||null;
+    cenas = Array.isArray(p.cenas) ? p.cenas : [];
+    custoUSD = Number(p.custoUSD)||0;
+    trilhaSel = p.trilha||null; musica=null;
+    pintarTrilhas();
+    videoFinalUrl = p.videoUrl||'';
+    renderThumbs('product'); renderThumbs('environment');
+    if(personagemImg) pintarPersonagem();
+    if(cenas.length) renderRoteiro();
+    // ⚠️ 27/08: o editor NÃO abre sozinho ao reabrir um projeto. Se o vídeo já existe, o
+    // atendente entra por "Editar" na tela final; se ainda não existe, ele só clica em GERAR VÍDEO.
+    // Abrir a tela de cortes de cara era justamente a complexidade que o fluxo de um clique tirou.
+    if(cenas.length && cenas.every(s=>s.video_url) && !p.videoUrl){
+      document.getElementById('editorCortes').classList.remove('hide'); renderCortes();
+    }
+    if(videoFinalUrl){
+      document.getElementById('videoFinal').src = videoFinalUrl;
+      document.getElementById('custoFinal').innerHTML='💰 Custo até aqui: <b>~R$'+(custoUSD*5.22).toFixed(2)+'</b>.';
+    }
+    passoMax = Math.max(1, p.passoMax||1);
+    abrirAba('criar'); checarSalvar();
+    irPara(Math.max(1, Math.min(passoMax, p.passo||1)));
+    const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='💾 Salvo em '+(p.atualizadoEm||'')+'.';
+    toast('✅ Projeto aberto — continue de onde parou.');
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+async function apagarProjeto(id){
+  if(!confirm('Apagar este projeto? Não dá pra desfazer.')) return;
+  try{
+    const r=await api('/histApagar',{ method:'POST', body: JSON.stringify({ projectId:id }) });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    toast('🗑️ Apagado.'); carregarProjetos();
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+
+
+// ══════════════════ PASSO 1 — BRIEFING (personagem + roteiro juntos) ══════════════════
+// ⚠️ Os dois saem EM PARALELO (25/08): são coisas independentes — o roteiro é só texto e a
+// imagem é o gpt-image. Antes o atendente esperava a imagem (1-2 min) pra só então pedir o
+// roteiro. Agora um botão só dispara os dois e a espera é a do mais lento, não a soma.
+function ambienteTexto(){ return ((document.getElementById('fAmbienteTxt')||{}).value||'').trim(); }
+
+// Cobra o briefing inteiro ANTES de gastar dinheiro: a imagem custa US$0,18 e o roteiro roda no
+// gpt-5.6-sol. Gerar com briefing pela metade era desperdício e produzia campanha genérica.
+// Devolve o campo que falta (ou '' se está tudo certo) e já foca nele.
+function faltaNoBriefing(){
+  if(!clienteNome())        return { msg:'✍️ Escreva o nome do cliente ou empresa.', el:'fCliente' };
+  if(!refs.product.length)  return { msg:'📸 Suba a foto do personagem.', el:null };
+  if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
+  if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };
+  return null;
+}
+
+async function gerarTudo(){
+  const falta = faltaNoBriefing();
+  if(falta){
+    toast(falta.msg);
+    const el = falta.el && document.getElementById(falta.el);
+    if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); if(el.focus) el.focus(); }
+    return;
+  }
+  const btn=document.getElementById('btnTudo'); const old=btn.innerHTML;
+  const t0=Date.now();
+  btn.disabled=true;
+  const relogio=setInterval(function(){
+    const seg=Math.round((Date.now()-t0)/1000);
+    btn.innerHTML='<span class="spin"></span>Criando… '+Math.floor(seg/60)+':'+String(seg%60).padStart(2,'0');
+  },1000);
+  try{
+    const r = await Promise.all([ gerarPersonagem(true), gerarRoteiro('', true) ]);
+    const okPers=r[0], okRot=r[1];
+    if(okRot){ renderRoteiro(); liberar(2); await autoSalvar(); }
+    if(okRot && okPers) toast('✅ Personagem e roteiro prontos!');
+    else if(okRot)      toast('⚠️ Roteiro pronto, mas a imagem falhou — use "Gerar de novo" no passo 2.');
+    else if(okPers)     toast('⚠️ Personagem pronto, mas o roteiro falhou — tente de novo.');
+  } finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
+}
+function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
+function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
+
+async function gerarPersonagem(silencioso){
+  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return false; }
+  const btn=silencioso?null:document.getElementById('btnPersonagem');
+  const old=btn?btn.innerHTML:'';
+  const nota=document.getElementById('notaPersonagem');
+  const ajuste=(document.getElementById('fAjustePers')||{}).value||'';
+  const t0=Date.now();
+  let relogio=null;
+  if(btn){
+    btn.disabled=true;
+    relogio=setInterval(function(){
+      const s=Math.round((Date.now()-t0)/1000);
+      btn.innerHTML='<span class="spin"></span>Desenhando… '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    },1000);
+  }
+  if(nota) nota.innerHTML='🎨 Desenhando o personagem (1 a 2 minutos)…';
+  try{
+    const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
+      client: clienteNome(), briefing: briefTexto(), ambienteTexto: ambienteTexto(), references: refsPayload(),
+      ajuste: ajuste, imagemAnterior: (ajuste && personagemImg) ? personagemImg : '' }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
+    personagemImg = d.base64; custoUSD += (d.custoUSD||0);
+    pintarPersonagem();
+    if(nota) nota.innerHTML='';
+    if(!silencioso){ toast('✅ Personagem pronto!'); rolarPara('boxPersonagem'); }
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
+  finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
+}
+function pintarPersonagem(){
+  const box=document.getElementById('boxPersonagem'); if(!box) return;
+  document.getElementById('imgPersonagem').src = imgSrc(personagemImg);
+  box.classList.remove('hide');
+}
+function baixarPersonagem(){
+  if(!personagemImg) return;
+  const a=document.createElement('a');
+  a.href=imgSrc(personagemImg);
+  a.download=(clienteNome()||'personagem').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem.jpg';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('⬇️ Imagem baixada.');
+}
+
+// ══════════════════ PASSO 2 — O ROTEIRO ══════════════════
+async function gerarRoteiro(ajuste, silencioso){
+  if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return false; }
+  const btn=silencioso?null:document.getElementById('btnTudo'); const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando o roteiro…'; }
+  const av=document.getElementById('avisoRoteiro');
+  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
+  try{
+    const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
+      briefing: briefTexto(), ajuste: String(ajuste||''), sexoVoz: sexoVoz }) });   // sem imagem: o roteiro é só texto
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Erro');
+    campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
+    if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
+    return true;
+  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); return false; }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
+}
+async function outroRoteiro(){
+  const dir = prompt('Quer dar alguma direção para a nova versão? (pode deixar em branco)\n\nEx: mais engraçado, foque na promoção, fale menos do horário');
+  if(dir === null) return;   // cancelou
+  await gerarRoteiro(dir);
+}
+const PAPEL_ROT = ['GANCHO','PRODUTO / SERVIÇO','DIFERENCIAL / OFERTA','FECHAMENTO + CTA'];
+function renderRoteiro(){
+  const cab=document.getElementById('boxCampanha');
+  if(cab && campanha){
+    cab.innerHTML = '<div class="cc">'+
+      (campanha.marca?('<div class="cc-tit">🎯 '+esc(campanha.marca)+'</div>'):'<div class="cc-tit">🎯 Campanha</div>')+
+      (campanha.objetivo?('<div class="cc-lin"><b>Objetivo:</b> '+esc(campanha.objetivo)+'</div>'):'')+
+      (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+
+      (campanha.argumento?('<div class="cc-lin"><b>Argumento principal:</b> '+esc(campanha.argumento)+'</div>'):'')+
+      // ⚠️ A VOZ é da CAMPANHA, não da cena: a MESMA descrição vai nos 4 prompts do Veo. Sem isso
+      // ele sorteia um timbre por clipe e uma das 4 cenas sai com outra voz. Editável: mudar aqui
+      // muda as 4 cenas de uma vez (ex.: trocar "male" por "female").
+      '<div class="cc-lin"><b>🎙️ Voz '+((campanha.sexoVoz||sexoVoz)==='feminina'?'feminina':'masculina')+' (igual nas 4 cenas):</b></div>'+
+      '<textarea id="vozCampanha" class="cc-voz" rows="2" placeholder="Descreva a voz em inglês — ex.: one single adult female voice, approximately 30 years old, native Brazilian Portuguese...">'+esc(campanha.voz||'')+'</textarea>'+
+      '<div class="cc-obs">Mudou a voz? Gere as cenas de novo pra valer.</div>'+
+      '</div>';
+    const tv=document.getElementById('vozCampanha');
+    if(tv) tv.addEventListener('input', function(){ campanha.voz = tv.value; });
+  }
+  // ⚠️ as 4 cenas num BLOCO SÓ e SEM repetir a imagem (25/08): ela já está logo acima, e
+  // repeti-la 4 vezes deixava a tela quilométrica.
+  const box=document.getElementById('boxRoteiro'); if(!box) return;
+  box.innerHTML='';
+  const bloco=document.createElement('div'); bloco.className='step';
+  bloco.innerHTML='<div class="step-head"><div class="step-title">As 4 cenas</div></div>';
+  cenas.forEach(function(s,i){
+    const n=contarPalavras(s.fala); const ok = n>=PALAVRAS_MIN && n<=PALAVRAS_MAX;
+    const d=document.createElement('div'); d.className='cena-rot'+(ok?' ok':'');
+    d.innerHTML =
+      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="badge badge-fn">'+(PAPEL_ROT[i]||'')+'</span></div>'+
+      (s.descricao?('<div class="cc-lin">'+esc(s.descricao)+'</div>'):'')+
+      '<textarea data-fa="'+i+'" style="min-height:64px">'+esc(s.fala)+'</textarea>'+
+      '<div class="alerta hide" data-al="'+i+'"></div>';
+    bloco.appendChild(d);
+  });
+  box.appendChild(bloco);
+  box.querySelectorAll('[data-fa]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.fa; cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      alertaFala(i); atualizarBotaoVideo();
+    });
+  });
+  cenas.forEach(function(s,i){ alertaFala(i); });
+  atualizarBotaoVideo();
+}
+// mesmo alerta de tamanho, mas no card do EDITOR (o do passo 2 usa data-al)
+function alertaFalaEditor(i){
+  const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
+  const n = contarPalavras(cenas[i].fala);
+  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+PALAVRAS_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
+  if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+PALAVRAS_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
+  el.className='alerta hide'; el.innerHTML='';
+}
+
+// alerta só quando a fala não cabe nos 8 segundos
+function alertaFala(i){
+  const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
+  const n = contarPalavras(cenas[i].fala); const card = el.closest('.sb');
+  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — cada palavra leva meio segundo, e passando disso a fala é cortada no meio no vídeo.'; if(card) card.classList.remove('ok'); return; }
+  if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta: <b>'+n+' palavras</b>. O mínimo é <b>'+PALAVRAS_MIN+'</b> — o personagem vai falar arrastado.'; if(card) card.classList.remove('ok'); return; }
+  el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
+}
+function atualizarBotaoVideo(){
+  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+  const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaFalas');
+  if(btn) btn.disabled = ruins>0;
+  if(nota) nota.innerHTML = ruins>0 ? '⛔ Ajuste a(s) fala(s) marcada(s) em vermelho pra liberar a produção.' : '';
+}
+function copiarRoteiro(){
+  if(!cenas.length) return;
+  let t='CAMPANHA — '+((campanha&&campanha.marca)||'')+'\n';
+  if(campanha){
+    if(campanha.objetivo)  t+='Objetivo: '+campanha.objetivo+'\n';
+    if(campanha.tom)       t+='Tom: '+campanha.tom+'\n';
+    if(campanha.argumento) t+='Principal argumento: '+campanha.argumento+'\n';
+  }
+  t+='\n';
+  cenas.forEach(function(s,i){
+    t += 'CENA '+(i+1)+' — '+(PAPEL_ROT[i]||'')+' | 8 SEGUNDOS\n';
+    if(s.descricao) t += s.descricao+'\n';
+    t += 'FALA: "'+(s.fala||'')+'"\n\n';
+  });
+  copiar(t.trim(), '📋 Roteiro copiado!');
+}
+async function irParaVideo(){
+  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+  if(ruins){ toast('⛔ Ajuste as falas em vermelho.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  liberar(3);
+  await autoSalvar();
+}
+
+// ⚠️ AUTO-SAVE (27/08) — salva sozinho ao fim de cada etapa, com aviso na tela.
+// O atendente perdia trabalho caro (imagem + roteiro + clipes) por esquecer de clicar em Salvar.
+// Guarda o MESMO estado do botão manual, então "Continuar" na aba Projetos volta com tudo:
+// fotos, texto do ambiente, voz escolhida, personagem, roteiro, cenas, trilha e vídeo final.
+async function autoSalvar(){
+  if(!clienteNome()) return false;          // sem nome não dá pra salvar; o briefing já cobra isso
+  const ok = await salvarProjeto(true);     // silencioso: o aviso abaixo é o nosso
+  toast(ok ? '💾 Projeto salvo — está na aba Projetos.' : '⚠️ Não consegui salvar o projeto agora.');
+  return ok;
+}
+
+// ══════════════════ PASSO 3 — OS CLIPES ══════════════════
+// ⚠️ ficou de fora na remontagem de 24/08 e quebrava a geração logo no 1º clipe: gerarVideo() chama
+// renderVideos() antes de bater na API, dava ReferenceError e as 4 cenas ficavam paradas em "na fila".
+function renderVideos(){ pintarProgresso(); }
+// A cena carrega, em memória, a análise do áudio (_audio.env = ~400 números por clipe, usada só
+// pra desenhar a onda). Isso não serve pro Worker nem pro projeto salvo — tira antes de enviar.
+function cenaLimpa(s){
+  const c = {};
+  for(const k in s){ if(k !== '_audio') c[k] = s[k]; }
+  return c;
+}
+
+// ⚠️ TODAS as cenas usam a MESMA imagem do personagem (decisão de 24/08).
+async function gerarVideo(i){
+  const s=cenas[i]; if(!s) return;
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
+  try{
+    // a voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre
+    const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
+      projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
+      sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
+    custoUSD += (d.custoUSD||0);
+    await acompanharVideo(i, d.predictionId);
+  } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
+}
+async function acompanharVideo(i, predictionId){
+  const s=cenas[i];
+  for(let t=0;t<80;t++){
+    await new Promise(r=>setTimeout(r, 6000));
+    try{
+      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
+      const d = await r.json();
+      if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
+      if(d.status==='failed'){ throw new Error(d.error||'a cena falhou no motor de vídeo'); }
+    }catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); return; }
+  }
+  s.video_status='erro'; s.video_error='demorou demais (mais de 8 minutos)'; renderVideos();
+}
+
+
+function readFileAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+async function fileToOptimizedImage(file){
+  const dataUrl = await readFileAsDataURL(file);
+  const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+  let { width, height } = img; const m=Math.max(width,height);
+  if (m > MAX_IMAGE_DIMENSION){ const f=MAX_IMAGE_DIMENSION/m; width=Math.round(width*f); height=Math.round(height*f); }
+  const cv=document.createElement('canvas'); cv.width=width; cv.height=height;
+  cv.getContext('2d').drawImage(img,0,0,width,height);
+  const out=cv.toDataURL('image/jpeg', IMAGE_QUALITY);
+  return { base64: out.split(',')[1], mimeType:'image/jpeg', thumbUrl: out };
+}
+async function onPick(ev, cat){
+  const files = Array.from(ev.target.files||[]); ev.target.value='';
+  for (const f of files){
+    if (refs[cat].length >= (LIMITES[cat]||4)){ toast('Limite de '+(LIMITES[cat]||4)+' aqui.'); break; }
+    try { refs[cat].push(await fileToOptimizedImage(f)); } catch(e){ toast('⚠️ Não consegui ler a imagem'); }
+  }
+  renderThumbs(cat);
+}
+const BOX = { product:'thProduto', environment:'thAmbiente' };   // produto + ambiente têm uploader na tela
+
+// PASSO 1 (12/08): a leitura automática da foto pela IA foi REMOVIDA a pedido do Thiago.
+// Agora é só upload de produto + ambiente e o atendente escreve o que quer divulgar.
+// A rota /histAnalisarFoto continua existindo no Worker, mas ninguém mais a chama.
+function renderThumbs(cat){
+  const box = document.getElementById(BOX[cat]); if(!box) return;
+  box.innerHTML='';
+  refs[cat].forEach(function(f,i){
+    const d=document.createElement('div'); d.className='thumb';
+    d.innerHTML='<img src="'+f.thumbUrl+'"/><button class="rm">✕</button>';
+    d.querySelector('.rm').onclick=function(){ refs[cat].splice(i,1); renderThumbs(cat); };
+    box.appendChild(d);
+  });
+}
+// Nicho, tom, modo do protagonista, ambiente/personagens/logo separados: REMOVIDOS da tela (11/08).
+// O fluxo agora é foto → a IA lê → o atendente descreve. O resto a IA deduz da imagem + da descrição.
+
+// ── Chips genéricos ──
+function ligarChips(id, cb){
+  document.querySelectorAll('#'+id+' .chip').forEach(function(c){
+    c.addEventListener('click', function(){
+      document.querySelectorAll('#'+id+' .chip').forEach(x=>x.classList.toggle('on', x===c));
+      cb(c.dataset.v);
+    });
+  });
+}
+// ⚠️ SEXO DA VOZ (25/08) — escolhido no briefing, NUNCA deduzido pela IA.
+// Um personagem CRIANÇA saiu com voz de mulher adulta porque a IA tentava inferir pelo desenho.
+// Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
+// no prompt negativo do Veo (o oposto do escolhido).
+let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
+ligarChips('chipsVoz', function(v){ sexoVoz = v; });
+
+// Monta o payload de referências (sem os thumbUrl, que são pesados)
+function refsPayload(){
+  // projeto reaberto: a foto volta como URL do R2 (sem base64) — manda a URL
+  const lim = a=>a.map(f=>(f.base64 ? { base64:f.base64, mimeType:f.mimeType } : { url:f.url, mimeType:f.mimeType||'image/jpeg' }));
+  return {
+    product: lim(refs.product), environment: lim(refs.environment), logo: lim(refs.logo),
+    characters: refs.characters.filter(p=>p.foto).map(p=>({ nome:p.nome||'', obs:p.obs||'', foto:{ base64:p.foto.base64, mimeType:p.foto.mimeType } }))
+  };
+}
+
+
+function copiar(txt, msg){
+  const done=()=>toast(msg);
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(()=>fb());
+  else fb();
+  function fb(){ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');done();}catch(e){} document.body.removeChild(ta); }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// TRILHAS PRONTAS (25/08) — 10 faixas fixas + a opção de subir a própria.
+// O catálogo vem do Worker (/promoTrilhas), não fica escrito aqui: assim dá pra
+// acrescentar faixa subindo o arquivo no R2 e redeployando o Worker, sem ninguém
+// precisar subir HTML no GitHub de novo.
+// ══════════════════════════════════════════════════════════════════════════
+let audioPreview = null, tocandoId = null, trilhaUpMsg = '';
+
+async function carregarTrilhas(){
+  const box = document.getElementById('trilhasGrid'); if(!box) return;
+  if(!trilhas.length){
+    try{
+      const r = await api('/promoTrilhas');
+      const d = await r.json();
+      if(d.ok) trilhas = d.trilhas||[];
+    }catch(e){ /* sem catálogo a tela continua funcionando com o upload */ }
+  }
+  pintarTrilhas();
+}
+
+function pintarTrilhas(){
+  const box = document.getElementById('trilhasGrid'); if(!box) return;
+  const selId = trilhaSel ? trilhaSel.id : null;
+  let html = trilhas.map(function(t){
+    return '<div class="trilha-item'+(selId===t.id?' sel':'')+'" data-id="'+esc(t.id)+'">'+
+             '<span class="trilha-nome">'+esc(t.titulo)+'</span>'+
+             '<button type="button" class="trilha-play'+(tocandoId===t.id?' tocando':'')+'" data-play="'+esc(t.id)+'">'+
+               (tocandoId===t.id?'❚❚':'▶')+
+             '</button>'+
+           '</div>';
+  }).join('');
+  // última opção: a trilha do próprio atendente
+  const rotuloUp = trilhaUpMsg ? trilhaUpMsg
+                 : (selId==='up' ? esc(trilhaSel.title) : 'Adicionar Trilha');
+  html += '<div class="trilha-item custom'+(selId==='up'?' sel':'')+'" data-id="__up">'+
+            '<span class="trilha-nome">'+rotuloUp+'</span>'+
+          '</div>';
+  box.innerHTML = html;
+
+  box.querySelectorAll('.trilha-item').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      if(ev.target.closest('.trilha-play')) return;          // o ▶ é só pra ouvir
+      const id = el.dataset.id;
+      if(id === '__up'){ document.getElementById('inpMusica').click(); return; }
+      const t = trilhas.find(x => x.id === id); if(!t) return;
+      trilhaSel = { id:t.id, title:t.titulo, url:t.url };
+      musica = null;
+      pintarTrilhas();
+    });
+  });
+  box.querySelectorAll('.trilha-play').forEach(function(b){
+    b.addEventListener('click', function(ev){ ev.stopPropagation(); ouvirTrilha(b.dataset.play); });
+  });
+}
+
+// toca UMA por vez — sem isso o atendente empilha três faixas e não compara nada
+function ouvirTrilha(id){
+  const t = trilhas.find(x => x.id === id); if(!t) return;
+  if(audioPreview){ audioPreview.pause(); audioPreview = null; }
+  if(tocandoId === id){ tocandoId = null; pintarTrilhas(); return; }   // 2º clique = parar
+  audioPreview = new Audio(t.url);
+  audioPreview.volume = 0.7;
+  audioPreview.addEventListener('ended', function(){ tocandoId = null; pintarTrilhas(); });
+  audioPreview.play().catch(function(){ toast('Não consegui tocar esta trilha.'); tocandoId = null; pintarTrilhas(); });
+  tocandoId = id;
+  pintarTrilhas();
+}
+// ⚠️ SOBE NA HORA (25/08). Antes o MP3 ia em base64 dentro do JSON da montagem: um arquivo de
+// 3-5 minutos vira 5-9MB num único POST e a trilha não chegava no vídeo. Agora vai pro R2 assim
+// que o atendente escolhe, e a montagem manda só a URL.
+async function onMusica(ev){
+  const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
+  trilhaUpMsg='<span class="spin"></span> Enviando…'; pintarTrilhas();
+  try{
+    const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+    const r = await api('/promoMusicaUp', { method:'POST', body: JSON.stringify({ projectId, base64:b64, tipo:f.type||'' }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'falha ao enviar');
+    trilhaSel = { id:'up', title:f.name, url:d.url };
+    musica = null; trilhaUpMsg='';
+    pintarTrilhas();
+    toast('✅ '+f.name+' enviada ('+(d.bytes/1048576).toFixed(1)+'MB).');
+  }catch(e){
+    trilhaSel=null; musica=null; trilhaUpMsg='';
+    pintarTrilhas();
+    toast('⚠️ '+e.message);
+  }
+}
+
+// ══ MONTAGEM FINAL ══
+// Um botão só: gera os 4 clipes de 8s e já monta o vídeo de 32s pra download.
+// ⚠️ 27/08: era uma lista com "✅ Cena 1 — pronta [Baixar]" nas 4 linhas. Virou ruído depois que o
+// fluxo passou a ser um clique só — o atendente não decide nada com essa lista, e o download da
+// cena mora no editor agora. Ficou um contador de uma linha, que some quando tudo termina.
+function pintarProgresso(){
+  const box=document.getElementById('progresso'); if(!box||!cenas.length) return;
+  const prontas = cenas.filter(s=>s.video_url).length;
+  const erros   = cenas.filter(s=>s.video_status==='erro');
+  let html = '';
+  if(montando){
+    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo…</b></div>';
+  } else if(prontas < cenas.length){
+    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> '+
+           '<b>'+prontas+' de '+cenas.length+' cenas prontas</b> — cada uma leva de 2 a 4 minutos.</div>';
+  }
+  // erro continua aparecendo: aí sim o atendente precisa saber qual cena e por quê
+  erros.forEach(function(s,k){
+    const i = cenas.indexOf(s);
+    html += '<div class="alerta" style="margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error||'falhou')+'</div>';
+  });
+  box.innerHTML = html;
+}
+
+// baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
+// não virar uma pasta de "video.mp4", "video (1).mp4"...
+function baixarCena(i){
+  const s = cenas[i]; if(!s || !s.video_url) return;
+  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-cena-'+(i+1)+'.mp4';
+  const a = document.createElement('a');
+  a.href = WORKER_URL + '/promoBaixar?u=' + encodeURIComponent(s.video_url) + '&nome=' + encodeURIComponent(nome);
+  a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+let montando = false;
+// PASSO 5-A: gera os 4 clipes de 8s (todos ao mesmo tempo). Custo: US$ 0,40 por cena.
+// ⚠️ a imagem do personagem sobe UMA vez e as 4 cenas usam a MESMA URL (25/08). Antes cada cena
+// mandava o base64 inteiro e o R2 recusava a escrita simultânea no mesmo objeto (erro 10058).
+async function subirPersonagem(){
+  if(!personagemImg) return '';
+  if(/^https?:\/\//.test(personagemImg)) return personagemImg;   // já é URL (projeto reaberto)
+  try{
+    const r = await apiRetry('/promoPersonagemUp', { method:'POST', body: JSON.stringify({ projectId, base64: personagemImg }) });
+    const d = await r.json();
+    if(d.ok && d.url){ personagemImg = d.url; return d.url; }
+  }catch(e){}
+  return personagemImg;   // se falhar, segue com o base64 (o backend ainda aceita)
+}
+async function gerarCenas(){
+  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  await subirPersonagem();
+  const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando as cenas…';
+  document.getElementById('notaFinal').textContent='Cada cena leva 2-4 minutos. Pode deixar a aba aberta.';
+  pintarProgresso();
+  try{
+    const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
+    // dispara em paralelo, mas com 1,2s entre um e outro: a rajada simultânea derrubava a 1ª cena
+    if(faltam.length) await Promise.all(faltam.map(function(i,k){
+      return new Promise(function(res){ setTimeout(function(){ gerarVideo(i).then(res); }, k*1200); });
+    }));
+    const prontas = cenas.filter(s=>s.video_url).length;
+    if(prontas < cenas.length){
+      document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
+      await salvarProjeto(true);   // as que saíram já foram pagas — não perder
+      toast('⚠️ Faltaram cenas — clique de novo (você paga só as que faltam).'); return false;
+    }
+    // ⚠️ NÃO abre o editor (27/08). O fluxo agora é um clique só e o atendente só vê as cenas
+    // se clicar em "Editar" depois do vídeo pronto. Aqui só salvamos: US$1,60 já foram gastos.
+    await salvarProjeto(true);
+    return true;
+  } finally { btn.disabled=false; btn.innerHTML=old; }
+}
+// Editor de corte por cena — resolve a alucinação que o Veo às vezes coloca no fim do clipe.
+// Editor de corte por cena: barra de tempo com duas alças. Arrastar move o vídeo JUNTO,
+// então dá pra ver o frame exato onde o corte cai (resolve a alucinação que o Veo põe no fim).
+const CLIPE_SEG = 8;
+function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.round((s%1)*10)); }
+// ═══════════════════════════════════════════════════════════════════════════════
+// EDITOR DE CORTE (25/08 v2) — corte AUTOMÁTICO, tela limpa
+// O atendente não precisa fazer nada: o sistema ouve o áudio, acha o fim da fala e
+// já corta RENTE ao fim da última palavra. A barra mostra a onda pra ele conferir e arrastar.
+// ⚠️ O critério de "fim da fala" mudou: 10% do pico dava 8,0s em clipes com ruído de
+// fundo (o Veo entrega bastante) — o corte nunca acontecia. Agora o limiar sai da
+// distância entre o SILÊNCIO do próprio clipe (percentil 20) e a FALA (percentil 95),
+// e exige 100ms seguidos acima dele pra contar como fala.
+// ═══════════════════════════════════════════════════════════════════════════════
+// ⚠️ FOLGA depois da última palavra — era 0,5s e o Thiago pediu pra apertar (25/08): meio segundo
+// de sobra já pegava o começo das oscilações do Veo, que é justamente o que a gente quer jogar fora.
+// Por que 0,15s e não ZERO: a marca de tempo do Whisper cai numa grade de ~20-40ms, e a última
+// palavra tem uma cauda curta (a vogal decaindo). Cortar exatamente no número faz a palavra soar
+// truncada. Medimos: a marca de fim DAS PALAVRAS DO MEIO é só a fronteira pra próxima palavra
+// (fim de uma == início da seguinte em 11 de 13 pares), mas a ÚLTIMA não tem seguinte — ali o
+// número é acústico de verdade. Daí dar pra chegar tão perto sem comer a fala.
+const FOLGA_POS_FALA = 0.15;
+let audioCtx = null;
+const analiseCache = {};
+
+async function analisarAudio(url){
+  if(analiseCache[url]) return analiseCache[url];
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const r = await api('/promoClipeAudio?u='+encodeURIComponent(url));
+    if(!r.ok) throw new Error('http '+r.status);
+    const buf = await audioCtx.decodeAudioData(await r.arrayBuffer());
+    const ch = buf.getChannelData(0), sr = buf.sampleRate, dur = buf.duration;
+    const JAN = Math.max(1, Math.round(sr*0.02));
+    const env = [];
+    for(let p=0; p<ch.length; p+=JAN){
+      let soma=0, n=0;
+      for(let k=p; k<p+JAN && k<ch.length; k++){ soma += ch[k]*ch[k]; n++; }
+      env.push(Math.sqrt(soma/Math.max(1,n)));
+    }
+    const ord = env.slice().sort((a,b)=>a-b);
+    const piso = ord[Math.floor(ord.length*0.20)] || 0;      // o "silêncio" deste clipe
+    const alto = ord[Math.floor(ord.length*0.95)] || 1;      // a fala
+    const lim  = piso + (alto-piso)*0.22;
+    const SUST = 5;                                          // 100ms seguidos = fala de verdade
+    let fimFala = dur;
+    for(let j=env.length-SUST; j>=0; j--){
+      let todos = true;
+      for(let k=j; k<j+SUST; k++){ if(env[k] <= lim){ todos = false; break; } }
+      if(todos){ fimFala = Math.min(dur, (j+SUST)*0.02); break; }
+    }
+    const pico = alto || 1;
+    const res = { dur, fimFala, env: env.map(v=>Math.min(1, v/pico)) };
+    analiseCache[url] = res;
+    return res;
+  }catch(e){ return null; }
+}
+
+function desenharOnda(i){
+  const cv = document.querySelector('#boxCortes [data-onda="'+i+'"]'); if(!cv) return;
+  const a = cenas[i] && cenas[i]._audio; if(!a) return;
+  const L = cv.clientWidth||600, A = cv.height=44;
+  cv.width = L;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,L,A);
+  const ini = Number(cenas[i].cortaIni||0), fim = CLIPE_SEG - Number(cenas[i].cortaFim||0);
+  const n = a.env.length;
+  for(let x=0; x<L; x++){
+    const v = a.env[Math.floor(x/L*n)]||0;
+    const h = Math.max(1, v*(A-6));
+    const t = (x/L)*CLIPE_SEG;
+    ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
+    ctx.fillRect(x, (A-h)/2, 1, h);
+  }
+  // o risco branco marca o fim da fala da TRANSCRIÇÃO (mais confiável que o pico de energia)
+  const marca = (cenas[i]._fimFala !== undefined && cenas[i]._fimFala !== null) ? cenas[i]._fimFala : a.fimFala;
+  if(marca < CLIPE_SEG - 0.05){
+    const x = Math.round(marca/CLIPE_SEG*L);
+    ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(x,0,1,A);
+  }
+}
+
+function renderCortes(){
+  const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
+  box.innerHTML='';
+  cenas.forEach(function(s,i){
+    if(!s.video_url) return;
+    if(typeof s.cortaIni!=='number') s.cortaIni=0;
+    if(typeof s.cortaFim!=='number') s.cortaFim=0;
+    const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
+    d.innerHTML =
+      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
+      '<video src="'+s.video_url+'" playsinline preload="auto" controls></video>'+
+      '<div class="trim">'+
+        '<div class="trim-bar" data-bar="'+i+'">'+
+          '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
+          '<div class="trim-fora" data-fe="'+i+'" style="left:0"></div>'+
+          '<div class="trim-fora" data-fd="'+i+'" style="right:0"></div>'+
+          '<div class="trim-cur"  data-cur="'+i+'" style="left:0"></div>'+
+          '<div class="trim-h" data-h="ini" data-hi="'+i+'"></div>'+
+          '<div class="trim-h" data-h="fim" data-hf="'+i+'"></div>'+
+        '</div>'+
+        '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
+      '</div>'+
+      '<div class="soon-note" data-auto="'+i+'"></div>'+
+      // ⚠️ 27/08: a fala vem junto pro editor. Quando o atendente ouve a cena e vê que a frase
+      // está errada, ele corrige AQUI e clica em Refazer — antes tinha que voltar pro passo 2.
+      '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
+      '<textarea data-faed="'+i+'" style="min-height:58px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<div class="alerta hide" data-aled="'+i+'"></div>'+
+      '<div class="btn-row" style="margin-top:.4rem">'+
+        '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
+        '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+      '</div>';
+    box.appendChild(d);
+    ligarTrim(d, i);
+  });
+  // a fala editada aqui vale pro roteiro inteiro: quem refizer a cena usa o texto novo
+  box.querySelectorAll('[data-faed]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.faed;
+      cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      alertaFalaEditor(i);
+      const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
+      if(espelho && espelho.value !== el.value){ espelho.value = el.value; alertaFala(i); }
+    });
+  });
+  cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
+  prepararAudios();
+}
+
+// ⚠️ O CORTE VEM DA TRANSCRIÇÃO (25/08), não da energia do áudio.
+// Medir energia cortava no ÚLTIMO SOM — e o Veo às vezes inventa um resmungo, um "hã" ou um ruído
+// DEPOIS da fala, o que jogava o corte pra frente e deixava a sujeira entrar. Agora o Worker
+// transcreve o clipe com marcação por palavra (whisper-1) e devolve onde termina a ÚLTIMA PALAVRA
+// DO ROTEIRO — que nós conhecemos. O que vier depois é ignorado de propósito. Custa R$0,017 o vídeo.
+// A onda continua sendo desenhada (a partir do áudio) só pra o atendente CONFERIR visualmente.
+// ⚠️ SÓ O CÁLCULO — não desenha nada, não depende do editor estar na tela (27/08).
+// No fluxo de um clique o editor fica oculto, e canvas escondido tem largura 0: se o desenho
+// estivesse aqui dentro, a onda sairia em branco e o corte nem seria calculado até o atendente
+// abrir a aba. O resultado fica em s._fimFala / s.cortaFim e o editor só lê depois.
+async function calcularCortes(){
+  for(let i=0;i<cenas.length;i++){
+    const s=cenas[i]; if(!s.video_url) continue;
+    if(s._fimFala !== undefined) continue;          // já transcrito — não paga de novo
+    const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
+    if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
+    try{
+      const r = await api('/promoFimDaFala', { method:'POST', body: JSON.stringify({ url:s.video_url, fala:s.fala||'' }) });
+      const d = await r.json();
+      if(!d.ok) throw new Error(d.error||'falha na transcrição');
+      s._fimFala = Number(d.fimFala);
+      s._palavra = d.palavra || '';
+      custoUSD += (d.custoUSD||0);
+    }catch(e){
+      s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
+      s._porEnergia = true;
+    }
+    if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
+      const alvo = Math.min(CLIPE_SEG, s._fimFala + FOLGA_POS_FALA);
+      const corte = Math.max(0, CLIPE_SEG - alvo);
+      // o piso caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
+      // cortes pequenos que agora valem a pena fazer.
+      s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
+    }
+  }
+}
+
+async function prepararAudios(){
+  await calcularCortes();                            // barato: se já transcreveu, não repete
+  for(let i=0;i<cenas.length;i++){
+    const s=cenas[i]; if(!s.video_url) continue;
+    const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
+    if(!s._audio){                                   // a onda é só desenho
+      const a = await analisarAudio(s.video_url);
+      if(a) s._audio = a;
+    }
+    desenharOnda(i); pintarTrim(i);
+    if(nota){
+      if(s._fimFala === null || s._fimFala === undefined){
+        nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — arraste a alça se o fim ficar estranho.';
+      } else if(s.cortaFim){
+        nota.innerHTML = '✂️ A fala termina em <b>'+s._fimFala.toFixed(1)+'s</b>'+
+          (s._palavra?(' (na palavra "'+esc(s._palavra)+'")'):'')+
+          ' — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim.'+
+          (s._porEnergia?' <i>(pelo som, não pela transcrição)</i>':'');
+      } else {
+        // sem sobra = fala longa demais. Medimos: cada palavra come ~0,5s e o clipe tem 8s fixos.
+        // Nesse caso o último segundo (onde o Veo costuma distorcer) fica no vídeo, e o atendente
+        // precisa saber que a solução é ENCURTAR A FALA e refazer a cena — não arrastar a alça.
+        nota.innerHTML = '⚠️ A fala ocupa o clipe inteiro (vai até <b>'+s._fimFala.toFixed(1)+'s</b> de 8s), '+
+          'então não dá pra cortar o finalzinho. Se o fim da cena ficou estranho, <b>encurte a fala</b> '+
+          'no passo anterior (frases de 9 a 13 palavras) e gere a cena de novo.';
+      }
+    }
+  }
+}
+
+function pintarTrim(i){
+  const s=cenas[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
+  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
+  const pi=(ini/CLIPE_SEG*100), pf=(fim/CLIPE_SEG*100);
+  const q=(sel)=>box.querySelector(sel+'="'+i+'"]');
+  const fe=q('[data-fe'), fd=q('[data-fd'), se=q('[data-sel'), hi=q('[data-hi'), hf=q('[data-hf');
+  if(fe) fe.style.width=pi+'%';
+  if(fd) fd.style.width=(100-pf)+'%';
+  if(se){ se.style.left=pi+'%'; se.style.width=(pf-pi)+'%'; }
+  if(hi) hi.style.left=pi+'%';
+  if(hf) hf.style.left=pf+'%';
+  const ti=q('[data-ti'), tf=q('[data-tf'), td=q('[data-td'), du=q('[data-dur');
+  if(ti) ti.textContent=mmss(ini)+' (início)';
+  if(tf) tf.textContent=mmss(fim)+' (fim)';
+  if(td) td.textContent='corte: '+(ini>0?('-'+ini.toFixed(1)+'s no início '):'')+(s.cortaFim>0?('-'+Number(s.cortaFim).toFixed(1)+'s no fim'):'')+(ini===0&&!s.cortaFim?'sem corte':'');
+  if(du) du.textContent=(fim-ini).toFixed(1)+'s';
+  if(typeof desenharOnda==='function') desenharOnda(i);   // a onda pinta o trecho escolhido em dourado
+  const tot=cenas.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
+  const nm=document.getElementById('notaMontagem'); if(nm) nm.textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
+}
+function ligarTrim(card, i){
+  const bar=card.querySelector('[data-bar]'), video=card.querySelector('video');
+  const cur=card.querySelector('[data-cur]');
+  const tempoDoX=(x)=>{ const r=bar.getBoundingClientRect(); return Math.max(0, Math.min(CLIPE_SEG, ((x-r.left)/r.width)*CLIPE_SEG)); };
+  const seek=(t)=>{ try{ video.currentTime=t; }catch(e){} };
+  let arrastando=null;
+  const mover=(ev)=>{
+    if(!arrastando) return;
+    const t=tempoDoX(ev.clientX); const s=cenas[i];
+    s._cortouManual = true;   // mexeu na mão: o pré-corte automático não mexe mais nesta cena
+    if(arrastando==='ini') s.cortaIni=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1));
+    else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
+    pintarTrim(i);
+    seek(arrastando==='ini' ? Number(s.cortaIni) : CLIPE_SEG-Number(s.cortaFim));   // vídeo acompanha a alça
+  };
+  const soltar=(ev)=>{ if(!arrastando) return; arrastando=null; try{ bar.releasePointerCapture(ev.pointerId); }catch(e){} };
+  card.querySelectorAll('.trim-h').forEach(function(h){
+    h.addEventListener('pointerdown', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      arrastando = h.dataset.h; video.pause();
+      try{ bar.setPointerCapture(ev.pointerId); }catch(e){}
+    });
+  });
+  bar.addEventListener('pointermove', mover);
+  bar.addEventListener('pointerup', soltar);
+  bar.addEventListener('pointercancel', soltar);
+  // clicar na barra = pular pra aquele ponto do vídeo (igual ao editor de áudio)
+  bar.addEventListener('pointerdown', function(ev){ if(arrastando) return; video.pause(); seek(tempoDoX(ev.clientX)); });
+  // marcador branco acompanha a reprodução
+  video.addEventListener('timeupdate', function(){ if(cur) cur.style.left=((video.currentTime||0)/CLIPE_SEG*100)+'%'; });
+}
+// toca só o pedaço que vai entrar na montagem
+function verTrecho(i){
+  const card=document.querySelector('#boxCortes [data-cena="'+i+'"]'); if(!card) return;
+  const v=card.querySelector('video'); const s=cenas[i];
+  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
+  try{ v.currentTime=ini; }catch(e){}
+  v.play();
+  const parar=()=>{ if(v.currentTime>=fim){ v.pause(); v.removeEventListener('timeupdate',parar); } };
+  v.addEventListener('timeupdate',parar);
+}
+
+
+// Refaz UMA cena só — o atendente paga apenas essa (US$ 0,40), não as quatro.
+async function refazerCena(i){
+  const s=cenas[i]; if(!s) return;
+  if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
+  const card=document.querySelector('#boxCortes [data-cena="'+i+'"]');
+  const bt=card?card.querySelector('.btn-refaz'):null; const old=bt?bt.innerHTML:'';
+  if(bt){ bt.disabled=true; bt.innerHTML='<span class="spin"></span>Refazendo… (2-4 min)'; }
+  s.video_url=''; s.cortaIni=0; s.cortaFim=0;
+  try{
+    await gerarVideo(i);
+    if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
+    renderCortes(); toast('✅ Cena '+(i+1)+' refeita!');
+    salvarProjeto(true);
+  }catch(e){ toast('⚠️ '+e.message); if(bt){ bt.disabled=false; bt.innerHTML=old; } }
+}
+
+// ⚠️ FLUXO DE UM CLIQUE (27/08) — pedido do Thiago.
+// Antes eram dois botões e uma tela de edição obrigatória no meio: GERAR CENAS → conferir/aparar
+// → GERAR VÍDEO. Agora o atendente clica UMA vez e recebe o vídeo pronto; as 4 cenas e os cortes
+// ficam escondidos atrás do botão "Editar" da tela final, pra quem quiser mexer.
+// A ordem importa: as cenas precisam existir E os cortes precisam estar calculados ANTES da
+// montagem, senão o vídeo sai com o fim distorcido que o corte existe pra remover.
+async function gerarVideoTudo(){
+  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
+
+  const nf = document.getElementById('notaFinal');
+  const ok = await gerarCenas();
+  if(!ok) return;                                   // gerarCenas já avisou o que faltou
+
+  if(nf) nf.innerHTML='<span class="spin"></span> Ouvindo as cenas pra cortar o fim de cada uma…';
+  await calcularCortes();                           // transcrição — não precisa do editor na tela
+
+  await finalizar('btnCenas');
+}
+
+// Abre o editor SOB DEMANDA, já com os cortes automáticos aplicados e visíveis.
+function abrirEditor(){
+  const box=document.getElementById('editorCortes'); if(!box) return;
+  box.classList.remove('hide');
+  renderCortes();            // desenha os cards; prepararAudios() completa as ondas
+  rolarPara('editorCortes');
+}
+
+// PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
+// btnId: qual botão mostra o "Montando…" — 'btnCenas' no fluxo de um clique, 'btnFinal' quando
+// o atendente remonta depois de editar (o btnFinal vive dentro do editor, que pode estar oculto).
+async function finalizar(btnId){
+  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+  // só pergunta pela trilha quando o clique veio do editor — no fluxo de um clique já perguntamos
+  if(btnId!=='btnCenas' && !trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
+  const btn=document.getElementById(btnId||'btnFinal') || document.getElementById('btnCenas');
+  const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
+  montando=true; pintarProgresso();
+  try{
+    const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
+    const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
+      musicUrl: trilhaSel?trilhaSel.url:null, music: musica }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Falha na montagem');
+    for(let t=0;t<80;t++){
+      await new Promise(x=>setTimeout(x, 6000));
+      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD, segundos:d.segundos }) });
+      const d2 = await r2.json();
+      if(d2.ok && d2.status==='done' && d2.url){
+        videoFinalUrl = d2.url;
+        document.getElementById('videoFinal').src = d2.url;
+        document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
+        montando=false; pintarProgresso();
+        document.getElementById('notaMontagem').textContent='';
+        document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal');
+        await salvarProjeto(true);   // cai sozinho na aba Resultados
+        toast('🎉 Vídeo pronto e projeto salvo — está na aba Resultados.');
+        return;
+      }
+      if(d2.ok && d2.status==='failed') throw new Error('a montagem falhou');
+    }
+    throw new Error('a montagem demorou demais');
+  } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaMontagem').textContent='⚠️ '+e.message; }
+  finally { montando=false; pintarProgresso(); btn.disabled=false; btn.innerHTML=old; }
+}
+function baixarFinal(){
+  if(!videoFinalUrl) return;
+  // mesmo motivo do baixarCena(): download="" não vale pra outra origem — vai pelo Worker
+  const nomeFinal=(clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-32s.mp4';
+  const a=document.createElement('a');
+  a.href=WORKER_URL+'/promoBaixar?u='+encodeURIComponent(videoFinalUrl)+'&nome='+encodeURIComponent(nomeFinal);
+  a.download=nomeFinal;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link copiado!'); }
+
+
+
+
+// ── início ──
+pintarBarra();
+(function(){
+  const c=document.getElementById('fCliente');
+  if(c){ c.addEventListener('input', checarSalvar); checarSalvar(); }
+})();
+</script>
+</body>
+</html>
