@@ -752,6 +752,7 @@ let music = null;                  // { base64, name, mimeType, duration } — S
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
 let expandIA = false;              // Passo 3: botão "Expansão com IA" ligado (expande as FOTOS pra 9:16 real)
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
+let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
 let pollTimer = null;
 let ed = null;                     // editor 9:16: { i, img, minScale, maxScale, scale, offX, offY, dragging, lastX, lastY }
@@ -2570,7 +2571,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas(), semTransicao: !transicoes };   // avScale/semTransicao: a edição também aplica tamanho e transições novos (25/08)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas(), semTransicao: !transicoes, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2755,7 +2756,13 @@ async function editarClipe(orderId) {
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
     avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
+    // (27/08 — incidente Stephani) o servidor agora DEVOLVE o tamanho e as transições do vídeo original.
+    // Sem isso a tela voltava aos padrões (100% / transições ligadas) e reenviava esses padrões,
+    // desfazendo a escolha da atendente. _cfgCarregada confirma isso ao salvar (trava no Worker).
     avScale      = (typeof d.avScale === 'number') ? d.avScale : AVSCALE_MAX;
+    transicoes   = !d.semTransicao;
+    _cfgCarregada = (typeof d.avScale === 'number');
+    setTransBtn();
     music = { fromEdit: true, url: d.musicUrl || '', duration: d.videoSec || 60, name: 'Música atual (mantida)' };
     scenes = (d.backgrounds || []).map((b, i) => ({
       id: 'ed' + i + Math.random().toString(36).slice(2, 5),
@@ -2826,6 +2833,7 @@ function resetCreateForm() {
   scenes = [];
   expandIA = false; setExpandBtn();
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
+  _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
@@ -2845,6 +2853,7 @@ function sairEdicao() {
   scenes = [];
   expandIA = false; setExpandBtn();
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
+  _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   aplicarModoEdicao(null);
