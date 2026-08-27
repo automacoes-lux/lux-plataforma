@@ -210,6 +210,40 @@ input[type="file"]{display:none}
 .grid-toolbar{margin-top:12px;display:none;flex-direction:column;gap:8px}
 .btn-grid{align-self:flex-start;padding:9px 14px;background:rgba(201,168,76,.1);border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.06em;transition:all .15s}
 .btn-grid:hover{background:rgba(201,168,76,.2)}
+/* ── Passo 3: Expansão com IA / Transições / Casar com a letra ── */
+.btn-toggle3{display:block;width:100%;padding:13px 14px;margin-top:10px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.05em;transition:all .15s;text-align:center}
+.btn-expand-ia{background:rgba(127,184,122,.10);border:1px solid rgba(127,184,122,.45);color:var(--green)}
+.btn-expand-ia:hover{background:rgba(127,184,122,.2)}
+.btn-expand-ia.on{background:rgba(127,184,122,.28);border-color:var(--green);color:#CFEBCB}
+.btn-expand-ia:disabled{opacity:.55;cursor:wait}
+.btn-trans{background:rgba(201,168,76,.75);border:1px solid var(--gold);color:#1A1508}
+.btn-trans:hover{background:rgba(201,168,76,.9)}
+.btn-trans.off{background:rgba(201,168,76,.10);color:var(--gold)}
+.btn-letra{background:rgba(160,120,220,.10);border:1px solid rgba(160,120,220,.45);color:#C9A8F0}
+.btn-letra:hover{background:rgba(160,120,220,.2)}
+.btn-letra:disabled{opacity:.55;cursor:wait}
+.hint3{font-size:11.5px;color:var(--text-dim);line-height:1.55;margin-top:5px}
+.lyric-status{display:none;margin-top:8px;font-size:12px}
+.btn-mini3{padding:3px 9px;background:var(--bg4);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;margin-left:5px}
+.btn-mini3:hover{color:var(--text)}
+/* linhas da letra */
+.lyric-row{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:8px;margin-bottom:5px;cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:all .12s}
+.lyric-row:hover{border-color:var(--border-bright)}
+.lyric-row.sel{border-color:var(--gold);background:rgba(201,168,76,.12)}
+.lyric-row b{color:var(--gold);font-size:11.5px;min-width:38px}
+.lyric-row span.tx{font-size:13px;flex:1;color:var(--text)}
+.lyric-thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;margin-left:auto}
+.lyric-media{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.lyric-media .th{width:60px;height:60px;border-radius:8px;overflow:hidden;position:relative;cursor:pointer;border:1px solid var(--border);background:#000}
+.lyric-media .th:hover{border-color:var(--gold)}
+.lyric-media .th img{width:100%;height:100%;object-fit:cover}
+.lyric-media .th .tag{position:absolute;left:2px;bottom:2px;font-size:10px;background:rgba(0,0,0,.7);border-radius:4px;padding:0 3px}
+.lyric-media .th .used{position:absolute;top:2px;right:3px;font-size:11px;color:var(--green)}
+/* badges nas fotos */
+.exp-badge{position:absolute;left:4px;bottom:4px;font-size:9.5px;background:rgba(127,184,122,.85);color:#08210A;border-radius:4px;padding:1px 5px;font-weight:700;z-index:3}
+.at-badge{position:absolute;right:4px;bottom:4px;font-size:9.5px;background:rgba(201,168,76,.9);color:#1A1508;border-radius:4px;padding:1px 5px;font-weight:700;z-index:3}
+.photo-cut{position:absolute;left:4px;top:30px;background:rgba(0,0,0,.75);border:1px solid var(--border);color:var(--gold);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px;z-index:4}
+.photo-cut:hover{background:rgba(201,168,76,.25)}
 .grid-select-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(201,168,76,.06);border:.5px solid var(--border);border-radius:var(--radius);padding:8px 12px}
 .grid-select-bar span{font-size:12px;color:var(--text-mid);flex:1;min-width:120px}
 .btn-grid-go{padding:8px 14px;background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#080808;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Cinzel',serif}
@@ -388,6 +422,12 @@ input[type="file"]{display:none}
         <p>Clique para enviar fotos e/ou clipes</p>
         <span>Fotos (JPG/PNG) + clipes de vídeo (até 60s · 50MB cada) · misture na ordem que quiser</span>
       </div>
+      <button type="button" class="btn-toggle3 btn-expand-ia" id="btnExpandIA" onclick="toggleExpandIA()">✨ Expansão com IA — <span id="expandIAState">desligada</span></button>
+      <div class="hint3">Ligada, a IA <b style="color:var(--green)">expande e melhora todas as FOTOS</b> pro formato do vídeo (9:16): continua o cenário de verdade pra cima e pra baixo, sem borrão. Vídeos passam normal, sem mexer. Custo: ~R$ 0,07 por foto.</div>
+
+      <button type="button" class="btn-toggle3 btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
+      <div class="hint3">Ligadas (padrão), as cenas entram com fade/wipe. Desligadas, todas as imagens entram em <b style="color:var(--text-mid)">corte seco</b>, uma atrás da outra. A 1ª imagem é sempre corte seco (pra capa do WhatsApp não sair preta).</div>
+
       <div class="photos-grid" id="photosGrid"></div>
       <div class="grid-toolbar" id="gridToolbar">
         <button class="btn-grid" id="btnGridMode" onclick="toggleGridMode()">🔲 Juntar 2 fotos numa só (grade)</button>
@@ -401,7 +441,10 @@ input[type="file"]{display:none}
         <span><strong id="photosCount">0</strong> no vídeo</span>
         <span id="photosSize">—</span>
       </div>
-      <div class="field-hint" style="margin-top:8px">📷 As fotos entram no formato vertical (9:16). Use <strong>✏️ editar</strong> pra enquadrar (zoom/arrastar) uma foto horizontal, ou <strong>grade</strong> pra juntar 2 numa só sem cortar.</div>
+      <div class="field-hint" style="margin-top:8px">📷 As fotos entram no formato vertical (9:16). Use <strong>✏️ editar</strong> pra enquadrar (zoom/arrastar) uma foto horizontal, ou <strong>grade</strong> pra juntar 2 numa só sem cortar. No clipe de vídeo, use <strong>✂️</strong> pra escolher o trecho.</div>
+
+      <button type="button" class="btn-toggle3 btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
+      <div class="lyric-status" id="lyricStatus"></div>
     </div>
 
     <div class="card">
@@ -585,6 +628,38 @@ input[type="file"]{display:none}
     <div class="editor-actions">
       <button class="ed-cancel" onclick="closeGridEditor()">Cancelar</button>
       <button class="ed-save" onclick="saveGridEditor()">Salvar grade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✂️ EDITOR DE VÍDEO — escolher o trecho do clipe -->
+<div class="editor-overlay" id="clipEditorOverlay">
+  <div class="editor-modal">
+    <div class="editor-title">✂️ Escolher o trecho do vídeo</div>
+    <div class="editor-stage" style="background:#000"><video id="clipEditorVideo" playsinline style="max-width:100%;max-height:46vh;border-radius:8px"></video></div>
+    <div class="editor-ctrl"><label>Começa em</label><input type="range" id="clipStart" min="0" max="100" step="0.1" value="0"/></div>
+    <div class="editor-ctrl"><label>Duração</label><input type="range" id="clipLen" min="1" max="60" step="1" value="4"/></div>
+    <div class="editor-hint" id="clipEditorLbl">Trecho: 0s → 4s (4s)</div>
+    <div class="editor-hint">Arraste "Começa em" pra achar a parte boa do vídeo e "Duração" pra decidir quanto tempo ele fica no vídeo final.</div>
+    <div class="editor-actions">
+      <button class="ed-cancel" onclick="clipPreview()" style="margin-right:auto">▶ Ver o trecho</button>
+      <button class="ed-cancel" onclick="closeClipEditor()">Cancelar</button>
+      <button class="ed-save" onclick="saveClipEditor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🎵 CASAR IMAGENS COM A LETRA -->
+<div class="editor-overlay" id="lyricOverlay">
+  <div class="editor-modal" style="max-width:560px">
+    <div class="editor-title">🎵 Casar imagens com a letra</div>
+    <div class="editor-hint">Clique numa <b style="color:var(--text-mid)">frase</b> da música e depois na <b style="color:var(--text-mid)">imagem</b> que combina com ela. A imagem aparece no momento em que a música canta essa parte. As frases sem imagem repetem a anterior.</div>
+    <div id="lyricRows" style="max-height:250px;overflow:auto;margin:10px 0"></div>
+    <div style="font-size:12px;color:var(--text-dim)">Suas imagens — clique pra encaixar na frase selecionada:</div>
+    <div id="lyricMedia" class="lyric-media"></div>
+    <div class="editor-actions" style="margin-top:12px">
+      <button class="ed-cancel" onclick="closeCasarLetra()">Cancelar</button>
+      <button class="ed-save" onclick="salvarCasarLetra()">Salvar e usar</button>
     </div>
   </div>
 </div>
@@ -1209,7 +1284,9 @@ async function handleClipFile(file) {
     const dur = Math.max(1, Math.min(MAX_CLIP_SECONDS, Math.round(meta.duration) || 4));
     state.photos.push({
       kind: 'clip', key: data.key, name: file.name, thumbUrl: meta.thumb || '',
-      size: file.size, duration: dur, origDuration: Math.round(meta.duration)
+      size: file.size, duration: dur, origDuration: Math.round(meta.duration),
+      // URL local do arquivo — só pra prévia do editor ✂️ (não vai pro servidor)
+      previewUrl: URL.createObjectURL(file), trimStart: 0
     });
     hideToast();
     renderPhotos(); renderBlocks(); updateTimingCalc();
@@ -1226,13 +1303,16 @@ function renderPhotos() {
     const selPos = (gridMode && !isClip) ? gridSel.indexOf(i) : -1;
     div.className = 'photo-item' + (isClip ? ' is-clip' : '') + (gridMode && !isClip ? ' gpick' : '') + (selPos >= 0 ? ' gsel' : '');
     if (selPos >= 0) div.dataset.gnum = (selPos + 1);
+    // badge do momento da música (modo "casar com a letra")
+    const _at = (typeof lyricAtBadge === 'function') ? lyricAtBadge(p) : '';
     if (isClip) {
       div.innerHTML =
         '<span class="photo-num">' + String(i + 1).padStart(2, '0') + '</span>' +
         '<span class="clip-badge">🎬 clipe</span>' +
         '<button class="photo-remove" data-i="' + i + '" title="Remover">✕</button>' +
+        '<button class="photo-cut" data-i="' + i + '" title="Escolher o trecho do vídeo">✂️</button>' +
         (p.thumbUrl ? '<img src="' + p.thumbUrl + '" alt="Clipe"/>' : '<div style="width:100%;height:100%;background:#000"></div>') +
-        '<span class="clip-play">▶</span>' +
+        '<span class="clip-play">▶</span>' + _at +
         '<div class="clip-dur"><input type="number" min="1" max="' + MAX_CLIP_SECONDS + '" step="1" data-i="' + i + '" value="' + p.duration + '"/><span class="s">s</span></div>';
     } else {
       div.innerHTML =
@@ -1240,6 +1320,7 @@ function renderPhotos() {
         '<button class="photo-remove" data-i="' + i + '" title="Remover">✕</button>' +
         '<button class="photo-edit" data-i="' + i + '" title="Editar / enquadrar">✏️</button>' +
         (p.edited ? '<span class="edited-badge">editada</span>' : '') +
+        (p.expanded ? '<span class="exp-badge">✨ IA</span>' : '') + _at +
         '<img src="' + p.thumbUrl + '" alt="Foto ' + (i + 1) + '"/>';
       if (gridMode) div.addEventListener('click', () => toggleGridSelect(i));
     }
@@ -1250,6 +1331,9 @@ function renderPhotos() {
   });
   grid.querySelectorAll('.photo-edit').forEach(btn => {
     btn.addEventListener('click', (e) => { e.stopPropagation(); openEditor(Number(btn.dataset.i)); });
+  });
+  grid.querySelectorAll('.photo-cut').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openClipEditor(Number(btn.dataset.i)); });
   });
   grid.querySelectorAll('.clip-dur input').forEach(inp => {
     inp.addEventListener('click', (e) => e.stopPropagation());
@@ -1375,6 +1459,8 @@ async function saveEditor() {
   if (p.thumbUrl) URL.revokeObjectURL(p.thumbUrl);
   p.base64 = base64; p.mime = 'image/jpeg'; p.size = blob.size;
   p.thumbUrl = URL.createObjectURL(blob); p.edited = true;
+  // Enquadrou na mão → sai da Expansão com IA (a escolha manual vale mais)
+  p.userEdited = true; p.expanded = false; p.preExpandBase64 = null;
   closeEditor();
   renderPhotos(); renderBlocks();
   toast('Foto enquadrada ✓', 'success');
@@ -1517,6 +1603,269 @@ async function saveGridEditor() {
 }
 
 // expõe pro HTML inline
+// ═══════════════════════════════════════════════════════════════
+// PASSO 3 — Expansão com IA · Transições · Casar com a letra · ✂️ vídeo
+// ═══════════════════════════════════════════════════════════════
+let expandIA   = false;   // botão "Expansão com IA" ligado
+let transicoes = true;    // transições entre cenas (padrão: ligadas)
+
+// Identidade estável por mídia (as fotos são criadas sem id em vários pontos).
+let _idSeq = 0;
+function ensureIds() { state.photos.forEach(p => { if (!p._id) p._id = 'm' + (++_idSeq); }); }
+
+// ── ✨ EXPANSÃO COM IA ─────────────────────────────────────────
+// Liga → TODAS as fotos viram 9:16 DE VERDADE (outpainting: o cenário continua pra
+// cima/baixo, sem borrão). Vídeos passam direto. Desliga → volta as originais.
+// O resultado fica guardado em p.expandBase64: religar não custa de novo.
+// Foto re-enquadrada no ✏️ DEPOIS sai da expansão (a escolha manual vale mais).
+async function toggleExpandIA() {
+  const btn = document.getElementById('btnExpandIA');
+  if (btn && btn.disabled) return;
+  if (!expandIA) {
+    const fotos = state.photos.filter(p => p.kind !== 'clip');
+    if (!fotos.length) { toast('Envie pelo menos 1 foto primeiro.', 'error'); return; }
+    expandIA = true; setExpandBtn();
+    await expandFotosIA();
+  } else {
+    expandIA = false;
+    restaurarFotosIA();
+    setExpandBtn();
+    toast('↩️ Fotos originais de volta (a expansão fica guardada — religar é grátis).');
+  }
+  renderPhotos();
+}
+async function expandFotosIA() {
+  const btn = document.getElementById('btnExpandIA');
+  const alvos = state.photos.filter(p => p.kind !== 'clip' && !p.userEdited);
+  const faltam = alvos.filter(p => !p.expandBase64);
+  let feitas = 0, erros = 0;
+  if (btn) btn.disabled = true;
+  for (let n = 0; n < faltam.length; n++) {
+    const p = faltam[n];
+    if (btn) btn.innerHTML = '⏳ Expandindo foto ' + (n + 1) + ' de ' + faltam.length + '…';
+    try {
+      const r = await window.__luxFetch(WORKER_URL + '/expandFoto', {
+        method: 'POST',
+        body: JSON.stringify({ base64: p.origBase64 || p.base64, mimeType: p.mime || 'image/jpeg' })
+      });
+      const j = await r.json();
+      if (!j.ok || !j.base64) throw new Error(j.error || 'falha');
+      p.expandBase64 = j.base64;
+      feitas++;
+    } catch (err) { erros++; console.warn('expandir falhou', err); }
+  }
+  // aplica o que tiver pronto (inclusive o que já estava em cache de antes)
+  alvos.forEach(p => {
+    if (p.expandBase64) {
+      if (!p.preExpandBase64) p.preExpandBase64 = p.base64;
+      p.base64 = p.expandBase64;
+      p.expanded = true;
+      p.thumbUrl = 'data:image/jpeg;base64,' + p.expandBase64;
+    }
+  });
+  if (btn) { btn.disabled = false; }
+  setExpandBtn();
+  renderPhotos();
+  const okCount = alvos.filter(p => p.expanded).length;
+  if (erros && !feitas && !okCount) { expandIA = false; setExpandBtn(); toast('⚠️ Não consegui expandir as fotos. Tente de novo.', 'error'); }
+  else if (erros) toast('✨ ' + okCount + ' foto(s) expandida(s) · ' + erros + ' falhou(aram)', 'success');
+  else toast('✨ ' + okCount + ' foto(s) expandida(s) com IA', 'success');
+}
+function restaurarFotosIA() {
+  state.photos.forEach(p => {
+    if (p.kind !== 'clip' && p.expanded) {
+      if (p.preExpandBase64) { p.base64 = p.preExpandBase64; p.thumbUrl = 'data:image/jpeg;base64,' + p.preExpandBase64; }
+      p.expanded = false;
+    }
+  });
+}
+function setExpandBtn() {
+  const b = document.getElementById('btnExpandIA'), s = document.getElementById('expandIAState');
+  if (b) { b.classList.toggle('on', expandIA); if (!b.disabled) b.innerHTML = '✨ Expansão com IA — <span id="expandIAState">' + (expandIA ? 'LIGADA ✅' : 'desligada') + '</span>'; }
+  else if (s) s.textContent = expandIA ? 'LIGADA ✅' : 'desligada';
+}
+// nº de fotos expandidas que VÃO no vídeo (é o que o worker cobra)
+function contarExpandidas() { return expandIA ? state.photos.filter(p => p.kind !== 'clip' && p.expanded).length : 0; }
+
+// ── 🎞️ TRANSIÇÕES ─────────────────────────────────────────────
+function toggleTransicoes() {
+  transicoes = !transicoes;
+  setTransBtn();
+  toast(transicoes ? '🎞️ Transições ligadas.' : '✂️ Corte seco: as cenas vão trocar sem transição.');
+}
+function setTransBtn() {
+  const b = document.getElementById('btnTrans'), s = document.getElementById('transState');
+  if (b) b.classList.toggle('off', !transicoes);
+  if (s) s.textContent = transicoes ? 'LIGADAS' : 'DESLIGADAS (corte seco)';
+}
+
+// ── 🎵 CASAR IMAGENS COM A LETRA ──────────────────────────────
+let lyricBlocks = null;   // [{ start, text, mediaId }]
+let lyricSelIdx = -1;
+let lyricOn = false;
+let _lyricSnap = null;
+function fmtTime(s) { s = Math.max(0, Math.round(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+async function abrirCasarLetra() {
+  if (!state.music || !state.music.base64) { toast('Envie a música primeiro (card "Música de fundo").', 'error'); return; }
+  if (!state.photos.length) { toast('Adicione fotos/clipes primeiro.', 'error'); return; }
+  ensureIds();
+  const btn = document.getElementById('btnCasarLetra');
+  if (!lyricBlocks) {
+    const t0 = btn.innerHTML; btn.disabled = true; btn.textContent = '⏳ Transcrevendo a música…';
+    try {
+      const r = await window.__luxFetch(WORKER_URL + '/transcribeMusic', {
+        method: 'POST',
+        body: JSON.stringify({ music: { base64: state.music.base64, mimeType: state.music.mime }, musicDuration: state.music.duration, lang: 'pt' })
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'falha na transcrição');
+      if (!j.blocks || !j.blocks.length) { toast('Não achei letra cantada nessa música.', 'error'); return; }
+      lyricBlocks = j.blocks.map(b => ({ start: b.start, text: b.text, mediaId: null }));
+      lyricSelIdx = 0;
+    } catch (err) { toast('⚠️ ' + err.message, 'error'); return; }
+    finally { btn.disabled = false; btn.innerHTML = t0; }
+  }
+  // snapshot p/ o Cancelar desfazer os encaixes feitos nesta abertura
+  _lyricSnap = { on: lyricOn, blocks: lyricBlocks.map(b => ({ start: b.start, text: b.text, mediaId: b.mediaId })) };
+  renderLyric();
+  document.getElementById('lyricOverlay').classList.add('show');
+}
+function renderLyric() {
+  if (!lyricBlocks) return;
+  ensureIds();
+  document.getElementById('lyricRows').innerHTML = lyricBlocks.map((b, i) => {
+    const m = b.mediaId ? state.photos.find(p => p._id === b.mediaId) : null;
+    const thumb = m
+      ? '<img class="lyric-thumb" src="' + (m.thumbUrl || '') + '" alt=""/>'
+      : '<span style="margin-left:auto;color:var(--text-dim);font-size:11.5px">+ imagem</span>';
+    return '<div class="lyric-row' + (i === lyricSelIdx ? ' sel' : '') + '" onclick="lyricSelectBlock(' + i + ')">' +
+      '<b>' + fmtTime(b.start) + '</b><span class="tx">' + escapeHtml(b.text) + '</span>' + thumb + '</div>';
+  }).join('');
+  const usados = {};
+  lyricBlocks.forEach(b => { if (b.mediaId) usados[b.mediaId] = true; });
+  document.getElementById('lyricMedia').innerHTML = state.photos.map(p =>
+    '<div class="th" onclick="lyricAssign(\'' + p._id + '\')" title="' + escapeHtml(p.name || '') + '">' +
+    (p.thumbUrl ? '<img src="' + p.thumbUrl + '" alt=""/>' : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">🎬</div>') +
+    (p.kind === 'clip' ? '<div class="tag">🎬</div>' : '') +
+    (usados[p._id] ? '<div class="used">✓</div>' : '') + '</div>').join('');
+}
+function lyricSelectBlock(i) { lyricSelIdx = i; renderLyric(); }
+function lyricAssign(mediaId) {
+  if (lyricSelIdx < 0) { toast('Clique numa frase primeiro.', 'error'); return; }
+  lyricBlocks[lyricSelIdx].mediaId = mediaId;
+  let nx = lyricSelIdx + 1;
+  while (nx < lyricBlocks.length && lyricBlocks[nx].mediaId) nx++;
+  if (nx < lyricBlocks.length) lyricSelIdx = nx;
+  renderLyric();
+}
+function salvarCasarLetra() {
+  if (!lyricBlocks || !lyricBlocks.some(b => b.mediaId)) { toast('Encaixe pelo menos 1 imagem numa frase.', 'error'); return; }
+  lyricOn = true;
+  closeCasarLetra(true);
+  updateLyricStatus(); renderPhotos();
+  toast('🎵 Imagens casadas com a letra ✓', 'success');
+}
+function closeCasarLetra(salvo) {
+  document.getElementById('lyricOverlay').classList.remove('show');
+  if (!salvo && _lyricSnap) {   // Cancelar = volta os encaixes de antes de abrir
+    lyricOn = _lyricSnap.on;
+    lyricBlocks = _lyricSnap.blocks.map(b => ({ start: b.start, text: b.text, mediaId: b.mediaId }));
+    updateLyricStatus(); renderPhotos();
+  }
+  _lyricSnap = null;
+}
+function desligarLetra() { lyricOn = false; updateLyricStatus(); renderPhotos(); toast('Modo letra desligado — as fotos voltam a repetir até a música acabar.'); }
+function updateLyricStatus() {
+  const el = document.getElementById('lyricStatus');
+  if (!el) return;
+  if (lyricOn) {
+    el.style.display = 'block';
+    el.innerHTML = '<span style="color:var(--gold)">✓ Imagens casadas com a letra</span>' +
+      '<button class="btn-mini3" onclick="abrirCasarLetra()">editar</button>' +
+      '<button class="btn-mini3" onclick="desligarLetra()">desfazer</button>';
+  } else el.style.display = 'none';
+}
+// Selo com o momento da música em que a mídia entra (aparece no card do Passo 3)
+function lyricAtBadge(p) {
+  if (!lyricOn || !lyricBlocks || !p || !p._id) return '';
+  const b = lyricBlocks.find(x => x.mediaId === p._id);
+  return b ? '<span class="at-badge">🎵 ' + fmtTime(b.start) + '</span>' : '';
+}
+// Mapa mídia → segundo da 1ª frase em que ela aparece (âncoras mandadas ao worker)
+function lyricAnchors() {
+  if (!lyricOn || !lyricBlocks) return null;
+  ensureIds();
+  lyricBlocks.forEach(b => { if (b.mediaId && !state.photos.find(p => p._id === b.mediaId)) b.mediaId = null; });
+  if (!lyricBlocks.some(b => b.mediaId)) { lyricOn = false; updateLyricStatus(); return null; }
+  const at = {};
+  lyricBlocks.forEach(b => { if (b.mediaId && at[b.mediaId] == null) at[b.mediaId] = b.start; });
+  return at;
+}
+
+// ── ✂️ EDITOR DE VÍDEO (trecho do clipe) ──────────────────────
+let ced = null;
+function openClipEditor(i) {
+  const p = state.photos[i];
+  if (!p || p.kind !== 'clip') return;
+  const v = document.getElementById('clipEditorVideo');
+  const total = Math.max(1, Number(p.origDuration) || Number(p.duration) || 4);
+  ced = { i: i, total: total };
+  v.src = p.previewUrl || p.thumbVideoUrl || '';
+  if (!v.src && p.fileUrl) v.src = p.fileUrl;
+  const st = document.getElementById('clipStart'), ln = document.getElementById('clipLen');
+  st.max = Math.max(0, total - 1); st.value = Number(p.trimStart) || 0;
+  ln.max = Math.min(MAX_CLIP_SECONDS, total); ln.value = Math.min(Number(p.duration) || 4, total);
+  st.oninput = ln.oninput = clipEditorLbl;
+  clipEditorLbl();
+  document.getElementById('clipEditorOverlay').classList.add('show');
+}
+function clipEditorLbl() {
+  if (!ced) return;
+  const s = Number(document.getElementById('clipStart').value) || 0;
+  let l = Number(document.getElementById('clipLen').value) || 1;
+  if (s + l > ced.total) { l = Math.max(1, ced.total - s); document.getElementById('clipLen').value = l; }
+  document.getElementById('clipEditorLbl').textContent = 'Trecho: ' + s.toFixed(1) + 's → ' + (s + l).toFixed(1) + 's (' + l + 's de vídeo)';
+}
+function clipPreview() {
+  const v = document.getElementById('clipEditorVideo');
+  if (!v || !v.src) { toast('Prévia indisponível pra este clipe.'); return; }
+  const s = Number(document.getElementById('clipStart').value) || 0;
+  const l = Number(document.getElementById('clipLen').value) || 1;
+  try {
+    v.currentTime = s; v.play();
+    setTimeout(() => { try { v.pause(); } catch (e) {} }, l * 1000);
+  } catch (e) { toast('Prévia indisponível.'); }
+}
+function saveClipEditor() {
+  if (!ced) return;
+  const p = state.photos[ced.i];
+  const s = Number(document.getElementById('clipStart').value) || 0;
+  const l = Number(document.getElementById('clipLen').value) || 4;
+  if (p) { p.trimStart = Number(s.toFixed(1)); p.duration = Math.max(1, Math.round(l)); }
+  closeClipEditor();
+  renderPhotos(); if (typeof updateTimingCalc === 'function') updateTimingCalc();
+  toast('Trecho salvo ✓', 'success');
+}
+function closeClipEditor() {
+  const v = document.getElementById('clipEditorVideo');
+  try { v.pause(); } catch (e) {}
+  document.getElementById('clipEditorOverlay').classList.remove('show');
+  ced = null;
+}
+
+window.toggleExpandIA = toggleExpandIA;
+window.toggleTransicoes = toggleTransicoes;
+window.abrirCasarLetra = abrirCasarLetra;
+window.closeCasarLetra = closeCasarLetra;
+window.salvarCasarLetra = salvarCasarLetra;
+window.lyricSelectBlock = lyricSelectBlock;
+window.lyricAssign = lyricAssign;
+window.desligarLetra = desligarLetra;
+window.openClipEditor = openClipEditor;
+window.saveClipEditor = saveClipEditor;
+window.closeClipEditor = closeClipEditor;
+window.clipPreview = clipPreview;
+
 window.openEditor = openEditor;
 window.closeEditor = closeEditor;
 window.saveEditor = saveEditor;
@@ -1558,6 +1907,12 @@ async function handleMusic(e) {
       base64: base64, mime: file.type || 'audio/mpeg',
       name: file.name, size: file.size, duration: Math.round(duration)
     };
+    // Música NOVA → a letra transcrita antes não vale mais (tempos seriam de outra música)
+    if (lyricBlocks || lyricOn) {
+      lyricBlocks = null; lyricSelIdx = -1; lyricOn = false;
+      updateLyricStatus(); renderPhotos();
+      toast('A música mudou — refaça o "casar com a letra" se for usar.', 'info');
+    }
     document.getElementById('musicName').textContent = file.name;
     document.getElementById('musicSize').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
     document.getElementById('musicDuration').textContent = formatDuration(state.music.duration);
@@ -1763,9 +2118,17 @@ async function generateVideo() {
       photosPayload.push({ base64: it.base64, mimeType: it.mime, name: it.name });
     }
   });
-  const timeline = state.photos.map(it => it.kind === 'clip'
-    ? { type: 'clip', key: it.key, duration: it.duration }
-    : { type: 'photo', index: photoIndexByItem.get(it) });
+  // Âncoras de tempo do "casar com a letra" (null = modo normal, sequência repete)
+  ensureIds();
+  const anchors = lyricAnchors();
+  const timeline = state.photos.map(it => {
+    const o = it.kind === 'clip'
+      ? { type: 'clip', key: it.key, duration: it.duration }
+      : { type: 'photo', index: photoIndexByItem.get(it) };
+    if (it.kind === 'clip' && it.trimStart) o.trimStart = it.trimStart;   // trecho escolhido no ✂️
+    if (anchors && anchors[it._id] != null) o.at = anchors[it._id];        // momento da frase
+    return o;
+  });
 
   try {
     // ── 1. createOrder ──
@@ -1781,6 +2144,11 @@ async function generateVideo() {
         textBlocks: textBlocks,
         textColor: textColor,
         textDuration: textDuration,
+        // Passo 3 (novos): transições on/off e nº de fotos expandidas com IA (cobrança)
+        transicoes: transicoes,
+        fotoExpandCount: contarExpandidas(),
+        // segundos de música transcritos no "casar com a letra" (0 = não usou)
+        lyricSeconds: (lyricBlocks && state.music) ? Math.round(state.music.duration || 0) : 0,
         // Custo já gasto na IA (somado depois no custo final do pedido)
         aiCostUSD: state.aiCostUSD,
         aiCostBRL: state.aiCostBRL
@@ -2078,6 +2446,12 @@ function goNewOrder() {
   state.music = null;
   state.logo = null;
   state.currentOrderId = null;
+  // Passo 3: volta os botões novos ao padrão (a música mudou → a letra antiga não vale mais)
+  expandIA = false; transicoes = true;
+  lyricBlocks = null; lyricSelIdx = -1; lyricOn = false;
+  if (typeof setExpandBtn === 'function') setExpandBtn();
+  if (typeof setTransBtn === 'function') setTransBtn();
+  if (typeof updateLyricStatus === 'function') updateLyricStatus();
   document.getElementById('inCliente').value = '';
   // Reseta o texto bruto + blocos + status da IA
   document.getElementById('inTextoRaw').value = '';
