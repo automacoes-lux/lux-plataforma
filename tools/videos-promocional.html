@@ -302,9 +302,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <button class="btn-ghost" onclick="abrirEditor()">✏️ Editar</button>
         <button class="btn-ghost" onclick="baixarFinal()">⬇️ Baixar vídeo</button>
       </div>
-      <div class="btn-row" style="margin-top:.5rem">
-        <button class="btn-ghost" onclick="copiarLinkFinal()">🔗 Copiar link</button>
-      </div>
       <div class="soon-note" id="custoFinal"></div>
     </div>
   </div>
@@ -340,11 +337,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
 const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
 // ⚠️ MEDIDO (25/08): cada palavra falada leva ~0,47s no Veo, e o clipe tem 8s FIXOS (pedir
-// duration:6 não adianta, a WaveSpeed devolve 8,00s do mesmo jeito). O PISO subiu pra 11 porque
-// com pouco texto o Veo ARRASTA a locução pra preencher o clipe: 9 palavras deram 0,59s por
-// palavra (lento), 11 deram 0,49s e 13 deram 0,46s (ritmo de comercial). O teto é 14 porque 13
-// já bateu 6,90s no pior tiro. Tem que bater com o Worker (ROT_PALAVRAS_*).
-const PALAVRAS_MIN = 11, PALAVRAS_MAX = 14;
+// duration:6 não adianta, a WaveSpeed devolve 8,00s do mesmo jeito). O PISO subiu porque com
+// pouco texto o Veo ARRASTA a locução: 9 palavras = 0,59s por palavra (lento), 11 = 0,49s,
+// 13 = 0,46s (ritmo de comercial).
+// ⚠️ 13-16 é a faixa que o Thiago pediu em 27/08, e ela é APERTADA de propósito: 13 palavras já
+// bateram 6,90s no pior tiro medido, e no teste real dele a cena 2 terminou em 7,3s (sobrou só
+// 0,5s pra cortar). Com 16 palavras a fala pode passar de 7,5s e o corte do fim fica sem espaço —
+// é o preço de falas mais longas. Tem que bater com o Worker (ROT_PALAVRAS_*).
+const PALAVRAS_MIN = 13, PALAVRAS_MAX = 16;
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -683,6 +683,15 @@ function renderRoteiro(){
   cenas.forEach(function(s,i){ alertaFala(i); });
   atualizarBotaoVideo();
 }
+// mesmo alerta de tamanho, mas no card do EDITOR (o do passo 2 usa data-al)
+function alertaFalaEditor(i){
+  const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
+  const n = contarPalavras(cenas[i].fala);
+  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+PALAVRAS_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
+  if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+PALAVRAS_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
+  el.className='alerta hide'; el.innerHTML='';
+}
+
 // alerta só quando a fala não cabe nos 8 segundos
 function alertaFala(i){
   const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
@@ -930,20 +939,26 @@ async function onMusica(ev){
 
 // ══ MONTAGEM FINAL ══
 // Um botão só: gera os 4 clipes de 8s e já monta o vídeo de 32s pra download.
+// ⚠️ 27/08: era uma lista com "✅ Cena 1 — pronta [Baixar]" nas 4 linhas. Virou ruído depois que o
+// fluxo passou a ser um clique só — o atendente não decide nada com essa lista, e o download da
+// cena mora no editor agora. Ficou um contador de uma linha, que some quando tudo termina.
 function pintarProgresso(){
   const box=document.getElementById('progresso'); if(!box||!cenas.length) return;
-  box.innerHTML = cenas.map(function(s,i){
-    const ic = s.video_url ? '✅' : (s.video_status==='gerando' ? '<span class="spin" style="border-top-color:var(--gold)"></span>' : (s.video_status==='erro' ? '⚠️' : '⏳'));
-    const tx = s.video_url ? 'pronta' : (s.video_status==='gerando' ? 'gerando… (2-4 min)' : (s.video_status==='erro' ? 'falhou' : 'na fila'));
-    // ⚠️ o download passa pelo Worker (/promoBaixar), não pelo link direto do R2: o atributo
-    // download="" é IGNORADO em arquivo de outra origem, e o navegador ABRIA o vídeo numa aba.
-    const bt = s.video_url ? ('<button type="button" class="btn-baixar" data-baixar="'+i+'">⬇ Baixar</button>') : '';
-    return '<div class="prog-item">'+ic+' <b>Cena '+(i+1)+'</b> — '+tx+bt+'</div>'+
-           (s.video_error ? ('<div class="alerta" style="margin-top:-.25rem;margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error)+'</div>') : '');
-  }).join('') + (montando ? '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo de 32s…</b></div>' : '');
-  box.querySelectorAll('[data-baixar]').forEach(function(b){
-    b.addEventListener('click', function(){ baixarCena(parseInt(b.dataset.baixar,10)); });
+  const prontas = cenas.filter(s=>s.video_url).length;
+  const erros   = cenas.filter(s=>s.video_status==='erro');
+  let html = '';
+  if(montando){
+    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> <b>Montando o vídeo…</b></div>';
+  } else if(prontas < cenas.length){
+    html = '<div class="prog-item"><span class="spin" style="border-top-color:var(--gold)"></span> '+
+           '<b>'+prontas+' de '+cenas.length+' cenas prontas</b> — cada uma leva de 2 a 4 minutos.</div>';
+  }
+  // erro continua aparecendo: aí sim o atendente precisa saber qual cena e por quê
+  erros.forEach(function(s,k){
+    const i = cenas.indexOf(s);
+    html += '<div class="alerta" style="margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error||'falhou')+'</div>';
   });
+  box.innerHTML = html;
 }
 
 // baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
@@ -1101,6 +1116,11 @@ function renderCortes(){
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
+      // ⚠️ 27/08: a fala vem junto pro editor. Quando o atendente ouve a cena e vê que a frase
+      // está errada, ele corrige AQUI e clica em Refazer — antes tinha que voltar pro passo 2.
+      '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
+      '<textarea data-faed="'+i+'" style="min-height:58px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="btn-row" style="margin-top:.4rem">'+
         '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
         '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
@@ -1108,7 +1128,17 @@ function renderCortes(){
     box.appendChild(d);
     ligarTrim(d, i);
   });
-  cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); });
+  // a fala editada aqui vale pro roteiro inteiro: quem refizer a cena usa o texto novo
+  box.querySelectorAll('[data-faed]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.faed;
+      cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      alertaFalaEditor(i);
+      const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
+      if(espelho && espelho.value !== el.value){ espelho.value = el.value; alertaFala(i); }
+    });
+  });
+  cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
   prepararAudios();
 }
 
