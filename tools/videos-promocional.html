@@ -64,7 +64,7 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
 .pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
 /* refazer 1 cena no editor de cortes */
-.btn-refaz{width:100%;margin-top:.4rem;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
+.btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
 /* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
 .aviso-ok{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
@@ -276,16 +276,19 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
     </div>
 
-    <button class="btn-gold" id="btnCenas" onclick="gerarCenas()">🎥 GERAR CENAS</button>
-    <div class="soon-note" id="notaFinal">Cada cena vira um clipe de 8s. Depois você confere e apara o que precisar.</div>
+    <button class="btn-gold" id="btnCenas" onclick="gerarVideoTudo()">🎬 GERAR VÍDEO</button>
+    <div class="soon-note" id="notaFinal">A IA gera as 4 cenas, corta o fim de cada uma sozinha e monta o vídeo. Leva de 8 a 15 minutos.</div>
     <div id="progresso" style="margin-top:.8rem"></div>
 
-    <!-- editor de corte: aparece com os clipes prontos -->
+    <!-- ⚠️ O EDITOR SÓ APARECE SE O ATENDENTE PEDIR (27/08). O fluxo normal é um clique só:
+         gera as 4 cenas → corta o fim de cada uma pela transcrição → monta → entrega pronto.
+         Quem quiser mexer clica em "Editar" na tela do vídeo pronto e cai aqui, com os cortes
+         automáticos já aplicados e visíveis. -->
     <div id="editorCortes" class="hide">
-      <div class="sec-title">✂️ Confira e apare as cenas</div>
-      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O motor às vezes inventa uma transição no fim. Corte o pedacinho ruim antes de montar.</div>
+      <div class="sec-title">✂️ As 4 cenas</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Os cortes do fim já foram feitos sozinhos. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
       <div id="boxCortes"></div>
-      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 GERAR VÍDEO</button>
+      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO DE NOVO</button>
       <div class="soon-note" id="notaMontagem"></div>
     </div>
   </div>
@@ -296,7 +299,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step">
       <video id="videoFinal" controls playsinline style="width:100%;border-radius:var(--radius)"></video>
       <div class="btn-row" style="margin-top:.8rem">
+        <button class="btn-ghost" onclick="abrirEditor()">✏️ Editar</button>
         <button class="btn-ghost" onclick="baixarFinal()">⬇️ Baixar vídeo</button>
+      </div>
+      <div class="btn-row" style="margin-top:.5rem">
         <button class="btn-ghost" onclick="copiarLinkFinal()">🔗 Copiar link</button>
       </div>
       <div class="soon-note" id="custoFinal"></div>
@@ -493,7 +499,10 @@ async function abrirProjeto(id){
     renderThumbs('product'); renderThumbs('environment');
     if(personagemImg) pintarPersonagem();
     if(cenas.length) renderRoteiro();
-    if(cenas.length && cenas.every(s=>s.video_url)){
+    // ⚠️ 27/08: o editor NÃO abre sozinho ao reabrir um projeto. Se o vídeo já existe, o
+    // atendente entra por "Editar" na tela final; se ainda não existe, ele só clica em GERAR VÍDEO.
+    // Abrir a tela de cortes de cara era justamente a complexidade que o fluxo de um clique tirou.
+    if(cenas.length && cenas.every(s=>s.video_url) && !p.videoUrl){
       document.getElementById('editorCortes').classList.remove('hide'); renderCortes();
     }
     if(videoFinalUrl){
@@ -979,15 +988,12 @@ async function gerarCenas(){
     if(prontas < cenas.length){
       document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
       await salvarProjeto(true);   // as que saíram já foram pagas — não perder
-      toast('⚠️ Faltaram cenas — clique de novo (você paga só as que faltam).'); return;
+      toast('⚠️ Faltaram cenas — clique de novo (você paga só as que faltam).'); return false;
     }
-    document.getElementById('notaFinal').textContent='';
-    document.getElementById('editorCortes').classList.remove('hide');
-    renderCortes();
-    // salva já: as 4 cenas custaram US$1,60 e fechar a aba aqui perdia tudo
+    // ⚠️ NÃO abre o editor (27/08). O fluxo agora é um clique só e o atendente só vê as cenas
+    // se clicar em "Editar" depois do vídeo pronto. Aqui só salvamos: US$1,60 já foram gastos.
     await salvarProjeto(true);
-    toast('✅ Cenas prontas e projeto salvo! Confira e apare o que precisar.');
-    rolarPara('editorCortes');
+    return true;
   } finally { btn.disabled=false; btn.innerHTML=old; }
 }
 // Editor de corte por cena — resolve a alucinação que o Veo às vezes coloca no fim do clipe.
@@ -1095,7 +1101,10 @@ function renderCortes(){
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
-      '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer só esta cena (US$ 0,40)</button>';
+      '<div class="btn-row" style="margin-top:.4rem">'+
+        '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
+        '<button class="btn-refaz" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+      '</div>';
     box.appendChild(d);
     ligarTrim(d, i);
   });
@@ -1109,35 +1118,45 @@ function renderCortes(){
 // transcreve o clipe com marcação por palavra (whisper-1) e devolve onde termina a ÚLTIMA PALAVRA
 // DO ROTEIRO — que nós conhecemos. O que vier depois é ignorado de propósito. Custa R$0,017 o vídeo.
 // A onda continua sendo desenhada (a partir do áudio) só pra o atendente CONFERIR visualmente.
-async function prepararAudios(){
+// ⚠️ SÓ O CÁLCULO — não desenha nada, não depende do editor estar na tela (27/08).
+// No fluxo de um clique o editor fica oculto, e canvas escondido tem largura 0: se o desenho
+// estivesse aqui dentro, a onda sairia em branco e o corte nem seria calculado até o atendente
+// abrir a aba. O resultado fica em s._fimFala / s.cortaFim e o editor só lê depois.
+async function calcularCortes(){
   for(let i=0;i<cenas.length;i++){
     const s=cenas[i]; if(!s.video_url) continue;
+    if(s._fimFala !== undefined) continue;          // já transcrito — não paga de novo
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
-    if(!s._audio){                                  // a onda é só desenho
-      const a = await analisarAudio(s.video_url);
-      if(a){ s._audio = a; desenharOnda(i); }
-    } else desenharOnda(i);
-
-    if(s._fimFala === undefined){
-      if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
-      try{
-        const r = await api('/promoFimDaFala', { method:'POST', body: JSON.stringify({ url:s.video_url, fala:s.fala||'' }) });
-        const d = await r.json();
-        if(!d.ok) throw new Error(d.error||'falha na transcrição');
-        s._fimFala = Number(d.fimFala);
-        s._palavra = d.palavra || '';
-        custoUSD += (d.custoUSD||0);
-      }catch(e){
-        s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
-        s._porEnergia = true;
-      }
+    if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
+    try{
+      const r = await api('/promoFimDaFala', { method:'POST', body: JSON.stringify({ url:s.video_url, fala:s.fala||'' }) });
+      const d = await r.json();
+      if(!d.ok) throw new Error(d.error||'falha na transcrição');
+      s._fimFala = Number(d.fimFala);
+      s._palavra = d.palavra || '';
+      custoUSD += (d.custoUSD||0);
+    }catch(e){
+      s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
+      s._porEnergia = true;
     }
     if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
       const alvo = Math.min(CLIPE_SEG, s._fimFala + FOLGA_POS_FALA);
       const corte = Math.max(0, CLIPE_SEG - alvo);
-      // o piso também caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
+      // o piso caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
       // cortes pequenos que agora valem a pena fazer.
       s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
+    }
+  }
+}
+
+async function prepararAudios(){
+  await calcularCortes();                            // barato: se já transcreveu, não repete
+  for(let i=0;i<cenas.length;i++){
+    const s=cenas[i]; if(!s.video_url) continue;
+    const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
+    if(!s._audio){                                   // a onda é só desenho
+      const a = await analisarAudio(s.video_url);
+      if(a) s._audio = a;
     }
     desenharOnda(i); pintarTrim(i);
     if(nota){
@@ -1239,12 +1258,45 @@ async function refazerCena(i){
   }catch(e){ toast('⚠️ '+e.message); if(bt){ bt.disabled=false; bt.innerHTML=old; } }
 }
 
-// PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
-async function finalizar(){
-  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+// ⚠️ FLUXO DE UM CLIQUE (27/08) — pedido do Thiago.
+// Antes eram dois botões e uma tela de edição obrigatória no meio: GERAR CENAS → conferir/aparar
+// → GERAR VÍDEO. Agora o atendente clica UMA vez e recebe o vídeo pronto; as 4 cenas e os cortes
+// ficam escondidos atrás do botão "Editar" da tela final, pra quem quiser mexer.
+// A ordem importa: as cenas precisam existir E os cortes precisam estar calculados ANTES da
+// montagem, senão o vídeo sai com o fim distorcido que o corte existe pra remover.
+async function gerarVideoTudo(){
+  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
-  const btn=document.getElementById('btnFinal'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…';
+
+  const nf = document.getElementById('notaFinal');
+  const ok = await gerarCenas();
+  if(!ok) return;                                   // gerarCenas já avisou o que faltou
+
+  if(nf) nf.innerHTML='<span class="spin"></span> Ouvindo as cenas pra cortar o fim de cada uma…';
+  await calcularCortes();                           // transcrição — não precisa do editor na tela
+
+  await finalizar('btnCenas');
+}
+
+// Abre o editor SOB DEMANDA, já com os cortes automáticos aplicados e visíveis.
+function abrirEditor(){
+  const box=document.getElementById('editorCortes'); if(!box) return;
+  box.classList.remove('hide');
+  renderCortes();            // desenha os cards; prepararAudios() completa as ondas
+  rolarPara('editorCortes');
+}
+
+// PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
+// btnId: qual botão mostra o "Montando…" — 'btnCenas' no fluxo de um clique, 'btnFinal' quando
+// o atendente remonta depois de editar (o btnFinal vive dentro do editor, que pode estar oculto).
+async function finalizar(btnId){
+  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+  // só pergunta pela trilha quando o clique veio do editor — no fluxo de um clique já perguntamos
+  if(btnId!=='btnCenas' && !trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
+  const btn=document.getElementById(btnId||'btnFinal') || document.getElementById('btnCenas');
+  const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
   montando=true; pintarProgresso();
   try{
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
