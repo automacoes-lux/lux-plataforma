@@ -67,6 +67,30 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 /* refazendo: vermelho com letra branca, pra não passar despercebido */
 .btn-refaz.refazendo{background:#C0392B;border-color:#C0392B;color:#fff;font-weight:600}
 .btn-refaz.refazendo .spin{border-color:rgba(255,255,255,.35);border-top-color:#fff}
+/* volume da trilha: três cartões explicativos, o escolhido ganha borda dourada */
+.vol-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.5rem}
+.vol-opt{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);
+  padding:.7rem .75rem;cursor:pointer;text-align:left;font-family:inherit;
+  display:flex;flex-direction:column;gap:.25rem;transition:border-color .15s,background .15s}
+.vol-opt b{color:var(--text-mid);font-size:13px;font-weight:600}
+.vol-opt span{color:var(--text-dim);font-size:11px;line-height:1.4}
+.vol-opt:hover{border-color:var(--border-bright)}
+.vol-opt.on{border-color:var(--gold);background:rgba(201,168,76,.10)}
+.vol-opt.on b{color:var(--text)}
+.vol-opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:520px){ .vol-opts{grid-template-columns:1fr} }
+
+/* paleta da palavra em destaque: bolinhas de cor, a escolhida ganha anel dourado */
+.cores{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.cor{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);
+  cursor:pointer;padding:0;position:relative;transition:transform .12s}
+.cor:hover{transform:scale(1.12)}
+.cor.on{box-shadow:0 0 0 3px var(--gold);border-color:transparent}
+.cor:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.cor-livre{display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:conic-gradient(#EF4444,#F97316,#FFD700,#22C55E,#38BDF8,#EC4899,#EF4444)}
+.cor-livre input[type=color]{opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
+
 /* erro de cena: vermelho de verdade, pra não passar batido no meio da tela escura */
 .alerta.erro-forte{background:rgba(192,57,43,.14);border:1px solid #C0392B;color:#F5B7B1;line-height:1.5}
 .btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
@@ -290,6 +314,25 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
         <div class="trilhas-grid" id="trilhasGrid"></div>
         <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
+
+        <!-- volume da trilha. Cada opção traz a descrição do que ela faz, porque "12%" não diz
+             nada pro atendente — o que ele precisa saber é COMO vai soar. -->
+        <div class="mini" style="margin-top:1rem">Volume da música</div>
+        <div class="step-hint">A voz do personagem fica sempre à frente. Isto ajusta só a música de fundo.</div>
+        <div class="vol-opts" id="volTrilha">
+          <button type="button" class="vol-opt on" data-vol="0.12">
+            <b>Volume padrão</b>
+            <span>A música acompanha a fala sem disputar. Serve pra quase todo vídeo.</span>
+          </button>
+          <button type="button" class="vol-opt" data-vol="0.08">
+            <b>Volume médio</b>
+            <span>Quase ambiente: dá clima e deixa a voz totalmente na frente.</span>
+          </button>
+          <button type="button" class="vol-opt" data-vol="0.05">
+            <b>Volume baixo</b>
+            <span>Discreta. Só preenche o silêncio entre uma fala e outra.</span>
+          </button>
+        </div>
       </div>
 
       <!-- legenda automática: ligada por padrão, o atendente desliga aqui. Fica depois da música
@@ -300,6 +343,24 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <div class="chips" id="chipsLegenda">
           <div class="chip on" data-v="sim">Com legenda</div>
           <div class="chip" data-v="nao">Sem legenda</div>
+        </div>
+
+        <!-- cor da palavra falada. Branco é o padrão; a paleta é só pra quem quiser destacar mais.
+             O resto da legenda continua branco sempre — só a palavra do momento muda de cor. -->
+        <div class="mini" style="margin-top:.9rem">Cor da palavra em destaque</div>
+        <div class="step-hint">Só a palavra que está sendo falada muda de cor. As outras seguem brancas.</div>
+        <div class="cores" id="paletaLegenda">
+          <button type="button" class="cor on" data-cor="#ffffff" style="background:#ffffff" title="Branco (padrão)"></button>
+          <button type="button" class="cor" data-cor="#D4AF37" style="background:#D4AF37" title="Dourado"></button>
+          <button type="button" class="cor" data-cor="#FFE500" style="background:#FFE500" title="Amarelo"></button>
+          <button type="button" class="cor" data-cor="#22C55E" style="background:#22C55E" title="Verde"></button>
+          <button type="button" class="cor" data-cor="#38BDF8" style="background:#38BDF8" title="Azul"></button>
+          <button type="button" class="cor" data-cor="#F97316" style="background:#F97316" title="Laranja"></button>
+          <button type="button" class="cor" data-cor="#EF4444" style="background:#EF4444" title="Vermelho"></button>
+          <button type="button" class="cor" data-cor="#EC4899" style="background:#EC4899" title="Rosa"></button>
+          <label class="cor cor-livre" title="Outra cor">
+            <input type="color" id="corLivre" value="#ffffff"/>
+          </label>
         </div>
       </div>
 
@@ -468,7 +529,7 @@ function estadoAtual(){
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
     personagem: personagemImg,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
-    trilha: trilhaSel, legendas: legendas, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
+    trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
   };
 }
 async function salvarProjeto(silencioso){
@@ -543,6 +604,8 @@ async function abrirProjeto(id){
     custoLancadoUSD = (p.custoLancadoUSD===undefined) ? custoUSD : (Number(p.custoLancadoUSD)||0);
     trilhaSel = p.trilha||null; musica=null;
     legendas = (p.legendas === undefined) ? true : !!p.legendas;   // projeto antigo assume ligada
+    marcarCor(/^#[0-9a-fA-F]{6}$/.test(String(p.corDestaque||'')) ? p.corDestaque : '#ffffff');
+    marcarVolume((Number(p.volumeTrilha) > 0 && Number(p.volumeTrilha) <= 1) ? Number(p.volumeTrilha) : 0.12);
     document.querySelectorAll('#chipsLegenda .chip').forEach(function(c){
       c.classList.toggle('on', (c.dataset.v==='sim') === legendas);
     });
@@ -952,8 +1015,43 @@ function ligarChips(id, cb){
 let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
 // legenda automática LIGADA por padrão (28/08). Desligar é escolha do atendente.
 let legendas = true;
+// cor da palavra falada. Branco é o padrão — só muda se o atendente escolher na paleta.
+let corDestaque = '#ffffff';
+// volume da música de fundo. 0,12 = "Volume padrão" (escolhido pelo Thiago comparando em vídeo).
+let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; });
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
+
+// volume da música
+function marcarVolume(v){
+  volumeTrilha = Number(v);
+  document.querySelectorAll('#volTrilha .vol-opt').forEach(function(b){
+    b.classList.toggle('on', Number(b.dataset.vol) === volumeTrilha);
+  });
+}
+document.querySelectorAll('#volTrilha .vol-opt').forEach(function(b){
+  b.addEventListener('click', function(){ marcarVolume(b.dataset.vol); });
+});
+
+// paleta da palavra em destaque
+function marcarCor(hex){
+  corDestaque = hex;
+  document.querySelectorAll('#paletaLegenda .cor').forEach(function(b){
+    b.classList.toggle('on', (b.dataset.cor||'').toLowerCase() === String(hex).toLowerCase());
+  });
+}
+document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(function(b){
+  b.addEventListener('click', function(){ marcarCor(b.dataset.cor); });
+});
+(function(){
+  const livre = document.getElementById('corLivre');
+  if(livre) livre.addEventListener('input', function(){
+    // cor fora da paleta: nenhuma bolinha fica marcada, mas a escolha vale
+    corDestaque = livre.value;
+    document.querySelectorAll('#paletaLegenda .cor').forEach(function(b){ b.classList.remove('on'); });
+    livre.parentElement.classList.add('on');
+  });
+})();
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
 function refsPayload(){
@@ -1565,7 +1663,7 @@ async function finalizar(){
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0),
       marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
-      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas }) });
+      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     // o Worker conta o que houve com a legenda (ok / sem-marcacoes / erro). Se ela estava ligada
