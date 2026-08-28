@@ -67,6 +67,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 /* refazendo: vermelho com letra branca, pra não passar despercebido */
 .btn-refaz.refazendo{background:#C0392B;border-color:#C0392B;color:#fff;font-weight:600}
 .btn-refaz.refazendo .spin{border-color:rgba(255,255,255,.35);border-top-color:#fff}
+/* erro de cena: vermelho de verdade, pra não passar batido no meio da tela escura */
+.alerta.erro-forte{background:rgba(192,57,43,.14);border:1px solid #C0392B;color:#F5B7B1;line-height:1.5}
 .btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
 .sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
 /* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
@@ -821,32 +823,66 @@ async function gerarVideo(i){
     await acompanharVideo(i, d.predictionId);
   } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
 }
+function falharCena(i, msg){
+  const s=cenas[i]; if(!s) return;
+  s.video_status='erro';
+  s.video_error=String(msg||'falhou').slice(0,220);
+  renderVideos();
+  salvarProjeto(true);              // não perder o resto do projeto por causa de uma cena
+  toast('⚠️ Cena '+(i+1)+': '+s.video_error);
+}
+// relógio no card, pra a espera não ser uma caixa preta
+function relogioCena(i){
+  const el = document.querySelector('#boxCortes [data-relogio="'+i+'"]');
+  const s = cenas[i]; if(!el || !s || !s._desde) return;
+  const seg = Math.round((Date.now()-s._desde)/1000);
+  el.textContent = Math.floor(seg/60)+':'+String(seg%60).padStart(2,'0');
+}
+
 async function acompanharVideo(i, predictionId){
   const s=cenas[i];
-  let semContato = 0;                     // consultas seguidas que nem chegaram ao servidor
-  for(let t=0;t<80;t++){
+  s._predictionId = predictionId;     // guardado: permite reconsultar esta mesma geração depois
+  s._desde = Date.now();
+  let semContato = 0, erroServidor = 0;
+  const CICLOS = 120;                 // 120 x 6s = 12 minutos (a fila do motor às vezes engasga)
+  for(let t=0;t<CICLOS;t++){
     await new Promise(r=>setTimeout(r, 6000));
+    relogioCena(i);
     try{
       const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
       const d = await r.json();
       semContato = 0;
-      if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
-      if(d.status==='failed'){
-        s.video_status='erro'; s.video_error=String(d.error||'a cena falhou no motor de vídeo').slice(0,220);
-        renderVideos(); return;           // erro DE VERDADE: o motor recusou. Desistir é certo.
+
+      // ⚠️ ISTO AQUI FALTAVA e era o travamento: o Worker responde, mas com erro. Antes caía
+      // fora dos dois ifs e o laço seguia em silêncio até estourar o tempo.
+      if(d && d.ok === false){
+        erroServidor++;
+        if(erroServidor >= 5){        // 5 erros seguidos = não é soluço, é problema de verdade
+          falharCena(i, 'o servidor recusou a consulta: '+(d.error||'erro desconhecido'));
+          return;
+        }
+        continue;                     // 1 ou 2 erros = soluço do R2/rede; tenta de novo
       }
+      erroServidor = 0;
+
+      if(d.status==='done' && d.url){
+        s.video_url=d.url; s.video_status='pronto'; s.video_error='';
+        renderVideos();
+        await salvarProjeto(true);    // ⚠️ SALVA A CADA CENA: fechar a aba aqui não perde mais nada
+        toast('✅ Cena '+(i+1)+' pronta!');
+        return;
+      }
+      if(d.status==='failed'){ falharCena(i, d.error||'o motor de vídeo recusou esta cena'); return; }
     }catch(e){
-      // ⚠️ falha de REDE aqui não significa que a cena falhou — o clipe pode estar pronto e PAGO
-      // do outro lado. Antes, uma única consulta perdida matava a cena e o dinheiro junto.
+      // falha de REDE não quer dizer que a cena falhou — o clipe pode estar pronto e PAGO lá.
       semContato++;
-      if(semContato >= 10){               // 10 x 6s = 1 minuto inteiro sem contato
-        s.video_status='erro';
-        s.video_error='perdi contato com o servidor por 1 minuto — o clipe pode até ter ficado pronto; abra o projeto de novo antes de refazer';
-        renderVideos(); return;
+      if(semContato >= 15){           // 15 x 6s = 1min30 sem conseguir falar com o servidor
+        falharCena(i, 'sem contato com o servidor há um minuto e meio — o clipe pode ter ficado pronto; reabra o projeto antes de refazer');
+        return;
       }
     }
   }
-  s.video_status='erro'; s.video_error='demorou demais (mais de 8 minutos)'; renderVideos();
+  falharCena(i, 'passou de 12 minutos sem resposta do motor de vídeo');
 }
 
 
@@ -1198,11 +1234,11 @@ function renderCortes(){
           (falhou ? '' : '<span class="stt" style="color:var(--text-dim)">gerando…</span>')+
         '</div>'+
         (falhou
-          ? ('<div class="alerta">⚠️ Esta cena ficou sem vídeo'+(s.video_error?(': '+esc(s.video_error)):'')+'. Ajuste a fala se precisar e clique em <b>Refazer</b>.</div>')
+          ? ('<div class="alerta erro-forte">⚠️ <b>ESTA CENA FALHOU.</b>'+(s.video_error?('<br>'+esc(s.video_error)):'')+'<br>Ajuste a fala se precisar e clique em <b>Refazer</b>. Se falhar de novo, avise o admin com esta mensagem.</div>')
           // ainda vindo: nada de vermelho e NENHUM botão de refazer — clicar aqui pagaria
           // US$ 0,40 por uma cena que já está sendo gerada.
           : ('<div class="soon-note" style="text-align:center;padding:1.4rem 0">'+
-               '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… (2 a 4 minutos)'+
+               '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">(leva de 2 a 4 minutos)</span>'+
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
