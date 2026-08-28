@@ -136,6 +136,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .adv summary{cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none}
 .adv textarea{min-height:90px;font-size:11.5px;margin-top:.4rem}
 video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem auto 0;background:#000}
+/* o vídeo pronto precisa SALTAR aos olhos no meio da tela de edição */
+.step.pronto{border:1.5px solid var(--gold);box-shadow:0 0 0 4px rgba(201,168,76,.10),0 8px 30px rgba(0,0,0,.45);background:linear-gradient(180deg,rgba(201,168,76,.07),transparent 40%)}
 .trilhas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin-bottom:.7rem}
 .trilha-item{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;cursor:pointer;font-size:13px;color:var(--text-mid)}
 .trilha-item.sel{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--text)}
@@ -268,7 +270,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <!-- ══════════ PASSO 3 — O VÍDEO ══════════ -->
   <div id="telaTrilha" class="hide">
-    <div class="sec-title">Passo 3 · 🎵 Trilha e vídeo</div>
+    <div class="sec-title">Passo 3 · ✂️ Editor</div>
     <div class="step">
       <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
       <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>, sem corte seco.</div>
@@ -277,19 +279,18 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
     </div>
 
-    <button class="btn-gold" id="btnCenas" onclick="gerarVideoTudo()">🎬 GERAR VÍDEO</button>
-    <div class="soon-note" id="notaFinal">A IA gera as cenas, corta o fim de cada uma sozinha e monta o vídeo.</div>
+    <div class="soon-note" id="notaFinal"></div>
     <div id="progresso" style="margin-top:.8rem"></div>
 
-    <!-- ⚠️ O EDITOR SÓ APARECE SE O ATENDENTE PEDIR (27/08). O fluxo normal é um clique só:
-         gera as 4 cenas → corta o fim de cada uma pela transcrição → monta → entrega pronto.
-         Quem quiser mexer clica em "Editar" na tela do vídeo pronto e cai aqui, com os cortes
-         automáticos já aplicados e visíveis. -->
-    <div id="editorCortes" class="hide">
+    <!-- ⚠️ 27/08 (noite): o editor NASCE aqui, não é mais escondido atrás de um botão.
+         Ao entrar no passo 3 as 4 cenas começam a ser geradas sozinhas e cada uma aparece
+         em modo edição assim que fica pronta. O atendente ajusta o que quiser (ou nada) e
+         clica em MONTAR O VÍDEO embaixo — que sempre usa os clipes ATUAIS. -->
+    <div id="editorCortes">
       <div class="sec-title">✂️ As 4 cenas</div>
-      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Os cortes do fim já foram feitos sozinhos. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O corte do fim de cada cena é feito sozinho. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
       <div id="boxCortes"></div>
-      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO DE NOVO</button>
+      <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO</button>
       <div class="soon-note" id="notaMontagem"></div>
     </div>
   </div>
@@ -297,11 +298,12 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- vídeo pronto -->
   <div id="telaFinal" class="hide">
     <div class="sec-title">✅ Vídeo pronto</div>
-    <div class="step">
+    <div class="step pronto">
       <video id="videoFinal" controls playsinline style="width:100%;border-radius:var(--radius)"></video>
+      <!-- sem "Editar": as cenas ficam logo acima, sempre abertas. Quem quiser mudar algo sobe,
+           mexe na cena e clica em MONTAR O VÍDEO de novo. -->
       <div class="btn-row" style="margin-top:.8rem">
-        <button class="btn-ghost" onclick="abrirEditor()">✏️ Editar</button>
-        <button class="btn-ghost" onclick="baixarFinal()">⬇️ Baixar vídeo</button>
+        <button class="btn-gold" onclick="baixarFinal()" style="width:100%">⬇️ Baixar vídeo</button>
       </div>
       <div class="soon-note" id="custoFinal"></div>
     </div>
@@ -391,7 +393,7 @@ function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : (
 const PASSOS = [
   { n:1, id:'p1',          rot:'Briefing'            },
   { n:2, id:'telaRoteiro', rot:'Personagem e roteiro' },
-  { n:3, id:'telaTrilha',  rot:'Vídeo'      }
+  { n:3, id:'telaTrilha',  rot:'Editor'     }
 ];
 let passoAtual = 1, passoMax = 1;
 function irPara(n){
@@ -400,7 +402,11 @@ function irPara(n){
   PASSOS.forEach(function(p){ const el=document.getElementById(p.id); if(el) el.classList.toggle('hide', p.n !== n); });
   const fin=document.getElementById('telaFinal');
   if(fin) fin.classList.toggle('hide', !(n === 3 && videoFinalUrl));
-  if(n === 3) carregarTrilhas();   // catálogo de trilhas; busca no Worker só na 1ª vez
+  if(n === 3){
+    carregarTrilhas();             // catálogo de trilhas; busca no Worker só na 1ª vez
+    renderCortes();                // mostra o que já existe (projeto reaberto)
+    iniciarCenasSeNecessario();    // e começa a gerar o que faltar
+  }
   pintarBarra();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -774,7 +780,9 @@ async function autoSalvar(){
 // ══════════════════ PASSO 3 — OS CLIPES ══════════════════
 // ⚠️ ficou de fora na remontagem de 24/08 e quebrava a geração logo no 1º clipe: gerarVideo() chama
 // renderVideos() antes de bater na API, dava ReferenceError e as 4 cenas ficavam paradas em "na fila".
-function renderVideos(){ pintarProgresso(); }
+// chamado a cada mudança de estado de cena. Além do painel de erro, redesenha o editor pra a
+// cena que acabou de chegar aparecer na hora — é isso que faz o atendente ver as cenas "abrindo".
+function renderVideos(){ pintarProgresso(); if(passoAtual===3) renderCortes(); }
 // A cena carrega, em memória, a análise do áudio (_audio.env = ~400 números por clipe, usada só
 // pra desenhar a onda). Isso não serve pro Worker nem pro projeto salvo — tira antes de enviar.
 function cenaLimpa(s){
@@ -1043,9 +1051,9 @@ async function gerarCenas(){
   if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   await subirPersonagem();
-  const btn=document.getElementById('btnCenas'); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando Vídeo…';
-  document.getElementById('notaFinal').innerHTML='<span class="spin"></span> Tempo estimado de 2 a 5 minutos.';
+  const btn=document.getElementById('btnCenas'); const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando Vídeo…'; }
+  document.getElementById('notaFinal').innerHTML='<span class="spin"></span> Gerando as cenas… tempo estimado de 2 a 5 minutos.';
   pintarProgresso();
   try{
     const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
@@ -1061,9 +1069,11 @@ async function gerarCenas(){
     }
     // ⚠️ NÃO abre o editor (27/08). O fluxo agora é um clique só e o atendente só vê as cenas
     // se clicar em "Editar" depois do vídeo pronto. Aqui só salvamos: US$1,60 já foram gastos.
+    document.getElementById('notaFinal').innerHTML='';
     await salvarProjeto(true);
+    toast('✅ Cenas prontas — confira e ajuste o que quiser.');
     return true;
-  } finally { btn.disabled=false; btn.innerHTML=old; }
+  } finally { if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
 // Editor de corte por cena — resolve a alucinação que o Veo às vezes coloca no fim do clipe.
 // Editor de corte por cena: barra de tempo com duas alças. Arrastar move o vídeo JUNTO,
@@ -1383,41 +1393,30 @@ async function refazerCena(i){
   }
 }
 
-// ⚠️ FLUXO DE UM CLIQUE (27/08) — pedido do Thiago.
-// Antes eram dois botões e uma tela de edição obrigatória no meio: GERAR CENAS → conferir/aparar
-// → GERAR VÍDEO. Agora o atendente clica UMA vez e recebe o vídeo pronto; as 4 cenas e os cortes
-// ficam escondidos atrás do botão "Editar" da tela final, pra quem quiser mexer.
-// A ordem importa: as cenas precisam existir E os cortes precisam estar calculados ANTES da
-// montagem, senão o vídeo sai com o fim distorcido que o corte existe pra remover.
-async function gerarVideoTudo(){
-  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
-  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
-  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
+// ⚠️ PASSO 3 = EDITOR (27/08, noite). Entrar aqui já começa a gerar as 4 cenas; cada uma aparece
+// em modo edição assim que fica pronta. Não existe mais botão de "gerar" — o único botão é o
+// MONTAR O VÍDEO, embaixo, que sempre usa os clipes ATUAIS e os cortes que estiverem na tela.
+let gerandoCenas = false;
 
-  const ok = await gerarCenas();
-  if(!ok) return;                                   // gerarCenas já avisou o que faltou
-
-  await calcularCortes();                           // transcrição — não precisa do editor na tela
-
-  await finalizar('btnCenas');
-}
-
-// Abre o editor SOB DEMANDA, já com os cortes automáticos aplicados e visíveis.
-function abrirEditor(){
-  const box=document.getElementById('editorCortes'); if(!box) return;
-  box.classList.remove('hide');
-  renderCortes();            // desenha os cards; prepararAudios() completa as ondas
-  rolarPara('editorCortes');
+async function iniciarCenasSeNecessario(){
+  if(gerandoCenas) return;                                   // já está rodando
+  if(!cenas.length || !personagemImg) return;                // roteiro/personagem ainda não existem
+  if(cenas.every(function(s){ return !!s.video_url; })) return;   // todas já prontas
+  gerandoCenas = true;
+  try{
+    await gerarCenas();          // dispara as que faltam e vai renderizando cada uma que chega
+    await calcularCortes();      // corte automático do fim, medido por transcrição
+    renderCortes(); pintarCusto();
+  } finally { gerandoCenas = false; }
 }
 
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
-// btnId: qual botão mostra o "Montando…" — 'btnCenas' no fluxo de um clique, 'btnFinal' quando
-// o atendente remonta depois de editar (o btnFinal vive dentro do editor, que pode estar oculto).
-async function finalizar(btnId){
+// Chamada só pelo botão MONTAR O VÍDEO, no fim do editor. Sempre usa os clipes ATUAIS
+// (cenas[i].video_url) e os cortes que estiverem na tela naquele instante.
+async function finalizar(){
   if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
-  // só pergunta pela trilha quando o clique veio do editor — no fluxo de um clique já perguntamos
-  if(btnId!=='btnCenas' && !trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nGerar o vídeo SEM música de fundo?')) return;
-  const btn=document.getElementById(btnId||'btnFinal') || document.getElementById('btnCenas');
+  if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
+  const btn=document.getElementById('btnFinal');
   const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
   montando=true; pintarProgresso();
