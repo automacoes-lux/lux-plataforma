@@ -932,6 +932,10 @@ async function acompanharVideo(i, predictionId){
         s.video_url=d.url; s.video_status='pronto'; s.video_error='';
         // ⚠️ o corte já vem junto com o clipe (28/08). Antes a tela pedia a transcrição num
         // segundo pedido, que baixava o clipe DE NOVO — eram ~15s com a linha de corte vazia.
+        // ⚠️ VOZ LIMPA (28/08): o Veo cria uma trilha própria em cada cena, que brigava com a
+        // nossa música. A separação roda em segundo plano — a cena já aparece pro atendente e a
+        // voz chega depois. Não travamos a tela por causa disso.
+        if(d.vozId){ s._vozId = d.vozId; esperarVoz(i); }
         if(d.transcricao){
           s._fimFala   = Number(d.transcricao.fimFala);
           s._inicioFala= Number(d.transcricao.inicioFala||0);
@@ -1187,6 +1191,27 @@ function pintarProgresso(){
   }).join('');
 }
 
+// Espera a separação de voz de UMA cena, sem travar a tela. Se falhar, a montagem segue com o
+// áudio original do clipe (com a trilha do Veo) — pior, mas nunca sem som.
+async function esperarVoz(i){
+  const s = cenas[i]; if(!s || !s._vozId || s._vozUrl) return;
+  for(let k=0;k<40;k++){                      // 40 x 5s = até 3min20 (costuma levar ~10s)
+    await new Promise(r=>setTimeout(r,5000));
+    if(!cenas[i] || cenas[i]!==s) return;      // a cena foi refeita no meio do caminho
+    try{
+      const r = await api('/promoVozStatus', { method:'POST', body: JSON.stringify({ vozId:s._vozId, projectId, cena:i+1 }) });
+      const d = await r.json();
+      if(d.ok && d.status==='done' && d.url){
+        s._vozUrl = d.url; custoUSD += (d.custoUSD||0);
+        pintarCusto(); salvarProjeto(true);
+        return;
+      }
+      if(d.ok && d.status==='failed'){ s._vozErro = d.error||'falhou'; return; }
+    }catch(e){ /* rede: tenta no próximo ciclo */ }
+  }
+  s._vozErro = 'demorou demais';
+}
+
 // Reescreve a LEGENDA a partir da fala atual. Só roda quando o atendente mexeu na fala — senão a
 // legenda que a IA já escreveu no roteiro continua valendo e não se gasta chamada à toa.
 async function refazerLegenda(i){
@@ -1400,6 +1425,13 @@ function renderCortes(){
       '<textarea data-faed="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda será reescrita quando você clicar em Refazer.':'')+'</div>'+
+      // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
+      // removemos, deixando só a voz. Se falhar, o atendente precisa saber ANTES de montar.
+      '<div class="soon-note" style="margin-top:.2rem">'+(
+        s._vozUrl ? '🔊 Áudio limpo: música de fundo do motor removida, só a voz.'
+        : (s._vozErro ? ('<span style="color:#F5B7B1">⚠️ Não consegui limpar o áudio desta cena ('+esc(s._vozErro)+'). Ela vai entrar com a música do motor por baixo.</span>')
+        : (s._vozId ? '<span class="spin"></span> Limpando o áudio (removendo a música do motor)…' : ''))
+      )+'</div>'+
       '<div class="btn-row" style="margin-top:.4rem">'+
         '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
@@ -1604,6 +1636,7 @@ async function refazerCena(i){
   s.video_url=''; s.cortaIni=0; s.cortaFim=0;
   s._fimFala=undefined; s._palavra=''; s._porEnergia=false; s._audio=null; s._cortouManual=false;
   s._marcacoes=[]; s._inicioFala=undefined;   // o clipe é outro: marcações da fala antiga não valem
+  s._vozId=undefined; s._vozUrl=''; s._vozErro='';   // e a voz isolada do clipe antigo também não
   try{
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
@@ -1644,6 +1677,15 @@ async function finalizar(){
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
   // ⚠️ 28/08: dava pra clicar em MONTAR antes de a transcrição terminar, e o vídeo saía SEM
   // legenda mesmo com a legenda ligada — silenciosamente. Agora espera o que faltar.
+  // espera a separação de voz que ainda estiver a caminho — sem isso o vídeo sai com a trilha
+  // do Veo por baixo da nossa, que é exatamente o que a separação existe pra evitar.
+  if(cenas.some(function(x){ return x.video_url && x._vozId && !x._vozUrl && !x._vozErro; })){
+    const bt0=document.getElementById('btnFinal');
+    if(bt0) bt0.innerHTML='<span class="spin"></span>Limpando o áudio das cenas…';
+    await Promise.all(cenas.map(function(x,i){
+      return (x.video_url && x._vozId && !x._vozUrl && !x._vozErro) ? esperarVoz(i) : Promise.resolve();
+    }));
+  }
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
     const bt=document.getElementById('btnFinal');
     if(bt) bt.innerHTML='<span class="spin"></span>Preparando as legendas…';
@@ -1661,7 +1703,8 @@ async function finalizar(){
   montando=true; pintarProgresso();
   try{
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0),
-      marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '' }));
+      marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '',
+      vozUrl: s._vozUrl || '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha }) });
     const d = await r.json();
