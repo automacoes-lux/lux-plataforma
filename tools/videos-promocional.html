@@ -423,7 +423,7 @@ let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) �
 let campanha = null;              // { marca, objetivo, tom, argumento }
 let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
 let trilhas = [], trilhaSel = null, musica = null;
-let videoFinalUrl = '', custoUSD = 0;
+let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
 
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
@@ -450,7 +450,7 @@ function estadoAtual(){
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
     personagem: personagemImg,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
-    trilha: trilhaSel, custoUSD: custoUSD, videoUrl: videoFinalUrl||''
+    trilha: trilhaSel, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
   };
 }
 async function salvarProjeto(silencioso){
@@ -520,6 +520,9 @@ async function abrirProjeto(id){
     campanha = p.campanha||null;
     cenas = Array.isArray(p.cenas) ? p.cenas : [];
     custoUSD = Number(p.custoUSD)||0;
+    // projeto antigo (sem o campo) já teve tudo lançado na montagem dele — assume igual ao total,
+    // senão reabrir e remontar cobraria o histórico inteiro de novo.
+    custoLancadoUSD = (p.custoLancadoUSD===undefined) ? custoUSD : (Number(p.custoLancadoUSD)||0);
     trilhaSel = p.trilha||null; musica=null;
     pintarTrilhas();
     videoFinalUrl = p.videoUrl||'';
@@ -1405,12 +1408,17 @@ async function finalizar(btnId){
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     for(let t=0;t<80;t++){
       await new Promise(x=>setTimeout(x, 6000));
-      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD, segundos:d.segundos }) });
+      const aLancar = Math.max(0, Number((custoUSD - custoLancadoUSD).toFixed(4)));
+      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD: aLancar, segundos:d.segundos }) });
       const d2 = await r2.json();
       if(d2.ok && d2.status==='done' && d2.url){
         videoFinalUrl = d2.url;
+        // o render do Shotstack é calculado no servidor e cobrado em TODA montagem — entra no total
+        custoUSD += Number(d2.montagemUSD||0);
+        custoLancadoUSD = custoUSD;                 // daqui pra frente, só o que for novo é lançado
         document.getElementById('videoFinal').src = d2.url;
-        document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> (lançado no seu financeiro).';
+        document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> '+
+          '<span style="color:var(--text-dim)">(tudo incluído: cenas, refeitas e montagens — lançado no seu financeiro).</span>';
         montando=false; pintarProgresso();
         document.getElementById('notaMontagem').textContent='';
         document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal');
