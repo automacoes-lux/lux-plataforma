@@ -79,8 +79,6 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .cc-lin{font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:.35rem}
 .cc-lin b{color:var(--text-dim);font-weight:500}
 /* voz da campanha: campo discreto, menor que os do formulário — é conferência, não digitação */
-.cc-voz{min-height:0;font-size:12px;line-height:1.45;padding:.5rem .65rem;margin:.15rem 0 .3rem}
-.cc-obs{font-size:11px;color:var(--text-dim);margin-bottom:.35rem}
 /* storyboard */
 .sb{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
 .sb.ok{border-color:rgba(90,190,120,.5)}
@@ -679,15 +677,12 @@ function renderRoteiro(){
       (campanha.objetivo?('<div class="cc-lin"><b>Objetivo:</b> '+esc(campanha.objetivo)+'</div>'):'')+
       (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+
       (campanha.argumento?('<div class="cc-lin"><b>Argumento principal:</b> '+esc(campanha.argumento)+'</div>'):'')+
-      // ⚠️ A VOZ é da CAMPANHA, não da cena: a MESMA descrição vai nos 4 prompts do Veo. Sem isso
-      // ele sorteia um timbre por clipe e uma das 4 cenas sai com outra voz. Editável: mudar aqui
-      // muda as 4 cenas de uma vez (ex.: trocar "male" por "female").
-      '<div class="cc-lin"><b>🎙️ Voz '+((campanha.sexoVoz||sexoVoz)==='feminina'?'feminina':'masculina')+' (igual nas 4 cenas):</b></div>'+
-      '<textarea id="vozCampanha" class="cc-voz" rows="2" placeholder="Descreva a voz em inglês — ex.: one single adult female voice, approximately 30 years old, native Brazilian Portuguese...">'+esc(campanha.voz||'')+'</textarea>'+
-      '<div class="cc-obs">Mudou a voz? Gere as cenas de novo pra valer.</div>'+
+      // ⚠️ A descrição técnica da voz (em inglês) NÃO aparece mais aqui (27/08, pedido do Thiago):
+      // era ruído pro atendente, que já escolheu masculina/feminina nos botões do briefing.
+      // Ela continua em campanha.voz e vai IDÊNTICA nos 4 prompts do Veo — só não é exibida.
+      // Fica só a linha dizendo qual voz é, que isso sim ele confere de relance.
+      '<div class="cc-lin"><b>🎙️ Voz:</b> '+((campanha.sexoVoz||sexoVoz)==='feminina'?'feminina':'masculina')+' (igual nas 4 cenas)</div>'+
       '</div>';
-    const tv=document.getElementById('vozCampanha');
-    if(tv) tv.addEventListener('input', function(){ campanha.voz = tv.value; });
   }
   // ⚠️ as 4 cenas num BLOCO SÓ e SEM repetir a imagem (25/08): ela já está logo acima, e
   // repeti-la 4 vezes deixava a tela quilométrica.
@@ -803,14 +798,28 @@ async function gerarVideo(i){
 }
 async function acompanharVideo(i, predictionId){
   const s=cenas[i];
+  let semContato = 0;                     // consultas seguidas que nem chegaram ao servidor
   for(let t=0;t<80;t++){
     await new Promise(r=>setTimeout(r, 6000));
     try{
       const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
       const d = await r.json();
+      semContato = 0;
       if(d.status==='done' && d.url){ s.video_url=d.url; s.video_status='pronto'; renderVideos(); toast('✅ Cena '+(i+1)+' pronta!'); return; }
-      if(d.status==='failed'){ throw new Error(d.error||'a cena falhou no motor de vídeo'); }
-    }catch(e){ s.video_status='erro'; s.video_error=String(e.message||'').slice(0,220); renderVideos(); return; }
+      if(d.status==='failed'){
+        s.video_status='erro'; s.video_error=String(d.error||'a cena falhou no motor de vídeo').slice(0,220);
+        renderVideos(); return;           // erro DE VERDADE: o motor recusou. Desistir é certo.
+      }
+    }catch(e){
+      // ⚠️ falha de REDE aqui não significa que a cena falhou — o clipe pode estar pronto e PAGO
+      // do outro lado. Antes, uma única consulta perdida matava a cena e o dinheiro junto.
+      semContato++;
+      if(semContato >= 10){               // 10 x 6s = 1 minuto inteiro sem contato
+        s.video_status='erro';
+        s.video_error='perdi contato com o servidor por 1 minuto — o clipe pode até ter ficado pronto; abra o projeto de novo antes de refazer';
+        renderVideos(); return;
+      }
+    }
   }
   s.video_status='erro'; s.video_error='demorou demais (mais de 8 minutos)'; renderVideos();
 }
@@ -1147,7 +1156,7 @@ function renderCortes(){
     const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
-      '<video src="'+s.video_url+'" playsinline preload="auto" controls></video>'+
+      '<video src="'+s.video_url+'#t=0.1" playsinline preload="auto" controls></video>'+
       '<div class="trim">'+
         '<div class="trim-bar" data-bar="'+i+'">'+
           '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
@@ -1325,14 +1334,29 @@ async function refazerCena(i){
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
   // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
   // senão ele clica de novo e paga US$ 0,40 duas vezes. Volta ao normal quando o card re-renderiza.
-  if(bt){ bt.disabled=true; bt.classList.add('refazendo'); bt.innerHTML='<span class="spin"></span>Refazendo… (2-4 min)'; }
+  if(bt){ bt.disabled=true; bt.classList.add('refazendo'); bt.innerHTML='<span class="spin"></span>Refazendo... (1 - 2 min)'; }
+  // guarda o clipe atual ANTES de mexer: se o refazer falhar, ele volta.
+  // Antes o código zerava video_url de cara — e uma falha deixava a cena órfã, sem vídeo nenhum,
+  // depois de o atendente já ter um clipe que funcionava.
+  const backup = { video_url:s.video_url, video_status:s.video_status, video_error:s.video_error,
+                   cortaIni:s.cortaIni, cortaFim:s.cortaFim,
+                   _fimFala:s._fimFala, _palavra:s._palavra, _porEnergia:s._porEnergia, _audio:s._audio };
+  // o clipe é outro e a fala pode ter mudado: o corte TEM que ser recalculado. Sem zerar isso, a
+  // cena nova era cortada no tempo da fala ANTIGA.
   s.video_url=''; s.cortaIni=0; s.cortaFim=0;
+  s._fimFala=undefined; s._palavra=''; s._porEnergia=false; s._audio=null; s._cortouManual=false;
   try{
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
+    await calcularCortes();                       // corte novo, medido no clipe novo
     renderCortes(); toast('✅ Cena '+(i+1)+' refeita!');
     salvarProjeto(true);
-  }catch(e){ toast('⚠️ '+traduzErroRede(e)); if(bt){ bt.disabled=false; bt.classList.remove('refazendo'); bt.innerHTML=old; } }
+  }catch(e){
+    // devolve o clipe anterior: falhar no refazer não pode custar um vídeo que já estava bom
+    Object.assign(s, backup);
+    renderCortes();
+    toast('⚠️ Não deu pra refazer: '+traduzErroRede(e)+(backup.video_url?' — mantive a cena anterior.':''));
+  }
 }
 
 // ⚠️ FLUXO DE UM CLIQUE (27/08) — pedido do Thiago.
