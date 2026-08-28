@@ -996,6 +996,17 @@ async function onMusica(ev){
 // um clique só. Quem mostra que está trabalhando é o BOTÃO (Gerando Vídeo… → Montando o vídeo…) e
 // a nota de tempo estimado logo abaixo dele. Aqui só aparece o que o atendente precisa DECIDIR:
 // qual cena falhou e por quê.
+// O valor embaixo do vídeo tem que acompanhar cada refazer, na hora. Antes só era escrito no fim
+// da montagem, então o atendente refazia 3 cenas (US$ 1,20) e continuava lendo o preço antigo.
+function pintarCusto(){
+  const el=document.getElementById('custoFinal'); if(!el) return;
+  const falta = Math.max(0, Number((custoUSD - custoLancadoUSD).toFixed(4)));
+  el.innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> '+
+    '<span style="color:var(--text-dim)">(tudo incluído: cenas, refeitas e montagens'+
+    (falta>0 ? ' — R$'+(falta*5.18).toFixed(2)+' entram no seu financeiro na próxima montagem' : ' — lançado no seu financeiro')+
+    ').</span>';
+}
+
 function pintarProgresso(){
   const box=document.getElementById('progresso'); if(!box||!cenas.length) return;
   box.innerHTML = cenas.map(function(s,i){
@@ -1297,7 +1308,9 @@ function ligarTrim(card, i){
     if(!arrastando) return;
     const t=tempoDoX(ev.clientX); const s=cenas[i];
     s._cortouManual = true;   // mexeu na mão: o pré-corte automático não mexe mais nesta cena
-    if(arrastando==='ini') s.cortaIni=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1));
+    // menos de 0,2s no início = encosta no zero. O atendente só corta o FIM na prática, e um
+    // arrasto de 3 pixels sem querer comia a primeira sílaba sem ninguém perceber.
+    if(arrastando==='ini'){ const v=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1)); s.cortaIni = v<0.2 ? 0 : v; }
     else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
     pintarTrim(i);
     seek(arrastando==='ini' ? Number(s.cortaIni) : CLIPE_SEG-Number(s.cortaFim));   // vídeo acompanha a alça
@@ -1317,6 +1330,14 @@ function ligarTrim(card, i){
   bar.addEventListener('pointerdown', function(ev){ if(arrastando) return; video.pause(); seek(tempoDoX(ev.clientX)); });
   // marcador branco acompanha a reprodução
   video.addEventListener('timeupdate', function(){ if(cur) cur.style.left=((video.currentTime||0)/CLIPE_SEG*100)+'%'; });
+  // ⚠️ o "#t=0.1" do src serve só pra pintar a capa. Sem isto o vídeo FICA em 0,1s: o marcador
+  // branco nasce fora do zero e o play come o comecinho da fala.
+  const zerar = function(){
+    try{ if(video.currentTime > 0 && video.currentTime < 0.5) video.currentTime = 0; }catch(e){}
+    if(cur) cur.style.left='0%';
+  };
+  video.addEventListener('loadeddata', zerar, { once:true });
+  if(video.readyState >= 2) zerar();   // já carregado (card redesenhado com o vídeo em cache)
 }
 // toca só o pedaço que vai entrar na montagem
 function verTrecho(i){
@@ -1352,7 +1373,7 @@ async function refazerCena(i){
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     await calcularCortes();                       // corte novo, medido no clipe novo
-    renderCortes(); toast('✅ Cena '+(i+1)+' refeita!');
+    renderCortes(); pintarCusto(); toast('✅ Cena '+(i+1)+' refeita!');
     salvarProjeto(true);
   }catch(e){
     // devolve o clipe anterior: falhar no refazer não pode custar um vídeo que já estava bom
@@ -1417,8 +1438,7 @@ async function finalizar(btnId){
         custoUSD += Number(d2.montagemUSD||0);
         custoLancadoUSD = custoUSD;                 // daqui pra frente, só o que for novo é lançado
         document.getElementById('videoFinal').src = d2.url;
-        document.getElementById('custoFinal').innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> '+
-          '<span style="color:var(--text-dim)">(tudo incluído: cenas, refeitas e montagens — lançado no seu financeiro).</span>';
+        pintarCusto();
         montando=false; pintarProgresso();
         document.getElementById('notaMontagem').textContent='';
         document.getElementById('telaFinal').classList.remove('hide'); rolarPara('telaFinal');
