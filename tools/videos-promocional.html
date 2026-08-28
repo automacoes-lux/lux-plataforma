@@ -290,6 +290,17 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
       </div>
 
+      <!-- legenda automática: ligada por padrão, o atendente desliga aqui. Fica depois da música
+           porque é a última decisão antes de montar. -->
+      <div class="step" style="margin-top:.8rem">
+        <div class="step-head"><div class="step-title">Legendas automáticas</div></div>
+        <div class="step-hint">A fala aparece escrita, com a palavra saltando conforme é dita. Sai da própria transcrição, sem custo a mais.</div>
+        <div class="chips" id="chipsLegenda">
+          <div class="chip on" data-v="sim">Com legenda</div>
+          <div class="chip" data-v="nao">Sem legenda</div>
+        </div>
+      </div>
+
       <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO</button>
       <div class="soon-note" id="notaMontagem"></div>
     </div>
@@ -455,7 +466,7 @@ function estadoAtual(){
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
     personagem: personagemImg,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
-    trilha: trilhaSel, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
+    trilha: trilhaSel, legendas: legendas, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
   };
 }
 async function salvarProjeto(silencioso){
@@ -529,6 +540,10 @@ async function abrirProjeto(id){
     // senão reabrir e remontar cobraria o histórico inteiro de novo.
     custoLancadoUSD = (p.custoLancadoUSD===undefined) ? custoUSD : (Number(p.custoLancadoUSD)||0);
     trilhaSel = p.trilha||null; musica=null;
+    legendas = (p.legendas === undefined) ? true : !!p.legendas;   // projeto antigo assume ligada
+    document.querySelectorAll('#chipsLegenda .chip').forEach(function(c){
+      c.classList.toggle('on', (c.dataset.v==='sim') === legendas);
+    });
     pintarTrilhas();
     videoFinalUrl = p.videoUrl||'';
     renderThumbs('product'); renderThumbs('environment');
@@ -886,7 +901,10 @@ function ligarChips(id, cb){
 // Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
 // no prompt negativo do Veo (o oposto do escolhido).
 let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
+// legenda automática LIGADA por padrão (28/08). Desligar é escolha do atendente.
+let legendas = true;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; });
+ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 
 // Monta o payload de referências (sem os thumbUrl, que são pesados)
 function refsPayload(){
@@ -1020,6 +1038,17 @@ function pintarProgresso(){
     if(s.video_status!=='erro') return '';
     return '<div class="alerta" style="margin-bottom:.45rem">⚠️ Cena '+(i+1)+': '+esc(s.video_error||'falhou')+'</div>';
   }).join('');
+}
+
+// Reescreve a LEGENDA a partir da fala atual. Só roda quando o atendente mexeu na fala — senão a
+// legenda que a IA já escreveu no roteiro continua valendo e não se gasta chamada à toa.
+async function refazerLegenda(i){
+  const s = cenas[i]; if(!s || !s._legendaSuja) return;
+  try{
+    const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: s.fala||'' }) });
+    const d = await r.json();
+    if(d.ok && d.legenda){ s.legenda = d.legenda; s._legendaSuja = false; custoUSD += (d.aiCostUSD||0); }
+  }catch(e){ /* se falhar, a legenda velha fica — melhor que nenhuma */ }
 }
 
 // baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
@@ -1177,7 +1206,8 @@ function renderCortes(){
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
-          ? ('<textarea data-faed="'+i+'" style="min-height:58px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+          ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (numeral)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
                '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
@@ -1206,11 +1236,16 @@ function renderCortes(){
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
-      // ⚠️ 27/08: a fala vem junto pro editor. Quando o atendente ouve a cena e vê que a frase
-      // está errada, ele corrige AQUI e clica em Refazer — antes tinha que voltar pro passo 2.
-      '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
-      '<textarea data-faed="'+i+'" style="min-height:58px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      // ⚠️ DUAS CAIXAS (28/08). São o MESMO conteúdo em formatos diferentes, e os dois importam:
+      //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
+      //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
+      // Mexer na fala suja a legenda: ao Refazer, ela é reescrita a partir da fala nova (/rotLegenda).
+      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito)</span></div>'+
+      '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+      '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
+      '<textarea data-faed="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
+      '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda será reescrita quando você clicar em Refazer.':'')+'</div>'+
       '<div class="btn-row" style="margin-top:.4rem">'+
         '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
@@ -1225,9 +1260,20 @@ function renderCortes(){
     el.addEventListener('input', function(){
       const i=+el.dataset.faed;
       cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      // a legenda ficou desatualizada: quem reescreve é o Refazer, com a fala nova
+      cenas[i]._legendaSuja = true;
       alertaFalaEditor(i);
+      const av = document.querySelector('[data-avisoleg="'+i+'"]');
+      if(av) av.textContent = 'A legenda será reescrita quando você clicar em Refazer.';
       const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
       if(espelho && espelho.value !== el.value){ espelho.value = el.value; alertaFala(i); }
+    });
+  });
+  // a legenda também pode ser corrigida na mão; nesse caso ela deixa de estar "suja"
+  box.querySelectorAll('[data-leg]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.leg;
+      cenas[i].legenda = el.value; cenas[i]._legendaSuja = false;
     });
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
@@ -1256,6 +1302,7 @@ async function calcularCortes(){
       if(!d.ok) throw new Error(d.error||'falha na transcrição');
       s._fimFala = Number(d.fimFala);
       s._inicioFala = Number(d.inicioFala||0);   // ~0 = o Veo começou a falar no primeiro quadro
+      s._marcacoes = Array.isArray(d.marcacoes) ? d.marcacoes : [];   // alimenta a legenda automática
       s._palavra = d.palavra || '';
       custoUSD += (d.custoUSD||0);
     }catch(e){
@@ -1399,6 +1446,7 @@ async function refazerCena(i){
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     await calcularCortes();                       // corte novo, medido no clipe novo
+    await refazerLegenda(i);                      // a legenda acompanha a fala nova
     renderCortes(); pintarCusto(); toast('✅ Cena '+(i+1)+' refeita!');
     salvarProjeto(true);
   }catch(e){
@@ -1437,9 +1485,10 @@ async function finalizar(){
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
   montando=true; pintarProgresso();
   try{
-    const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0) }));
+    const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0),
+      marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
-      musicUrl: trilhaSel?trilhaSel.url:null, music: musica }) });
+      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     for(let t=0;t<80;t++){
