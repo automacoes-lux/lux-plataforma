@@ -876,8 +876,7 @@ async function acompanharVideo(i, predictionId){
           s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
           custoUSD += (d.transcricao.custoUSD||0);
           if(!s._cortouManual){
-            const alvo = Math.min(CLIPE_SEG, TETO_FIM, s._fimFala + FOLGA_POS_FALA);
-            const corte = Math.max(0, CLIPE_SEG - alvo);
+            const corte = Math.max(0, CLIPE_SEG - pontoDeCorte(s._fimFala));
             s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
           }
         }
@@ -1174,8 +1173,11 @@ function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math
 // truncada. Medimos: a marca de fim DAS PALAVRAS DO MEIO é só a fronteira pra próxima palavra
 // (fim de uma == início da seguinte em 11 de 13 pares), mas a ÚLTIMA não tem seguinte — ali o
 // número é acústico de verdade. Daí dar pra chegar tão perto sem comer a fala.
-const FOLGA_POS_FALA = 0.60;   // respiro depois da última palavra (era 0,15)
+const FOLGA_POS_FALA = 0.50;   // corte automático: 0,5s depois da última palavra (Thiago, 28/08)
 const TETO_FIM = 7.0;          // nunca guardar além disto: dos ~7s pros 8s o Veo distorce
+// o ponto onde o corte automático cai, a partir do fim da fala. Usado no cálculo do corte,
+// na LISTRA BRANCA da barra e (por consequência) na alça — os três sempre no MESMO lugar.
+function pontoDeCorte(fimFala){ return Math.min(CLIPE_SEG, TETO_FIM, Number(fimFala) + FOLGA_POS_FALA); }
 let audioCtx = null;
 const analiseCache = {};
 
@@ -1228,11 +1230,15 @@ function desenharOnda(i){
     ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
     ctx.fillRect(x, (A-h)/2, 1, h);
   }
-  // o risco branco marca o fim da fala da TRANSCRIÇÃO (mais confiável que o pico de energia)
-  const marca = (cenas[i]._fimFala !== undefined && cenas[i]._fimFala !== null) ? cenas[i]._fimFala : a.fimFala;
-  if(marca < CLIPE_SEG - 0.05){
+  // a LISTRA BRANCA marca o PONTO DE CORTE AUTOMÁTICO (fim da fala + 0,5s, com teto) — o MESMO
+  // lugar onde a alça amarela nasce. Ela é a referência fixa: se o atendente arrastar a alça, a
+  // listra continua mostrando onde o automático tinha cortado. (Antes ela marcava o fim da FALA,
+  // e apareciam dois riscos separados na barra sem explicação.)
+  const fimF = (cenas[i]._fimFala !== undefined && cenas[i]._fimFala !== null) ? cenas[i]._fimFala : a.fimFala;
+  const marca = pontoDeCorte(fimF);
+  if(marca < CLIPE_SEG - 0.02){
     const x = Math.round(marca/CLIPE_SEG*L);
-    ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(x,0,1,A);
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(x-1,0,2,A);
   }
 }
 
@@ -1348,7 +1354,10 @@ async function calcularCortes(){
 async function umCorte(s,i){
   {
     if(!s.video_url) return;
-    if(s._fimFala !== undefined) return;             // já transcrito — não paga de novo
+    // pula só se já tem o corte E as marcações (ou se a transcrição já falhou e caiu na energia).
+    // Antes bastava ter _fimFala — cena vinda de projeto antigo ficava sem marcações pra sempre,
+    // e a legenda saía vazia sem ninguém saber por quê.
+    if(s._fimFala !== undefined && ((s._marcacoes||[]).length || s._porEnergia)) return;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
     if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
     try{
@@ -1366,8 +1375,7 @@ async function umCorte(s,i){
     }
     if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
       // guarda o respiro, mas trava no TETO_FIM pra não trazer a distorção junto
-      const alvo = Math.min(CLIPE_SEG, TETO_FIM, s._fimFala + FOLGA_POS_FALA);
-      const corte = Math.max(0, CLIPE_SEG - alvo);
+      const corte = Math.max(0, CLIPE_SEG - pontoDeCorte(s._fimFala));
       // o piso caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
       // cortes pequenos que agora valem a pena fazer.
       s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
@@ -1497,6 +1505,7 @@ async function refazerCena(i){
   // cena nova era cortada no tempo da fala ANTIGA.
   s.video_url=''; s.cortaIni=0; s.cortaFim=0;
   s._fimFala=undefined; s._palavra=''; s._porEnergia=false; s._audio=null; s._cortouManual=false;
+  s._marcacoes=[]; s._inicioFala=undefined;   // o clipe é outro: marcações da fala antiga não valem
   try{
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
@@ -1559,6 +1568,13 @@ async function finalizar(){
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
+    // o Worker conta o que houve com a legenda (ok / sem-marcacoes / erro). Se ela estava ligada
+    // e não entrou, o atendente PRECISA saber — era exatamente o defeito que ficou dias escondido.
+    if(legendas && d.legenda && d.legenda !== 'ok'){
+      const nm=document.getElementById('notaMontagem');
+      if(nm) nm.innerHTML='<span style="color:#F5B7B1">⚠️ O vídeo está sendo montado SEM legenda ('+esc(d.legenda)+'). Se precisar dela, refaça as cenas e monte de novo — ou avise o admin.</span>';
+      toast('⚠️ Montando SEM legenda: '+d.legenda);
+    }
     for(let t=0;t<80;t++){
       await new Promise(x=>setTimeout(x, 6000));
       const aLancar = Math.max(0, Number((custoUSD - custoLancadoUSD).toFixed(4)));
