@@ -849,7 +849,7 @@ async function acompanharVideo(i, predictionId){
     await new Promise(r=>setTimeout(r, 6000));
     relogioCena(i);
     try{
-      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1 }) });
+      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1, fala: s.fala||'' }) });
       const d = await r.json();
       semContato = 0;
 
@@ -867,6 +867,20 @@ async function acompanharVideo(i, predictionId){
 
       if(d.status==='done' && d.url){
         s.video_url=d.url; s.video_status='pronto'; s.video_error='';
+        // ⚠️ o corte já vem junto com o clipe (28/08). Antes a tela pedia a transcrição num
+        // segundo pedido, que baixava o clipe DE NOVO — eram ~15s com a linha de corte vazia.
+        if(d.transcricao){
+          s._fimFala   = Number(d.transcricao.fimFala);
+          s._inicioFala= Number(d.transcricao.inicioFala||0);
+          s._palavra   = d.transcricao.palavra||'';
+          s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
+          custoUSD += (d.transcricao.custoUSD||0);
+          if(!s._cortouManual){
+            const alvo = Math.min(CLIPE_SEG, TETO_FIM, s._fimFala + FOLGA_POS_FALA);
+            const corte = Math.max(0, CLIPE_SEG - alvo);
+            s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
+          }
+        }
         renderVideos();
         await salvarProjeto(true);    // ⚠️ SALVA A CADA CENA: fechar a aba aqui não perde mais nada
         toast('✅ Cena '+(i+1)+' pronta!');
@@ -1238,7 +1252,7 @@ function renderCortes(){
           // ainda vindo: nada de vermelho e NENHUM botão de refazer — clicar aqui pagaria
           // US$ 0,40 por uma cena que já está sendo gerada.
           : ('<div class="soon-note" style="text-align:center;padding:1.4rem 0">'+
-               '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">(leva de 2 a 4 minutos)</span>'+
+               '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">(leva de 1 a 2 minutos)</span>'+
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
@@ -1327,9 +1341,14 @@ function renderCortes(){
 // estivesse aqui dentro, a onda sairia em branco e o corte nem seria calculado até o atendente
 // abrir a aba. O resultado fica em s._fimFala / s.cortaFim e o editor só lê depois.
 async function calcularCortes(){
-  for(let i=0;i<cenas.length;i++){
-    const s=cenas[i]; if(!s.video_url) continue;
-    if(s._fimFala !== undefined) continue;          // já transcrito — não paga de novo
+  // ⚠️ EM PARALELO (28/08). Era um for com await: 4 cenas viravam 4 esperas em fila.
+  // Quase sempre não sobra nada pra fazer aqui — a transcrição já veio junto com o clipe.
+  await Promise.all(cenas.map(function(s,i){ return umCorte(s,i); }));
+}
+async function umCorte(s,i){
+  {
+    if(!s.video_url) return;
+    if(s._fimFala !== undefined) return;             // já transcrito — não paga de novo
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
     if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
     try{
@@ -1358,13 +1377,13 @@ async function calcularCortes(){
 
 async function prepararAudios(){
   await calcularCortes();                            // barato: se já transcreveu, não repete
+  // as ondas também em paralelo — são 4 downloads independentes
+  await Promise.all(cenas.map(async function(s,i){
+    if(s.video_url && !s._audio){ const a = await analisarAudio(s.video_url); if(a) s._audio = a; }
+  }));
   for(let i=0;i<cenas.length;i++){
     const s=cenas[i]; if(!s.video_url) continue;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
-    if(!s._audio){                                   // a onda é só desenho
-      const a = await analisarAudio(s.video_url);
-      if(a) s._audio = a;
-    }
     desenharOnda(i); pintarTrim(i);
     if(nota){
       if(s._fimFala === null || s._fimFala === undefined){
@@ -1516,6 +1535,19 @@ async function iniciarCenasSeNecessario(){
 async function finalizar(){
   if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
+  // ⚠️ 28/08: dava pra clicar em MONTAR antes de a transcrição terminar, e o vídeo saía SEM
+  // legenda mesmo com a legenda ligada — silenciosamente. Agora espera o que faltar.
+  if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
+    const bt=document.getElementById('btnFinal');
+    if(bt) bt.innerHTML='<span class="spin"></span>Preparando as legendas…';
+    await calcularCortes();
+    if(cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
+      if(!confirm('Não consegui a transcrição de alguma cena.\n\nMontar mesmo assim, SEM legenda?')) {
+        if(bt) bt.innerHTML='🎬 MONTAR O VÍDEO';
+        return;
+      }
+    }
+  }
   const btn=document.getElementById('btnFinal');
   const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
