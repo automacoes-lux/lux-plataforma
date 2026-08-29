@@ -207,7 +207,7 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:4px}
 .cut-editor.show{display:block}
 .cut-title{font-size:13px;color:#E8A84C;font-weight:600;margin-bottom:10px;line-height:1.5}
-#waveCanvas{width:100%;height:84px;display:block;border-radius:6px;background:#0d0d0d;margin-bottom:12px}
+#waveCanvas{width:100%;height:84px;display:block;border-radius:6px;background:#0d0d0d;margin-bottom:12px;cursor:pointer;touch-action:manipulation}
 .cut-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);margin-bottom:6px;gap:10px}
 .cut-row b{color:var(--gold);font-size:13px;white-space:nowrap}
 input[type=range]{width:100%;accent-color:var(--gold);height:28px}
@@ -484,7 +484,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- editor de corte (música > 1:00) -->
       <div class="cut-editor" id="cutEditor">
         <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o <b>1 minuto</b> que vai pro clipe:</div>
-        <canvas id="waveCanvas"></canvas>
+        <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
+        <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
         <div class="cut-row"><span>O minuto começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
         <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
         <div class="fades-row">
@@ -770,7 +771,8 @@ let rawAudioBuffer = null;         // AudioBuffer da música original (> 1:00)
 let rawAudioName = '';
 let wavePeaks = null;
 let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
-let playheadFrac = -1, playheadRAF = 0;   // marcador branco tocando na waveform
+let playheadFrac = -1, playheadRAF = 0;   // marcador branco tocando na waveform (dentro da SELEÇÃO)
+let playheadAbs  = -1;                    // marcador da escuta LIVRE (clique na onda) — fração da música inteira
 
 // Wrapper de fetch — usa __luxFetch (token do shell) se existir
 function api(path, opts) {
@@ -2330,12 +2332,57 @@ function drawWave() {
   ctx.fillRect(selA, 0, 2, H);
   ctx.fillRect(selB - 2, 0, 2, H);
 
-  // marcador branco da posição tocando (durante o preview)
+  // marcador branco da posição tocando (durante o preview do trecho escolhido)
   if (playheadFrac >= 0) {
     const px = selA + playheadFrac * (selB - selA);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(px - 1, 0, 2, H);
   }
+  // marcador da ESCUTA LIVRE (clicou na onda pra adiantar) — percorre a música inteira
+  if (playheadAbs >= 0) {
+    const px = playheadAbs * W;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(px - 1, 0, 2, H);
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(px, 5, 4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── ESCUTA LIVRE: clique/arraste na onda toca a música A PARTIR dali ─────────
+// Só para OUVIR e achar o trecho bom — NÃO muda o minuto escolhido (isso é a barrinha
+// "O minuto começa em"). Clicar de novo em outro ponto pula pra lá; clicar no mesmo para.
+function ouvirDaOnda(evt) {
+  const canvas = document.getElementById('waveCanvas');
+  if (!canvas || !rawAudioBuffer) return;
+  const r = canvas.getBoundingClientRect();
+  if (!r.width) return;   // onda ainda não desenhada (aba oculta) → ignora o clique
+  const t = (evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+  const frac = Math.max(0, Math.min(0.999, (t.clientX - r.left) / r.width));
+  const dur = rawAudioBuffer.duration;
+  const sec = frac * dur;
+  stopPreviewCorte();   // encerra qualquer reprodução anterior (preview do trecho ou escuta livre)
+  try {
+    previewCtxAudio = new (window.AudioContext || window.webkitAudioContext)();
+    previewSrc = previewCtxAudio.createBufferSource();
+    previewSrc.buffer = rawAudioBuffer;                 // música CRUA (sem fades) — é só audição
+    previewSrc.connect(previewCtxAudio.destination);
+    previewSrc.onended = () => stopPreviewCorte();
+    previewSrc.start(0, sec);
+    previewPlaying = true;
+    playheadAbs = frac;   // marcador aparece JÁ no ponto clicado (não espera o 1º quadro da animação)
+    drawWave();
+    const b = document.getElementById('btnCutPreview'); if (b) b.textContent = '⏹ Parar';
+    const t0 = previewCtxAudio.currentTime;
+    const tick = () => {
+      if (!previewPlaying || !previewCtxAudio) return;
+      playheadAbs = Math.min(1, (sec + (previewCtxAudio.currentTime - t0)) / dur);
+      drawWave();
+      if (playheadAbs < 1) playheadRAF = requestAnimationFrame(tick);
+    };
+    playheadRAF = requestAnimationFrame(tick);
+    const lbl = document.getElementById('cutHint');
+    if (lbl) lbl.textContent = '🔊 Ouvindo a partir de ' + fmtTime(Math.round(sec)) + ' — clique em outro ponto pra pular, ou em "Parar".';
+  } catch (err) { toast('⚠️ ' + err.message); }
 }
 
 // Corte + fades (curva x² — mesma da ferramenta Corte)
@@ -2398,9 +2445,12 @@ function stopPreviewCorte() {
   previewSrc = null; previewCtxAudio = null; previewPlaying = false;
   if (playheadRAF) { cancelAnimationFrame(playheadRAF); playheadRAF = 0; }
   playheadFrac = -1;
+  playheadAbs = -1;
   drawWave();
   const b = document.getElementById('btnCutPreview');
   if (b) b.textContent = '▶ Ouvir o resultado';
+  const lbl = document.getElementById('cutHint');
+  if (lbl) lbl.textContent = '👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).';
 }
 
 // PCM Int16 + encode MP3 (LameJS 192kbps) — portado da ferramenta Corte
