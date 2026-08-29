@@ -495,7 +495,9 @@ function pintarBarra(){
 }
 
 // ── Estado ──
-let projectId = 'promo_' + Date.now();
+// sufixo aleatorio: so o Date.now() colide se dois atendentes clicam no MESMO milissegundo,
+// e ai os dois gravariam na mesma chave do KV e na mesma pasta do R2.
+let projectId = 'promo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 let salvoEm = '';
 let refs = { product:[], environment:[], characters:[], logo:[] };
 let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) — a referência dos 4 clipes
@@ -503,6 +505,10 @@ let campanha = null;              // { marca, objetivo, tom, argumento }
 let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
 let trilhas = [], trilhaSel = null, musica = null;
 let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
+// A listagem do KV demora alguns segundos pra enxergar um projeto RECÉM-criado. Como o aviso de
+// salvamento manda conferir "na aba Projetos", o atendente chegava lá e não achava o que acabou
+// de salvar. Esta marca deixa a aba mostrar o projeto atual pela memória enquanto o servidor não alcança.
+let projetoJaSalvo = false;
 
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
@@ -542,6 +548,7 @@ async function salvarProjeto(silencioso){
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao salvar');
     projectId=d.projectId||projectId; salvoEm=d.atualizadoEm||'';
+    projetoJaSalvo = true;
     const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='💾 Salvo em '+salvoEm+' — está na aba Projetos.';
     if(!silencioso) toast('💾 Projeto salvo!');
     return true;
@@ -567,6 +574,14 @@ async function carregarProjetos(){
   try{
     const r=await api('/histProjetos'); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
+    // ainda não propagou? mostra o projeto atual pela memória, pra ele nunca "sumir" logo após salvar
+    if(projetoJaSalvo && projectId && !d.projetos.concat(d.resultados).some(function(p){ return p.projectId===projectId; })){
+      const eu = { projectId: projectId, cliente: clienteNome(), passo: passoAtual, passoMax: passoMax,
+                   atualizadoEm: 'agora mesmo', criadoEm: '', videoUrl: videoFinalUrl || null,
+                   thumb: personagemImg || null, atendente: '',
+                   custoBRL: Number((custoUSD * 5.18).toFixed(2)) };
+      (videoFinalUrl ? d.resultados : d.projetos).unshift(eu);
+    }
     lp.innerHTML = d.projetos.length ? d.projetos.map(p=>pjCard(p,'proj')).join('')
       : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>';
     lr.innerHTML = d.resultados.length ? d.resultados.map(p=>pjCard(p,'res')).join('')
@@ -784,7 +799,7 @@ function renderRoteiro(){
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="badge badge-fn">'+(PAPEL_ROT[i]||'')+'</span></div>'+
       (s.descricao?('<div class="cc-lin">'+esc(s.descricao)+'</div>'):'')+
-      '<textarea data-fa="'+i+'" style="min-height:64px">'+esc(s.fala)+'</textarea>'+
+      '<textarea data-fa="'+i+'" maxlength="160" style="min-height:64px">'+esc(s.fala)+'</textarea>'+
       '<div class="alerta hide" data-al="'+i+'"></div>';
     bloco.appendChild(d);
   });
@@ -802,6 +817,11 @@ function renderRoteiro(){
 function alertaFalaEditor(i){
   const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala);
+  // CONTENÇÃO: o aviso sozinho não impedia nada. Fora da faixa, o botão Refazer fica desligado —
+  // senão uma fala gigante escrita à mão ia direto pro Veo, saía cortada no meio e custava US$ 0,40.
+  // (não mexe no botão enquanto ele está no estado "Refazendo", pra não reabilitar no meio.)
+  const btR = document.querySelector('#boxCortes [data-refaz="'+i+'"]');
+  if(btR && !btR.classList.contains('refazendo')) btR.disabled = (n > PALAVRAS_MAX || n < PALAVRAS_MIN);
   if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+PALAVRAS_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
   if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+PALAVRAS_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
   el.className='alerta hide'; el.innerHTML='';
@@ -831,7 +851,7 @@ function copiarRoteiro(){
   }
   t+='\n';
   cenas.forEach(function(s,i){
-    t += 'CENA '+(i+1)+' — '+(PAPEL_ROT[i]||'')+' | 8 SEGUNDOS\n';
+    t += 'CENA '+(i+1)+' — '+(PAPEL_ROT[i]||'')+'\n';   // sem a duracao: esse texto e colado pro cliente, e os 8s sao informacao interna
     if(s.descricao) t += s.descricao+'\n';
     t += 'FALA: "'+(s.fala||'')+'"\n\n';
   });
@@ -1386,7 +1406,7 @@ function renderCortes(){
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (numeral)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-             '<textarea data-faed="'+i+'" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" maxlength="160" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
                '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
@@ -1422,7 +1442,7 @@ function renderCortes(){
       '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito)</span></div>'+
       '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
       '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
-      '<textarea data-faed="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<textarea data-faed="'+i+'" maxlength="160" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda será reescrita quando você clicar em Refazer.':'')+'</div>'+
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
@@ -1620,6 +1640,11 @@ function verTrecho(i){
 // Refaz UMA cena só — o atendente paga apenas essa (US$ 0,40), não as quatro.
 async function refazerCena(i){
   const s=cenas[i]; if(!s) return;
+  // Trava final: no passo 2 o botão de produzir já barra fora da faixa, mas aqui no editor a fala
+  // pode ter sido reescrita à mão depois. Barra ANTES do confirm, pra nem perguntar do custo.
+  const np = contarPalavras(s.fala);
+  if(np > PALAVRAS_MAX){ toast('⛔ Fala com '+np+' palavras — o máximo é '+PALAVRAS_MAX+'. Encurte antes de refazer.'); return; }
+  if(np < PALAVRAS_MIN){ toast('⛔ Fala com '+np+' palavras — o mínimo é '+PALAVRAS_MIN+'. Complete antes de refazer.'); return; }
   if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
   // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
