@@ -59,6 +59,7 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-in{flex:1;min-width:0}
 .pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
+.pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
@@ -509,6 +510,8 @@ let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
 // salvamento manda conferir "na aba Projetos", o atendente chegava lá e não achava o que acabou
 // de salvar. Esta marca deixa a aba mostrar o projeto atual pela memória enquanto o servidor não alcança.
 let projetoJaSalvo = false;
+// quem e atendente so enxerga os proprios projetos, entao o nome so faz sentido pro admin
+let souAdmin = false;
 
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
@@ -564,9 +567,12 @@ function pjCard(p, tipo){
     ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
       '<button onclick="window.open(\''+escA(p.videoUrl)+'\',\'_blank\')">⬇️ Baixar</button>'
     : '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">▶ Continuar</button>';
+  // nome de quem fez: so pro admin, que e quem ve a lista dos 18. Pro atendente seria
+  // sempre o proprio nome repetido em todo card.
+  const quem = (souAdmin && p.atendente) ? '<div class="pj-at">👤 '+esc(p.atendente)+'</div>' : '';
   return '<div class="pj">'+th+
     '<div class="pj-in"><div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
-      '<div class="pj-sb">'+sub+'</div></div>'+
+      '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+
     '<div class="pj-bt">'+bts+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
 }
 async function carregarProjetos(){
@@ -574,6 +580,7 @@ async function carregarProjetos(){
   try{
     const r=await api('/histProjetos'); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
+    souAdmin = !!d.isAdmin;
     // ainda não propagou? mostra o projeto atual pela memória, pra ele nunca "sumir" logo após salvar
     if(projetoJaSalvo && projectId && !d.projetos.concat(d.resultados).some(function(p){ return p.projectId===projectId; })){
       const eu = { projectId: projectId, cliente: clienteNome(), passo: passoAtual, passoMax: passoMax,
