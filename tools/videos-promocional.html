@@ -62,6 +62,17 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
 .alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
+/* seletor de atendente (só admin) — usado pra devolver o projeto pra quem pediu ajuda */
+.atr-fundo{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:90}
+.atr-cx{background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.1rem;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column}
+.atr-tit{font-weight:600;font-size:15px;color:var(--text);margin-bottom:.2rem}
+.atr-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:.8rem;line-height:1.45}
+.atr-lista{overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem}
+.atr-item{background:var(--bg-input);border:.5px solid var(--border);color:var(--text);border-radius:8px;padding:.6rem .8rem;font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit}
+.atr-item:hover{border-color:var(--gold);color:var(--gold)}
+.atr-item.dono{border-color:var(--gold);color:var(--gold)}
+.atr-item small{display:block;color:var(--text-dim);font-size:11px;margin-top:.15rem}
+.atr-fechar{background:transparent;border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.55rem;font-size:13px;cursor:pointer;font-family:inherit}
 .pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
@@ -571,6 +582,7 @@ let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
 let projetoJaSalvo = false;
 // quem e atendente so enxerga os proprios projetos, entao o nome so faz sentido pro admin
 let souAdmin = false;
+let _ultProjetos = [], _ultResultados = [];   // usados pelo seletor de atribuição
 
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
@@ -629,10 +641,12 @@ function pjCard(p, tipo){
   // nome de quem fez: so pro admin, que e quem ve a lista dos 18. Pro atendente seria
   // sempre o proprio nome repetido em todo card.
   const quem = (souAdmin && p.atendente) ? '<div class="pj-at">👤 '+esc(p.atendente)+'</div>' : '';
+  // Atribuir: só o admin. É como ele devolve o projeto pro atendente depois de ajudar.
+  const atr = souAdmin ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
   return '<div class="pj">'+th+
     '<div class="pj-in"><div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
       '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+
-    '<div class="pj-bt">'+bts+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
+    '<div class="pj-bt">'+bts+atr+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
 }
 async function carregarProjetos(){
   const lp=document.getElementById('listaProjetos'), lr=document.getElementById('listaResultados');
@@ -640,6 +654,7 @@ async function carregarProjetos(){
     const r=await api('/histProjetos'); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     souAdmin = !!d.isAdmin;
+    _ultProjetos = d.projetos||[]; _ultResultados = d.resultados||[];
     // ainda não propagou? mostra o projeto atual pela memória, pra ele nunca "sumir" logo após salvar
     if(projetoJaSalvo && projectId && !d.projetos.concat(d.resultados).some(function(p){ return p.projectId===projectId; })){
       const eu = { projectId: projectId, cliente: clienteNome(), passo: passoAtual, passoMax: passoMax,
@@ -657,6 +672,57 @@ async function carregarProjetos(){
     if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
   }
 }
+// ══ ATRIBUIR PROJETO A OUTRO ATENDENTE (só admin) ══════════════════════════
+// Nasceu de um caso real: o admin abria o projeto do atendente pra ajudar, salvava, e o
+// projeto passava pra ele — o atendente não conseguia mais terminar. O Worker parou de
+// trocar o dono sozinho; isto aqui é a troca EXPLÍCITA, quando ela é desejada.
+let _atendentesCache = null;
+async function abrirAtribuir(projId){
+  const alvo = [].concat(_ultProjetos||[], _ultResultados||[]).find(function(p){ return p.projectId===projId; });
+  const donoAtual = alvo ? (alvo.atendente||'') : '';
+  if(!_atendentesCache){
+    try{
+      const r = await api('/histAtendentes'); const d = await r.json();
+      if(!d.ok) throw new Error(d.error||'não consegui listar');
+      _atendentesCache = d.atendentes||[];
+    }catch(e){ toast('⚠️ '+e.message); return; }
+  }
+  const fundo = document.createElement('div');
+  fundo.className = 'atr-fundo';
+  fundo.innerHTML =
+    '<div class="atr-cx">'+
+      '<div class="atr-tit">Atribuir a quem?</div>'+
+      '<div class="atr-sub">'+(alvo?('<b>'+esc(alvo.cliente||'projeto')+'</b> — hoje é de '+esc(donoAtual||'ninguém')+'.'):'')+
+        ' Quem receber passa a ver o projeto na aba <b>Projetos</b> dele.</div>'+
+      '<div class="atr-lista">'+
+        _atendentesCache.map(function(a){
+          const eDono = a.nome === donoAtual;
+          return '<button class="atr-item'+(eDono?' dono':'')+'" data-em="'+escA(a.email)+'">'+
+                 esc(a.nome)+(eDono?' · dono atual':'')+'<small>'+esc(a.email)+'</small></button>';
+        }).join('')+
+      '</div>'+
+      '<button class="atr-fechar">Cancelar</button>'+
+    '</div>';
+  document.body.appendChild(fundo);
+  const fecha = function(){ if(fundo.parentNode) fundo.parentNode.removeChild(fundo); };
+  fundo.addEventListener('click', function(e){ if(e.target===fundo) fecha(); });
+  fundo.querySelector('.atr-fechar').addEventListener('click', fecha);
+  fundo.querySelectorAll('.atr-item').forEach(function(b){
+    b.addEventListener('click', async function(){
+      const email = b.dataset.em;
+      b.disabled = true; b.textContent = 'Atribuindo…';
+      try{
+        const r = await api('/histAtribuir', { method:'POST', body: JSON.stringify({ projectId:projId, email:email }) });
+        const d = await r.json();
+        if(!d.ok) throw new Error(d.error||'falhou');
+        fecha();
+        toast('✅ Projeto atribuído a '+d.para+'.');
+        carregarProjetos();
+      }catch(e){ toast('⚠️ '+e.message); fecha(); }
+    });
+  });
+}
+
 async function abrirProjeto(id){
   toast('📂 Abrindo…');
   try{
