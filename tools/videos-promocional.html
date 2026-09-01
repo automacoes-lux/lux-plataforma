@@ -178,6 +178,27 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .trilha-play:hover{border-color:var(--gold);color:var(--gold)}
 .trilha-item.sel .trilha-play{border-color:var(--gold);color:var(--gold)}
 .trilha-play.tocando{background:var(--gold);color:#141414;border-color:transparent}
+/* ── editor de corte da trilha (portado do Vídeo Avatar) ─────────────────── */
+.cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:.8rem}
+.cut-editor.show{display:block}
+.cut-title{font-size:13px;color:#E8A84C;font-weight:600;margin-bottom:10px;line-height:1.5}
+#waveCanvas{width:100%;height:84px;display:block;border-radius:6px;background:#0d0d0d;margin-bottom:12px;cursor:pointer;touch-action:manipulation}
+.cut-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);margin-bottom:6px;gap:10px}
+.cut-row b{color:var(--gold);font-size:13px;white-space:nowrap}
+.cut-editor input[type=range]{width:100%;accent-color:var(--gold);height:28px;padding:0;background:transparent;border:none}
+.fades-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.fade-box{flex:1;min-width:150px}
+.cut-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btn-preview{flex:1;min-width:150px;padding:10px 14px;border-radius:var(--radius);background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);cursor:pointer;font-size:13px}
+.btn-preview:hover{border-color:var(--gold);color:var(--gold)}
+.btn-cut{flex:1;min-width:150px;padding:10px 14px;border-radius:var(--radius);border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-weight:700;font-size:13px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.05em}
+.btn-cut:disabled{opacity:.5;cursor:not-allowed}
+.cut-progress{display:none;font-size:12px;color:var(--text-dim);margin-top:10px}
+.cut-progress.show{display:block}
+.cut-mini{display:flex;gap:8px;margin-top:8px;justify-content:center;flex-wrap:wrap}
+.cut-mini button{background:var(--bg-card);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer}
+.cut-mini button:hover{border-color:var(--gold);color:var(--gold)}
+
 /* "Adicionar Trilha" é AÇÃO, não é uma faixa: botão branco de texto preto, destacado das 10 */
 .trilha-item.custom{background:#fff;border-color:#fff;color:#141414;font-weight:600;justify-content:center}
 .trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414}
@@ -316,6 +337,35 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <div class="trilhas-grid" id="trilhasGrid"></div>
         <input type="file" id="inpMusica" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden onchange="onMusica(event)"/>
 
+        <!-- Editor de corte: só aparece quando o atendente sobe um MP3 MAIOR que o vídeo.
+             Se a música já cabe, não há o que escolher e ela sobe direto. -->
+        <div class="cut-editor" id="cutEditor">
+          <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho de <b id="cutAlvoTxt"></b> que vai pro vídeo:</div>
+          <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
+          <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
+          <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">0:00 → 0:32</b></div>
+          <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
+          <div class="fades-row">
+            <div class="fade-box">
+              <div class="cut-row"><span>Fade in (entrada)</span><b id="fadeInVal">1,0s</b></div>
+              <input type="range" id="fadeIn" min="0" max="5" step="0.5" value="1"/>
+            </div>
+            <div class="fade-box">
+              <div class="cut-row"><span>Fade out (final)</span><b id="fadeOutVal">2,5s</b></div>
+              <input type="range" id="fadeOut" min="0" max="6" step="0.5" value="2.5"/>
+            </div>
+          </div>
+          <div class="cut-actions">
+            <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
+            <button class="btn-cut" id="btnCutApply" onclick="aplicarCorteTrilha()">✂ Cortar e usar</button>
+          </div>
+          <div class="cut-mini">
+            <button type="button" onclick="document.getElementById('inpMusica').click()">🔁 Trocar a música</button>
+            <button type="button" onclick="cancelarCorteTrilha()">✖ Cancelar</button>
+          </div>
+          <div class="cut-progress" id="cutProgress"></div>
+        </div>
+
         <!-- volume da trilha. Cada opção traz a descrição do que ela faz, porque "12%" não diz
              nada pro atendente — o que ele precisa saber é COMO vai soar. -->
         <div class="mini" style="margin-top:1rem">Volume da música</div>
@@ -402,6 +452,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <script src="../js/auth-iframe.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -505,6 +556,11 @@ let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) �
 let campanha = null;              // { marca, objetivo, tom, argumento }
 let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
 let trilhas = [], trilhaSel = null, musica = null;
+// ── editor de corte da trilha (portado do Vídeo Avatar) ──
+let rawAudioBuffer = null, rawAudioName = '', wavePeaks = null, cutAlvo = 32;
+let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
+let playheadFrac = -1, playheadRAF = 0, playheadAbs = -1;
+let _cutLigado = false;   // listeners dos sliders: só uma vez
 let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
 // A listagem do KV demora alguns segundos pra enxergar um projeto RECÉM-criado. Como o aviso de
 // salvamento manda conferir "na aba Projetos", o atendente chegava lá e não achava o que acabou
@@ -1175,21 +1231,266 @@ function ouvirTrilha(id){
 // que o atendente escolhe, e a montagem manda só a URL.
 async function onMusica(ev){
   const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
+  // Decodifica AQUI no navegador pra saber a duração. Se sobrar música além do vídeo, abre o
+  // editor de corte (mesmo do Vídeo Avatar) pro atendente escolher o trecho — senão sobe direto.
+  rawAudioBuffer = null; rawAudioName = f.name;
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    rawAudioBuffer = await ctx.decodeAudioData(await f.arrayBuffer());
+    try{ ctx.close(); }catch(e){}
+  }catch(e){ rawAudioBuffer = null; }   // formato exótico: segue o fluxo antigo, sem editor
+
+  cutAlvo = duracaoDoVideo();
+  if(rawAudioBuffer && rawAudioBuffer.duration > cutAlvo + 1){
+    abrirEditorTrilha();
+    return;                              // só sobe depois do "Cortar e usar"
+  }
+  const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+  await subirTrilha(f.name, b64, f.type||'');
+}
+
+// Sobe o MP3 pro R2 e marca como trilha escolhida. Separado do onMusica porque o corte
+// também chama isto no fim.
+async function subirTrilha(nome, b64, tipo){
   trilhaUpMsg='<span class="spin"></span> Enviando…'; pintarTrilhas();
   try{
-    const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
-    const r = await api('/promoMusicaUp', { method:'POST', body: JSON.stringify({ projectId, base64:b64, tipo:f.type||'' }) });
+    const r = await api('/promoMusicaUp', { method:'POST', body: JSON.stringify({ projectId, base64:b64, tipo:tipo||'audio/mpeg' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'falha ao enviar');
-    trilhaSel = { id:'up', title:f.name, url:d.url };
+    trilhaSel = { id:'up', title:nome, url:d.url };
     musica = null; trilhaUpMsg='';
     pintarTrilhas();
-    toast('✅ '+f.name+' enviada ('+(d.bytes/1048576).toFixed(1)+'MB).');
+    toast('✅ '+nome+' enviada ('+(d.bytes/1048576).toFixed(1)+'MB).');
+    return true;
   }catch(e){
     trilhaSel=null; musica=null; trilhaUpMsg='';
     pintarTrilhas();
     toast('⚠️ '+e.message);
+    return false;
   }
+}
+
+// ══ EDITOR DE CORTE DA TRILHA (portado do Vídeo Avatar) ══════════════════════
+// Só entra em cena quando o atendente sobe um MP3 maior que o vídeo. A conta do alvo é a
+// MESMA do Worker (histMontar): cada cena vale 8s menos o preâmbulo e menos os cortes.
+function duracaoDoVideo(){
+  const PREAMBULO = 0.1, PER = 8;
+  let t = 0, n = 0;
+  (cenas||[]).forEach(function(c){
+    if(!c || !c.video_url) return;
+    const ini = Math.min(Number(c.cortaIni)||0, PER-1);
+    const fim = Math.min(Number(c.cortaFim)||0, PER-1);
+    t += Math.max(1, PER - PREAMBULO - ini - fim); n++;
+  });
+  return n ? Math.round(t) : 32;        // sem cenas prontas ainda: 4 x 8s
+}
+function fmtTime(sec){
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+}
+function abrirEditorTrilha(){
+  const ed = document.getElementById('cutEditor'); if(!ed || !rawAudioBuffer) return;
+  ed.classList.add('show');
+  document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
+  document.getElementById('cutAlvoTxt').textContent  = fmtTime(cutAlvo);
+  document.getElementById('btnCutApply').textContent = '✂ Cortar e usar '+fmtTime(cutAlvo);
+  const sl = document.getElementById('cutStart');
+  sl.max = Math.max(0, Math.floor((rawAudioBuffer.duration - cutAlvo) * 2) / 2);
+  sl.value = 0;
+  if(!_cutLigado){   // listeners uma vez só, senão empilham a cada upload
+    sl.addEventListener('input', function(){ stopPreviewCorte(); updateCutUI(); });
+    document.getElementById('fadeIn').addEventListener('input', updateCutUI);
+    document.getElementById('fadeOut').addEventListener('input', updateCutUI);
+    _cutLigado = true;
+  }
+  computePeaks();
+  updateCutUI();
+  ed.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function cancelarCorteTrilha(){
+  stopPreviewCorte();
+  document.getElementById('cutEditor').classList.remove('show');
+  rawAudioBuffer = null; wavePeaks = null;
+  toast('Corte cancelado — nenhuma trilha foi enviada.');
+}
+function getCutValues(){
+  return {
+    startSec: parseFloat(document.getElementById('cutStart').value) || 0,
+    fadeIn:   parseFloat(document.getElementById('fadeIn').value) || 0,
+    fadeOut:  parseFloat(document.getElementById('fadeOut').value) || 0
+  };
+}
+function updateCutUI(){
+  const v = getCutValues();
+  document.getElementById('cutStartLabel').textContent = fmtTime(v.startSec)+' → '+fmtTime(v.startSec+cutAlvo);
+  document.getElementById('fadeInVal').textContent  = v.fadeIn.toFixed(1).replace('.',',')+'s';
+  document.getElementById('fadeOutVal').textContent = v.fadeOut.toFixed(1).replace('.',',')+'s';
+  drawWave();
+}
+// picos em ~600 colunas (amostra a cada 16 pra ser rápido)
+function computePeaks(){
+  const data = rawAudioBuffer.getChannelData(0);
+  const cols = 600, block = Math.floor(data.length/cols);
+  wavePeaks = new Float32Array(cols);
+  for(let c=0;c<cols;c++){
+    let max=0; const st=c*block;
+    for(let i=0;i<block;i+=16){ const v=Math.abs(data[st+i]||0); if(v>max) max=v; }
+    wavePeaks[c]=max;
+  }
+}
+function drawWave(){
+  const canvas = document.getElementById('waveCanvas');
+  if(!canvas || !wavePeaks || !rawAudioBuffer) return;
+  const W = canvas.clientWidth||600, H = 84;
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const dur = rawAudioBuffer.duration;
+  const selA = (getCutValues().startSec/dur)*W;
+  const selB = ((getCutValues().startSec+cutAlvo)/dur)*W;
+  ctx.fillStyle='rgba(201,168,76,0.13)'; ctx.fillRect(selA,0,selB-selA,H);
+  const cols = wavePeaks.length;
+  for(let c=0;c<cols;c++){
+    const x=(c/cols)*W, h=Math.max(1.5, wavePeaks[c]*(H-8));
+    const dentro = x>=selA && x<=selB;
+    ctx.fillStyle = dentro ? '#C9A84C' : 'rgba(176,160,128,0.35)';
+    ctx.fillRect(x,(H-h)/2,Math.max(1,W/cols-0.5),h);
+  }
+  ctx.fillStyle='#D9BC6E'; ctx.fillRect(selA,0,2,H); ctx.fillRect(selB-2,0,2,H);
+  if(playheadFrac>=0){ const px=selA+playheadFrac*(selB-selA); ctx.fillStyle='#ffffff'; ctx.fillRect(px-1,0,2,H); }
+  if(playheadAbs>=0){
+    const px=playheadAbs*W;
+    ctx.fillStyle='#ffffff'; ctx.fillRect(px-1,0,2,H);
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(px,5,4,0,Math.PI*2); ctx.fill();
+  }
+}
+// clique na onda = ESCUTA LIVRE a partir dali. Não muda o trecho escolhido (isso é a barrinha).
+function ouvirDaOnda(evt){
+  const canvas = document.getElementById('waveCanvas');
+  if(!canvas || !rawAudioBuffer) return;
+  const r = canvas.getBoundingClientRect(); if(!r.width) return;
+  const t = (evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+  const frac = Math.max(0, Math.min(0.999, (t.clientX-r.left)/r.width));
+  const dur = rawAudioBuffer.duration, sec = frac*dur;
+  stopPreviewCorte();
+  try{
+    previewCtxAudio = new (window.AudioContext||window.webkitAudioContext)();
+    previewSrc = previewCtxAudio.createBufferSource();
+    previewSrc.buffer = rawAudioBuffer;
+    previewSrc.connect(previewCtxAudio.destination);
+    previewSrc.onended = function(){ stopPreviewCorte(); };
+    previewSrc.start(0, sec);
+    previewPlaying = true; playheadAbs = frac; drawWave();
+    const b=document.getElementById('btnCutPreview'); if(b) b.textContent='⏹ Parar';
+    const t0 = previewCtxAudio.currentTime;
+    const tick = function(){
+      if(!previewPlaying || !previewCtxAudio) return;
+      playheadAbs = Math.min(1,(sec+(previewCtxAudio.currentTime-t0))/dur);
+      drawWave();
+      if(playheadAbs<1) playheadRAF = requestAnimationFrame(tick);
+    };
+    playheadRAF = requestAnimationFrame(tick);
+    const lbl=document.getElementById('cutHint');
+    if(lbl) lbl.textContent='🔊 Ouvindo a partir de '+fmtTime(sec)+' — clique em outro ponto pra pular, ou em "Parar".';
+  }catch(err){ toast('⚠️ '+err.message); }
+}
+// corte + fades com curva x² (mesma da ferramenta Corte)
+function processAudio(srcBuffer, startSec, endSec, fadeIn, fadeOut){
+  const sr = srcBuffer.sampleRate, nc = srcBuffer.numberOfChannels;
+  const a = Math.floor(startSec*sr), b = Math.min(srcBuffer.length, Math.floor(endSec*sr));
+  const len = b-a;
+  if(len<=0) throw new Error('Seleção inválida.');
+  const outCtx = new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(nc,len,sr);
+  const out = outCtx.createBuffer(nc,len,sr);
+  const fi = Math.min(len, Math.floor(fadeIn*sr));
+  const fo = Math.min(len-fi, Math.floor(fadeOut*sr));
+  for(let ch=0;ch<nc;ch++){
+    const src=srcBuffer.getChannelData(ch), dst=out.getChannelData(ch);
+    for(let i=0;i<len;i++){
+      let v = src[a+i]||0;
+      if(i<fi){ const t=i/fi; v*=t*t; }
+      const ini=len-fo;
+      if(i>=ini && fo>0){ const t=(len-i)/fo; v*=t*t; }
+      dst[i]=v;
+    }
+  }
+  return out;
+}
+function previewCorte(){
+  if(!rawAudioBuffer) return;
+  if(previewPlaying){ stopPreviewCorte(); return; }
+  const v = getCutValues();
+  try{
+    const buf = processAudio(rawAudioBuffer, v.startSec, v.startSec+cutAlvo, v.fadeIn, v.fadeOut);
+    previewCtxAudio = new (window.AudioContext||window.webkitAudioContext)();
+    previewSrc = previewCtxAudio.createBufferSource();
+    previewSrc.buffer = buf;
+    previewSrc.connect(previewCtxAudio.destination);
+    previewSrc.onended = function(){ stopPreviewCorte(); };
+    previewSrc.start(0);
+    previewPlaying = true;
+    document.getElementById('btnCutPreview').textContent='⏹ Parar';
+    const t0 = previewCtxAudio.currentTime;
+    const tick = function(){
+      if(!previewPlaying || !previewCtxAudio) return;
+      playheadFrac = Math.min(1,(previewCtxAudio.currentTime-t0)/cutAlvo);
+      drawWave();
+      if(playheadFrac<1) playheadRAF = requestAnimationFrame(tick);
+    };
+    playheadRAF = requestAnimationFrame(tick);
+  }catch(err){ toast('⚠️ '+err.message); }
+}
+function stopPreviewCorte(){
+  try{ if(previewSrc) previewSrc.stop(); }catch(e){}
+  try{ if(previewCtxAudio) previewCtxAudio.close(); }catch(e){}
+  previewSrc=null; previewCtxAudio=null; previewPlaying=false;
+  if(playheadRAF){ cancelAnimationFrame(playheadRAF); playheadRAF=0; }
+  playheadFrac=-1; playheadAbs=-1;
+  drawWave();
+  const b=document.getElementById('btnCutPreview'); if(b) b.textContent='▶ Ouvir o resultado';
+  const lbl=document.getElementById('cutHint');
+  if(lbl) lbl.textContent='👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).';
+}
+function floatTo16BitPCM(f32){
+  const out=new Int16Array(f32.length);
+  for(let i=0;i<f32.length;i++){ const v=Math.max(-1,Math.min(1,f32[i])); out[i]= v<0 ? v*0x8000 : v*0x7FFF; }
+  return out;
+}
+async function encodeMP3(buffer, onProgress){
+  const sr=buffer.sampleRate, ch=Math.min(2,buffer.numberOfChannels);
+  const L=floatTo16BitPCM(buffer.getChannelData(0));
+  const R=ch>1?floatTo16BitPCM(buffer.getChannelData(1)):L;
+  const enc=new lamejs.Mp3Encoder(ch,sr,192);
+  const block=1152, parts=[];
+  for(let i=0;i<L.length;i+=block){
+    const out = ch>1 ? enc.encodeBuffer(L.subarray(i,i+block), R.subarray(i,i+block))
+                     : enc.encodeBuffer(L.subarray(i,i+block));
+    if(out.length) parts.push(new Uint8Array(out));
+    if(onProgress && i%(block*400)===0){ onProgress(i/L.length); await new Promise(r=>setTimeout(r,0)); }
+  }
+  const tail=enc.flush(); if(tail.length) parts.push(new Uint8Array(tail));
+  return new Blob(parts,{type:'audio/mpeg'});
+}
+async function aplicarCorteTrilha(){
+  if(!rawAudioBuffer) return;
+  if(typeof lamejs==='undefined'){ toast('⚠️ O conversor MP3 não carregou. Recarregue a página.'); return; }
+  stopPreviewCorte();
+  const btn=document.getElementById('btnCutApply'), prog=document.getElementById('cutProgress');
+  btn.disabled=true; prog.classList.add('show'); prog.textContent='Cortando…';
+  try{
+    const v = getCutValues();
+    const cortado = processAudio(rawAudioBuffer, v.startSec, v.startSec+cutAlvo, v.fadeIn, v.fadeOut);
+    const blob = await encodeMP3(cortado, function(p){ prog.textContent='Convertendo pra MP3… '+Math.round(p*100)+'%'; });
+    const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+    prog.textContent='Enviando…';
+    const nome = rawAudioName.replace(/\.[^.]+$/,'') + '_trecho.mp3';
+    const ok = await subirTrilha(nome, b64, 'audio/mpeg');
+    if(ok){
+      document.getElementById('cutEditor').classList.remove('show');
+      toast('✂ Trecho de '+fmtTime(cutAlvo)+' aplicado com fades.');
+    }
+  }catch(err){ toast('⚠️ Erro no corte: '+err.message); }
+  finally{ btn.disabled=false; prog.classList.remove('show'); }
 }
 
 // ══ MONTAGEM FINAL ══
