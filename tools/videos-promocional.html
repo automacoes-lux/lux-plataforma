@@ -60,6 +60,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
 .pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
+.alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
 .pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
@@ -472,7 +474,8 @@ const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
 // ⚠️ 11-13 (28/08). Veio de 13-16 e voltou porque fala longa come o RESPIRO entre as cenas:
 // com 16 palavras a fala ia até ~7,6s e não sobrava silêncio pra emendar na cena seguinte.
 // Com 13 sobram ~0,6s. Tem que bater com o Worker (ROT_PALAVRAS_*).
-const PALAVRAS_MIN = 11, PALAVRAS_MAX = 13;
+const PALAVRAS_MIN = 11, PALAVRAS_MAX = 13;      // passo 2: o que a IA escreve
+const EDIT_MIN = 10, EDIT_MAX = 20;              // passo 3: edição à mão, faixa mais larga
 const LIMITES = { product: 4, environment: 4, logo: 1 };
 
 function api(path, opts){
@@ -884,9 +887,11 @@ function alertaFalaEditor(i){
   // senão uma fala gigante escrita à mão ia direto pro Veo, saía cortada no meio e custava US$ 0,40.
   // (não mexe no botão enquanto ele está no estado "Refazendo", pra não reabilitar no meio.)
   const btR = document.querySelector('#boxCortes [data-refaz="'+i+'"]');
-  if(btR && !btR.classList.contains('refazendo')) btR.disabled = (n > PALAVRAS_MAX || n < PALAVRAS_MIN);
-  if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+PALAVRAS_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
-  if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+PALAVRAS_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
+  if(btR && !btR.classList.contains('refazendo')) btR.disabled = (n > EDIT_MAX || n < EDIT_MIN);
+  if(n > EDIT_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+EDIT_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
+  if(n < EDIT_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+EDIT_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
+  // acima de 13 ainda cabe, mas aperta: avisa sem travar, porque a decisão é do atendente
+  if(n > PALAVRAS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — acima de <b>'+PALAVRAS_MAX+'</b> a fala fica corrida e pode encostar no fim dos 8s. Dá pra refazer assim, mas confira o resultado.'; return; }
   el.className='alerta hide'; el.innerHTML='';
 }
 
@@ -1714,7 +1719,7 @@ function renderCortes(){
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (numeral)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-             '<textarea data-faed="'+i+'" maxlength="160" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
                '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
@@ -1750,7 +1755,7 @@ function renderCortes(){
       '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito)</span></div>'+
       '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
       '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
-      '<textarea data-faed="'+i+'" maxlength="160" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda será reescrita quando você clicar em Refazer.':'')+'</div>'+
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
@@ -1951,8 +1956,8 @@ async function refazerCena(i){
   // Trava final: no passo 2 o botão de produzir já barra fora da faixa, mas aqui no editor a fala
   // pode ter sido reescrita à mão depois. Barra ANTES do confirm, pra nem perguntar do custo.
   const np = contarPalavras(s.fala);
-  if(np > PALAVRAS_MAX){ toast('⛔ Fala com '+np+' palavras — o máximo é '+PALAVRAS_MAX+'. Encurte antes de refazer.'); return; }
-  if(np < PALAVRAS_MIN){ toast('⛔ Fala com '+np+' palavras — o mínimo é '+PALAVRAS_MIN+'. Complete antes de refazer.'); return; }
+  if(np > EDIT_MAX){ toast('⛔ Fala com '+np+' palavras — o máximo é '+EDIT_MAX+'. Encurte antes de refazer.'); return; }
+  if(np < EDIT_MIN){ toast('⛔ Fala com '+np+' palavras — o mínimo é '+EDIT_MIN+'. Complete antes de refazer.'); return; }
   if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
   // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
