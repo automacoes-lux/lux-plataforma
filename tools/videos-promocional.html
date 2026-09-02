@@ -1066,7 +1066,7 @@ async function acompanharVideo(i, predictionId){
     await new Promise(r=>setTimeout(r, 6000));
     relogioCena(i);
     try{
-      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1, fala: s.fala||'' }) });
+      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1, fala: s.fala||'', cliente: clienteNome() }) });
       const d = await r.json();
       semContato = 0;
 
@@ -1090,6 +1090,11 @@ async function acompanharVideo(i, predictionId){
         // nossa música. A separação roda em segundo plano — a cena já aparece pro atendente e a
         // voz chega depois. Não travamos a tela por causa disso.
         if(d.vozId){ s._vozId = d.vozId; esperarVoz(i); }
+        // Conferência de pronúncia: o Worker ouve o clipe SEM dica e compara com o que está escrito.
+        // É assim que pegamos "carinho" saindo como "carinjo" sem ninguém precisar assistir tudo.
+        s._pron = (d.pronuncia && Array.isArray(d.pronuncia.suspeitas) && d.pronuncia.suspeitas.length)
+                    ? d.pronuncia : null;
+        if(d.pronuncia) custoUSD += (d.pronuncia.custoUSD||0);
         if(d.transcricao){
           s._fimFala   = Number(d.transcricao.fimFala);
           s._inicioFala= Number(d.transcricao.inicioFala||0);
@@ -1814,6 +1819,7 @@ function renderCortes(){
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
+      '<div class="alerta hide" data-pron="'+i+'"></div>'+
       // ⚠️ DUAS CAIXAS (28/08). São o MESMO conteúdo em formatos diferentes, e os dois importam:
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
       //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
@@ -1922,6 +1928,19 @@ async function prepararAudios(){
     const s=cenas[i]; if(!s.video_url) continue;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
     desenharOnda(i); pintarTrim(i);
+    // Alerta de pronúncia. Some sozinho quando o atendente troca a palavra e o motor acerta.
+    const alp = document.querySelector('#boxCortes [data-pron="'+i+'"]');
+    if(alp){
+      if(s._pron && s._pron.suspeitas.length){
+        const lista = s._pron.suspeitas.map(function(x){
+          return '<b>'+esc(x.escrito)+'</b>'+(x.ouvido?(' soou como <b>'+esc(x.ouvido)+'</b>'):'');
+        }).join(' · ');
+        alp.className='alerta aviso';
+        alp.innerHTML='🗣️ <b>Confira a pronúncia:</b> '+lista+'.<br>'+
+          'Se o personagem falou errado mesmo, <b>refazer não resolve</b> — o motor erra sempre igual. '+
+          'Troque a palavra por outra de mesmo sentido (nas DUAS caixas) e refaça a cena.';
+      } else { alp.className='alerta hide'; alp.innerHTML=''; }
+    }
     if(nota){
       if(s._fimFala === null || s._fimFala === undefined){
         nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — arraste a alça se o fim ficar estranho.';
