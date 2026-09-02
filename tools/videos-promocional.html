@@ -636,6 +636,17 @@ async function salvarProjeto(silencioso){
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); return false; }
   finally{ if(bt && !silencioso){ bt.disabled=false; bt.innerHTML=old; } }
 }
+// Baixa o vídeo pronto da aba Resultados. Antes era window.open, que só ABRIA o MP4 numa aba —
+// no celular vira um player em tela cheia e o atendente acha que travou. Vai pelo Worker.
+function baixarResultado(url, cliente){
+  if(!url) return;
+  const nome=(cliente||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem-animado.mp4';
+  const a=document.createElement('a');
+  a.href=WORKER_URL+'/promoBaixar?u='+encodeURIComponent(url)+'&nome='+encodeURIComponent(nome);
+  a.download=nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('⬇️ Baixando…');
+}
 function pjCard(p, tipo){
   const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
   const sub = tipo==='res'
@@ -643,7 +654,7 @@ function pjCard(p, tipo){
     : ('parou no passo '+p.passoMax+' de 3 · '+esc(p.atualizadoEm||''));
   const bts = tipo==='res'
     ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
-      '<button onclick="window.open(\''+escA(p.videoUrl)+'\',\'_blank\')">⬇️ Baixar</button>'
+      '<button onclick="baixarResultado(\''+escA(p.videoUrl)+'\',\''+escA(p.cliente||'video')+'\')">⬇️ Baixar</button>'
     : '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">▶ Continuar</button>';
   // nome de quem fez: so pro admin, que e quem ve a lista dos 18. Pro atendente seria
   // sempre o proprio nome repetido em todo card.
@@ -901,10 +912,16 @@ function pintarPersonagem(){
 }
 function baixarPersonagem(){
   if(!personagemImg) return;
+  const nome=(clienteNome()||'personagem').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem.jpg';
   const a=document.createElement('a');
-  a.href=imgSrc(personagemImg);
-  a.download=(clienteNome()||'personagem').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem.jpg';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  // ⚠️ (02/09) URL de OUTRA ORIGEM (R2) ignora o atributo download: o navegador navega pra imagem
+  // e, dentro do iframe, o atendente fica preso numa tela sem voltar. Mesmo caminho do
+  // baixarCena(): passa pelo Worker, que devolve o cabeçalho de download. Base64 pode ir direto.
+  a.href = /^https?:/.test(personagemImg)
+    ? (WORKER_URL+'/promoBaixar?u='+encodeURIComponent(personagemImg)+'&nome='+encodeURIComponent(nome))
+    : imgSrc(personagemImg);
+  a.download=nome;
+  document.body.appendChild(a); a.click(); a.remove();
   toast('⬇️ Imagem baixada.');
 }
 
