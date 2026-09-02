@@ -62,6 +62,13 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
 .alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
+/* frase já corrigida pela IA: avisar sem resolver joga o trabalho pro atendente, que é
+   justamente quem não sabe qual palavra escapa da armadilha */
+.sug-cx{margin-top:.6rem;background:var(--bg-input);border:.5px solid rgba(201,168,76,.45);border-radius:var(--radius);padding:.7rem .8rem}
+.sug-rot{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.35rem}
+.sug-txt{font-size:13.5px;color:var(--text);line-height:1.5;margin-bottom:.6rem}
+.sug-bt{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border:none;border-radius:8px;padding:.5rem .9rem;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.sug-bt:hover{filter:brightness(1.08)}
 /* seletor de atendente (só admin) — usado pra devolver o projeto pra quem pediu ajuda */
 .atr-fundo{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:90}
 .atr-cx{background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.1rem;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column}
@@ -672,6 +679,27 @@ async function carregarProjetos(){
     if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
   }
 }
+// Aplica a frase sugerida na caixa da FALA. A legenda NÃO é tocada aqui: ela é reescrita
+// sozinha a partir da fala nova quando o atendente clica em Refazer (/rotLegenda) — é o mesmo
+// caminho de quando ele digita à mão, então não há dois jeitos diferentes de mexer na fala.
+function usarSugestao(i){
+  const s = cenas[i];
+  const nova = s && s._pron && s._pron.sugestao;
+  if(!nova) return;
+  s.fala = nova; s.palavras = contarPalavras(nova); s._legendaSuja = true;
+  const cx = document.querySelector('#boxCortes [data-faed="'+i+'"]');
+  if(cx) cx.value = nova;
+  const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
+  if(espelho){ espelho.value = nova; alertaFala(i); }
+  const av = document.querySelector('[data-avisoleg="'+i+'"]');
+  if(av) av.textContent = 'A legenda será reescrita quando você clicar em Refazer.';
+  s._pron = null;                       // o alerta já cumpriu o papel
+  const alp = document.querySelector('#boxCortes [data-pron="'+i+'"]');
+  if(alp){ alp.className='alerta hide'; alp.innerHTML=''; }   // some da tela sem redesenhar o card
+  alertaFalaEditor(i);
+  toast('✅ Frase trocada. Agora clique em Refazer nesta cena.');
+}
+
 // ══ ATRIBUIR PROJETO A OUTRO ATENDENTE (só admin) ══════════════════════════
 // Nasceu de um caso real: o admin abria o projeto do atendente pra ajudar, salvava, e o
 // projeto passava pra ele — o atendente não conseguia mais terminar. O Worker parou de
@@ -1936,9 +1964,18 @@ async function prepararAudios(){
           return '<b>'+esc(x.escrito)+'</b>'+(x.ouvido?(' soou como <b>'+esc(x.ouvido)+'</b>'):'');
         }).join(' · ');
         alp.className='alerta aviso';
+        const sug = s._pron.sugestao || '';
         alp.innerHTML='🗣️ <b>Confira a pronúncia:</b> '+lista+'.<br>'+
-          'Se o personagem falou errado mesmo, <b>refazer não resolve</b> — o motor erra sempre igual. '+
-          'Troque a palavra por outra de mesmo sentido (nas DUAS caixas) e refaça a cena.';
+          'Se o personagem falou errado mesmo, <b>refazer não resolve</b> — o motor erra sempre igual.'+
+          (sug
+            ? ('<div class="sug-cx">'+
+                 '<div class="sug-rot">Sugestão de frase corrigida</div>'+
+                 '<div class="sug-txt">'+esc(sug)+'</div>'+
+                 '<button type="button" class="sug-bt" data-usarsug="'+i+'">✓ Usar esta frase</button>'+
+               '</div>')
+            : ' Troque a palavra por outra de mesmo sentido (nas DUAS caixas) e refaça a cena.');
+        const btSug = alp.querySelector('[data-usarsug]');
+        if(btSug) btSug.addEventListener('click', function(){ usarSugestao(i); });
       } else { alp.className='alerta hide'; alp.innerHTML=''; }
     }
     if(nota){
