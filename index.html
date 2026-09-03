@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20260903d';</script>
+<script>window.__LUX_VERSION = '20260903e';</script>
 <script type="module" src="js/auth.js?v=20260709"></script>
 </head>
 <body>
@@ -532,6 +532,30 @@ function openLogoAnim(event) {
   }
   requestAnimationFrame(() => { ov.style.opacity = '1'; });
 }
+
+// ── LUX MUSIC → CORTE ──────────────────────────────────────
+// A aba Lux Music pede pra abrir o Corte já com a música pronta,
+// pra o atendente não ter que baixar e subir o arquivo de novo.
+// O áudio em si viaja pelo sessionStorage (as duas telas são do
+// mesmo domínio); aqui a gente só abre a aba certa.
+window.addEventListener('message', (event) => {
+  if (event.origin !== window.location.origin) return;
+  if (!event.data || event.data.type !== 'luxAbrirCorte') return;
+
+  // O iframe do Corte é montado uma vez só. Se ele JÁ existia, não
+  // recarrega sozinho — então avisamos por postMessage. Se ainda não
+  // existia, o loadTool monta e o próprio Corte busca o pendente.
+  const painel = document.getElementById('view-corte');
+  const iframeAntigo = painel && painel.querySelector('iframe.tool-iframe');
+
+  loadTool('corte');
+
+  if (iframeAntigo && iframeAntigo.contentWindow) {
+    iframeAntigo.contentWindow.postMessage(
+      { type: 'luxCorteCarregar' }, window.location.origin
+    );
+  }
+});
 
 // ── ALERTA ATENDIMENTO — bolinha amarela na sidebar ────────
 // Consulta /protocols ao carregar: se há versão não vista (só
