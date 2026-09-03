@@ -37,6 +37,17 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .btn-ghost:disabled{opacity:.5;cursor:not-allowed}
 .btn-row{display:flex;gap:.6rem;flex-wrap:wrap}
 .up-btn{display:inline-block;background:var(--bg-input);border:.5px dashed var(--border-bright);color:var(--text-mid);border-radius:var(--radius);padding:.7rem 1rem;font-size:13.5px;cursor:pointer;text-align:center;width:100%}
+/* Personagem MONTADO: o cliente já mandou a arte pronta, com fundo e tudo. Precisa saltar aos
+   olhos porque é um caminho DIFERENTE — aqui a IA não desenha nada. Dourado sombreado. */
+.up-btn.montado{background:linear-gradient(180deg,rgba(201,168,76,.16),rgba(201,168,76,.07));
+  border:1px solid rgba(201,168,76,.55);color:#E8C97A;font-weight:600;
+  box-shadow:0 2px 10px rgba(201,168,76,.12), inset 0 1px 0 rgba(255,255,255,.06)}
+.up-btn.montado:hover{background:linear-gradient(180deg,rgba(201,168,76,.24),rgba(201,168,76,.10));
+  border-color:rgba(201,168,76,.8)}
+.cx-montado{margin-top:1rem;padding:.9rem;border-radius:var(--radius);
+  background:rgba(201,168,76,.05);border:1px dashed rgba(201,168,76,.35)}
+.cx-montado .tit{font-size:13.5px;color:#E8C97A;font-weight:600;margin-bottom:.25rem}
+.cx-montado .sub{font-size:12.5px;color:var(--text-dim);line-height:1.45;margin-bottom:.6rem}
 .up-cat{margin-bottom:.9rem}
 .up-cat-head{font-size:12.5px;color:var(--text-mid);margin-bottom:.4rem}
 .thumbs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
@@ -60,6 +71,17 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
 .pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pj-cat{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);
+  border-radius:999px;padding:.12rem .5rem;margin-bottom:.25rem}
+/* busca da vitrine de resultados */
+.busca{display:flex;align-items:center;gap:.5rem;background:var(--bg-input);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:.15rem .7rem;margin-bottom:.9rem}
+.busca input{border:none;background:transparent;padding:.6rem 0;flex:1;color:var(--text);font-size:14px;outline:none}
+.busca .lupa{font-size:14px;opacity:.7}
+.busca button{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;padding:.2rem .3rem}
+.busca button:hover{color:var(--gold)}
+.busca-cont{font-size:11.5px;color:var(--text-dim);margin:-.5rem 0 .8rem}
 /* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
 .alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
 /* frase já corrigida pela IA: avisar sem resolver joga o trabalho pro atendente, que é
@@ -269,7 +291,22 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
 
     <div class="mini">Cliente / empresa <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">Só nomeia o projeto nas abas Projetos e Resultados — não entra no roteiro nem na imagem.</div>
+    <div class="step-hint">Só nomeiam o projeto nas abas Projetos e Resultados — não entram no roteiro nem na imagem.</div>
+    <div class="mini">Categoria <span style="color:var(--gold)">*</span></div>
+    <div class="step-hint">O ramo do cliente. É por aqui que todo mundo acha o vídeo depois, na aba Resultados.</div>
+    <input type="text" id="fCategoria" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica · Loja de roupa" list="catSugestoes"/>
+    <datalist id="catSugestoes">
+      <option value="Alimentação"></option><option value="Padaria e confeitaria"></option>
+      <option value="Açaí e sorveteria"></option><option value="Lanchonete"></option>
+      <option value="Restaurante"></option><option value="Móveis e marcenaria"></option>
+      <option value="Construção e reforma"></option><option value="Clínica e consultório"></option>
+      <option value="Odontologia"></option><option value="Moda e vestuário"></option>
+      <option value="Oficina e automotivo"></option><option value="Pet shop"></option>
+      <option value="Salão e barbearia"></option><option value="Academia"></option>
+      <option value="Mercado"></option><option value="Eventos e festa"></option>
+    </datalist>
+
+    <div class="mini" style="margin-top:.9rem">Cliente / empresa <span style="color:var(--gold)">*</span></div>
     <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
 
     <div class="mini" style="margin-top:.9rem">Foto do personagem <span style="color:var(--gold)">*</span></div>
@@ -284,6 +321,16 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
     <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
     <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
+
+    <!-- Caminho alternativo: o cliente já mandou a arte pronta. Sem IA no meio. -->
+    <div class="cx-montado">
+      <div class="tit">🎨 Já tem o personagem pronto?</div>
+      <div class="sub">Use aqui quando o cliente <b>já mandou a arte do personagem com o cenário</b>. A imagem vai
+        direto para os vídeos, <b>sem a IA redesenhar nada</b> — nem o personagem, nem o fundo.<br>
+        Usando este campo, você <b>não precisa</b> preencher a foto do personagem acima.</div>
+      <div class="thumbs" id="thMontado"></div>
+      <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onPick(event,'montado')"/></label>
+    </div>
 
   </div>
 
@@ -323,7 +370,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
         <button class="btn-ghost" id="btnPersonagem" onclick="gerarPersonagem()">🔄 Gerar de novo</button>
       </div>
-      <div class="mini" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
+      <div class="mini" id="rotAjustePers" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
       <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
     </div>
 
@@ -466,6 +513,12 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="abaResultados" class="hide">
     <div class="sec-title">🎬 Resultados</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você pode refazer só uma cena.</div>
+    <div class="busca">
+      <span class="lupa">🔎</span>
+      <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+      <button type="button" id="buscaLimpa" title="Limpar" style="display:none">✕</button>
+    </div>
+    <div class="busca-cont" id="buscaCont"></div>
     <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
   </div>
 </div>
@@ -494,7 +547,7 @@ const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
 // Com 13 sobram ~0,6s. Tem que bater com o Worker (ROT_PALAVRAS_*).
 const PALAVRAS_MIN = 11, PALAVRAS_MAX = 13;      // passo 2: o que a IA escreve
 const EDIT_MIN = 10, EDIT_MAX = 20;              // passo 3: edição à mão, faixa mais larga
-const LIMITES = { product: 4, environment: 4, logo: 1 };
+const LIMITES = { product: 4, environment: 4, logo: 1, montado: 1 };
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -572,8 +625,9 @@ function pintarBarra(){
 // e ai os dois gravariam na mesma chave do KV e na mesma pasta do R2.
 let projectId = 'promo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 let salvoEm = '';
-let refs = { product:[], environment:[], characters:[], logo:[] };
+let refs = { product:[], environment:[], characters:[], logo:[], montado:[] };
 let personagemImg = '';           // base64 (ou URL, se veio de projeto salvo) — a referência dos 4 clipes
+let personagemMontado = false;    // true = arte pronta do cliente; a IA não redesenha nem pode redesenhar
 let campanha = null;              // { marca, objetivo, tom, argumento }
 let cenas = [];                   // 4 cenas: { numero, papel, descricao, fala, prompt_veo, video_url, ... }
 let trilhas = [], trilhaSel = null, musica = null;
@@ -614,7 +668,8 @@ function estadoAtual(){
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
-    personagem: personagemImg,
+    categoria: categoriaNome(),
+    personagem: personagemImg, personagemMontado: personagemMontado,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
     trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
   };
@@ -649,22 +704,33 @@ function baixarResultado(url, cliente){
 }
 function pjCard(p, tipo){
   const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
+  // A aba Resultados é uma VITRINE compartilhada: todo atendente vê o vídeo pronto de todo mundo
+  // pra mandar como prova social pro lead. Mas mexer no projeto do colega atrapalharia o trabalho
+  // dele — então quem não é dono (nem admin) só ganha o botão de baixar.
+  const podeMexer = (p.meu !== false) || souAdmin;
   const sub = tipo==='res'
-    ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+(p.custoBRL?(' · ~R$'+p.custoBRL.toFixed(2)):''))
+    ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+((podeMexer && p.custoBRL)?(' · ~R$'+p.custoBRL.toFixed(2)):''))
     : ('parou no passo '+p.passoMax+' de 3 · '+esc(p.atualizadoEm||''));
+  const btBaixar = '<button onclick="baixarResultado(\''+escA(p.videoUrl)+'\',\''+escA(p.cliente||'video')+'\')">⬇️ Baixar</button>';
   const bts = tipo==='res'
-    ? '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+
-      '<button onclick="baixarResultado(\''+escA(p.videoUrl)+'\',\''+escA(p.cliente||'video')+'\')">⬇️ Baixar</button>'
+    ? (podeMexer
+        ? ('<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">✏️ Editar</button>'+btBaixar)
+        : ('<button class="ouro" onclick="baixarResultado(\''+escA(p.videoUrl)+'\',\''+escA(p.cliente||'video')+'\')">⬇️ Baixar</button>'))
     : '<button class="ouro" onclick="abrirProjeto(\''+p.projectId+'\')">▶ Continuar</button>';
   // nome de quem fez: so pro admin, que e quem ve a lista dos 18. Pro atendente seria
   // sempre o proprio nome repetido em todo card.
-  const quem = (souAdmin && p.atendente) ? '<div class="pj-at">👤 '+esc(p.atendente)+'</div>' : '';
+  // Na vitrine o nome é essencial (é de quem é o vídeo). Nos projetos em andamento, só o admin
+  // vê nome — o atendente só enxerga os próprios, seria o dele repetido em todo card.
+  const quem = ((tipo==='res' || souAdmin) && p.atendente)
+    ? '<div class="pj-at">👤 '+esc(p.atendente)+(p.meu===false?'':' · seu')+'</div>' : '';
   // Atribuir: só o admin. É como ele devolve o projeto pro atendente depois de ajudar.
   const atr = souAdmin ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
+  const lixo = podeMexer ? '<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button>' : '';
+  const cat = p.categoria ? '<div class="pj-cat">'+esc(p.categoria)+'</div>' : '';
   return '<div class="pj">'+th+
-    '<div class="pj-in"><div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
+    '<div class="pj-in">'+cat+'<div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
       '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+
-    '<div class="pj-bt">'+bts+atr+'<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button></div></div>';
+    '<div class="pj-bt">'+bts+atr+lixo+'</div></div>';
 }
 async function carregarProjetos(){
   const lp=document.getElementById('listaProjetos'), lr=document.getElementById('listaResultados');
@@ -683,8 +749,8 @@ async function carregarProjetos(){
     }
     lp.innerHTML = d.projetos.length ? d.projetos.map(p=>pjCard(p,'proj')).join('')
       : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>';
-    lr.innerHTML = d.resultados.length ? d.resultados.map(p=>pjCard(p,'res')).join('')
-      : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 7 dias.</div>';
+    _resultados = d.resultados || [];
+    pintarResultados();
   }catch(e){
     const m='<div class="pj-vazio">⚠️ '+esc(e.message)+'</div>';
     if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
@@ -762,6 +828,34 @@ async function abrirAtribuir(projId){
   });
 }
 
+// ══ BUSCA DA VITRINE ═══════════════════════════════════════════════════════
+// Sem categoria não dá pra achar nada numa lista com o trabalho de 18 pessoas. A busca varre
+// categoria, cliente e atendente ao mesmo tempo, sem acento e sem ligar pra maiúscula.
+let _resultados = [];
+const semAcento = function(t){ return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); };
+function pintarResultados(){
+  const lr = document.getElementById('listaResultados'); if(!lr) return;
+  const cx = document.getElementById('buscaRes');
+  const termo = semAcento((cx && cx.value) || '').trim();
+  const btL = document.getElementById('buscaLimpa');
+  if(btL) btL.style.display = termo ? '' : 'none';
+  const lista = !termo ? _resultados : _resultados.filter(function(p){
+    const alvo = semAcento((p.categoria||'')+' '+(p.cliente||'')+' '+(p.atendente||''));
+    return termo.split(/\s+/).every(function(t){ return alvo.indexOf(t) >= 0; });
+  });
+  const cont = document.getElementById('buscaCont');
+  if(cont) cont.textContent = !_resultados.length ? ''
+    : (termo ? (lista.length+' de '+_resultados.length+' vídeos') : (_resultados.length+' vídeos de toda a equipe'));
+  lr.innerHTML = lista.length ? lista.map(p=>pjCard(p,'res')).join('')
+    : (termo ? '<div class="pj-vazio">Nada encontrado para <b>'+esc(cx.value)+'</b>.</div>'
+             : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 7 dias.</div>');
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const cx=document.getElementById('buscaRes'), btL=document.getElementById('buscaLimpa');
+  if(cx) cx.addEventListener('input', pintarResultados);
+  if(btL) btL.addEventListener('click', function(){ cx.value=''; pintarResultados(); cx.focus(); });
+});
+
 async function abrirProjeto(id){
   toast('📂 Abrindo…');
   try{
@@ -771,6 +865,7 @@ async function abrirProjeto(id){
     const p=d.projeto;
     projectId = p.projectId;
     document.getElementById('fCliente').value = p.cliente||'';
+    const elCat=document.getElementById('fCategoria'); if(elCat) elCat.value = p.categoria||'';
     document.getElementById('fBriefing').value = p.briefing||'';
     document.getElementById('fAmbienteTxt').value = p.ambienteTexto||'';
     // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido).
@@ -782,6 +877,7 @@ async function abrirProjeto(id){
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     personagemImg = p.personagem||'';
+    personagemMontado = !!p.personagemMontado;   // arte pronta: nao reabilita o "Gerar de novo"
     campanha = p.campanha||null;
     cenas = Array.isArray(p.cenas) ? p.cenas : [];
     custoUSD = Number(p.custoUSD)||0;
@@ -838,8 +934,11 @@ function ambienteTexto(){ return ((document.getElementById('fAmbienteTxt')||{}).
 // gpt-5.6-sol. Gerar com briefing pela metade era desperdício e produzia campanha genérica.
 // Devolve o campo que falta (ou '' se está tudo certo) e já foca nele.
 function faltaNoBriefing(){
+  if(!categoriaNome())      return { msg:'🏷️ Escreva a categoria do cliente.', el:'fCategoria' };
   if(!clienteNome())        return { msg:'✍️ Escreva o nome do cliente ou empresa.', el:'fCliente' };
-  if(!refs.product.length)  return { msg:'📸 Suba a foto do personagem.', el:null };
+  // dois caminhos válidos: foto pra IA desenhar, OU a arte pronta do cliente
+  if(!refs.product.length && !refs.montado.length)
+    return { msg:'📸 Suba a foto do personagem — ou a arte pronta em "Personagem montado".', el:null };
   if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
   if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };
   return null;
@@ -861,7 +960,12 @@ async function gerarTudo(){
     btn.innerHTML='<span class="spin"></span>Criando… '+Math.floor(seg/60)+':'+String(seg%60).padStart(2,'0');
   },1000);
   try{
-    const r = await Promise.all([ gerarPersonagem(true), gerarRoteiro('', true) ]);
+    // Com arte pronta a IA NÃO desenha: era exatamente aí que o gpt-image inventava um fundo
+    // que o cliente não pediu e devolvia um personagem sem nada a ver com o original.
+    const r = await Promise.all([
+      refs.montado.length ? Promise.resolve(usarPersonagemMontado()) : gerarPersonagem(true),
+      gerarRoteiro('', true)
+    ]);
     const okPers=r[0], okRot=r[1];
     // ⚠️ o auto-save é silencioso AQUI de propósito: o toast dele era apagado meio segundo depois
     // pelo aviso de "personagem e roteiro prontos". Os dois viraram uma frase só.
@@ -874,6 +978,7 @@ async function gerarTudo(){
 }
 function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
 function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
+function categoriaNome(){ return ((document.getElementById('fCategoria')||{}).value||'').trim(); }
 
 async function gerarPersonagem(silencioso){
   if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return false; }
@@ -905,10 +1010,27 @@ async function gerarPersonagem(silencioso){
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
   finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
+// Usa a arte que o cliente mandou, do jeito que veio. Nenhuma chamada de IA, custo zero.
+function usarPersonagemMontado(){
+  const f = refs.montado[0];
+  if(!f) return false;
+  personagemImg = String(f.base64||'').replace(/^data:[^;]+;base64,/,'') || f.url || '';
+  personagemMontado = true;
+  pintarPersonagem();
+  return !!personagemImg;
+}
 function pintarPersonagem(){
   const box=document.getElementById('boxPersonagem'); if(!box) return;
   document.getElementById('imgPersonagem').src = imgSrc(personagemImg);
   box.classList.remove('hide');
+  // arte pronta: esconde "Gerar de novo" e o campo de ajuste. Mandar a IA mexer aqui é
+  // justamente o que a gente está evitando.
+  const bt = document.getElementById('btnPersonagem');
+  const aj = document.getElementById('fAjustePers');
+  const rot = document.getElementById('rotAjustePers');
+  if(bt)  bt.style.display  = personagemMontado ? 'none' : '';
+  if(aj)  aj.style.display  = personagemMontado ? 'none' : '';
+  if(rot) rot.style.display = personagemMontado ? 'none' : '';
 }
 function baixarPersonagem(){
   if(!personagemImg) return;
@@ -1189,7 +1311,7 @@ async function onPick(ev, cat){
   }
   renderThumbs(cat);
 }
-const BOX = { product:'thProduto', environment:'thAmbiente' };   // produto + ambiente têm uploader na tela
+const BOX = { product:'thProduto', environment:'thAmbiente', montado:'thMontado' };   // produto + ambiente + montado têm uploader na tela
 
 // PASSO 1 (12/08): a leitura automática da foto pela IA foi REMOVIDA a pedido do Thiago.
 // Agora é só upload de produto + ambiente e o atendente escreve o que quer divulgar.
