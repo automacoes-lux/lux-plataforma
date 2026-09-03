@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lux Music — Plataforma Lux</title>
+
+<script src="../js/auth-iframe.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --gold:#C9A84C;
+    --gold-bright:#E2BA5F;
+    --gold-dim:#9A7A38;
+    --bg:#0A0A0B;
+    --bg2:#111114;
+    --bg3:#18181C;
+    --bg4:#1F1F25;
+    --text:#E8E4DC;
+    --muted:#8A8680;
+    --line:rgba(201,168,76,.2);
+    --line-bright:rgba(201,168,76,.4);
+    --green:#7FB87A;
+    --red:#E87A7A;
+    --radius:14px;
+    --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:var(--font);
+    background:radial-gradient(ellipse at top, rgba(201,168,76,.05) 0%, var(--bg) 60%);
+    color:var(--text);
+    min-height:100vh;
+    padding:20px 14px 60px;
+    line-height:1.5;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .wrap{width:100%;max-width:1180px}
+
+  /* ── CABEÇALHO ── */
+  header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+  .mark{
+    width:44px;height:44px;border-radius:50%;
+    background:conic-gradient(from 220deg,var(--gold),var(--gold-bright),var(--gold));
+    display:grid;place-items:center;font-weight:800;color:#10131a;
+    box-shadow:0 0 0 4px rgba(201,168,76,.12);
+    font-size:17px;flex-shrink:0;
+  }
+  h1{font-family:'Cinzel',serif;font-size:20px;font-weight:600;letter-spacing:.04em}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .saldo{
+    margin-left:auto;text-align:right;background:var(--bg2);
+    border:1px solid var(--line);border-radius:10px;padding:9px 14px;
+  }
+  .saldo-num{font-family:'Cinzel',serif;font-size:17px;color:var(--gold-bright);font-weight:600}
+  .saldo-lbl{font-size:10.5px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+
+  /* ── LAYOUT ── */
+  .layout{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
+
+  .card{
+    background:var(--bg2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;margin-bottom:16px;
+  }
+  .card-head{
+    display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;
+  }
+  .card-title{
+    font-family:'Cinzel',serif;color:var(--gold-bright);font-size:13.5px;
+    font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  }
+  .card-hint{color:var(--muted);font-size:12.5px;margin-bottom:12px;line-height:1.55}
+
+  label.fld{display:block;font-size:11px;color:var(--muted);letter-spacing:.07em;
+    text-transform:uppercase;margin-bottom:6px;font-weight:500}
+
+  textarea,input[type=text]{
+    width:100%;background:var(--bg);border:1px solid #35322b;border-radius:9px;
+    padding:12px 13px;color:var(--text);font-family:var(--font);font-size:14px;
+    line-height:1.6;transition:border-color .15s;resize:vertical;
+  }
+  textarea:focus,input[type=text]:focus{outline:none;border-color:var(--gold)}
+  textarea::placeholder,input::placeholder{color:#57534b}
+  #letra{min-height:290px}
+  #estilo{min-height:74px}
+  #briefing{min-height:110px}
+
+  .contador{font-size:11.5px;color:var(--muted);text-align:right;margin-top:5px}
+  .contador.alto{color:var(--gold-bright)}
+  .contador.estourou{color:var(--red);font-weight:600}
+
+  /* ── BOTÕES ── */
+  .btn{
+    border:none;border-radius:9px;padding:12px 16px;cursor:pointer;
+    font-family:'Cinzel',serif;font-size:12.5px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;transition:filter .15s,transform .1s;
+  }
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:not(:disabled):hover{filter:brightness(1.1)}
+  .btn:not(:disabled):active{transform:translateY(1px)}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:#1A1A1A}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--line-bright);color:var(--gold-bright);
+    font-family:var(--font);font-size:12.5px;letter-spacing:.03em;text-transform:none;
+    font-weight:600;padding:9px 13px;border-radius:8px;
+  }
+  .btn-ghost:not(:disabled):hover{background:rgba(201,168,76,.08)}
+  .btn-lg{width:100%;padding:15px;font-size:13.5px}
+  .btn-confirm{background:linear-gradient(135deg,#B8452F,#D4674E);color:#fff}
+
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ── CHIPS DE RITMO ── */
+  /* A ordem NÃO é decorativa: é o ranking real de pedidos da Lux
+     (7.038 conversas). Sertanejo primeiro porque é 45,7% do que
+     o cliente pede — o atendente acha o mais provável primeiro. */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{
+    background:var(--bg3);border:1px solid #35322b;border-radius:20px;
+    padding:6px 13px;font-size:12.5px;color:#bdb8ad;cursor:pointer;
+    transition:all .13s;font-family:var(--font);
+  }
+  .chip:hover{border-color:var(--gold);color:var(--gold-bright)}
+  .chip.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+
+  /* ── VOZ ── */
+  .voz{display:flex;gap:8px}
+  .voz button{
+    flex:1;background:var(--bg3);border:1px solid #35322b;border-radius:9px;
+    padding:12px 8px;color:#bdb8ad;cursor:pointer;font-family:var(--font);
+    font-size:13px;transition:all .13s;display:flex;flex-direction:column;
+    align-items:center;gap:4px;
+  }
+  .voz button .ic{font-size:19px;line-height:1}
+  .voz button:hover{border-color:var(--gold)}
+  .voz button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+
+  /* ── BRIEFING (colapsável) ── */
+  #painelBriefing{display:none;margin-top:12px;padding-top:14px;border-top:1px dashed var(--line)}
+  #painelBriefing.aberto{display:block}
+
+  /* ══ SIGNATURE: as duas versões ═══════════════════════════════
+     A Musicful SEMPRE devolve duas músicas por pedido. Elas não são
+     "1ª e 2ª" — são alternativas equivalentes, por isso A e B.
+     O equalizador pulsa enquanto gera e congela quando fica pronta. */
+  .versao{
+    background:var(--bg2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;margin-bottom:14px;
+  }
+  .versao.pronta{border-color:var(--line-bright)}
+  .versao.falhou{border-color:rgba(232,122,122,.4)}
+  .versao-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+  .versao-letra{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    display:grid;place-items:center;font-family:'Cinzel',serif;font-weight:700;
+    font-size:15px;background:var(--bg4);color:var(--muted);
+    border:1px solid #35322b;transition:all .3s;
+  }
+  .versao.pronta .versao-letra{
+    background:linear-gradient(135deg,var(--gold),var(--gold-bright));
+    color:#10131a;border-color:transparent;
+  }
+  .versao-nome{font-family:'Cinzel',serif;font-size:13px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text)}
+  .versao-estado{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .versao.pronta .versao-estado{color:var(--green)}
+  .versao.falhou .versao-estado{color:var(--red)}
+
+  /* equalizador — a onda da música que está nascendo.
+     Cada barra tem sua própria altura de repouso (--h), então mesmo
+     parado o desenho é uma onda, e não uma cerca. */
+  .eq{display:flex;align-items:flex-end;gap:2px;height:38px;margin-bottom:12px}
+  .eq i{
+    flex:1;background:linear-gradient(180deg,var(--gold-bright),var(--gold-dim));
+    border-radius:1px;height:var(--h,30%);opacity:.4;
+    transition:height .4s ease,opacity .4s ease;
+  }
+  .versao.gerando .eq i{animation:eqPulse 1.1s ease-in-out infinite}
+  .versao.pronta .eq i{opacity:.8}
+  .versao.falhou .eq i{background:#4a3a3a;height:10%;opacity:.5}
+  @keyframes eqPulse{
+    0%,100%{height:calc(var(--h,30%) * .35);opacity:.28}
+    50%    {height:var(--h,30%);opacity:.8}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .versao.gerando .eq i{animation:none;opacity:.5}
+  }
+
+  .versao audio{width:100%;margin-bottom:10px;height:38px}
+  .versao .capa{
+    width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;
+    margin-bottom:11px;border:1px solid var(--line);display:block;
+  }
+
+  .vazio{
+    background:var(--bg2);border:1px dashed var(--line);border-radius:var(--radius);
+    padding:34px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.65;
+  }
+  .vazio .ic{font-size:30px;display:block;margin-bottom:10px;opacity:.5}
+
+  /* ── AVISOS ── */
+  .aviso{
+    border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;
+    margin-bottom:14px;display:none;
+  }
+  .aviso.on{display:block}
+  .aviso-erro{background:rgba(232,122,122,.1);border:1px solid rgba(232,122,122,.35);color:#F0A0A0}
+  .aviso-ok{background:rgba(127,184,122,.1);border:1px solid rgba(127,184,122,.35);color:#A5D3A0}
+
+  .custo-nota{
+    font-size:12px;color:var(--muted);text-align:center;margin-top:9px;line-height:1.5;
+  }
+
+  .spin{
+    display:inline-block;width:12px;height:12px;border:2px solid rgba(201,168,76,.3);
+    border-top-color:var(--gold-bright);border-radius:50%;
+    animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── MOBILE ── */
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr}
+    .saldo{margin-left:0;width:100%;text-align:left;order:3}
+    header{gap:11px}
+    h1{font-size:18px}
+    body{padding:16px 11px 50px}
+    .card{padding:15px}
+    #letra{min-height:230px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark">♪</div>
+    <div>
+      <h1>Lux Music</h1>
+      <div class="sub">Escreva a letra, escolha o ritmo e receba duas músicas prontas</div>
+    </div>
+    <div class="saldo">
+      <div class="saldo-num" id="saldoNum">—</div>
+      <div class="saldo-lbl" id="saldoLbl">verificando plano</div>
+    </div>
+  </header>
+
+  <div class="aviso aviso-erro" id="avisoErro"></div>
+  <div class="aviso aviso-ok" id="avisoOk"></div>
+
+  <div class="layout">
+
+    <!-- ═══ COLUNA DA ESQUERDA — O PEDIDO ═══ -->
+    <div>
+
+      <!-- LETRA -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Letra</span>
+          <div class="btn-row" style="margin-left:auto">
+            <button class="btn btn-ghost" id="btnAbrirBriefing" onclick="toggleBriefing()">✨ Criar com IA</button>
+            <button class="btn btn-ghost" onclick="usarEstrutura()">Usar estrutura</button>
+          </div>
+        </div>
+
+        <textarea id="letra" placeholder="Cole a letra aqui, escreva do zero, ou clique em “Criar com IA” para a Lux escrever a partir do briefing do cliente."
+          oninput="contarLetra()"></textarea>
+        <div class="contador" id="contadorLetra">0 / 5.000 caracteres</div>
+
+        <!-- painel de briefing -->
+        <div id="painelBriefing">
+          <label class="fld" for="briefing">Briefing do cliente</label>
+          <textarea id="briefing" placeholder="Ex: Pizzaria do João, no Centro de Cabo Frio. Massa artesanal, forno a lenha, entrega até 23h. Telefone (22) 99988-2227. Quero algo animado, que dê vontade de pedir."></textarea>
+
+          <label class="fld" for="instrucoes" style="margin-top:12px">Instruções extras (opcional)</label>
+          <input type="text" id="instrucoes" placeholder="Ex: citar o nome do dono, não falar de preço"/>
+
+          <div class="btn-row" style="margin-top:12px;align-items:center">
+            <button class="btn btn-gold" id="btnGerarLetra" onclick="gerarLetra()" style="flex:1">Escrever letra</button>
+            <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer">
+              <input type="checkbox" id="ehPolitica" style="accent-color:var(--gold);width:15px;height:15px"/>
+              Jingle político
+            </label>
+          </div>
+          <div class="custo-nota">A letra usa o mesmo motor da aba Letra de Música — não gasta crédito da Musicful.</div>
+        </div>
+      </div>
+
+      <!-- RITMO -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">Ritmo</span></div>
+        <div class="card-hint">Descreva o estilo, o clima e os instrumentos. Toque nos ritmos abaixo para montar.</div>
+        <textarea id="estilo" placeholder="Ex: sertanejo universitário, animado, viola e guitarra, voz masculina marcante"></textarea>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <!-- VOZ + IDENTIFICAÇÃO -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">Voz e identificação</span></div>
+
+        <label class="fld">Quem canta</label>
+        <div class="voz" id="voz">
+          <button data-voz="male"   onclick="escolherVoz('male')"><span class="ic">♂</span>Masculina</button>
+          <button data-voz="female" onclick="escolherVoz('female')"><span class="ic">♀</span>Feminina</button>
+          <button data-voz=""       onclick="escolherVoz('')" class="on"><span class="ic">✧</span>A IA escolhe</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px">
+          <div>
+            <label class="fld" for="titulo">Título da música</label>
+            <input type="text" id="titulo" maxlength="80" placeholder="Ex: A Melhor Pizza da Cidade"/>
+          </div>
+          <div>
+            <label class="fld" for="cliente">Cliente</label>
+            <input type="text" id="cliente" placeholder="Ex: Pizzaria do João"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- AÇÃO -->
+      <div class="card">
+        <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
+        <div class="custo-nota" id="notaCusto">
+          Cada criação gasta 6 créditos e devolve duas versões da mesma música.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ COLUNA DA DIREITA — AS DUAS VERSÕES ═══ -->
+    <div id="resultados">
+      <div class="vazio" id="painelVazio">
+        <span class="ic">♫</span>
+        Toda criação devolve <strong>duas versões</strong> da mesma letra.<br/>
+        Você escolhe a que ficou melhor e baixa.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LUX MUSIC — tela de criação de música (Musicful)
+// Backend: Worker lux-song. Só admin enxerga esta aba.
+// ═══════════════════════════════════════════════════════════════
+const WORKER = 'https://lux-song.plataformalux.workers.dev';
+
+// Ritmos na ordem REAL de pedido dos clientes da Lux
+// (RITMOS-ranking.md — 7.038 conversas com ritmo identificado).
+const RITMOS = [
+  'Sertanejo','Piseiro','Pop','Forró','Gospel','Pagode','Funk','Rock',
+  'Infantil','Country','Vanerão','Eletrônica','MPB','Axé','Rap','Samba',
+  'Bossa Nova','Brega','Reggae','Marchinha'
+];
+
+const ESTRUTURA_PADRAO =
+`[Verse]
+
+
+[Chorus]
+
+
+[Bridge]
+
+
+[Outro]
+`;
+
+let vozEscolhida = '';
+let taskAtual    = null;
+let pollTimer    = null;
+let inicioGeracao = null;
+let aguardandoConfirmacao = false;
+
+// ── helpers de tela ────────────────────────────────────────────
+function $(id){ return document.getElementById(id); }
+
+function erro(msg){
+  const el = $('avisoErro');
+  el.textContent = msg;
+  el.classList.add('on');
+  $('avisoOk').classList.remove('on');
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function sucesso(msg){
+  const el = $('avisoOk');
+  el.textContent = msg;
+  el.classList.add('on');
+  $('avisoErro').classList.remove('on');
+}
+function limparAvisos(){
+  $('avisoErro').classList.remove('on');
+  $('avisoOk').classList.remove('on');
+}
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── saldo do plano ─────────────────────────────────────────────
+async function carregarSaldo(){
+  try{
+    const r = await window.__luxFetch(WORKER + '/saldo');
+    const d = await r.json();
+    if(!d.ok){
+      $('saldoNum').textContent = '—';
+      $('saldoLbl').textContent = 'saldo indisponível';
+      return;
+    }
+    $('saldoNum').textContent = d.geracoesRestantes;
+    $('saldoLbl').textContent = (d.geracoesRestantes === 1 ? 'música restante' : 'músicas restantes');
+    if(d.custoPorGeracao){
+      $('notaCusto').innerHTML =
+        'Cada criação gasta 6 créditos (cerca de R$ ' +
+        d.custoPorGeracao.toFixed(2).replace('.',',') +
+        ') e devolve duas versões da mesma música.';
+    }
+  }catch(e){
+    $('saldoNum').textContent = '—';
+    $('saldoLbl').textContent = 'saldo indisponível';
+  }
+}
+
+// ── chips de ritmo ─────────────────────────────────────────────
+function montarChips(){
+  $('chips').innerHTML = RITMOS
+    .map(r => `<button type="button" class="chip" data-r="${esc(r)}" onclick="tocarChip(this)">${esc(r)}</button>`)
+    .join('');
+}
+function tocarChip(el){
+  const ritmo = el.dataset.r;
+  const campo = $('estilo');
+  const atual = campo.value.trim();
+  const jaTem = new RegExp('(^|,\\s*)' + ritmo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(\\s*,|$)', 'i').test(atual);
+
+  if(jaTem){
+    // remove o ritmo do texto
+    campo.value = atual
+      .split(',').map(p => p.trim())
+      .filter(p => p.toLowerCase() !== ritmo.toLowerCase())
+      .join(', ');
+    el.classList.remove('on');
+  }else{
+    campo.value = atual ? (atual.replace(/,\s*$/,'') + ', ' + ritmo) : ritmo;
+    el.classList.add('on');
+  }
+}
+
+// ── voz ────────────────────────────────────────────────────────
+function escolherVoz(v){
+  vozEscolhida = v;
+  document.querySelectorAll('#voz button').forEach(b => {
+    b.classList.toggle('on', b.dataset.voz === v);
+  });
+}
+
+// ── letra ──────────────────────────────────────────────────────
+function contarLetra(){
+  const n = $('letra').value.length;
+  const el = $('contadorLetra');
+  el.textContent = n.toLocaleString('pt-BR') + ' / 5.000 caracteres';
+  el.className = 'contador' + (n > 5000 ? ' estourou' : (n > 4000 ? ' alto' : ''));
+}
+function usarEstrutura(){
+  const campo = $('letra');
+  if(campo.value.trim() && !confirm('Isso apaga o que já está escrito na letra. Continuar?')) return;
+  campo.value = ESTRUTURA_PADRAO;
+  campo.focus();
+  contarLetra();
+}
+function toggleBriefing(){
+  const p = $('painelBriefing');
+  p.classList.toggle('aberto');
+  $('btnAbrirBriefing').textContent = p.classList.contains('aberto') ? '✕ Fechar briefing' : '✨ Criar com IA';
+  if(p.classList.contains('aberto')) $('briefing').focus();
+}
+
+async function gerarLetra(){
+  const briefing = $('briefing').value.trim();
+  const ritmo    = $('estilo').value.trim();
+  if(!briefing){ erro('Escreva o briefing do cliente antes de gerar a letra.'); return; }
+  if(!ritmo){ erro('Escolha o ritmo antes — a letra muda conforme o estilo.'); return; }
+
+  const btn = $('btnGerarLetra');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Escrevendo...';
+  limparAvisos();
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/gerarLetra', {
+      method:'POST',
+      body: JSON.stringify({
+        briefing,
+        ritmo,
+        instrucoes: $('instrucoes').value.trim(),
+        tipo: $('ehPolitica').checked ? 'politica' : 'empresa'
+      })
+    });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não deu para gerar a letra.'); return; }
+
+    const res = d.result || {};
+    $('letra').value = res.lyrics || '';
+    contarLetra();
+
+    // O motor devolve um estilo pronto pra IA de música — aproveita.
+    if(res.style_prompt) $('estilo').value = res.style_prompt;
+    if(res.musica_nome && !$('titulo').value.trim()) $('titulo').value = res.musica_nome.slice(0,80);
+    if(res.nome_negocio && !$('cliente').value.trim()) $('cliente').value = res.nome_negocio;
+
+    toggleBriefing();
+    sucesso('Letra pronta. Revise, ajuste o que quiser e crie a música.');
+    $('letra').scrollIntoView({behavior:'smooth', block:'center'});
+  }catch(e){
+    erro('Falha ao falar com o servidor: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Escrever letra';
+  }
+}
+
+// ── criar música ───────────────────────────────────────────────
+function criarMusica(){
+  const letra  = $('letra').value.trim();
+  const estilo = $('estilo').value.trim();
+
+  if(!letra){  erro('A letra está vazia. Escreva, cole ou gere com IA.'); return; }
+  if(letra.length > 5000){ erro('A letra passou de 5.000 caracteres, o limite da Musicful. Corte um pouco.'); return; }
+  if(!estilo){ erro('Escolha o ritmo da música.'); return; }
+
+  const btn = $('btnCriar');
+
+  // Confirmação em dois toques: gastar 6 créditos não pode ser
+  // acidente. O segundo toque manda de verdade.
+  if(!aguardandoConfirmacao){
+    aguardandoConfirmacao = true;
+    btn.classList.remove('btn-gold');
+    btn.classList.add('btn-confirm');
+    btn.textContent = 'Confirmar · gasta 6 créditos';
+    setTimeout(() => {
+      if(aguardandoConfirmacao){
+        aguardandoConfirmacao = false;
+        btn.classList.remove('btn-confirm');
+        btn.classList.add('btn-gold');
+        btn.textContent = 'Criar música';
+      }
+    }, 6000);
+    return;
+  }
+
+  aguardandoConfirmacao = false;
+  btn.classList.remove('btn-confirm');
+  btn.classList.add('btn-gold');
+  enviarGeracao(letra, estilo);
+}
+
+async function enviarGeracao(letra, estilo){
+  const btn = $('btnCriar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Enviando...';
+  limparAvisos();
+  pintarVersoes(null); // já mostra as duas caixas "gerando"
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/gerarMusica', {
+      method:'POST',
+      body: JSON.stringify({
+        lyrics: letra,
+        style:  estilo,
+        title:  $('titulo').value.trim(),
+        clientName: $('cliente').value.trim(),
+        gender: vozEscolhida,
+        mv: 'MFV3.0'
+      })
+    });
+    const d = await r.json();
+    if(!d.ok){
+      erro(d.error || 'Não deu para criar a música.');
+      mostrarPainelVazio();
+      restaurarBotao();
+      return;
+    }
+
+    taskAtual = d.taskId;
+    inicioGeracao = Date.now();
+    btn.innerHTML = '<span class="spin"></span>Gerando as duas versões...';
+    carregarSaldo();
+    iniciarPolling();
+  }catch(e){
+    erro('Falha ao falar com o servidor: ' + e.message);
+    restaurarBotao();
+  }
+}
+
+function restaurarBotao(){
+  const btn = $('btnCriar');
+  btn.disabled = false;
+  btn.textContent = 'Criar música';
+}
+
+// Volta o convite da coluna da direita quando não há nada pra mostrar
+function mostrarPainelVazio(){
+  $('resultados').innerHTML =
+    '<div class="vazio"><span class="ic">♫</span>' +
+    'Toda criação devolve <strong>duas versões</strong> da mesma letra.<br/>' +
+    'Você escolhe a que ficou melhor e baixa.</div>';
+}
+
+// ── polling: pergunta o estado a cada 3s ───────────────────────
+function iniciarPolling(){
+  pararPolling();
+  consultar();
+  pollTimer = setInterval(consultar, 3000);
+}
+function pararPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function consultar(){
+  if(!taskAtual) return;
+
+  // Rede de segurança: a música leva ~30s. Se passar de 6 minutos,
+  // algo travou do lado da Musicful — para de perguntar e avisa,
+  // em vez de ficar rodando calado pra sempre.
+  if(inicioGeracao && (Date.now() - inicioGeracao) > 360000){
+    pararPolling();
+    restaurarBotao();
+    erro('A música está demorando muito mais que o normal. O pedido continua salvo — ' +
+         'saia e volte nesta aba daqui a pouco para ver se ficou pronta.');
+    return;
+  }
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/status?taskId=' + encodeURIComponent(taskAtual));
+    const d = await r.json();
+    if(!d.ok){ return; } // erro passageiro: tenta de novo no próximo ciclo
+
+    pintarVersoes(d);
+
+    if(d.estado === 'PRONTO'){
+      pararPolling();
+      restaurarBotao();
+      const seg = Math.round((Date.now() - inicioGeracao)/1000);
+      sucesso('As duas versões ficaram prontas em ' + seg + ' segundos. Ouça e baixe a melhor.');
+    }else if(d.estado === 'FALHOU'){
+      pararPolling();
+      restaurarBotao();
+      erro('A Musicful não conseguiu gerar esta música. Veja o motivo em cada versão.');
+    }
+  }catch(e){ /* rede instável: o próximo ciclo tenta de novo */ }
+}
+
+// ── as duas versões ────────────────────────────────────────────
+function pintarVersoes(d){
+  const alvo = $('resultados');
+  const musicas = (d && d.musicas && d.musicas.length)
+    ? d.musicas
+    : [{indice:0,pronta:false,falhou:false},{indice:1,pronta:false,falhou:false}];
+
+  const decorrido = inicioGeracao ? Math.round((Date.now() - inicioGeracao)/1000) : 0;
+
+  alvo.innerHTML = musicas.map((m, i) => {
+    const nome = 'Versão ' + String.fromCharCode(65 + i); // A, B
+    let classe, estado, corpo;
+
+    if(m.falhou){
+      classe = 'falhou';
+      estado = m.erro || 'não deu certo';
+      corpo  = '';
+    }else if(m.pronta){
+      classe = 'pronta';
+      estado = m.duracao ? (m.duracao + ' segundos') : 'pronta para baixar';
+      // mesmo link nos dois: sem dl=1 o navegador toca, com dl=1 ele salva
+      const link = WORKER + m.link;
+      corpo =
+        (m.capa ? `<img class="capa" src="${esc(m.capa)}" alt="Capa da ${esc(nome)}" loading="lazy"/>` : '') +
+        `<audio controls preload="none" src="${esc(link)}"></audio>` +
+        `<a class="btn btn-gold btn-lg" style="display:block;text-align:center;text-decoration:none"
+            href="${esc(link + '&dl=1')}">Baixar MP3</a>`;
+    }else{
+      // ~90s é o tempo real medido. Dizer isso evita o atendente achar
+      // que travou e sair da tela no meio.
+      classe = 'gerando';
+      estado = decorrido ? ('gerando há ' + decorrido + 's · leva ~1min30') : 'na fila';
+      corpo  = '';
+    }
+
+    return `
+      <div class="versao ${classe}">
+        <div class="versao-head">
+          <div class="versao-letra">${String.fromCharCode(65 + i)}</div>
+          <div>
+            <div class="versao-nome">${esc(nome)}</div>
+            <div class="versao-estado">${esc(estado)}</div>
+          </div>
+        </div>
+        <div class="eq">${barrasEq(i)}</div>
+        ${corpo}
+      </div>`;
+  }).join('');
+
+}
+
+// Desenha as barras do equalizador. A altura de repouso vem de uma
+// senoide, não de random: assim o desenho é estável entre repinturas
+// (o polling redesenha a cada 3s) e A e B ficam com ondas diferentes.
+function barrasEq(versao){
+  const TOTAL = 26;
+  let html = '';
+  for(let n = 0; n < TOTAL; n++){
+    const onda = Math.sin((n / TOTAL) * Math.PI * 3 + versao * 1.7);
+    const alt  = Math.round(34 + Math.abs(onda) * 58); // 34% a 92%
+    html += `<i style="--h:${alt}%;animation-delay:${(n * 0.045).toFixed(3)}s"></i>`;
+  }
+  return html;
+}
+
+// ── início ─────────────────────────────────────────────────────
+montarChips();
+contarLetra();
+carregarSaldo();
+</script>
+</body>
+</html>
