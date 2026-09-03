@@ -1878,7 +1878,7 @@ function renderCortes(){
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
       // removemos, deixando só a voz. Se falhar, o atendente precisa saber ANTES de montar.
       '<div class="soon-note" style="margin-top:.2rem">'+(
-        s._vozUrl ? '🔊 Áudio limpo: música de fundo do motor removida, só a voz.'
+        s._vozUrl ? '🔊 Voz isolada pronta. A prévia acima ainda toca o áudio do motor, <b>com a música de fundo</b> — ela sai só no vídeo final, na montagem.'
         : (s._vozErro ? ('<span style="color:#F5B7B1">⚠️ Não consegui limpar o áudio desta cena ('+esc(s._vozErro)+'). Ela vai entrar com a música do motor por baixo.</span>')
         : (s._vozId ? '<span class="spin"></span> Limpando o áudio (removendo a música do motor)…' : ''))
       )+'</div>'+
@@ -2061,6 +2061,20 @@ function ligarTrim(card, i){
       try{ bar.setPointerCapture(ev.pointerId); }catch(e){}
     });
   });
+  // ⚠️ O play respeita as alças: começa na alça do INÍCIO e para exatamente na do FIM.
+  // Sem isso o atendente arrastava a alça, dava play e via os 8s inteiros — sem enxergar onde
+  // o vídeo realmente vai terminar depois de montado.
+  const alcaIni = function(){ return Number(cenas[i].cortaIni)||0; };
+  const alcaFim = function(){ return CLIPE_SEG - (Number(cenas[i].cortaFim)||0); };
+  video.addEventListener('play', function(){
+    const t = video.currentTime||0;
+    // fora do trecho escolhido (ou parado no fim dele): volta pro início da alça
+    if(t < alcaIni()-0.05 || t >= alcaFim()-0.02) seek(alcaIni());
+  });
+  video.addEventListener('timeupdate', function(){
+    if(video.paused) return;
+    if((video.currentTime||0) >= alcaFim()){ video.pause(); seek(alcaFim()); }
+  });
   bar.addEventListener('pointermove', mover);
   bar.addEventListener('pointerup', soltar);
   bar.addEventListener('pointercancel', soltar);
@@ -2179,8 +2193,12 @@ async function finalizar(){
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
   montando=true; pintarProgresso();
   try{
+    // inicioFala vai SEMPRE (mesmo com legenda desligada): é com ele que o Worker decide quanto
+    // cortar do começo. Cortando 100ms cego, uma cena que começa a falar em 0,000s perdia o
+    // ataque da primeira palavra e o vídeo montado saía com tropeço (02/09).
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0),
       marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '',
+      inicioFala: (s._inicioFala===undefined||s._inicioFala===null) ? undefined : Number(s._inicioFala),
       vozUrl: s._vozUrl || '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha }) });
