@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20260903c';</script>
+<script>window.__LUX_VERSION = '20260903d';</script>
 <script type="module" src="js/auth.js?v=20260709"></script>
 </head>
 <body>
@@ -114,6 +114,10 @@
       <a class="nav-item" data-tool="musica" href="#">
         <div class="nav-icon">🎵</div> Letra de Música
         <span class="nav-badge badge-live">LIVE</span>
+      </a>
+      <a class="nav-item" data-tool="luxmusic" href="#" data-role-required="admin" style="display:none">
+        <div class="nav-icon">🎼</div> Lux Music
+        <span class="nav-badge badge-live">ADMIN</span>
       </a>
       <a class="nav-item" data-tool="figurinhas" href="#">
         <div class="nav-icon">🎭</div> Figurinhas
@@ -220,6 +224,16 @@
           </div>
         </div>
 
+        <div class="tool-card" data-card-tool="luxmusic" data-role-required="admin" style="display:none" onclick="loadTool('luxmusic')">
+          <div class="tool-card-icon">🎼</div>
+          <div class="tool-card-name">LUX MUSIC</div>
+          <div class="tool-card-desc">A letra vira música de verdade. Escolha o ritmo e a voz, e receba duas versões prontas em cerca de um minuto e meio.</div>
+          <div class="tool-card-footer">
+            <span class="status-live">● Em teste — só admin</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
         <div class="tool-card" onclick="loadTool('figurinhas')">
           <div class="tool-card-icon">🎭</div>
           <div class="tool-card-name">FIGURINHAS</div>
@@ -322,12 +336,21 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- MÚSICA — MAESTRO AI -->
+    <!-- MÚSICA — MAESTRO AI (só a LETRA) -->
     <div id="view-musica" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-        <span class="tool-panel-title">✦ LUX MUSIC</span>
+        <span class="tool-panel-title">✦ LETRA DE MÚSICA</span>
         <span class="tool-panel-atendente" id="musicAtendente"></span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- LUX MUSIC — música em áudio (Musicful). Admin only, em teste. -->
+    <div id="view-luxmusic" class="tool-panel" data-role-required="admin" style="display:none">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">🎼 LUX MUSIC</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
@@ -555,6 +578,6 @@ function openLogoAnim(event) {
 })();
 </script>
 
-<script src="js/shell.js?v=20260709"></script>
+<script src="js/shell.js?v=20260903d"></script>
 </body>
 </html>
