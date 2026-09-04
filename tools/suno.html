@@ -295,6 +295,16 @@ let buscaTimer  = null;
 let convertendo = 0;
 let listaPendente = false;   // chegou música nova enquanto convertia
 let publicasNoSuno = null;   // quantas músicas públicas o Suno vê no perfil
+let ultimaMudancaVista = 0;  // carimbo da lista que esta tela já mostrou
+
+// MP3 adiantado: a conversão começa assim que a música chega, não na
+// hora do clique. Quando o atendente aperta "Baixar MP3", o arquivo
+// já está pronto e o download é na hora.
+const mp3Pronto  = new Map();   // id -> Blob já convertido
+const mp3Fazendo = new Map();   // id -> Promise em andamento
+const filaMp3    = [];
+let rodandoFila  = false;
+const MAX_ADIANTADAS = 5;       // teto pra não encher a memória do navegador
 
 function $(id){ return document.getElementById(id); }
 
@@ -461,8 +471,18 @@ async function verificarAgora(manual){
     }
 
     radar('procurando música nova', true);
-    if(d.novas > 0){
-      sucesso(`Chegou música nova: ${d.novas} adicionada${d.novas>1?'s':''}.`);
+
+    // A lista pode ter mudado por aqui OU pelo cron do Worker. Por isso
+    // não basta olhar "novas": comparamos o carimbo da última mudança
+    // com o que esta tela já mostrou. Sem isso, quando o cron chegava
+    // primeiro a música só aparecia recarregando a página.
+    const mudou = (d.ultimaMudanca || 0) !== ultimaMudancaVista;
+
+    if(d.novas > 0 || mudou){
+      const quantas = d.novas > 0 ? d.novas : null;
+      sucesso(quantas
+        ? `Chegou música nova: ${quantas} adicionada${quantas>1?'s':''}.`
+        : 'Chegou música nova.');
       carregarMusicas();
     }else if(manual){
       erro('Nenhuma música nova. O Suno mostra ' + publicasNoSuno +
@@ -499,7 +519,9 @@ async function carregarMusicas(){
     // arrancaria o botão de progresso da tela no meio da conversão.
     if(convertendo > 0){ listaPendente = true; return; }
     musicas = d.musicas || [];
+    if(typeof d.ultimaMudanca === 'number') ultimaMudancaVista = d.ultimaMudanca;
     pintarLista(q);
+    adiantarMp3();          // já começa a converter as mais recentes
   }catch(e){
     $('lista').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
       'Não consegui carregar a lista agora. Tente recarregar a página.</div>';
@@ -550,7 +572,8 @@ function pintarLista(busca){
 
         <div class="musica-acoes">
           <button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>
-          <button class="btn btn-gold" id="dl${i}" onclick="baixarMp3(${i})">Baixar MP3</button>
+          <button class="btn btn-gold" id="dl-${esc(m.id)}"
+            onclick="baixarMp3('${esc(m.id)}')">${rotuloBotao(m.id)}</button>
           ${m.letra ? `<button class="btn-mini" onclick="verLetra(${i})" id="lt${i}">Ver letra</button>` : ''}
         </div>
 
@@ -565,59 +588,157 @@ function verLetra(i){
   bt.textContent = abriu ? 'Esconder letra' : 'Ver letra';
 }
 
-// ── baixar em MP3 ──────────────────────────────────────────────
-// O Suno entrega MP4 (capa parada + áudio). Aqui a gente tira o
-// áudio e monta o MP3 no próprio navegador — mesma receita da
-// ferramenta Corte, sem custo e sem servidor no meio.
-async function baixarMp3(i){
-  const m = musicas[i];
+// ══ MP3 ADIANTADO ══════════════════════════════════════════════
+// O Suno entrega MP4 (capa parada + áudio). A conversão pra MP3
+// começa assim que a música chega na lista, e não quando o atendente
+// clica — quando ele clicar, o arquivo já está pronto e salva na hora.
+// Converte uma de cada vez, das mais recentes pras mais antigas, com
+// teto de MAX_ADIANTADAS pra não encher a memória do navegador.
+// ═══════════════════════════════════════════════════════════════
+
+function rotuloBotao(id){
+  if(mp3Pronto.has(id))  return 'Baixar MP3';
+  if(mp3Fazendo.has(id)) return 'preparando MP3…';
+  return 'Baixar MP3';
+}
+
+// Guarda o MP3 pronto, mas sem deixar a memória crescer sem fim: numa
+// aba aberta o dia inteiro isso viraria centenas de MB. Fica com os
+// MAX_GUARDADOS mais recentes e descarta os mais antigos (o Map do JS
+// mantém a ordem de inserção, então o primeiro é sempre o mais velho).
+const MAX_GUARDADOS = 8;
+function guardarMp3(id, blob){
+  mp3Pronto.set(id, blob);
+  while(mp3Pronto.size > MAX_GUARDADOS){
+    const maisVelho = mp3Pronto.keys().next().value;
+    mp3Pronto.delete(maisVelho);
+    pintarBotao(maisVelho);
+  }
+}
+
+function pintarBotao(id){
+  const btn = $('dl-' + id);
+  if(!btn || btn.dataset.ocupado === '1') return;
+  btn.textContent = rotuloBotao(id);
+  btn.style.opacity = mp3Fazendo.has(id) ? '.75' : '';
+}
+
+// Faz o trabalho pesado: busca o MP4, tira o áudio e monta o MP3.
+async function gerarMp3(m, onProgresso){
+  const resp = await fetch(WORKER + m.link);
+  if(!resp.ok){
+    const t = await resp.json().catch(()=>({}));
+    throw new Error(t.error || ('o Suno respondeu ' + resp.status));
+  }
+  const buf = await resp.arrayBuffer();
+
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const audio = await ctx.decodeAudioData(buf);
+  ctx.close();
+
+  return paraMp3(audio, onProgresso || (()=>{}));
+}
+
+// Coloca as mais recentes na fila de conversão adiantada
+function adiantarMp3(){
+  if(typeof lamejs === 'undefined') return;   // conversor ainda carregando
+  musicas.slice(0, MAX_ADIANTADAS).forEach(m => {
+    if(mp3Pronto.has(m.id) || mp3Fazendo.has(m.id)) return;
+    if(!filaMp3.includes(m.id)) filaMp3.push(m.id);
+  });
+  rodarFila();
+}
+
+async function rodarFila(){
+  if(rodandoFila) return;
+  rodandoFila = true;
+  while(filaMp3.length){
+    const id = filaMp3.shift();
+    const m = musicas.find(x => x.id === id);
+    if(!m || mp3Pronto.has(id) || mp3Fazendo.has(id)) continue;
+
+    const tarefa = gerarMp3(m).then(blob => {
+      guardarMp3(id, blob);
+      mp3Fazendo.delete(id);
+      pintarBotao(id);
+      return blob;
+    }).catch(err => {
+      // falhou adiantado? sem drama: converte na hora do clique
+      mp3Fazendo.delete(id);
+      pintarBotao(id);
+      throw err;
+    });
+
+    mp3Fazendo.set(id, tarefa);
+    pintarBotao(id);
+    try { await tarefa; } catch(e){ /* silencioso */ }
+  }
+  rodandoFila = false;
+}
+
+// Salva o arquivo no computador do atendente
+function salvarArquivo(blob, nome){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 30000);
+}
+
+async function baixarMp3(id){
+  const m = musicas.find(x => x.id === id);
   if(!m) return;
-  const btn = $('dl'+i);
-  const original = btn.textContent;
+  const btn = $('dl-' + id);
+  const nome = (m.arquivo || 'musica.mp4').replace(/\.mp4$/i, '') + '.mp3';
+
+  // 1) já está pronto: salva na hora
+  if(mp3Pronto.has(id)){
+    salvarArquivo(mp3Pronto.get(id), nome);
+    sucesso('MP3 salvo: ' + nome);
+    return;
+  }
 
   if(typeof lamejs === 'undefined'){
     erro('O conversor de MP3 ainda está carregando. Tente de novo em 5 segundos.');
     return;
   }
 
+  btn.dataset.ocupado = '1';
   btn.disabled = true;
   convertendo++;
   limparAvisos();
+
   try{
-    btn.innerHTML = '<span class="spin"></span>Baixando...';
-    const resp = await fetch(WORKER + m.link);
-    if(!resp.ok){
-      const t = await resp.json().catch(()=>({}));
-      throw new Error(t.error || ('o Suno respondeu ' + resp.status));
+    // 2) já está sendo preparado: só espera terminar
+    let blob;
+    if(mp3Fazendo.has(id)){
+      btn.innerHTML = '<span class="spin"></span>Quase lá...';
+      blob = await mp3Fazendo.get(id);
+    }else{
+      // 3) ninguém preparou ainda: converte agora
+      btn.innerHTML = '<span class="spin"></span>Preparando...';
+      const tarefa = gerarMp3(m, (pct)=>{
+        btn.innerHTML = '<span class="spin"></span>Preparando ' + Math.round(pct*100) + '%';
+      });
+      mp3Fazendo.set(id, tarefa);
+      blob = await tarefa;
+      guardarMp3(id, blob);
+      mp3Fazendo.delete(id);
     }
-    const buf = await resp.arrayBuffer();
 
-    btn.innerHTML = '<span class="spin"></span>Convertendo...';
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const audio = await ctx.decodeAudioData(buf);
-    ctx.close();
-
-    const blob = await paraMp3(audio, (pct)=>{
-      btn.innerHTML = '<span class="spin"></span>Convertendo ' + Math.round(pct*100) + '%';
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = (m.arquivo || 'musica.mp4').replace(/\.mp4$/i, '') + '.mp3';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 30000);
-
-    sucesso('MP3 salvo: ' + a.download);
+    salvarArquivo(blob, nome);
+    sucesso('MP3 salvo: ' + nome);
   }catch(e){
+    mp3Fazendo.delete(id);
     erro('Não consegui montar o MP3 (' + e.message + ').');
   }finally{
+    btn.dataset.ocupado = '';
     btn.disabled = false;
-    btn.textContent = original;
+    pintarBotao(id);
     convertendo--;
-    // acabou a conversão: agora sim mostra a música que chegou no meio
     if(convertendo === 0 && listaPendente){
       listaPendente = false;
       carregarMusicas();
@@ -685,6 +806,13 @@ function cortar(i){
   await carregarPerfil();
   await carregarMusicas();
   if(handleAtual) verificarAgora(false);
+
+  // O conversor vem de um CDN e pode demorar alguns segundos. Quando
+  // ele chegar, começa a adiantar os MP3 (se a lista carregou antes).
+  for(let i = 0; i < 40 && typeof lamejs === 'undefined'; i++){
+    await new Promise(r => setTimeout(r, 250));
+  }
+  adiantarMp3();
 })();
 </script>
 </body>
