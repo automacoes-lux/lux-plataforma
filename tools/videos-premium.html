@@ -2755,10 +2755,22 @@ async function loadOrders() {
   try {
     const resp = await api('/listOrders');
     const d = await resp.json();
+    // (03/09) ERRO do servidor NÃO é "lista vazia": antes, um 401/403 (sessão expirada) caía no mesmo
+    // "Nenhum clipe ainda" e escondia a causa — o admin achava que os pedidos tinham sumido.
+    if (!d.ok) {
+      const expirou = (resp.status === 401 || resp.status === 403);
+      el.innerHTML = '<div class="empty-state">⚠️ ' +
+        (expirou
+          ? 'Sua sessão expirou.<br/>Recarregue a página (<b>F5</b>) — se continuar, saia e entre de novo com o Google.'
+          : ('Não consegui carregar o histórico.<br/><span style="font-size:12px;color:var(--text-dim)">' + ((d.error || ('HTTP ' + resp.status)) + '').slice(0, 160) + '</span>')) +
+        '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Tentar de novo</button></div>';
+      return;
+    }
     const ehAdmin = (d.viewMode === 'admin');   // admin vê o atendente de cada pedido; atendente vê só os seus
     const orders = (d.orders || []).filter(o => o.kind === 'avatar');
     if (!orders.length) {
-      el.innerHTML = '<div class="empty-state">Nenhum clipe ainda.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤</div>';
+      el.innerHTML = '<div class="empty-state">Nenhum clipe ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤' +
+        '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
       return;
     }
     orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
