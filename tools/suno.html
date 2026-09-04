@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suno Download — Plataforma Lux</title>
+
+<script src="../js/auth-iframe.js"></script>
+<!-- Encoder MP3 (mesmo da ferramenta Corte). O Suno entrega MP4;
+     a conversão pra MP3 acontece aqui no navegador, sem custo. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --gold:#C9A84C; --gold-bright:#E2BA5F; --gold-dim:#9A7A38;
+    --bg:#0A0A0B; --bg2:#111114; --bg3:#18181C; --bg4:#1F1F25;
+    --text:#E8E4DC; --muted:#8A8680;
+    --line:rgba(201,168,76,.2); --line-bright:rgba(201,168,76,.4);
+    --green:#7FB87A; --red:#E87A7A;
+    --radius:14px;
+    --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:var(--font);
+    background:radial-gradient(ellipse at top, rgba(201,168,76,.05) 0%, var(--bg) 60%);
+    color:var(--text);min-height:100vh;padding:20px 14px 60px;line-height:1.5;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .wrap{width:100%;max-width:920px}
+
+  /* ── CABEÇALHO ── */
+  header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+  .mark{
+    width:44px;height:44px;border-radius:50%;
+    background:conic-gradient(from 220deg,var(--gold),var(--gold-bright),var(--gold));
+    display:grid;place-items:center;color:#10131a;font-size:19px;flex-shrink:0;
+    box-shadow:0 0 0 4px rgba(201,168,76,.12);
+  }
+  h1{font-family:'Cinzel',serif;font-size:20px;font-weight:600;letter-spacing:.04em}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .radar{
+    margin-left:auto;display:flex;align-items:center;gap:8px;
+    background:var(--bg2);border:1px solid var(--line);border-radius:20px;
+    padding:7px 14px;font-size:12px;color:var(--muted);
+  }
+  .radar .bolinha{
+    width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;
+    animation:pisca 2s ease-in-out infinite;
+  }
+  .radar.parado .bolinha{background:var(--muted);animation:none}
+  @keyframes pisca{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(127,184,122,.5)}50%{opacity:.5;box-shadow:0 0 0 5px rgba(127,184,122,0)}}
+  @media (prefers-reduced-motion:reduce){.radar .bolinha{animation:none}}
+
+  /* ── CARDS ── */
+  .card{
+    background:var(--bg2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;margin-bottom:16px;
+  }
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .titulo-secao{
+    font-family:'Cinzel',serif;color:var(--gold-bright);font-size:13.5px;
+    font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  }
+  .card-hint{color:var(--muted);font-size:12.5px;margin-bottom:12px;line-height:1.55}
+
+  input[type=text]{
+    width:100%;background:var(--bg);border:1px solid #35322b;border-radius:9px;
+    padding:12px 13px;color:var(--text);font-family:var(--font);font-size:14px;
+    transition:border-color .15s;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--gold)}
+  input::placeholder{color:#57534b}
+
+  .linha{display:flex;gap:8px;flex-wrap:wrap}
+  .linha input{flex:1;min-width:200px}
+
+  /* ── BOTÕES ── */
+  .btn{
+    border:none;border-radius:9px;padding:12px 16px;cursor:pointer;
+    font-family:'Cinzel',serif;font-size:12.5px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;transition:filter .15s,transform .1s;
+    white-space:nowrap;
+  }
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:not(:disabled):hover{filter:brightness(1.1)}
+  .btn:not(:disabled):active{transform:translateY(1px)}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:#1A1A1A}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--line-bright);color:var(--gold-bright);
+    font-family:var(--font);font-size:13px;letter-spacing:.02em;text-transform:none;
+    font-weight:600;padding:10px 14px;border-radius:9px;
+  }
+  .btn-ghost:not(:disabled):hover{background:rgba(201,168,76,.08)}
+  .btn-mini{
+    background:transparent;border:1px solid #35322b;border-radius:8px;
+    padding:5px 11px;color:var(--muted);cursor:pointer;font-size:12px;
+    font-family:var(--font);transition:all .13s;
+  }
+  .btn-mini:hover{border-color:var(--gold);color:var(--gold-bright)}
+
+  /* ── CONTA CONECTADA ── */
+  .conectado{
+    display:flex;align-items:center;gap:11px;background:var(--bg3);
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;flex-wrap:wrap;
+  }
+  .conectado .arroba{font-family:'Cinzel',serif;color:var(--gold-bright);font-size:15px}
+  .conectado .ok{color:var(--green);font-size:12px}
+
+  /* ── BUSCA ── */
+  .busca-wrap{position:relative;margin-bottom:14px}
+  .busca-wrap .lupa{
+    position:absolute;left:13px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:15px;pointer-events:none;
+  }
+  .busca-wrap input{padding-left:38px}
+  .busca-info{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-bottom:12px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;
+  }
+
+  /* ── LISTA DE MÚSICAS ── */
+  .musica{
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:15px;margin-bottom:12px;
+  }
+  .musica-topo{display:flex;gap:13px;align-items:flex-start}
+  .musica-capa{
+    width:74px;height:74px;border-radius:9px;object-fit:cover;flex-shrink:0;
+    border:1px solid var(--line);background:var(--bg4);
+  }
+  .musica-info{flex:1;min-width:0}
+  .musica-titulo{
+    font-family:'Cinzel',serif;font-size:15px;color:var(--text);
+    line-height:1.35;word-break:break-word;
+  }
+  .musica-meta{color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.6}
+  .musica-estilo{
+    display:inline-block;background:rgba(201,168,76,.12);border:1px solid var(--line);
+    border-radius:20px;padding:2px 10px;font-size:11.5px;color:var(--gold-bright);
+    margin-top:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .musica audio{width:100%;margin-top:12px;height:36px}
+  .musica-acoes{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .musica-acoes .btn{flex:1;min-width:130px}
+  .letra{
+    display:none;margin-top:12px;background:var(--bg);border:1px solid #2a2822;
+    border-radius:9px;padding:13px;font-size:13px;line-height:1.7;
+    white-space:pre-wrap;max-height:260px;overflow-y:auto;color:#cfcabf;
+  }
+  .letra.aberta{display:block}
+
+  /* ── ESTADOS ── */
+  .vazio{
+    background:var(--bg2);border:1px dashed var(--line);border-radius:var(--radius);
+    padding:38px 22px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.7;
+  }
+  .vazio .ic{font-size:32px;display:block;margin-bottom:11px;opacity:.5}
+  .vazio strong{color:var(--text)}
+
+  .aviso{border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:14px;display:none}
+  .aviso.on{display:block}
+  .aviso-erro{background:rgba(232,122,122,.1);border:1px solid rgba(232,122,122,.35);color:#F0A0A0}
+  .aviso-ok{background:rgba(127,184,122,.1);border:1px solid rgba(127,184,122,.35);color:#A5D3A0}
+
+  .spin{
+    display:inline-block;width:12px;height:12px;border:2px solid rgba(201,168,76,.3);
+    border-top-color:var(--gold-bright);border-radius:50%;
+    animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── MOBILE ── */
+  @media (max-width:640px){
+    body{padding:16px 11px 50px}
+    h1{font-size:18px}
+    .radar{margin-left:0;order:3;width:100%;justify-content:center}
+    .card{padding:15px}
+    .musica-capa{width:58px;height:58px}
+    .musica-acoes .btn{min-width:0;flex:1 1 100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark">♫</div>
+    <div>
+      <h1>Suno Download</h1>
+      <div class="sub">As músicas que você publica no Suno chegam aqui sozinhas</div>
+    </div>
+    <div class="radar parado" id="radar">
+      <span class="bolinha"></span>
+      <span id="radarTxt">conectando…</span>
+    </div>
+  </header>
+
+  <div class="aviso aviso-erro" id="avisoErro"></div>
+  <div class="aviso aviso-ok" id="avisoOk"></div>
+
+  <!-- ═══ 1. PUXAR PELO LINK (fica em cima — é o plano B) ═══ -->
+  <div class="card">
+    <div class="card-head"><span class="titulo-secao">Puxar pelo link</span></div>
+    <div class="card-hint">
+      Cole o link de compartilhamento do Suno para trazer uma música na hora.
+      Use quando ela não aparecer sozinha na lista.
+    </div>
+    <div class="linha">
+      <input type="text" id="linkSuno" placeholder="https://suno.com/s/..."
+        onkeydown="if(event.key==='Enter')puxarLink()"/>
+      <button class="btn btn-gold" id="btnLink" onclick="puxarLink()">Puxar música</button>
+    </div>
+  </div>
+
+  <!-- ═══ 2. CONTA DO SUNO ═══ -->
+  <div class="card">
+    <div class="card-head">
+      <span class="titulo-secao">Sua conta no Suno</span>
+      <button class="btn-mini" id="btnTrocar" style="margin-left:auto;display:none"
+        onclick="trocarConta()">Trocar conta</button>
+    </div>
+
+    <!-- não cadastrado -->
+    <div id="semConta">
+      <div class="card-hint">
+        Cadastre o seu <strong>@</strong> do Suno uma vez. Depois disso, tudo que você
+        publicar por lá aparece nesta lista sozinho, em poucos segundos.<br/>
+        <span style="color:#6f6b64">Para achar o seu @: no Suno, clique na sua foto → o endereço
+        do seu perfil termina com ele (ex.: suno.com/<strong>@seunome</strong>).</span>
+      </div>
+      <div class="linha">
+        <input type="text" id="handle" placeholder="seunome (sem o @)"
+          onkeydown="if(event.key==='Enter')salvarHandle()"/>
+        <button class="btn btn-gold" id="btnSalvar" onclick="salvarHandle()">Conectar</button>
+      </div>
+    </div>
+
+    <!-- cadastrado -->
+    <div id="comConta" style="display:none">
+      <div class="conectado">
+        <span class="arroba" id="handleAtual">@—</span>
+        <span class="ok">● conectado</span>
+        <button class="btn-mini" style="margin-left:auto" onclick="verificarAgora(true)">Procurar agora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 3. BUSCA + LISTA ═══ -->
+  <div class="busca-wrap">
+    <span class="lupa">🔍</span>
+    <input type="text" id="busca" placeholder="Procurar por nome, ritmo ou trecho da letra…"
+      oninput="buscarComPausa()"/>
+  </div>
+  <div class="busca-info">
+    <span id="contador">—</span>
+    <span>As músicas ficam aqui por 7 dias</span>
+  </div>
+
+  <div id="lista">
+    <div class="vazio"><span class="ic">⏳</span>Carregando suas músicas…</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SUNO DOWNLOAD — tela do atendente
+// Backend: Worker lux-suno. Disponível para admin e atendente;
+// cada um vê só as próprias músicas.
+// ═══════════════════════════════════════════════════════════════
+const WORKER = 'https://lux-suno.plataformalux.workers.dev';
+
+// De quanto em quanto tempo a tela procura música nova enquanto
+// está aberta. O cron do Worker faz o mesmo a cada 2 min por trás,
+// mas com a aba aberta a gente quer que apareça quase na hora.
+const INTERVALO_RADAR = 20000;
+
+let musicas     = [];
+let handleAtual = '';
+let radarTimer  = null;
+let buscaTimer  = null;
+// Quantas conversões de MP3 estão rolando. Enquanto houver alguma, a
+// lista NÃO é repintada — senão o botão que mostra o progresso some
+// no meio do caminho e o atendente fica sem saber o que aconteceu.
+let convertendo = 0;
+let listaPendente = false;   // chegou música nova enquanto convertia
+
+function $(id){ return document.getElementById(id); }
+
+function erro(msg){
+  const el=$('avisoErro'); el.textContent=msg; el.classList.add('on');
+  $('avisoOk').classList.remove('on');
+}
+function sucesso(msg){
+  const el=$('avisoOk'); el.textContent=msg; el.classList.add('on');
+  $('avisoErro').classList.remove('on');
+  setTimeout(()=>el.classList.remove('on'), 6000);
+}
+function limparAvisos(){
+  $('avisoErro').classList.remove('on'); $('avisoOk').classList.remove('on');
+}
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtDuracao(seg){
+  if(!seg) return '';
+  const m=Math.floor(seg/60), s=Math.round(seg%60);
+  return m+':'+String(s).padStart(2,'0');
+}
+function fmtData(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  if(isNaN(d)) return '';
+  const hoje=new Date();
+  const mesmoDia = d.toDateString()===hoje.toDateString();
+  const hora = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  return mesmoDia ? ('hoje às '+hora)
+                  : d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' às '+hora;
+}
+
+// ── radar (o indicador do topo) ────────────────────────────────
+function radar(texto, ligado){
+  $('radarTxt').textContent = texto;
+  $('radar').classList.toggle('parado', !ligado);
+}
+
+// ── perfil ─────────────────────────────────────────────────────
+async function carregarPerfil(){
+  try{
+    const r = await window.__luxFetch(WORKER + '/perfil');
+    const d = await r.json();
+    handleAtual = (d && d.handle) || '';
+    pintarPerfil();
+  }catch(e){
+    radar('sem conexão', false);
+  }
+}
+
+function pintarPerfil(){
+  const tem = !!handleAtual;
+  $('semConta').style.display = tem ? 'none' : 'block';
+  $('comConta').style.display = tem ? 'block' : 'none';
+  $('btnTrocar').style.display = tem ? 'inline-block' : 'none';
+  if(tem){
+    $('handleAtual').textContent = '@' + handleAtual;
+    radar('procurando música nova', true);
+    ligarRadar();
+  }else{
+    radar('conecte sua conta', false);
+    desligarRadar();
+  }
+}
+
+async function salvarHandle(){
+  const h = $('handle').value.trim().replace(/^@/,'');
+  if(!h){ erro('Digite o seu @ do Suno.'); return; }
+
+  const btn=$('btnSalvar');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Conferindo...';
+  limparAvisos();
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/perfil', {
+      method:'POST', body: JSON.stringify({handle:h})
+    });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui conectar essa conta.'); return; }
+
+    handleAtual = d.handle;
+    pintarPerfil();
+    sucesso(d.importadas > 0
+      ? `Conta conectada. Já trouxe ${d.importadas} música${d.importadas>1?'s':''} do seu perfil.`
+      : 'Conta conectada. Assim que você publicar uma música no Suno, ela aparece aqui.');
+    carregarMusicas();
+  }catch(e){
+    erro('Falha ao falar com o servidor: ' + e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='Conectar';
+  }
+}
+
+async function trocarConta(){
+  if(!confirm('Desconectar @' + handleAtual + '? As músicas já baixadas continuam na lista.')) return;
+  try{
+    await window.__luxFetch(WORKER + '/perfil/remover', {method:'POST'});
+    handleAtual='';
+    $('handle').value='';
+    pintarPerfil();
+  }catch(e){ erro('Não consegui desconectar: ' + e.message); }
+}
+
+// ── puxar pelo link (plano B) ──────────────────────────────────
+async function puxarLink(){
+  const link = $('linkSuno').value.trim();
+  if(!link){ erro('Cole o link da música do Suno.'); return; }
+
+  const btn=$('btnLink');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Puxando...';
+  limparAvisos();
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/puxarLink', {
+      method:'POST', body: JSON.stringify({link})
+    });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui puxar essa música.'); return; }
+
+    $('linkSuno').value='';
+    sucesso(d.novas > 0
+      ? `Trouxe ${d.novas} música${d.novas>1?'s':''} — "${d.titulo}" está na lista.`
+      : `"${d.titulo}" já estava na sua lista.`);
+    carregarMusicas();
+  }catch(e){
+    erro('Falha ao falar com o servidor: ' + e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='Puxar música';
+  }
+}
+
+// ── radar: procura música nova sozinho ─────────────────────────
+function ligarRadar(){
+  if(radarTimer) return;
+  radarTimer = setInterval(()=>verificarAgora(false), INTERVALO_RADAR);
+}
+function desligarRadar(){
+  if(radarTimer){ clearInterval(radarTimer); radarTimer=null; }
+}
+
+async function verificarAgora(manual){
+  if(!handleAtual) return;
+  if(manual){ radar('procurando...', true); limparAvisos(); }
+  try{
+    const r = await window.__luxFetch(WORKER + '/verificar', {method:'POST'});
+    const d = await r.json();
+    if(!d.ok){
+      if(manual) erro(d.error || 'Não consegui falar com o Suno agora.');
+      radar('Suno fora do ar — use o link', false);
+      return;
+    }
+    radar('procurando música nova', true);
+    if(d.novas > 0){
+      sucesso(`Chegou música nova: ${d.novas} adicionada${d.novas>1?'s':''}.`);
+      carregarMusicas();
+    }else if(manual){
+      sucesso('Nenhuma música nova. Lembre de publicar a música no Suno.');
+    }
+  }catch(e){
+    radar('sem conexão', false);
+  }
+}
+
+// ── lista + busca ──────────────────────────────────────────────
+function buscarComPausa(){
+  clearTimeout(buscaTimer);
+  buscaTimer = setTimeout(()=>carregarMusicas(), 300);
+}
+
+async function carregarMusicas(){
+  const q = $('busca').value.trim();
+  try{
+    const r = await window.__luxFetch(WORKER + '/musicas' + (q ? ('?q='+encodeURIComponent(q)) : ''));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui carregar a lista.'); return; }
+    // Está convertendo um MP3? Guarda pra depois — repintar agora
+    // arrancaria o botão de progresso da tela no meio da conversão.
+    if(convertendo > 0){ listaPendente = true; return; }
+    musicas = d.musicas || [];
+    pintarLista(q);
+  }catch(e){
+    $('lista').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
+      'Não consegui carregar a lista agora. Tente recarregar a página.</div>';
+  }
+}
+
+function pintarLista(busca){
+  const alvo = $('lista');
+
+  $('contador').textContent = musicas.length
+    ? (musicas.length + (musicas.length===1 ? ' música' : ' músicas'))
+    : '';
+
+  if(!musicas.length){
+    if(busca){
+      alvo.innerHTML = '<div class="vazio"><span class="ic">🔍</span>' +
+        'Nenhuma música encontrada para <strong>' + esc(busca) + '</strong>.</div>';
+    }else if(!handleAtual){
+      alvo.innerHTML = '<div class="vazio"><span class="ic">🎵</span>' +
+        'Conecte a sua conta do Suno aí em cima.<br/>' +
+        'Depois disso, é só publicar a música lá que ela aparece aqui sozinha.</div>';
+    }else{
+      alvo.innerHTML = '<div class="vazio"><span class="ic">🎵</span>' +
+        'Nenhuma música ainda.<br/>Publique uma música no Suno que ela aparece aqui em segundos.<br/>' +
+        '<span style="font-size:12.5px">Lembre: só chegam as músicas <strong>públicas</strong>.</span></div>';
+    }
+    return;
+  }
+
+  alvo.innerHTML = musicas.map((m,i) => {
+    const link = WORKER + m.link;
+    return `
+      <div class="musica">
+        <div class="musica-topo">
+          ${m.capa ? `<img class="musica-capa" src="${esc(m.capa)}" alt="" loading="lazy"/>`
+                   : `<div class="musica-capa"></div>`}
+          <div class="musica-info">
+            <div class="musica-titulo">${esc(m.titulo)}</div>
+            <div class="musica-meta">
+              ${m.duracao ? esc(fmtDuracao(m.duracao)) + ' · ' : ''}${esc(fmtData(m.criadoEm))}
+              ${m.origem === 'link' ? ' · <span style="color:#8a8680">puxada pelo link</span>' : ''}
+            </div>
+            ${m.estilo ? `<div class="musica-estilo">${esc(m.estilo)}</div>` : ''}
+          </div>
+        </div>
+
+        <audio controls preload="none" src="${esc(link)}"></audio>
+
+        <div class="musica-acoes">
+          <button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>
+          <button class="btn btn-gold" id="dl${i}" onclick="baixarMp3(${i})">Baixar MP3</button>
+          ${m.letra ? `<button class="btn-mini" onclick="verLetra(${i})" id="lt${i}">Ver letra</button>` : ''}
+        </div>
+
+        ${m.letra ? `<div class="letra" id="letra${i}">${esc(m.letra)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function verLetra(i){
+  const el = $('letra'+i), bt = $('lt'+i);
+  const abriu = el.classList.toggle('aberta');
+  bt.textContent = abriu ? 'Esconder letra' : 'Ver letra';
+}
+
+// ── baixar em MP3 ──────────────────────────────────────────────
+// O Suno entrega MP4 (capa parada + áudio). Aqui a gente tira o
+// áudio e monta o MP3 no próprio navegador — mesma receita da
+// ferramenta Corte, sem custo e sem servidor no meio.
+async function baixarMp3(i){
+  const m = musicas[i];
+  if(!m) return;
+  const btn = $('dl'+i);
+  const original = btn.textContent;
+
+  if(typeof lamejs === 'undefined'){
+    erro('O conversor de MP3 ainda está carregando. Tente de novo em 5 segundos.');
+    return;
+  }
+
+  btn.disabled = true;
+  convertendo++;
+  limparAvisos();
+  try{
+    btn.innerHTML = '<span class="spin"></span>Baixando...';
+    const resp = await fetch(WORKER + m.link);
+    if(!resp.ok){
+      const t = await resp.json().catch(()=>({}));
+      throw new Error(t.error || ('o Suno respondeu ' + resp.status));
+    }
+    const buf = await resp.arrayBuffer();
+
+    btn.innerHTML = '<span class="spin"></span>Convertendo...';
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const audio = await ctx.decodeAudioData(buf);
+    ctx.close();
+
+    const blob = await paraMp3(audio, (pct)=>{
+      btn.innerHTML = '<span class="spin"></span>Convertendo ' + Math.round(pct*100) + '%';
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (m.arquivo || 'musica.mp4').replace(/\.mp4$/i, '') + '.mp3';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 30000);
+
+    sucesso('MP3 salvo: ' + a.download);
+  }catch(e){
+    erro('Não consegui montar o MP3 (' + e.message + ').');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = original;
+    convertendo--;
+    // acabou a conversão: agora sim mostra a música que chegou no meio
+    if(convertendo === 0 && listaPendente){
+      listaPendente = false;
+      carregarMusicas();
+    }
+  }
+}
+
+// Converte o áudio decodificado em MP3 (lamejs) — mesma função da
+// ferramenta Corte, 192kbps.
+async function paraMp3(buffer, onProgresso){
+  const canais = buffer.numberOfChannels;
+  const esq = floatPara16(buffer.getChannelData(0));
+  const dir = canais > 1 ? floatPara16(buffer.getChannelData(1)) : esq;
+
+  const enc = new lamejs.Mp3Encoder(canais, buffer.sampleRate, 192);
+  const pedacos = [];
+  const BLOCO = 1152;
+  const total = Math.ceil(esq.length / BLOCO);
+  let feitos = 0;
+
+  for(let i=0; i<esq.length; i+=BLOCO){
+    const a = esq.subarray(i, i+BLOCO);
+    const b = dir.subarray(i, i+BLOCO);
+    const out = (canais === 1) ? enc.encodeBuffer(a) : enc.encodeBuffer(a, b);
+    if(out.length > 0) pedacos.push(out);
+    feitos++;
+    if(feitos % 50 === 0){
+      if(onProgresso) onProgresso(feitos/total);
+      await new Promise(r=>setTimeout(r,0));   // deixa a tela respirar
+    }
+  }
+  const fim = enc.flush();
+  if(fim.length > 0) pedacos.push(fim);
+  return new Blob(pedacos, {type:'audio/mpeg'});
+}
+
+function floatPara16(f32){
+  const out = new Int16Array(f32.length);
+  for(let i=0;i<f32.length;i++){
+    const s = Math.max(-1, Math.min(1, f32[i]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return out;
+}
+
+// ── mandar pro Corte ───────────────────────────────────────────
+// Mesma ponte que a Lux Music usa: a música viaja pela sessionStorage
+// (mesmo domínio) e o pai abre a aba Corte já com ela carregada.
+function cortar(i){
+  const m = musicas[i];
+  if(!m) return;
+  try{
+    sessionStorage.setItem('lux:corte:pendente', JSON.stringify({
+      url: WORKER + m.link,
+      nome: m.arquivo || 'musica.mp4'
+    }));
+    window.parent.postMessage({type:'luxAbrirCorte'}, window.location.origin);
+  }catch(e){
+    erro('Não consegui abrir o Corte (' + e.message + '). Baixe o MP3 e use a aba Corte direto.');
+  }
+}
+
+// ── início ─────────────────────────────────────────────────────
+(async function(){
+  await carregarPerfil();
+  await carregarMusicas();
+  if(handleAtual) verificarAgora(false);
+})();
+</script>
+</body>
+</html>
