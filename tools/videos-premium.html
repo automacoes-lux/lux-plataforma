@@ -439,6 +439,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="avatarGenRow" style="display:none;margin-top:12px">
         <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
         <div class="gerar-note" id="avatarGenNote" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
+        <button class="btn-mini" id="btnUsarComoAvatar" onclick="usarImagemComoAvatar()" style="width:100%;margin-top:10px;padding:11px">🖼️ A Imagem 1 JÁ é o avatar pronto — usar do jeito que está</button>
+        <div class="gerar-note" style="margin-top:6px;font-size:11.5px">Use quando a imagem já for o personagem <b>de corpo inteiro, de frente, com o microfone na mão e fundo liso</b> (ex.: feita no ChatGPT). Pula a geração: sai mais rápido, custa menos e não passa pelo filtro da OpenAI.</div>
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
@@ -1042,6 +1044,28 @@ async function gerarAvatar() {
     refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
   finally { btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+}
+
+// A Imagem 1 JÁ é o avatar pronto (personagem de corpo inteiro, microfone na mão, fundo liso) →
+// usa ela DIRETO como avatar, sem passar pela geração. Motivos (04/09, caso Aline/guias):
+//   • o filtro de segurança da OpenAI às vezes recusa a imagem do cliente e trava o pedido;
+//   • quando a imagem já está pronta, gerar de novo só custa dinheiro e pode piorar o personagem.
+// Passa pela MESMA normalização do avatar gerado (padroniza o formato e os pés), então tudo
+// daqui pra frente — calibração, canto, recorte e montagem — funciona igual.
+async function usarImagemComoAvatar() {
+  if (!clientPhoto || !clientPhoto.base64) { toast('Envie a Imagem 1 primeiro.'); return; }
+  const b = document.getElementById('btnUsarComoAvatar');
+  if (b) { b.disabled = true; b._t = b.textContent; b.textContent = '⏳ Preparando…'; }
+  try {
+    const normB64 = await normalizarAvatarPes(clientPhoto.base64);
+    avatarPreview = { cartoonBase64: normB64, approved: false, semIA: true };
+    avatarCalib = { dx: 0, dy: 0, px: 0 };
+    avScale = AVSCALE_MAX;
+    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
+    refreshAvatarUI();
+    toast('🖼️ Usando a sua imagem como avatar (sem gerar). Confira e aprove.');
+  } catch (err) { toast('⚠️ ' + err.message); }
+  finally { if (b) { b.disabled = false; if (b._t) b.textContent = b._t; } }
 }
 
 function aprovarAvatar() {
