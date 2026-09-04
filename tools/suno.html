@@ -300,6 +300,7 @@ let convertendo = 0;
 let listaPendente = false;   // chegou música nova enquanto convertia
 let publicasNoSuno = null;   // quantas músicas públicas o Suno vê no perfil
 let ultimaMudancaVista = 0;  // carimbo da lista que esta tela já mostrou
+let voltasDoRadar = 0;       // conta as verificações, pra revisar a lista de vez em quando
 
 // MP3 adiantado: a conversão começa assim que a música chega, não na
 // hora do clique. Quando o atendente aperta "Baixar MP3", o arquivo
@@ -482,12 +483,23 @@ async function verificarAgora(manual){
     // primeiro a música só aparecia recarregando a página.
     const mudou = (d.ultimaMudanca || 0) !== ultimaMudancaVista;
 
-    if(d.novas > 0 || mudou){
+    // Rede de segurança: de 5 em 5 voltas (~1 min) recarrega a lista de
+    // qualquer jeito. O banco do Cloudflare leva alguns segundos pra
+    // espalhar uma gravação entre os servidores, então o carimbo pode
+    // chegar atrasado aqui — e o atendente não pode depender de apertar
+    // F5 pra ver a música dele.
+    voltasDoRadar++;
+    const revisaoPeriodica = (voltasDoRadar % 5 === 0);
+
+    if(d.novas > 0 || mudou || revisaoPeriodica){
+      const quantasAntes = musicas.length;
       const quantas = d.novas > 0 ? d.novas : null;
-      sucesso(quantas
-        ? `Chegou música nova: ${quantas} adicionada${quantas>1?'s':''}.`
-        : 'Chegou música nova.');
-      carregarMusicas();
+      await carregarMusicas();
+      // só avisa se realmente entrou música — a revisão periódica é
+      // silenciosa, senão o atendente veria "chegou música nova" a cada
+      // minuto sem ter chegado nada.
+      if(quantas) sucesso(`Chegou música nova: ${quantas} adicionada${quantas>1?'s':''}.`);
+      else if(musicas.length > quantasAntes) sucesso('Chegou música nova.');
     }else if(manual){
       erro('Nenhuma música nova. O Suno mostra ' + publicasNoSuno +
            ' música' + (publicasNoSuno===1?'':'s') + ' pública' + (publicasNoSuno===1?'':'s') +
