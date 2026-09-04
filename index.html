@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20260903e';</script>
+<script>window.__LUX_VERSION = '20260903f';</script>
 <script type="module" src="js/auth.js?v=20260709"></script>
 </head>
 <body>
@@ -114,6 +114,10 @@
       <a class="nav-item" data-tool="musica" href="#">
         <div class="nav-icon">🎵</div> Letra de Música
         <span class="nav-badge badge-live">LIVE</span>
+      </a>
+      <a class="nav-item" data-tool="suno" href="#">
+        <div class="nav-icon">⬇️</div> Suno Download
+        <span class="nav-badge badge-new">NOVO</span>
       </a>
       <a class="nav-item" data-tool="luxmusic" href="#" data-role-required="admin" style="display:none">
         <div class="nav-icon">🎼</div> Lux Music
@@ -218,6 +222,16 @@
           <div class="tool-card-icon">🎵</div>
           <div class="tool-card-name">LETRA DE MÚSICA</div>
           <div class="tool-card-desc">Gerador de letras e jingles personalizados para campanhas e eventos.</div>
+          <div class="tool-card-footer">
+            <span class="status-live">● Disponível</span>
+            <span class="tool-arrow">→</span>
+          </div>
+        </div>
+
+        <div class="tool-card" data-card-tool="suno" onclick="loadTool('suno')">
+          <div class="tool-card-icon">⬇️</div>
+          <div class="tool-card-name">SUNO DOWNLOAD</div>
+          <div class="tool-card-desc">Cadastre seu @ do Suno uma vez. Tudo que você publicar por lá chega aqui sozinho, pronto pra cortar e baixar em MP3.</div>
           <div class="tool-card-footer">
             <span class="status-live">● Disponível</span>
             <span class="tool-arrow">→</span>
@@ -342,6 +356,15 @@
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">✦ LETRA DE MÚSICA</span>
         <span class="tool-panel-atendente" id="musicAtendente"></span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- SUNO DOWNLOAD — traz as músicas publicadas no Suno (todos) -->
+    <div id="view-suno" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">⬇️ SUNO DOWNLOAD</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
@@ -602,6 +625,6 @@ window.addEventListener('message', (event) => {
 })();
 </script>
 
-<script src="js/shell.js?v=20260903d"></script>
+<script src="js/shell.js?v=20260903f"></script>
 </body>
 </html>
