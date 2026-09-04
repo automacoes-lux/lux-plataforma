@@ -48,7 +48,36 @@ function showDashboard() {
   hideAll();
   document.getElementById('view-dashboard').style.display = 'block';
   setNav('dashboard');
+  lembrarTela('');
   document.getElementById('mainContent').scrollTo(0, 0);
+}
+
+// ── LEMBRAR A TELA ABERTA (pra F5 não jogar pro Dashboard) ──
+// Guarda a ferramenta aberta no endereço da página (ex.: .../#suno).
+// Assim, recarregar volta pra mesma tela — e o botão Voltar do
+// navegador também passa a andar entre as abas.
+function lembrarTela(nome) {
+  try {
+    const novo = nome ? ('#' + nome) : '#';
+    if (location.hash !== novo) history.replaceState(null, '', novo);
+  } catch (e) { /* endereço travado (iframe/sandbox): segue sem lembrar */ }
+}
+
+// Abre a tela que estava aberta antes do F5. Chamada pelo auth.js
+// depois que o login é confirmado — antes disso não dá pra saber se o
+// usuário tem acesso à aba.
+function abrirTelaInicial() {
+  const nome = (location.hash || '').replace(/^#/, '').trim();
+  if (!nome || !TOOLS[nome]) { showDashboard(); return; }
+
+  // Não reabre uma aba que este usuário não pode ver (ex.: alguém salvou
+  // o link do Financeiro e depois virou atendente). applyRole já escondeu
+  // o item do menu; usamos isso como permissão.
+  const item = document.querySelector(`.nav-item[data-tool="${nome}"]`);
+  if (!item || item.style.display === 'none' || item.classList.contains('soon')) {
+    showDashboard(); return;
+  }
+  loadTool(nome);
 }
 
 function loadTool(name) {
@@ -84,6 +113,7 @@ function loadTool(name) {
 
   view.classList.add('show');
   setNav(name);
+  lembrarTela(name);
 
   // Preenche o nome do atendente na topbar (Lux Music e Figurinhas)
   const atendenteSlots = { musica: 'musicAtendente', figurinhas: 'figurinhasAtendente' };
@@ -339,8 +369,9 @@ if (document.readyState === 'loading') {
 window.luxAlertasRefresh = alertasFetchPending;
 
 // Exposto pro auth.js e pro HTML inline
-window.showDashboard = showDashboard;
-window.loadTool      = loadTool;
+window.showDashboard    = showDashboard;
+window.abrirTelaInicial = abrirTelaInicial;
+window.loadTool         = loadTool;
 window.handleNav     = handleNav;
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar  = closeSidebar;

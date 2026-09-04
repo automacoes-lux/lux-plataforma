@@ -168,7 +168,11 @@ onAuthStateChanged(auth, async (user) => {
     applyRole(authorizedUser.role);
     if (!window.__appReady) {
       window.__appReady = true;
-      if (typeof window.showDashboard === 'function') window.showDashboard();
+      // Volta pra tela que estava aberta antes do F5 (o shell guarda no
+      // endereço da página). Só depois do applyRole acima, porque a
+      // permissão da aba depende do role já estar aplicado.
+      if (typeof window.abrirTelaInicial === 'function') window.abrirTelaInicial();
+      else if (typeof window.showDashboard === 'function') window.showDashboard();
     }
   } else {
     window.__luxUser = null;
