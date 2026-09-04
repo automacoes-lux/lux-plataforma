@@ -245,7 +245,12 @@
       <div class="conectado">
         <span class="arroba" id="handleAtual">@—</span>
         <span class="ok">● conectado</span>
+        <span id="publicas" style="color:var(--muted);font-size:12px"></span>
         <button class="btn-mini" style="margin-left:auto" onclick="verificarAgora(true)">Procurar agora</button>
+      </div>
+      <div class="card-hint" style="margin:10px 0 0">
+        Só chegam aqui as músicas <strong>públicas</strong>. No Suno, música nova nasce
+        privada — publique ela lá que em segundos ela aparece nesta lista.
       </div>
     </div>
   </div>
@@ -276,9 +281,9 @@
 const WORKER = 'https://lux-suno.plataformalux.workers.dev';
 
 // De quanto em quanto tempo a tela procura música nova enquanto
-// está aberta. O cron do Worker faz o mesmo a cada 2 min por trás,
-// mas com a aba aberta a gente quer que apareça quase na hora.
-const INTERVALO_RADAR = 20000;
+// está aberta. O cron do Worker faz o mesmo de minuto em minuto por
+// trás, mas com a aba aberta a gente quer que apareça quase na hora.
+const INTERVALO_RADAR = 12000;
 
 let musicas     = [];
 let handleAtual = '';
@@ -289,6 +294,7 @@ let buscaTimer  = null;
 // no meio do caminho e o atendente fica sem saber o que aconteceu.
 let convertendo = 0;
 let listaPendente = false;   // chegou música nova enquanto convertia
+let publicasNoSuno = null;   // quantas músicas públicas o Suno vê no perfil
 
 function $(id){ return document.getElementById(id); }
 
@@ -437,23 +443,44 @@ async function verificarAgora(manual){
   if(!handleAtual) return;
   if(manual){ radar('procurando...', true); limparAvisos(); }
   try{
-    const r = await window.__luxFetch(WORKER + '/verificar', {method:'POST'});
+    const r = await window.__luxFetch(
+      WORKER + '/verificar' + (manual ? '?forcar=1' : ''), {method:'POST'});
     const d = await r.json();
     if(!d.ok){
       if(manual) erro(d.error || 'Não consegui falar com o Suno agora.');
       radar('Suno fora do ar — use o link', false);
       return;
     }
+
+    // Quantas músicas PÚBLICAS o Suno enxerga no perfil. É o número que
+    // explica o "cadê a minha música?": se o atendente acabou de criar
+    // uma e este número não subiu, ela ficou privada lá.
+    if(typeof d.totalNoPerfil === 'number'){
+      publicasNoSuno = d.totalNoPerfil;
+      mostrarPublicas();
+    }
+
     radar('procurando música nova', true);
     if(d.novas > 0){
       sucesso(`Chegou música nova: ${d.novas} adicionada${d.novas>1?'s':''}.`);
       carregarMusicas();
     }else if(manual){
-      sucesso('Nenhuma música nova. Lembre de publicar a música no Suno.');
+      erro('Nenhuma música nova. O Suno mostra ' + publicasNoSuno +
+           ' música' + (publicasNoSuno===1?'':'s') + ' pública' + (publicasNoSuno===1?'':'s') +
+           ' no seu perfil. Se você acabou de criar uma e ela não está aí, ' +
+           'é porque ficou PRIVADA no Suno — publique ela lá que em segundos ela cai aqui.');
     }
   }catch(e){
     radar('sem conexão', false);
   }
+}
+
+// Mostra, ao lado do @, quantas músicas públicas o Suno vê
+function mostrarPublicas(){
+  const el = $('publicas');
+  if(!el) return;
+  if(publicasNoSuno === null){ el.textContent = ''; return; }
+  el.textContent = publicasNoSuno + ' pública' + (publicasNoSuno===1?'':'s') + ' no Suno';
 }
 
 // ── lista + busca ──────────────────────────────────────────────
