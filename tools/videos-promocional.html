@@ -1246,7 +1246,25 @@ async function irParaVideo(){
   const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
   if(ruins){ toast('⛔ Ajuste as falas em vermelho.'); return; }
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
-  liberar(3);
+
+  // Já existem cenas? Então o atendente voltou ao passo 2 pra mudar alguma coisa — personagem,
+  // fala, o que for. Pergunta se refaz, SEM depender de detectar o que mudou.
+  const feitas = cenas.filter(s=>s.video_url).length;
+  if(feitas){
+    const aviso = cenasDesatualizadas()
+      ? 'O personagem mudou depois que estas cenas foram geradas.\n\n'
+      : '';
+    const refaz = confirm(aviso +
+      'Este projeto já tem ' + feitas + ' cena(s) gerada(s).\n\n' +
+      'OK = REFAZER as ' + cenas.length + ' cenas com o personagem e as falas de agora (US$ 0,40 por cena)\n' +
+      'Cancelar = manter as cenas atuais e só abrir o editor');
+    if(refaz){
+      limparCenas();
+      toast('🗑️ Cenas antigas descartadas — gerando as novas…');
+    }
+  }
+
+  liberar(3);            // entrar no passo 3 dispara a geração do que estiver faltando
   await autoSalvar();
 }
 
@@ -2367,13 +2385,10 @@ function cenasDesatualizadas(){
 async function iniciarCenasSeNecessario(){
   if(gerandoCenas) return;                                   // já está rodando
   if(!cenas.length || !personagemImg) return;                // roteiro/personagem ainda não existem
-  // ⚠️ ANTES de desistir por "todas prontas": elas podem ser do personagem ANTIGO.
+  // Aviso, não pergunta: quem pergunta é o GERAR VÍDEO. Dois confirms seguidos seriam ruído,
+  // e aqui a gente pode ter chegado pela barra de passos, sem intenção de refazer nada.
   if(cenasDesatualizadas()){
-    const ok = confirm('O personagem mudou depois que estas cenas foram geradas.\n\n' +
-      'As ' + cenas.length + ' cenas antigas serão descartadas e geradas de novo com o personagem atual ' +
-      '(US$ 0,40 cada).\n\nRefazer agora?');
-    if(!ok){ toast('As cenas continuam com o personagem antigo. Use "Refazer as 4 cenas" quando quiser.'); return; }
-    limparCenas();
+    toast('⚠️ Estas cenas são do personagem anterior. Use "Refazer as 4 cenas" acima pra atualizar.');
   }
   if(cenas.every(function(s){ return !!s.video_url; })) return;   // todas já prontas
   gerandoCenas = true;
