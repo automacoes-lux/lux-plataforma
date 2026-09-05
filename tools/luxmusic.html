@@ -296,12 +296,7 @@
 
       <!-- COVER — antes do briefing, como pedido -->
       <div class="card cover-box">
-        <div class="card-head"><span class="titulo-secao">Cover de uma música</span></div>
-        <div class="card-hint">
-          Já tem a música pronta e quer refazer com outra letra ou outra voz?
-          Envie o arquivo: a melodia é mantida e a letra vem transcrita aqui embaixo
-          para você alterar o que quiser.
-        </div>
+        <div class="card-head"><span class="titulo-secao">Cover de música</span></div>
         <button class="btn btn-ghost" id="btnEscolherAudio" onclick="document.getElementById('arqCover').click()">
           🎵 Enviar música para cover
         </button>
@@ -610,6 +605,7 @@ async function subirCover(input){
     coverDeTask = null;
     $('coverNome').textContent = arq.name;
     $('coverArquivo').style.display = 'flex';
+    if(d.titulo) $('titulo').value = d.titulo;      // "Cover - nome do arquivo"
 
     if(d.letra){
       $('letra').value = d.letra;
@@ -680,9 +676,11 @@ async function criarMusica(){
 
   if(!letra){  erro('A letra está vazia. Gere a letra ou escreva a sua.'); return; }
   if(letra.length > 5000){ erro('A letra passou de 5.000 caracteres, o limite do gerador. Corte um pouco.'); return; }
-  if(!estilo){ erro('Escolha o ritmo da música.'); return; }
 
+  // No cover o ritmo é opcional: quem manda no clima é a melodia do
+  // áudio de origem. Só a música nova exige escolher o ritmo.
   const ehCover = !!(coverUploadUrl || coverDeTask);
+  if(!ehCover && !estilo){ erro('Escolha o ritmo da música.'); return; }
   const btn = $('btnCriar');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>Enviando...';
@@ -839,7 +837,9 @@ async function coverDesta(taskId, indice){
 
     $('letra').value  = d.letra || '';
     $('estilo').value = d.estilo || '';
-    $('titulo').value = d.titulo || '';
+    // o titulo do cover segue o padrao "Cover - nome da musica"
+    const base = String(d.titulo || 'musica').replace(/^Covers*-s*/i, '');
+    $('titulo').value = ('Cover - ' + base).slice(0, 80);
     if(d.genero) escolherVoz(d.genero);
     contarLetra();
 
