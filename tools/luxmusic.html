@@ -151,7 +151,7 @@
   .politico input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
 
   /* ══ AS DUAS VERSÕES ═══════════════════════════════════════
-     A Musicful sempre devolve duas músicas por pedido. Não são
+     O motor sempre devolve duas músicas por pedido. Não são
      "1ª e 2ª" — são alternativas equivalentes, por isso A e B. */
   .versao{
     background:var(--bg2);border:1px solid var(--line);
@@ -323,7 +323,7 @@
       <div class="card">
         <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
         <div class="custo-nota" id="notaCusto">
-          Cada criação gasta 6 créditos e devolve duas versões da mesma música.
+          Cada criação devolve duas versões da mesma música.
         </div>
       </div>
 
@@ -415,9 +415,12 @@ async function carregarSaldo(){
     }
     $('saldoNum').textContent = d.geracoesRestantes;
     $('saldoLbl').textContent = (d.geracoesRestantes === 1 ? 'música restante' : 'músicas restantes');
+    // O número de créditos vem do servidor: se um dia trocarmos de
+    // motor de novo, o texto acompanha sozinho em vez de mentir.
     if(d.custoPorGeracao){
+      const cr = d.creditosPorGeracao ? (d.creditosPorGeracao + ' créditos') : 'créditos';
       $('notaCusto').innerHTML =
-        'Cada criação gasta 6 créditos (cerca de R$ ' +
+        'Cada criação gasta ' + cr + ' (cerca de R$ ' +
         d.custoPorGeracao.toFixed(2).replace('.',',') +
         ') e devolve duas versões da mesma música.';
     }
@@ -536,8 +539,7 @@ async function criarMusica(){
         lyrics: letra,
         style:  estilo,
         title:  $('titulo').value.trim(),
-        gender: vozEscolhida,
-        mv: 'MFV3.0'
+        gender: vozEscolhida
       })
     });
     const d = await r.json();
