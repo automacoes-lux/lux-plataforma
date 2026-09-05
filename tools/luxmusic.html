@@ -12,19 +12,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
   :root{
-    --gold:#C9A84C;
-    --gold-bright:#E2BA5F;
-    --gold-dim:#9A7A38;
-    --bg:#0A0A0B;
-    --bg2:#111114;
-    --bg3:#18181C;
-    --bg4:#1F1F25;
-    --text:#E8E4DC;
-    --muted:#8A8680;
-    --line:rgba(201,168,76,.2);
-    --line-bright:rgba(201,168,76,.4);
-    --green:#7FB87A;
-    --red:#E87A7A;
+    --gold:#C9A84C; --gold-bright:#E2BA5F; --gold-dim:#9A7A38;
+    --bg:#0A0A0B; --bg2:#111114; --bg3:#18181C; --bg4:#1F1F25;
+    --text:#E8E4DC; --muted:#8A8680;
+    --line:rgba(201,168,76,.2); --line-bright:rgba(201,168,76,.4);
+    --green:#7FB87A; --red:#E87A7A;
     --radius:14px;
     --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
@@ -33,31 +25,32 @@
   body{
     font-family:var(--font);
     background:radial-gradient(ellipse at top, rgba(201,168,76,.05) 0%, var(--bg) 60%);
-    color:var(--text);
-    min-height:100vh;
-    padding:20px 14px 60px;
-    line-height:1.5;
+    color:var(--text);min-height:100vh;padding:20px 14px 60px;line-height:1.5;
     display:flex;flex-direction:column;align-items:center;
   }
   .wrap{width:100%;max-width:1180px}
 
   /* ── CABEÇALHO ── */
-  header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
   .mark{
     width:44px;height:44px;border-radius:50%;
     background:conic-gradient(from 220deg,var(--gold),var(--gold-bright),var(--gold));
     display:grid;place-items:center;font-weight:800;color:#10131a;
-    box-shadow:0 0 0 4px rgba(201,168,76,.12);
-    font-size:17px;flex-shrink:0;
+    box-shadow:0 0 0 4px rgba(201,168,76,.12);font-size:17px;flex-shrink:0;
   }
   h1{font-family:'Cinzel',serif;font-size:20px;font-weight:600;letter-spacing:.04em}
   .sub{color:var(--muted);font-size:13px;margin-top:3px}
-  .saldo{
-    margin-left:auto;text-align:right;background:var(--bg2);
-    border:1px solid var(--line);border-radius:10px;padding:9px 14px;
+
+  /* ── ABAS (Criar / Pedidos) ── */
+  .abas{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .aba{
+    background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 18px;color:var(--muted);cursor:pointer;font-family:'Cinzel',serif;
+    font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    transition:all .15s;
   }
-  .saldo-num{font-family:'Cinzel',serif;font-size:17px;color:var(--gold-bright);font-weight:600}
-  .saldo-lbl{font-size:10.5px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+  .aba:hover{border-color:var(--gold)}
+  .aba.on{background:rgba(201,168,76,.14);border-color:var(--gold);color:var(--gold-bright)}
 
   /* ── LAYOUT ── */
   .layout{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
@@ -68,8 +61,7 @@
   }
   .card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 
-  /* TODO título de seção usa este estilo — mesmo tamanho, cor e fonte,
-     do "BRIEFING" ao "TÍTULO DA MÚSICA". Nenhum fica escondido. */
+  /* Todo título de seção usa este estilo — mesmo tamanho, cor e fonte. */
   .titulo-secao{
     font-family:'Cinzel',serif;color:var(--gold-bright);font-size:13.5px;
     font-weight:600;letter-spacing:.09em;text-transform:uppercase;
@@ -87,6 +79,22 @@
   #briefing{min-height:130px}
   #letra{min-height:300px}
   #estilo{min-height:70px}
+
+  /* ── FERRAMENTAS DENTRO DA CAIXA (lixeira / copiar) ──
+     Ficam no canto superior direito do próprio campo, e não no cabeçalho
+     do card: a ação fica junto do texto que ela afeta. */
+  .campo{position:relative}
+  .campo > textarea{padding-right:46px}
+  .campo-acoes{position:absolute;top:8px;right:8px;display:flex;gap:5px;z-index:2}
+  .btn-campo{
+    background:rgba(10,10,11,.85);border:1px solid #35322b;border-radius:7px;
+    width:28px;height:28px;display:grid;place-items:center;
+    color:var(--muted);cursor:pointer;font-size:13px;line-height:1;
+    transition:all .13s;font-family:var(--font);padding:0;
+  }
+  .btn-campo:hover{border-color:var(--gold);color:var(--gold-bright)}
+  .btn-campo.lixo:hover{border-color:var(--red);color:var(--red)}
+  .btn-campo.ok{border-color:var(--green);color:var(--green)}
 
   .contador{font-size:11.5px;color:var(--muted);text-align:right;margin-top:5px}
   .contador.alto{color:var(--gold-bright)}
@@ -109,20 +117,21 @@
   }
   .btn-ghost:not(:disabled):hover{background:rgba(201,168,76,.08)}
   .btn-lg{width:100%;padding:15px;font-size:13.5px}
-
-  /* lixeira — some no fundo até você precisar dela */
-  .btn-lixo{
-    margin-left:auto;background:transparent;border:1px solid #35322b;
-    border-radius:8px;padding:5px 10px;color:var(--muted);cursor:pointer;
-    font-size:14px;line-height:1;transition:all .13s;font-family:var(--font);
-  }
-  .btn-lixo:hover{border-color:var(--red);color:var(--red)}
-
   .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
+  /* ── CAIXA DO COVER (fica ANTES do briefing) ── */
+  .cover-box{
+    background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.02));
+    border:1px dashed var(--line-bright);
+  }
+  .cover-arquivo{
+    display:flex;align-items:center;gap:10px;background:var(--bg3);
+    border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+    font-size:13px;margin-top:11px;flex-wrap:wrap;
+  }
+  .cover-arquivo .nome{color:var(--gold-bright);word-break:break-all;flex:1;min-width:120px}
+
   /* ── CHIPS DE RITMO ── */
-  /* A ordem não é alfabética nem decorativa: é o que os clientes da Lux
-     mais pedem (RITMOS-ranking.md), depois o resto do portfólio. */
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
   .chip{
     background:var(--bg3);border:1px solid #35322b;border-radius:20px;
@@ -150,9 +159,7 @@
   }
   .politico input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
 
-  /* ══ AS DUAS VERSÕES ═══════════════════════════════════════
-     O motor sempre devolve duas músicas por pedido. Não são
-     "1ª e 2ª" — são alternativas equivalentes, por isso A e B. */
+  /* ══ AS DUAS VERSÕES ══ */
   .versao{
     background:var(--bg2);border:1px solid var(--line);
     border-radius:var(--radius);padding:16px;margin-bottom:14px;
@@ -176,9 +183,7 @@
   .versao.pronta .versao-estado{color:var(--green)}
   .versao.falhou .versao-estado{color:var(--red)}
 
-  /* equalizador — a onda da música que está nascendo.
-     Cada barra tem sua altura de repouso (--h), então mesmo parado
-     o desenho é uma onda, e não uma cerca. */
+  /* equalizador — a onda da música que está nascendo */
   .eq{display:flex;align-items:flex-end;gap:2px;height:38px;margin-bottom:12px}
   .eq i{
     flex:1;background:linear-gradient(180deg,var(--gold-bright),var(--gold-dim));
@@ -197,13 +202,42 @@
   }
 
   .versao audio{width:100%;margin-bottom:10px;height:38px}
-  .versao-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  /* três ações por música: cortar, cover e baixar */
+  .versao-acoes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .versao-acoes .btn{padding:11px 6px;font-size:11.5px;letter-spacing:.05em}
 
   .vazio{
     background:var(--bg2);border:1px dashed var(--line);border-radius:var(--radius);
     padding:34px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.65;
   }
   .vazio .ic{font-size:30px;display:block;margin-bottom:10px;opacity:.5}
+
+  /* ── ABA PEDIDOS ── */
+  .busca-wrap{position:relative;margin-bottom:14px}
+  .busca-wrap .lupa{
+    position:absolute;left:13px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:15px;pointer-events:none;
+  }
+  .busca-wrap input{padding-left:38px}
+  .pedido{
+    background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;
+    gap:14px;flex-wrap:wrap;
+  }
+  .pedido-info{flex:1;min-width:190px}
+  .pedido-nome{
+    font-family:'Cinzel',serif;font-size:14.5px;color:var(--text);
+    line-height:1.35;word-break:break-word;
+  }
+  .pedido-meta{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .pedido-valor{font-family:'Cinzel',serif;color:var(--gold-bright);font-size:14px;white-space:nowrap}
+  .pedido-acoes{display:flex;gap:7px;flex-wrap:wrap}
+  .pedido-acoes .btn{padding:9px 15px;font-size:11.5px}
+  .selo-cover{
+    display:inline-block;background:rgba(201,168,76,.14);border:1px solid var(--line);
+    border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--gold-bright);
+    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
+  }
 
   /* ── AVISOS ── */
   .aviso{
@@ -226,12 +260,12 @@
   /* ── MOBILE ── */
   @media (max-width:900px){
     .layout{grid-template-columns:1fr}
-    .saldo{margin-left:0;width:100%;text-align:left;order:3}
     header{gap:11px}
     h1{font-size:18px}
     body{padding:16px 11px 50px}
     .card{padding:15px}
     #letra{min-height:240px}
+    .versao-acoes{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -244,27 +278,49 @@
       <h1>Lux Music</h1>
       <div class="sub">Escreva o briefing, gere a letra e receba duas músicas prontas</div>
     </div>
-    <div class="saldo">
-      <div class="saldo-num" id="saldoNum">—</div>
-      <div class="saldo-lbl" id="saldoLbl">verificando plano</div>
-    </div>
   </header>
+
+  <div class="abas">
+    <button class="aba on" id="abaCriar"   onclick="trocarAba('criar')">Criar música</button>
+    <button class="aba"    id="abaPedidos" onclick="trocarAba('pedidos')">Pedidos</button>
+  </div>
 
   <div class="aviso aviso-erro" id="avisoErro"></div>
   <div class="aviso aviso-ok" id="avisoOk"></div>
 
+  <!-- ═══════════════ ABA CRIAR ═══════════════ -->
+  <div id="viewCriar">
   <div class="layout">
 
-    <!-- ═══ COLUNA DA ESQUERDA — O PEDIDO ═══ -->
     <div>
+
+      <!-- COVER — antes do briefing, como pedido -->
+      <div class="card cover-box">
+        <div class="card-head"><span class="titulo-secao">Cover de uma música</span></div>
+        <div class="card-hint">
+          Já tem a música pronta e quer refazer com outra letra ou outra voz?
+          Envie o arquivo: a melodia é mantida e a letra vem transcrita aqui embaixo
+          para você alterar o que quiser.
+        </div>
+        <button class="btn btn-ghost" id="btnEscolherAudio" onclick="document.getElementById('arqCover').click()">
+          🎵 Enviar música para cover
+        </button>
+        <input type="file" id="arqCover" accept="audio/*,.mp3,.wav,.m4a,.ogg" style="display:none" onchange="subirCover(this)"/>
+        <div class="cover-arquivo" id="coverArquivo" style="display:none">
+          <span class="nome" id="coverNome">—</span>
+          <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio">🗑</button>
+        </div>
+      </div>
 
       <!-- 1. BRIEFING -->
       <div class="card">
-        <div class="card-head">
-          <span class="titulo-secao">Briefing do cliente</span>
-          <button class="btn-lixo" onclick="limpar('briefing')" title="Apagar o briefing">🗑</button>
+        <div class="card-head"><span class="titulo-secao">Briefing do cliente</span></div>
+        <div class="campo">
+          <div class="campo-acoes">
+            <button class="btn-campo lixo" onclick="limpar('briefing')" title="Apagar o briefing">🗑</button>
+          </div>
+          <textarea id="briefing" placeholder="Ex: Pizzaria do João, no Centro de Cabo Frio. Massa artesanal, forno a lenha, entrega até 23h. Telefone (22) 99988-2227. Quero algo animado, que dê vontade de pedir."></textarea>
         </div>
-        <textarea id="briefing" placeholder="Ex: Pizzaria do João, no Centro de Cabo Frio. Massa artesanal, forno a lenha, entrega até 23h. Telefone (22) 99988-2227. Quero algo animado, que dê vontade de pedir."></textarea>
 
         <div style="margin-top:14px">
           <span class="titulo-secao solto">Instruções extras</span>
@@ -282,23 +338,28 @@
 
       <!-- 2. LETRA -->
       <div class="card">
-        <div class="card-head">
-          <span class="titulo-secao">Letra</span>
-          <button class="btn-lixo" onclick="limpar('letra')" title="Apagar a letra">🗑</button>
+        <div class="card-head"><span class="titulo-secao">Letra</span></div>
+        <div class="campo">
+          <div class="campo-acoes">
+            <button class="btn-campo" id="btnCopiar" onclick="copiarLetra()" title="Copiar a letra">⧉</button>
+            <button class="btn-campo lixo" onclick="limpar('letra')" title="Apagar a letra">🗑</button>
+          </div>
+          <textarea id="letra" placeholder="A letra gerada aparece aqui. Você pode editar à vontade antes de criar a música — ou escrever a sua do zero."
+            oninput="contarLetra()"></textarea>
         </div>
-        <textarea id="letra" placeholder="A letra gerada aparece aqui. Você pode editar à vontade antes de criar a música — ou escrever a sua do zero."
-          oninput="contarLetra()"></textarea>
         <div class="contador" id="contadorLetra">0 / 5.000 caracteres</div>
       </div>
 
       <!-- 3. RITMO -->
       <div class="card">
-        <div class="card-head">
-          <span class="titulo-secao">Ritmo</span>
-          <button class="btn-lixo" onclick="limpar('estilo')" title="Apagar o ritmo">🗑</button>
+        <div class="card-head"><span class="titulo-secao">Ritmo</span></div>
+        <div class="card-hint">Toque num ritmo e o estilo completo é montado sozinho. Dá para editar depois.</div>
+        <div class="campo">
+          <div class="campo-acoes">
+            <button class="btn-campo lixo" onclick="limpar('estilo')" title="Apagar o ritmo">🗑</button>
+          </div>
+          <textarea id="estilo" placeholder="Ex: sertanejo universitário, animado, viola e guitarra, voz masculina marcante"></textarea>
         </div>
-        <div class="card-hint">Toque nos ritmos abaixo para montar, ou escreva do seu jeito.</div>
-        <textarea id="estilo" placeholder="Ex: sertanejo universitário, animado, viola e guitarra, voz masculina marcante"></textarea>
         <div class="chips" id="chips"></div>
       </div>
 
@@ -308,9 +369,9 @@
 
         <span class="titulo-secao solto">Quem canta</span>
         <div class="voz" id="voz">
-          <button data-voz="male"   onclick="escolherVoz('male')"><span class="ic">♂</span>Masculina</button>
+          <button data-voz="male"   onclick="escolherVoz('male')" class="on"><span class="ic">♂</span>Masculina</button>
           <button data-voz="female" onclick="escolherVoz('female')"><span class="ic">♀</span>Feminina</button>
-          <button data-voz=""       onclick="escolherVoz('')" class="on"><span class="ic">✧</span>A IA escolhe</button>
+          <button data-voz=""       onclick="escolherVoz('')"><span class="ic">✧</span>A IA escolhe</button>
         </div>
 
         <div style="margin-top:16px">
@@ -329,7 +390,7 @@
 
     </div>
 
-    <!-- ═══ COLUNA DA DIREITA — AS DUAS VERSÕES ═══ -->
+    <!-- COLUNA DA DIREITA — AS DUAS VERSÕES -->
     <div id="resultados">
       <div class="vazio" id="painelVazio">
         <span class="ic">♫</span>
@@ -339,46 +400,90 @@
     </div>
 
   </div>
+  </div>
+
+  <!-- ═══════════════ ABA PEDIDOS ═══════════════ -->
+  <div id="viewPedidos" style="display:none">
+    <div class="busca-wrap">
+      <span class="lupa">🔍</span>
+      <input type="text" id="buscaPedido" placeholder="Procurar por nome, ritmo ou trecho da letra…"
+        oninput="buscarPedidosComPausa()"/>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+      <span id="contadorPedidos">—</span>
+      <span>Os pedidos ficam aqui por 1 mês</span>
+    </div>
+    <div id="listaPedidos">
+      <div class="vazio"><span class="ic">⏳</span>Carregando seus pedidos…</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// LUX MUSIC — tela de criação de música (Musicful)
+// LUX MUSIC — criação de música (motor sunoapi.org)
 // Backend: Worker lux-song. Só admin enxerga esta aba.
 // ═══════════════════════════════════════════════════════════════
 const WORKER = 'https://lux-song.plataformalux.workers.dev';
 
-// Ritmos: primeiro os mais pedidos pelos clientes da Lux
-// (RITMOS-ranking.md, 7.038 conversas), depois o restante do
-// portfólio de músicas. O chip só escreve no campo — o atendente
-// pode ajustar o texto à mão depois.
+// Ritmos na ordem real de pedido dos clientes da Lux
+// (RITMOS-ranking.md), depois o resto do portfólio.
+// Cada um já traz o PROMPT COMPLETO no estilo do Maestro (gênero,
+// clima, instrumentos e BPM): clicar no chip monta o estilo inteiro,
+// não só o nome do ritmo.
 const RITMOS = [
-  'Sertanejo','Sertanejo Raiz','Piseiro','Pisadinha','Forró','Pop','Gospel',
-  'Pagode','Funk','Rock','Romântico','Infantil','Kids','Country','Vanerão',
-  'Gaúcha','Dance','Eletrônica','Flashback Disco','Trap','MPB','Axé','Rap',
-  'Samba','Bossa Nova','Brega','Reggae','Marchinha'
+  ['Sertanejo',        'sertanejo universitário, animado e envolvente, viola caipira, guitarra e bateria marcada, vocal limpo à frente, BPM 120'],
+  ['Sertanejo Raiz',   'sertanejo raiz, viola caipira dedilhada, sanfona suave, clima interiorano e nostálgico, dupla em terças, BPM 95'],
+  ['Piseiro',          'piseiro animado, teclado marcante e batida eletrônica dançante, groove de arrasta-pé moderno, BPM 130'],
+  ['Pisadinha',        'pisadinha nordestina, teclado sintetizado, batida seca e dançante, vocal empolgado, BPM 128'],
+  ['Forró',            'forró pé-de-serra, sanfona, zabumba e triângulo, alegre e dançante, clima de festa junina, BPM 135'],
+  ['Pop',              'pop brasileiro comercial, sintetizadores brilhantes, refrão grudento, produção limpa e moderna, BPM 118'],
+  ['Gospel',           'gospel contemporâneo, piano e cordas emotivas, coral no refrão, clima de fé e esperança, BPM 75'],
+  ['Pagode',           'pagode romântico, cavaquinho, pandeiro e tantã, suingue leve e apaixonado, BPM 92'],
+  ['Funk',             'funk carioca comercial, batida de tamborzão, graves fortes, refrão chiclete e cantado, BPM 130'],
+  ['Rock',             'rock nacional, guitarras distorcidas, baixo pulsante e bateria potente, vocal marcante, BPM 140'],
+  ['Romântico',        'romântico brasileiro, piano e cordas suaves, violão dedilhado, vocal sentimental e intimista, BPM 70'],
+  ['Infantil',         'música infantil alegre, melodia simples e cantável, xilofone e teclado divertido, vozes animadas, BPM 120'],
+  ['Kids',             'canção infantil moderna, sons lúdicos e coloridos, refrão fácil de repetir, clima de brincadeira, BPM 122'],
+  ['Country',          'country pop, banjo e slide guitar, batida animada de estrada, vocal caloroso, BPM 125'],
+  ['Vanerão',          'vanerão gaúcho, gaita ponto marcante, ritmo dançante de baile, clima de galpão, BPM 130'],
+  ['Gaúcha',           'música gaúcha tradicional, gaita e violão, ritmo de chamamé, clima campeiro, BPM 110'],
+  ['Dance',            'dance pop eletrônico, sintetizadores brilhantes, drop dançante e refrão energético, BPM 128'],
+  ['Eletrônica',       'música eletrônica, sintetizadores em camadas, batida four-on-the-floor, build-up e drop, BPM 126'],
+  ['Flashback Disco',  'flashback disco anos 80, baixo slap, naipe de metais, cordas e batida dançante retrô, BPM 118'],
+  ['Trap',             'trap brasileiro, 808 graves e hi-hats rápidos, atmosfera moderna, flow cadenciado, BPM 140'],
+  ['MPB',              'MPB, violão de nylon, percussão orgânica e arranjo sofisticado, vocal suave e expressivo, BPM 95'],
+  ['Axé',              'axé baiano, percussão de timbau e surdo, metais festivos, energia de carnaval, BPM 140'],
+  ['Rap',              'rap nacional, boom bap com 808 graves, batida marcada e scratchs, flow firme e articulado, BPM 90'],
+  ['Samba',            'samba brasileiro, cavaquinho, pandeiro, surdo e tamborim, suingue tradicional e alegre, BPM 100'],
+  ['Bossa Nova',       'bossa nova, violão com harmonia rica, batida suave de bossa, vocal sussurrado e elegante, BPM 78'],
+  ['Brega',            'brega romântico, teclado e guitarra melódica, clima nostálgico e emotivo, vocal sentido, BPM 85'],
+  ['Reggae',           'reggae brasileiro, guitarra no contratempo, baixo grave e groove relaxado, clima praiano, BPM 76'],
+  ['Marchinha',        'marchinha de carnaval, metais festivos, bumbo marcado e coro animado, clima de folia, BPM 120']
 ];
 
-let vozEscolhida  = '';
-let taskAtual     = null;
-let pollTimer     = null;
-let inicioGeracao = null;
-let cortaveis     = [];   // {url, nome} de cada versão pronta, pro botão Cortar
+let vozEscolhida   = 'male';   // masculina por padrão
+let taskAtual      = null;
+let pollTimer      = null;
+let inicioGeracao  = null;
+let cortaveis      = [];       // {url, nome} de cada versão pronta
+let coverUploadUrl = '';       // preenchido quando o atendente sobe um MP3
+let coverDeTask    = null;     // {taskId, indice} quando o cover vem de uma música da lista
+let buscaTimer     = null;
 
-// ── helpers de tela ────────────────────────────────────────────
+// ── helpers ────────────────────────────────────────────────────
 function $(id){ return document.getElementById(id); }
 
 function erro(msg){
   const el = $('avisoErro');
-  el.textContent = msg;
-  el.classList.add('on');
+  el.textContent = msg; el.classList.add('on');
   $('avisoOk').classList.remove('on');
   el.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 function sucesso(msg){
   const el = $('avisoOk');
-  el.textContent = msg;
-  el.classList.add('on');
+  el.textContent = msg; el.classList.add('on');
   $('avisoErro').classList.remove('on');
 }
 function limparAvisos(){
@@ -390,69 +495,53 @@ function esc(s){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
-// ── lixeiras ───────────────────────────────────────────────────
-function limpar(campo){
-  const el = $(campo);
-  if(!el || !el.value.trim()) return;          // já está vazio: nem pergunta
-  const nomes = { briefing:'o briefing', letra:'a letra', estilo:'o ritmo' };
-  if(!confirm('Apagar ' + (nomes[campo] || 'este campo') + '?')) return;
-  el.value = '';
-  el.focus();
-  if(campo === 'letra')  contarLetra();
-  if(campo === 'estilo') document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+function reais(v){
+  return 'R$ ' + (Number(v)||0).toFixed(2).replace('.',',');
 }
 
-// ── saldo do plano ─────────────────────────────────────────────
-async function carregarSaldo(){
+// ── abas ───────────────────────────────────────────────────────
+function trocarAba(qual){
+  const criar = qual === 'criar';
+  $('viewCriar').style.display   = criar ? 'block' : 'none';
+  $('viewPedidos').style.display = criar ? 'none'  : 'block';
+  $('abaCriar').classList.toggle('on', criar);
+  $('abaPedidos').classList.toggle('on', !criar);
+  limparAvisos();
+  if(!criar) carregarPedidos();
+}
+
+// ── custo (o número de créditos vem do servidor) ───────────────
+async function carregarCusto(){
   try{
     const r = await window.__luxFetch(WORKER + '/saldo');
     const d = await r.json();
-    if(!d.ok){
-      $('saldoNum').textContent = '—';
-      $('saldoLbl').textContent = 'saldo indisponível';
-      return;
-    }
-    $('saldoNum').textContent = d.geracoesRestantes;
-    $('saldoLbl').textContent = (d.geracoesRestantes === 1 ? 'música restante' : 'músicas restantes');
-    // O número de créditos vem do servidor: se um dia trocarmos de
-    // motor de novo, o texto acompanha sozinho em vez de mentir.
-    if(d.custoPorGeracao){
-      const cr = d.creditosPorGeracao ? (d.creditosPorGeracao + ' créditos') : 'créditos';
-      $('notaCusto').innerHTML =
-        'Cada criação gasta ' + cr + ' (cerca de R$ ' +
-        d.custoPorGeracao.toFixed(2).replace('.',',') +
-        ') e devolve duas versões da mesma música.';
-    }
-  }catch(e){
-    $('saldoNum').textContent = '—';
-    $('saldoLbl').textContent = 'saldo indisponível';
-  }
+    if(!d.ok || !d.custoPorGeracao) return;
+    const cr = d.creditosPorGeracao ? (d.creditosPorGeracao + ' créditos') : 'créditos';
+    $('notaCusto').innerHTML =
+      'Cada criação gasta ' + cr + ' (' + reais(d.custoPorGeracao) +
+      ') e devolve duas versões da mesma música.';
+  }catch(e){ /* silencioso: o custo é informativo */ }
 }
 
-// ── chips de ritmo ─────────────────────────────────────────────
+// ── chips de ritmo → monta o estilo completo ───────────────────
 function montarChips(){
   $('chips').innerHTML = RITMOS
-    .map(r => `<button type="button" class="chip" data-r="${esc(r)}" onclick="tocarChip(this)">${esc(r)}</button>`)
+    .map(([nome]) => `<button type="button" class="chip" data-r="${esc(nome)}" onclick="tocarChip(this)">${esc(nome)}</button>`)
     .join('');
 }
 function tocarChip(el){
-  const ritmo = el.dataset.r;
+  const nome = el.dataset.r;
+  const par = RITMOS.find(r => r[0] === nome);
   const campo = $('estilo');
-  const atual = campo.value.trim();
-  const escapado = ritmo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const jaTem = new RegExp('(^|,\\s*)' + escapado + '(\\s*,|$)', 'i').test(atual);
+  const jaEstava = el.classList.contains('on');
 
-  if(jaTem){
-    campo.value = atual
-      .split(',').map(p => p.trim())
-      .filter(p => p.toLowerCase() !== ritmo.toLowerCase())
-      .join(', ');
-    el.classList.remove('on');
-  }else{
-    campo.value = atual ? (atual.replace(/,\s*$/,'') + ', ' + ritmo) : ritmo;
-    el.classList.add('on');
-  }
+  // Um ritmo por vez: o estilo montado já vem completo, e emendar dois
+  // prompts inteiros só confunde o gerador.
+  document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+
+  if(jaEstava){ campo.value = ''; return; }   // clicar de novo limpa
+  el.classList.add('on');
+  campo.value = par ? par[1] : nome;
 }
 
 // ── voz ────────────────────────────────────────────────────────
@@ -463,21 +552,92 @@ function escolherVoz(v){
   });
 }
 
-// ── letra ──────────────────────────────────────────────────────
+// ── campos (lixeira e copiar) ──────────────────────────────────
 function contarLetra(){
   const n = $('letra').value.length;
   const el = $('contadorLetra');
   el.textContent = n.toLocaleString('pt-BR') + ' / 5.000 caracteres';
   el.className = 'contador' + (n > 5000 ? ' estourou' : (n > 4000 ? ' alto' : ''));
 }
+function limpar(campo){
+  const el = $(campo);
+  if(!el || !el.value.trim()) return;
+  const nomes = { briefing:'o briefing', letra:'a letra', estilo:'o ritmo' };
+  if(!confirm('Apagar ' + (nomes[campo] || 'este campo') + '?')) return;
+  el.value = ''; el.focus();
+  if(campo === 'letra')  contarLetra();
+  if(campo === 'estilo') document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+}
+async function copiarLetra(){
+  const txt = $('letra').value;
+  if(!txt.trim()){ erro('Não há letra para copiar.'); return; }
+  const btn = $('btnCopiar');
+  try{
+    await navigator.clipboard.writeText(txt);
+    btn.textContent = '✓'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent = '⧉'; btn.classList.remove('ok'); }, 1600);
+  }catch(e){
+    $('letra').select();
+    erro('Não consegui copiar sozinho — a letra está selecionada, use Ctrl+C.');
+  }
+}
 
+// ── COVER: subir um MP3 ────────────────────────────────────────
+async function subirCover(input){
+  const arq = input.files && input.files[0];
+  if(!arq) return;
+  if(arq.size > 25 * 1024 * 1024){
+    erro('O arquivo passou de 25 MB. Corte a música antes, na aba Corte.');
+    input.value = ''; return;
+  }
+
+  const btn = $('btnEscolherAudio');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Enviando e ouvindo a letra...';
+  limparAvisos();
+
+  try{
+    const r = await window.__luxFetch(
+      WORKER + '/transcrever?nome=' + encodeURIComponent(arq.name), {
+        method:'POST',
+        headers:{ 'Content-Type': arq.type || 'audio/mpeg' },
+        body: arq
+      });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui preparar esse áudio.'); return; }
+
+    coverUploadUrl = d.uploadUrl;
+    coverDeTask = null;
+    $('coverNome').textContent = arq.name;
+    $('coverArquivo').style.display = 'flex';
+
+    if(d.letra){
+      $('letra').value = d.letra;
+      contarLetra();
+      sucesso('Áudio pronto e letra transcrita. Ajuste o que quiser e crie a música — a melodia é mantida.');
+    }else{
+      sucesso('Áudio pronto. ' + (d.avisoLetra || 'Não consegui transcrever a letra') + ' — escreva a letra abaixo.');
+    }
+  }catch(e){
+    erro('Falha ao enviar o áudio: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '🎵 Enviar música para cover';
+    input.value = '';
+  }
+}
+function limparCover(){
+  coverUploadUrl = '';
+  coverDeTask = null;
+  $('coverArquivo').style.display = 'none';
+  $('coverNome').textContent = '—';
+  sucesso('Áudio removido. A próxima criação será uma música nova.');
+}
+
+// ── letra ──────────────────────────────────────────────────────
 async function gerarLetra(){
   const briefing = $('briefing').value.trim();
   if(!briefing){ erro('Escreva o briefing do cliente para a IA ter o que contar.'); return; }
-
-  // O ritmo NÃO é obrigatório aqui: se estiver preenchido a letra sai
-  // no clima certo, mas dá pra gerar antes de decidir o estilo.
-  const ritmo = $('estilo').value.trim();
 
   const btn = $('btnGerarLetra');
   btn.disabled = true;
@@ -489,7 +649,7 @@ async function gerarLetra(){
       method:'POST',
       body: JSON.stringify({
         briefing,
-        ritmo,
+        ritmo: $('estilo').value.trim(),      // opcional
         instrucoes: $('instrucoes').value.trim(),
         tipo: $('ehPolitica').checked ? 'politica' : 'empresa'
       })
@@ -500,9 +660,6 @@ async function gerarLetra(){
     const res = d.result || {};
     $('letra').value = res.lyrics || '';
     contarLetra();
-
-    // O motor devolve um estilo pronto pra IA de música. Só preenche
-    // se o atendente ainda não tinha escolhido o ritmo dele.
     if(res.style_prompt && !$('estilo').value.trim()) $('estilo').value = res.style_prompt;
     if(res.musica_nome) $('titulo').value = String(res.musica_nome).slice(0,80);
 
@@ -516,49 +673,47 @@ async function gerarLetra(){
   }
 }
 
-// ── criar música ───────────────────────────────────────────────
+// ── criar música (ou cover, se houver áudio de origem) ─────────
 async function criarMusica(){
   const letra  = $('letra').value.trim();
   const estilo = $('estilo').value.trim();
 
   if(!letra){  erro('A letra está vazia. Gere a letra ou escreva a sua.'); return; }
-  if(letra.length > 5000){ erro('A letra passou de 5.000 caracteres, o limite da Musicful. Corte um pouco.'); return; }
+  if(letra.length > 5000){ erro('A letra passou de 5.000 caracteres, o limite do gerador. Corte um pouco.'); return; }
   if(!estilo){ erro('Escolha o ritmo da música.'); return; }
 
+  const ehCover = !!(coverUploadUrl || coverDeTask);
   const btn = $('btnCriar');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>Enviando...';
   limparAvisos();
   inicioGeracao = null;
-  pintarVersoes(null);   // já mostra as duas caixas "na fila"
+  pintarVersoes(null);
+
+  const corpo = {
+    lyrics: letra, style: estilo,
+    title: $('titulo').value.trim(), gender: vozEscolhida
+  };
+  if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
+  else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
 
   try{
-    const r = await window.__luxFetch(WORKER + '/gerarMusica', {
-      method:'POST',
-      body: JSON.stringify({
-        lyrics: letra,
-        style:  estilo,
-        title:  $('titulo').value.trim(),
-        gender: vozEscolhida
-      })
+    const r = await window.__luxFetch(WORKER + (ehCover ? '/cover' : '/gerarMusica'), {
+      method:'POST', body: JSON.stringify(corpo)
     });
     const d = await r.json();
     if(!d.ok){
       erro(d.error || 'Não deu para criar a música.');
-      mostrarPainelVazio();
-      restaurarBotao();
-      return;
+      mostrarPainelVazio(); restaurarBotao(); return;
     }
 
     taskAtual = d.taskId;
     inicioGeracao = Date.now();
-    btn.innerHTML = '<span class="spin"></span>Gerando as duas versões...';
-    carregarSaldo();
+    btn.innerHTML = '<span class="spin"></span>' + (ehCover ? 'Refazendo...' : 'Gerando as duas versões...');
     iniciarPolling();
   }catch(e){
     erro('Falha ao falar com o servidor: ' + e.message);
-    mostrarPainelVazio();
-    restaurarBotao();
+    mostrarPainelVazio(); restaurarBotao();
   }
 }
 
@@ -567,7 +722,6 @@ function restaurarBotao(){
   btn.disabled = false;
   btn.textContent = 'Criar música';
 }
-
 function mostrarPainelVazio(){
   $('resultados').innerHTML =
     '<div class="vazio"><span class="ic">♫</span>' +
@@ -575,10 +729,9 @@ function mostrarPainelVazio(){
     'Você escolhe a que ficou melhor, corta e baixa.</div>';
 }
 
-// ── polling: pergunta o estado a cada 3s ───────────────────────
+// ── polling ────────────────────────────────────────────────────
 function iniciarPolling(){
-  pararPolling();
-  consultar();
+  pararPolling(); consultar();
   pollTimer = setInterval(consultar, 3000);
 }
 function pararPolling(){
@@ -587,36 +740,28 @@ function pararPolling(){
 
 async function consultar(){
   if(!taskAtual) return;
-
-  // Rede de segurança: a música leva ~1min30. Se passar de 6 minutos,
-  // algo travou do lado da Musicful — para de perguntar e avisa,
-  // em vez de ficar rodando calado pra sempre.
   if(inicioGeracao && (Date.now() - inicioGeracao) > 360000){
-    pararPolling();
-    restaurarBotao();
+    pararPolling(); restaurarBotao();
     erro('A música está demorando muito mais que o normal. O pedido continua salvo — ' +
-         'saia e volte nesta aba daqui a pouco para ver se ficou pronta.');
+         'veja na aba Pedidos daqui a pouco.');
     return;
   }
-
   try{
     const r = await window.__luxFetch(WORKER + '/status?taskId=' + encodeURIComponent(taskAtual));
     const d = await r.json();
-    if(!d.ok) return;   // erro passageiro: tenta de novo no próximo ciclo
+    if(!d.ok) return;
 
     pintarVersoes(d);
 
     if(d.estado === 'PRONTO'){
-      pararPolling();
-      restaurarBotao();
+      pararPolling(); restaurarBotao();
       const seg = Math.round((Date.now() - inicioGeracao)/1000);
       sucesso('Pronto em ' + seg + ' segundos. Ouça as duas, corte se precisar e baixe a melhor.');
     }else if(d.estado === 'FALHOU'){
-      pararPolling();
-      restaurarBotao();
-      erro('A Musicful não conseguiu gerar esta música. Veja o motivo em cada versão.');
+      pararPolling(); restaurarBotao();
+      erro('O gerador não conseguiu criar esta música. Veja o motivo em cada versão.');
     }
-  }catch(e){ /* rede instável: o próximo ciclo tenta de novo */ }
+  }catch(e){ /* rede instável: o próximo ciclo tenta */ }
 }
 
 // ── as duas versões ────────────────────────────────────────────
@@ -628,37 +773,32 @@ function pintarVersoes(d){
 
   const decorrido = inicioGeracao ? Math.round((Date.now() - inicioGeracao)/1000) : 0;
   const arquivo   = (d && d.arquivo) || 'musica.mp3';
+  const dono      = (d && d.taskId) || taskAtual || '';
   cortaveis = [];
 
   alvo.innerHTML = musicas.map((m, i) => {
-    const nome = 'Versão ' + String.fromCharCode(65 + i);   // A, B
+    const nome = 'Versão ' + String.fromCharCode(65 + i);
     let classe, estado, corpo;
 
     if(m.falhou){
-      classe = 'falhou';
-      estado = m.erro || 'não deu certo';
-      corpo  = '';
+      classe='falhou'; estado=m.erro || 'não deu certo'; corpo='';
     }else if(m.pronta){
-      classe = 'pronta';
+      classe='pronta';
       estado = m.duracao ? (m.duracao + ' segundos') : 'pronta para baixar';
-      // mesmo link nos dois: sem dl=1 o navegador toca, com dl=1 ele salva
       const link = WORKER + m.link;
-      // o botão guarda só o índice; a URL fica no array (nome de música
-      // com aspas quebraria um onclick montado por string)
       cortaveis[i] = { url: link, nome: arquivo };
       corpo =
         `<audio controls preload="none" src="${esc(link)}"></audio>` +
         `<div class="versao-acoes">` +
           `<button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>` +
-          `<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 14px"
-              href="${esc(link + '&dl=1')}">Baixar MP3</a>` +
+          `<button class="btn btn-ghost" onclick="coverDesta('${esc(dono)}',${i})">🎤 Cover</button>` +
+          `<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px"
+              href="${esc(link + '&dl=1')}">Baixar</a>` +
         `</div>`;
     }else{
-      // ~90s é o tempo real medido. Dizer isso evita o atendente achar
-      // que travou e sair da tela no meio.
-      classe = 'gerando';
-      estado = decorrido ? ('gerando há ' + decorrido + 's · leva ~1min30') : 'na fila';
-      corpo  = '';
+      classe='gerando';
+      estado = decorrido ? ('gerando há ' + decorrido + 's · leva ~1min') : 'na fila';
+      corpo='';
     }
 
     return `
@@ -676,25 +816,49 @@ function pintarVersoes(d){
   }).join('');
 }
 
-// Desenha as barras do equalizador. A altura de repouso vem de uma
-// senoide, não de random: assim o desenho é estável entre repinturas
-// (o polling redesenha a cada 3s) e A e B ficam com ondas diferentes.
 function barrasEq(versao){
   const TOTAL = 26;
   let html = '';
   for(let n = 0; n < TOTAL; n++){
     const onda = Math.sin((n / TOTAL) * Math.PI * 3 + versao * 1.7);
-    const alt  = Math.round(34 + Math.abs(onda) * 58);   // 34% a 92%
+    const alt  = Math.round(34 + Math.abs(onda) * 58);
     html += `<i style="--h:${alt}%;animation-delay:${(n * 0.045).toFixed(3)}s"></i>`;
   }
   return html;
 }
 
+// ── COVER a partir de uma música já pronta ─────────────────────
+// Traz a letra de volta e marca a origem: ao clicar em Criar música,
+// a melodia desta versão é mantida e só a letra/voz mudam.
+async function coverDesta(taskId, indice){
+  if(!taskId){ erro('Não consegui identificar essa música.'); return; }
+  try{
+    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui abrir essa música.'); return; }
+
+    $('letra').value  = d.letra || '';
+    $('estilo').value = d.estilo || '';
+    $('titulo').value = d.titulo || '';
+    if(d.genero) escolherVoz(d.genero);
+    contarLetra();
+
+    coverUploadUrl = '';
+    coverDeTask = { taskId, indice };
+    $('coverNome').textContent = 'Versão ' + String.fromCharCode(65 + indice) + ' de "' + (d.titulo || 'música') + '"';
+    $('coverArquivo').style.display = 'flex';
+
+    trocarAba('criar');
+    sucesso('Letra carregada. Mude o que quiser (palavra, voz, ritmo) e clique em Criar música — a melodia é mantida.');
+    $('letra').scrollIntoView({behavior:'smooth', block:'center'});
+  }catch(e){
+    erro('Falha ao carregar a música: ' + e.message);
+  }
+}
+
 // ── mandar pro Corte ───────────────────────────────────────────
-// O atendente não precisa baixar e subir de novo: a música vai
-// pela sessionStorage (mesmo domínio) e o pai abre a aba Corte.
-function cortar(indice){
-  const alvo = cortaveis[indice];
+function cortar(i){
+  const alvo = cortaveis[i];
   if(!alvo){ erro('Essa versão ainda não está pronta pra cortar.'); return; }
   try{
     sessionStorage.setItem('lux:corte:pendente', JSON.stringify(alvo));
@@ -704,10 +868,110 @@ function cortar(indice){
   }
 }
 
+// ── ABA PEDIDOS ────────────────────────────────────────────────
+function buscarPedidosComPausa(){
+  clearTimeout(buscaTimer);
+  buscaTimer = setTimeout(()=>carregarPedidos(), 300);
+}
+
+async function carregarPedidos(){
+  const q = $('buscaPedido').value.trim();
+  try{
+    const r = await window.__luxFetch(WORKER + '/historico' + (q ? ('?q='+encodeURIComponent(q)) : ''));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui carregar os pedidos.'); return; }
+    pintarPedidos(d.itens || [], q);
+  }catch(e){
+    $('listaPedidos').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
+      'Não consegui carregar os pedidos agora. Tente recarregar a página.</div>';
+  }
+}
+
+function pintarPedidos(itens, busca){
+  const alvo = $('listaPedidos');
+  $('contadorPedidos').textContent = itens.length
+    ? (itens.length + (itens.length === 1 ? ' música' : ' músicas'))
+    : '';
+
+  if(!itens.length){
+    alvo.innerHTML = '<div class="vazio"><span class="ic">' + (busca ? '🔍' : '🎵') + '</span>' +
+      (busca
+        ? ('Nenhuma música encontrada para <strong>' + esc(busca) + '</strong>.')
+        : 'Você ainda não criou nenhuma música.<br/>As que criar aparecem aqui por 1 mês.') +
+      '</div>';
+    return;
+  }
+
+  alvo.innerHTML = itens.map(p => `
+    <div class="pedido">
+      <div class="pedido-info">
+        <div class="pedido-nome">${esc(p.titulo)}${p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : ''}</div>
+        <div class="pedido-meta">
+          ${esc(p.dia)} às ${esc(p.hora)}${p.estilo ? ' · ' + esc(String(p.estilo).slice(0,42)) : ''}
+        </div>
+      </div>
+      <div class="pedido-valor">${esc(reais(p.custoBRL))}</div>
+      <div class="pedido-acoes">
+        <button class="btn btn-gold" onclick="editarPedido('${esc(p.taskId)}')">Editar</button>
+        <button class="btn btn-ghost" onclick="baixarPedido('${esc(p.taskId)}')">Baixar</button>
+      </div>
+    </div>`).join('');
+}
+
+// Editar: volta pra tela de criação com tudo preenchido
+async function editarPedido(taskId){
+  try{
+    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui abrir esse pedido.'); return; }
+
+    $('letra').value  = d.letra || '';
+    $('estilo').value = d.estilo || '';
+    $('titulo').value = d.titulo || '';
+    if(d.genero) escolherVoz(d.genero);
+    contarLetra();
+
+    // marca o chip do ritmo, se o estilo bater com algum
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    const par = RITMOS.find(([, prompt]) => prompt === d.estilo);
+    if(par){
+      const el = document.querySelector('.chip[data-r="' + par[0] + '"]');
+      if(el) el.classList.add('on');
+    }
+
+    // mostra as músicas daquele pedido na coluna da direita
+    taskAtual = taskId;
+    inicioGeracao = null;
+    coverUploadUrl = ''; coverDeTask = null;
+    $('coverArquivo').style.display = 'none';
+    pintarVersoes(d);
+
+    trocarAba('criar');
+    sucesso('Pedido carregado. Altere o que quiser e crie de novo — ou use o botão Cover numa das versões para manter a melodia.');
+  }catch(e){
+    erro('Falha ao abrir o pedido: ' + e.message);
+  }
+}
+
+// Baixar: pega a primeira versão pronta do pedido
+async function baixarPedido(taskId){
+  try{
+    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui abrir esse pedido.'); return; }
+    const pronta = (d.musicas || []).find(m => m.pronta && m.link);
+    if(!pronta){ erro('Esse pedido não tem música pronta para baixar.'); return; }
+    window.open(WORKER + pronta.link + '&dl=1', '_blank');
+  }catch(e){
+    erro('Falha ao baixar: ' + e.message);
+  }
+}
+
 // ── início ─────────────────────────────────────────────────────
 montarChips();
 contarLetra();
-carregarSaldo();
+escolherVoz('male');
+carregarCusto();
 </script>
 </body>
 </html>
