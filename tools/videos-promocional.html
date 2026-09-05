@@ -372,6 +372,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       </div>
       <div class="mini" id="rotAjustePers" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
       <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
+
+      <!-- trocar pela arte pronta do cliente, sem voltar ao passo 1 -->
+      <div class="cx-montado">
+        <div class="tit">🎨 Prefere usar a arte pronta do cliente?</div>
+        <div class="sub">Suba aqui e ela <b>substitui a imagem acima</b>, indo direto para os vídeos,
+          <b>sem a IA redesenhar nada</b>. O roteiro das 4 cenas continua o mesmo.</div>
+        <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onMontadoPasso2(event)"/></label>
+      </div>
     </div>
 
     <div id="boxRoteiro"></div>
@@ -981,7 +989,14 @@ function clienteNome(){ return (document.getElementById('fCliente')||{}).value.t
 function categoriaNome(){ return ((document.getElementById('fCategoria')||{}).value||'').trim(); }
 
 async function gerarPersonagem(silencioso){
-  if(!refs.product.length){ toast('📸 Suba a foto do produto.'); return false; }
+  const ajusteTxt = ((document.getElementById('fAjustePers')||{}).value||'').trim();
+  // Arte pronta sem instrução: não há o que ajustar, e recriar do zero é o que se quer evitar.
+  if(personagemMontado && !ajusteTxt){
+    toast('✏️ Escreva o que mudar na imagem antes de aplicar.');
+    const el=document.getElementById('fAjustePers'); if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); el.focus(); }
+    return false;
+  }
+  if(!refs.product.length && !personagemMontado){ toast('📸 Suba a foto do produto.'); return false; }
   const btn=silencioso?null:document.getElementById('btnPersonagem');
   const old=btn?btn.innerHTML:'';
   const nota=document.getElementById('notaPersonagem');
@@ -999,7 +1014,8 @@ async function gerarPersonagem(silencioso){
   try{
     const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
       client: clienteNome(), briefing: briefTexto(), ambienteTexto: ambienteTexto(), references: refsPayload(),
-      ajuste: ajuste, imagemAnterior: (ajuste && personagemImg) ? personagemImg : '' }) });
+      // na arte pronta a imagem atual vai SEMPRE: é ela que segura a composição do cliente
+      ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
     personagemImg = d.base64; custoUSD += (d.custoUSD||0);
@@ -1010,6 +1026,22 @@ async function gerarPersonagem(silencioso){
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
   finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
+// Sobe a arte pronta JÁ no passo 2, substituindo o personagem que a IA tinha gerado.
+// Não gera nada, não custa nada — só troca a referência que as 4 cenas vão usar.
+async function onMontadoPasso2(ev){
+  const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
+  try{
+    const img = await fileToOptimizedImage(f);
+    refs.montado = [img];
+    renderThumbs('montado');            // mantém o briefing coerente com o que está valendo
+    if(!usarPersonagemMontado()){ toast('⚠️ Não consegui ler a imagem.'); return; }
+    const el=document.getElementById('fAjustePers'); if(el) el.value='';
+    await salvarProjeto(true);
+    toast('✅ Personagem trocado pela arte do cliente.');
+    rolarPara('boxPersonagem');
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+
 // Usa a arte que o cliente mandou, do jeito que veio. Nenhuma chamada de IA, custo zero.
 function usarPersonagemMontado(){
   const f = refs.montado[0];
@@ -1028,9 +1060,14 @@ function pintarPersonagem(){
   const bt = document.getElementById('btnPersonagem');
   const aj = document.getElementById('fAjustePers');
   const rot = document.getElementById('rotAjustePers');
-  if(bt)  bt.style.display  = personagemMontado ? 'none' : '';
-  if(aj)  aj.style.display  = personagemMontado ? 'none' : '';
-  if(rot) rot.style.display = personagemMontado ? 'none' : '';
+  // arte pronta: o botão vira "aplicar ajuste" e o campo passa a ser obrigatório
+  if(bt)  bt.innerHTML = personagemMontado ? '✏️ Aplicar ajuste' : '🔄 Gerar de novo';
+  if(rot) rot.innerHTML = personagemMontado
+    ? '✏️ O que mudar na imagem <span style="color:var(--gold)">*</span>'
+    : '✏️ O que mudar no personagem (opcional)';
+  if(aj)  aj.placeholder = personagemMontado
+    ? 'Ex: tire a língua para fora, coloque um boné, remova a placa do fundo'
+    : 'Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro';
 }
 function baixarPersonagem(){
   if(!personagemImg) return;
