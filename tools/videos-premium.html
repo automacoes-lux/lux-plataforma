@@ -183,16 +183,6 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 }
 .btn-letra:hover{background:rgba(201,168,76,.22)}
 
-/* EXPANSÃO COM IA (Passo 3) — botão-interruptor VERDE */
-.btn-expand-ia{
-  display:block;width:100%;margin:10px 0 4px;padding:13px 16px;border-radius:var(--radius);
-  font-size:14px;font-weight:700;letter-spacing:.2px;cursor:pointer;
-  background:rgba(46,204,113,.10);border:1px solid #2ecc71;color:#2ecc71;
-  transition:background .15s,box-shadow .15s;
-}
-.btn-expand-ia:hover{background:rgba(46,204,113,.18)}
-.btn-expand-ia.on{background:#2ecc71;color:#0d0d0f;box-shadow:0 0 14px rgba(46,204,113,.45)}
-.btn-expand-ia:disabled{opacity:.6;cursor:wait}
 /* TRANSIÇÕES — interruptor dourado (ligado por padrão; desligado = corte seco) */
 .btn-trans{
   display:block;width:100%;margin:10px 0 4px;padding:13px 16px;border-radius:var(--radius);
@@ -201,7 +191,6 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 }
 .btn-trans.off{background:transparent;color:var(--text-dim);border-color:var(--border-bright)}
 .btn-trans.off:hover{border-color:var(--gold);color:var(--gold)}
-.thumb .exp-badge{position:absolute;top:4px;left:4px;background:rgba(46,204,113,.92);color:#0d0d0f;font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:8px;z-index:2}
 
 /* EDITOR DE CORTE (1:00) */
 .cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:4px}
@@ -293,6 +282,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .order-item:last-child{border-bottom:none}
 .order-info{flex:1;min-width:180px}
 .order-client{font-size:14.5px;font-weight:600;color:var(--text)}
+.order-etapa{font-size:12px;font-weight:600;color:#E8A84C;white-space:nowrap}
 .order-meta{font-size:11.5px;color:var(--text-dim);margin-top:3px}
 .order-attendant{font-size:12px;color:var(--gold);font-weight:600;margin-top:2px}
 .order-side{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -516,9 +506,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
       <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">De <b style="color:var(--text-mid)">1 a 20</b> mídias (fotos e/ou vídeos) que passam ATRÁS do avatar — a ordem é a ordem do clipe. A <b style="color:var(--gold)">1ª foto é a CAPA</b>: aparece <b>parada</b> (sem movimento); as demais ganham o movimento normal. Na <b>foto</b>, o ✏️ enquadra no 9:16. No <b>vídeo</b>, você escolhe a duração. O tempo das fotos é dividido automático no que sobrar da <b style="color:var(--text-mid)">duração da música</b> (<b style="color:var(--text-mid)">mínimo 3s por foto</b>).</div>
-      <button type="button" class="btn-expand-ia" id="btnExpandIA" onclick="toggleExpandIA()">✨ Expansão com IA — <span id="expandIAState">desligada</span></button>
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligada, a IA <b style="color:#2ecc71">expande e melhora todas as FOTOS</b> pro formato do vídeo (9:16): continua o cenário de verdade pra cima e pra baixo, sem borrão. Vídeos passam normal, sem mexer. Custo: ~R$ 0,07 por foto.</div>
+      <div class="card-hint">As <b style="color:var(--text-mid)">fotos não são editadas</b>: elas são <b style="color:#2ecc71">melhoradas e estendidas automaticamente</b> pro formato do vídeo. Você só edita <b style="color:var(--text-mid)">vídeos</b> (✏️ escolhe o trecho e o enquadramento).</div>
       <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
       <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligadas (padrão), as cenas entram com fade/wipe. <b>Desligadas</b>, todas as imagens entram em <b style="color:var(--text-mid)">corte seco</b>, uma atrás da outra. A <b>1ª imagem é sempre corte seco</b> (pra capa do WhatsApp não sair preta).</div>
       <div class="thumb-row" id="scenesRow"></div>
@@ -737,9 +725,9 @@ const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes
 const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
 const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (solo)
 const EST_USD_LIPSEC_DUO = 0.03;   // dupla voltou ao MultiTalk 18/08 — mesmo preço do solo
-const EST_USD_MATTESEC = 0.0033;   // recorte BRIA, por segundo (04/09: comprado DIRETO da BRIA; a fal revendia e subiu p/ $0,14)
+const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
-const EST_USD_EXPAND  = 0.012;     // Expansão com IA por FOTO (gpt-image-2 low — custo real medido 20/08)
+const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
 const EST_CAMBIO      = 5.18;
 
 const POLL_INTERVAL_MS = 8000;
@@ -753,7 +741,6 @@ let avatarTipo = 'universal';   // UI universal 19/08: sem tipos — o prompt un
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
-let expandIA = false;              // Passo 3: botão "Expansão com IA" ligado (expande as FOTOS pra 9:16 real)
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
@@ -1434,7 +1421,6 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
       renderScenes(); renderStoryboard();
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
   }
-  if (expandIA) await expandFotosIA();   // botão verde ligado → foto nova já entra expandida
 });
 
 // vídeo: extrai duração + thumbnail do 1º frame (tudo no navegador)
@@ -1680,16 +1666,17 @@ function renderScenes() {
   scenes.forEach((s, i) => {
     const isVid = s.kind === 'video';
     const tag = isVid ? '🎬 Vídeo' : (i === 0 ? '📌 Foto da capa' : 'Foto ' + (i + 1));   // 1ª mídia FOTO = capa (sai parada no vídeo)
+    // (05/09) SÓ VÍDEO tem ✏️. Foto não se edita mais: o servidor melhora e estende toda foto sozinho,
+    // depois do "Gerar o clipe" — se a atendente recortasse antes, o recorte seria refeito por cima.
     const editBtn = isVid
       ? '<button class="edit" title="Editar vídeo (corte + 9:16)" onclick="openVideoEditor(\'' + s.id + '\')">✏️</button>'
-      : '<button class="edit" title="Enquadrar (9:16)" onclick="openEditor(\'' + s.id + '\')">✏️</button>';
+      : '';
     const photoLbl = (Math.round(t.photoDur * 10) / 10).toString().replace('.', ',') + 's';
     const durBar = isVid
       ? '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:11px;text-align:center;padding:2px;color:#fff">⏱ <input type="number" min="1" max="' + (videoDur() || VIDEO_SECONDS) + '" step="1" value="' + Math.round(s.dur) + '" onchange="setClipDur(\'' + s.id + '\', this.value)" style="width:34px;background:#222;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;text-align:center"/> s</div>'
       : '<div style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);font-size:11px;text-align:center;padding:2px;color:var(--gold)">🎤 ' + photoLbl + '</div>';
     const media = s.thumbUrl ? '<img src="' + s.thumbUrl + '" alt="' + tag + '"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:#181818">🎬</div>';
     html += '<div class="thumb" data-id="' + s.id + '" title="Arraste para reordenar">' + media +
-      (s.expanded ? '<div class="exp-badge">✨ IA</div>' : '') +
       '<div class="tag">' + tag + '</div>' +
       '<button class="rm" title="Remover" onclick="removeScene(\'' + s.id + '\')">✕</button>' +
       editBtn + durBar + '</div>';
@@ -2011,26 +1998,10 @@ async function autoFitHorizontais() {
   }
 }
 
-// ── EXPANSÃO COM IA (Passo 3 — botão verde) ─────────────────────────────────
-// Liga → TODAS as fotos são expandidas pro 9:16 REAL pela IA (outpainting no servidor: o cenário
-// continua pra cima/baixo, sem borrão) e melhoradas. Vídeos passam direto, sem mexer. Desliga →
-// volta as originais. O resultado fica em cache na cena (expandBase64): religar não custa de novo.
-// Foto re-enquadrada no ✏️ DEPOIS sai da expansão (a escolha manual vale mais).
-async function toggleExpandIA() {
-  const btn = document.getElementById('btnExpandIA');
-  if (btn && btn.disabled) return;
-  if (!expandIA) {
-    expandIA = true;
-    setExpandBtn();
-    await expandFotosIA();
-  } else {
-    expandIA = false;
-    restaurarFotosIA();
-    setExpandBtn();
-    toast('↩️ Fotos originais de volta (a expansão fica guardada — religar é grátis).');
-  }
-  renderScenes(); renderStoryboard();
-}
+// ── MELHORIA + EXTENSÃO DAS FOTOS ───────────────────────────────────────────
+// (05/09) Deixou de ser botão: TODA foto passa por isso, sempre, e o trabalho roda NO SERVIDOR
+// depois do "Gerar o clipe" (a atendente não espera). Aqui a tela só CONTA as fotos pra estimar
+// o custo — quem faz e cobra é o Worker. Ver contarFotos().
 // ── TRANSIÇÕES (Passo 3) ────────────────────────────────────────────────────
 // Ligadas (padrão) = cada cena entra com fade/wipe. Desligadas = corte seco em TODAS.
 // A 1ª cena é SEMPRE corte seco (senão o WhatsApp pega o 1º frame preto como capa).
@@ -2045,59 +2016,9 @@ function setTransBtn() {
   if (b) b.classList.toggle('off', !transicoes);
   if (s) s.textContent = transicoes ? 'LIGADAS' : 'DESLIGADAS (corte seco)';
 }
-function setExpandBtn() {
-  const btn = document.getElementById('btnExpandIA');
-  const st  = document.getElementById('expandIAState');
-  if (btn) btn.classList.toggle('on', expandIA);
-  if (st) st.textContent = expandIA ? 'LIGADA ✅' : 'desligada';
-}
-// nº de fotos expandidas que VÃO no vídeo (cobrança no pedido)
-function contarExpandidas() {
-  return expandIA ? scenes.filter(s => s.kind === 'photo' && s.expanded).length : 0;
-}
-// expande as fotos que ainda não têm resultado; lotes de 3 em paralelo
-async function expandFotosIA() {
-  const btn = document.getElementById('btnExpandIA');
-  const alvo = scenes.filter(s => s.kind === 'photo' && !s.expanded && !s.userEdited && (s.expandBase64 || s.origBase64 || s.base64));
-  if (!alvo.length) {
-    if (!scenes.some(s => s.kind === 'photo')) toast('Nenhuma foto no Passo 3 ainda — as próximas que você adicionar já entram expandidas.');
-    return;
-  }
-  if (btn) btn.disabled = true;
-  let feitas = 0, falhas = 0;
-  const uma = async (s) => {
-    try {
-      if (!s.expandBase64) {
-        const src = s.origBase64 || s.base64;   // expande a foto ORIGINAL (não a versão desfocada/editada)
-        const r = await api('/avatarExpandFoto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64: src, mimeType: s.mimeType || 'image/jpeg' }) });
-        const d = await r.json();
-        if (!d.ok || !d.base64) throw new Error(d.error || 'sem imagem');
-        s.expandBase64 = d.base64;
-      }
-      if (!s.preExpand) s.preExpand = { base64: s.base64, mimeType: s.mimeType, thumbUrl: s.thumbUrl };
-      s.base64 = s.expandBase64;
-      s.mimeType = 'image/jpeg';
-      s.thumbUrl = 'data:image/jpeg;base64,' + s.expandBase64;
-      s.expanded = true;
-      feitas++;
-    } catch (e) { falhas++; }
-    toast('✨ Expandindo fotos… ' + (feitas + falhas) + ' de ' + alvo.length);
-    renderScenes();
-  };
-  for (let i = 0; i < alvo.length; i += 3) await Promise.all(alvo.slice(i, i + 3).map(uma));
-  if (btn) btn.disabled = false;
-  if (falhas && !feitas) { expandIA = false; setExpandBtn(); toast('⚠️ Não consegui expandir as fotos agora — tente de novo em instantes.'); }
-  else if (falhas) toast('✅ ' + feitas + ' foto(s) expandida(s); ⚠️ ' + falhas + ' falharam e ficam como estavam.');
-  else toast('✅ ' + feitas + ' foto(s) expandida(s) e melhorada(s) pela IA!');
-  renderStoryboard();
-}
-function restaurarFotosIA() {
-  scenes.forEach(s => {
-    if (s.kind === 'photo' && s.expanded && s.preExpand) {
-      s.base64 = s.preExpand.base64; s.mimeType = s.preExpand.mimeType; s.thumbUrl = s.preExpand.thumbUrl;
-      s.expanded = false;
-    }
-  });
+// nº de FOTOS do clipe — cada uma é melhorada/estendida no servidor (entra na estimativa de custo)
+function contarFotos() {
+  return scenes.filter(s => s.kind === 'photo').length;
 }
 async function saveEditor() {
   if (!ed) return;
@@ -2592,7 +2513,7 @@ function renderStoryboard() {
   if (durEl) durEl.textContent = fmtTime(D);
 
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;   // dupla = InfiniteTalk (2×)
-  const usd = EST_USD_CENA + contarExpandidas() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + expansão IA + lipsync + recorte + montagem
+  const usd = EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + melhoria das fotos + lipsync + recorte + montagem
   const brl = usd * EST_CAMBIO;
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
@@ -2641,9 +2562,10 @@ async function gerarClipe() {
   btn.textContent = 'Enviando os arquivos…';
 
   try {
-    // FUNDO DESFOCADO AUTOMÁTICO: fotos deitadas/quadradas não reenquadradas ganham o 9:16 desfocado
-    // ANTES de montar a lista (blindado: nunca trava). Assim ninguém mais perde as laterais sem querer.
-    await autoFitHorizontais();
+    // (05/09) O FUNDO DESFOCADO automático SAIU daqui de propósito: agora TODA foto é melhorada e
+    // estendida pra 9:16 no servidor, e o certo é mandar a foto ORIGINAL — mandar a versão com as
+    // barras desfocadas faria o servidor "melhorar" o borrão em vez de continuar o cenário.
+    // (autoFitHorizontais/renderBlurFill9x16 continuam no arquivo, sem uso, caso precise voltar atrás.)
     // PROTEÇÃO ANTI-PERDA (incidente 09-07): a lista enviada tem que ter TODAS as mídias do Passo 3.
     // Se divergir (qualquer bug futuro), BLOQUEIA com aviso claro — nunca mais descarte silencioso.
     const bgs = buildBackgrounds();
@@ -2663,7 +2585,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, fotoExpandCount: contarExpandidas(), semTransicao: !transicoes, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2687,7 +2609,6 @@ async function gerarClipe() {
       avScale: avScale,
       backgrounds: bgs,
       bgExpected: scenes.length,
-      fotoExpandCount: contarExpandidas(),   // Expansão com IA (Passo 3) — cobrança por foto expandida
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration
@@ -2780,7 +2701,12 @@ function startPolling() {
         } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
       }
       updateLiveBanner();
-      if (mudou) loadOrders();
+      // (05/09) o "em que pé está" muda durante a produção → com a aba Resultados aberta, recarrega
+      // a lista a cada ~32s (4 ticks) pra etapa não ficar congelada na tela.
+      tick._n = (tick._n || 0) + 1;
+      const abaAberta = !!(document.getElementById('panel-resultados') || {}).classList &&
+                        document.getElementById('panel-resultados').classList.contains('active');
+      if (mudou || (abaAberta && tick._n % 4 === 0)) loadOrders();
       if (!getPending().length) stopPolling();
     } finally { tick._busy = false; }
   };
@@ -2829,11 +2755,15 @@ async function loadOrders() {
       } else {
         chip = '<span class="st-chip st-run">Em produção</span>';
       }
+      // (05/09) EM QUE PÉ está o pedido, do lado do nome (vem do servidor em order.statusMsg).
+      // Texto curto e objetivo — nunca cita o nome da ferramenta usada.
+      const etapa = (o.status !== 'COMPLETED' && o.status !== 'ERROR' && o.status !== 'CANCELLED' && o.statusMsg)
+        ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
       const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
       const linhaAtend = (ehAdmin && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
       const fim = o.finishedAt ? ' · Fim ' + o.finishedAt : '';
       html += '<div class="order-item">' +
-        '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + '</div>' +
+        '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' +
         linhaAtend +
         '<div class="order-meta">Início ' + (o.createdAt || '—') + fim + ' · ' + numCenas + ' cena(s)' + custo +
         (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') +
@@ -2935,7 +2865,7 @@ function resetCreateForm() {
   avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
-  expandIA = false; setExpandBtn();
+  // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -2955,7 +2885,7 @@ function sairEdicao() {
   try { renderClientPhoto2(); } catch (e) {}
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
-  expandIA = false; setExpandBtn();
+  // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
