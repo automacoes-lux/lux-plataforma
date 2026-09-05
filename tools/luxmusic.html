@@ -78,7 +78,7 @@
   textarea::placeholder,input::placeholder{color:#57534b}
   #briefing{min-height:130px}
   #letra{min-height:300px}
-  #estilo{min-height:70px}
+  #estilo{min-height:120px}
 
   /* ── FERRAMENTAS DENTRO DA CAIXA (lixeira / copiar) ──
      Ficam no canto superior direito do próprio campo, e não no cabeçalho
@@ -147,6 +147,14 @@
   }
   .btn-copiar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
   .btn-copiar.ok{border-color:var(--green);color:var(--green)}
+
+  /* A varinha é a mesma casca do Copiar, em dourado: é uma ação que
+     gasta (0,4 crédito), então tem que se anunciar. */
+  .btn-copiar.varinha{
+    border-color:var(--line-bright);color:var(--gold-bright);
+  }
+  .btn-copiar.varinha:hover{border-color:var(--gold);background:rgba(201,168,76,.09)}
+  .btn-copiar:disabled{opacity:.5;cursor:not-allowed}
 
   /* ── PLAYER DO COVER — play e linha do tempo, brancos ── */
   .player{
@@ -285,9 +293,10 @@
   .busca-wrap input{padding-left:38px}
   .pedido{
     background:var(--bg2);border:1px solid var(--line);border-radius:11px;
-    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;
-    gap:14px;flex-wrap:wrap;
+    padding:14px 16px;margin-bottom:10px;
   }
+  .pedido-topo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .pedido-versoes{margin-top:6px}
   .pedido-info{flex:1;min-width:190px}
   .pedido-nome{
     font-family:'Cinzel',serif;font-size:14.5px;color:var(--text);
@@ -302,28 +311,6 @@
     border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--gold-bright);
     margin-left:7px;vertical-align:1px;letter-spacing:.05em;
   }
-
-  /* ── DURAÇÃO (barrinha) ── */
-  .dur{display:flex;align-items:center;gap:14px}
-  .dur input[type=range]{
-    flex:1;-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;
-    background:rgba(201,168,76,.25);outline:none;cursor:pointer;
-  }
-  .dur input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;
-    background:linear-gradient(135deg,var(--gold),var(--gold-bright));cursor:pointer;
-    border:none;box-shadow:0 0 0 3px rgba(201,168,76,.16);
-  }
-  .dur input[type=range]::-moz-range-thumb{
-    width:17px;height:17px;border-radius:50%;border:none;
-    background:linear-gradient(135deg,var(--gold),var(--gold-bright));cursor:pointer;
-  }
-  .dur input[type=range]:disabled{opacity:.35;cursor:not-allowed}
-  .dur-valor{
-    font-family:'Cinzel',serif;font-size:19px;color:var(--gold-bright);
-    min-width:62px;text-align:right;font-variant-numeric:tabular-nums;
-  }
-  .dur-valor.auto{font-size:13px;color:var(--muted);font-family:var(--font)}
 
   /* ── FILTRO DE PERÍODO (aba Pedidos) ── */
   .periodo{
@@ -348,15 +335,19 @@
   .chip-per:hover{border-color:var(--gold);color:var(--gold-bright)}
   .chip-per.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
 
-  /* ── AS VERSÕES DENTRO DA LINHA DO PEDIDO ── */
-  .pedido-audio{flex-basis:100%}
-  .pedido-audio:empty{display:none}
-  .faixa{display:flex;align-items:center;gap:11px;margin-top:10px;flex-wrap:wrap}
+  /* ── AS DUAS VERSÕES, SEMPRE À VISTA ──
+     Cada versão é uma música diferente: o atendente precisa ouvir as
+     duas e baixar a que preferir, sem abrir nada antes. */
+  .faixa{display:flex;align-items:center;gap:11px;margin-top:9px;flex-wrap:wrap}
   .faixa-nome{
     font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.07em;
     text-transform:uppercase;color:var(--muted);min-width:74px;
   }
-  .faixa .player{flex:1;margin-top:0;min-width:200px}
+  .faixa .player{flex:1;margin-top:0;min-width:190px}
+  .faixa-baixar{
+    padding:10px 16px;font-size:11.5px;text-decoration:none;text-align:center;
+    white-space:nowrap;
+  }
   .aviso-linha{
     margin-top:10px;font-size:12.5px;color:var(--muted);
     display:flex;align-items:center;gap:7px;
@@ -389,6 +380,10 @@
     .card{padding:15px}
     #letra{min-height:240px}
     .versao-acoes{grid-template-columns:1fr}
+    .faixa-nome{min-width:100%}
+    /* no celular o player fica numa linha so pra nao espremer o tempo */
+    .faixa .player{min-width:100%}
+    .faixa-baixar{flex:1}
   }
 </style>
 </head>
@@ -476,30 +471,25 @@
       <!-- 3. RITMO -->
       <div class="card">
         <div class="card-head"><span class="titulo-secao">Ritmo</span></div>
-        <div class="card-hint">Toque num ritmo e o estilo completo é montado sozinho. Dá para editar depois.</div>
+        <div class="card-hint">Toque num ritmo e o estilo completo é montado sozinho. A varinha ✨ melhora o texto usando o assunto da letra — e você pode editar tudo depois.</div>
         <div class="campo">
           <div class="campo-acoes">
             <button class="btn-campo lixo" onclick="limpar('estilo')" title="Apagar o ritmo">🗑</button>
           </div>
           <textarea id="estilo" placeholder="Ex: sertanejo universitário, animado, viola e guitarra, voz masculina marcante"></textarea>
         </div>
+        <div class="rodape-campo">
+          <button class="btn-copiar varinha" id="btnAprimorar" type="button" onclick="aprimorarEstilo()">
+            <span id="icAprimorar">✨</span><span id="txtAprimorar">Aprimorar prompt</span>
+          </button>
+          <button class="btn-copiar" id="btnDesfazerEstilo" type="button" onclick="desfazerEstilo()" style="display:none">
+            ↩ Voltar ao anterior
+          </button>
+        </div>
         <div class="chips" id="chips"></div>
       </div>
 
-      <!-- 4. DURAÇÃO -->
-      <div class="card">
-        <div class="card-head"><span class="titulo-secao">Duração</span></div>
-        <div class="card-hint">É um alvo, não uma medida exata: quem manda no tamanho é a letra. Medido em teste — pedindo 3:00 com uma letra completa, saiu 2:37 numa versão e 1:17 na outra.</div>
-        <div class="dur">
-          <input type="range" id="duracao" min="30" max="360" step="15" value="180" oninput="mostrarDuracao()"/>
-          <span class="dur-valor" id="durValor">3:00</span>
-        </div>
-        <label class="politico" style="margin-top:12px">
-          <input type="checkbox" id="durAuto" onchange="mostrarDuracao()"/> Deixar a IA escolher o tamanho
-        </label>
-      </div>
-
-      <!-- 5. VOZ E IDENTIFICAÇÃO -->
+      <!-- 4. VOZ E IDENTIFICAÇÃO -->
       <div class="card">
         <div class="card-head"><span class="titulo-secao">Voz e identificação</span></div>
 
@@ -515,7 +505,7 @@
         </div>
       </div>
 
-      <!-- 6. CRIAR -->
+      <!-- 5. CRIAR -->
       <div class="card">
         <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
         <div class="custo-nota" id="notaCusto">
@@ -573,40 +563,35 @@
 // ═══════════════════════════════════════════════════════════════
 const WORKER = 'https://lux-song.plataformalux.workers.dev';
 
-// Ritmos na ordem real de pedido dos clientes da Lux
-// (RITMOS-ranking.md), depois o resto do portfólio.
+// Os 22 ritmos do PORTFÓLIO da Lux (luxmarketing.com.br/portfolio),
+// na mesma ordem em que aparecem lá — é o que o cliente ouve antes de
+// pedir, então a tela do atendente fala a mesma língua do site.
 // Cada um já traz o PROMPT COMPLETO no estilo do Maestro (gênero,
 // clima, instrumentos e BPM): clicar no chip monta o estilo inteiro,
-// não só o nome do ritmo.
+// não só o nome do ritmo. A varinha ✨ refina ainda mais, usando a letra.
 const RITMOS = [
-  ['Sertanejo',        'sertanejo universitário, animado e envolvente, viola caipira, guitarra e bateria marcada, vocal limpo à frente, BPM 120'],
-  ['Sertanejo Raiz',   'sertanejo raiz, viola caipira dedilhada, sanfona suave, clima interiorano e nostálgico, dupla em terças, BPM 95'],
-  ['Piseiro',          'piseiro animado, teclado marcante e batida eletrônica dançante, groove de arrasta-pé moderno, BPM 130'],
-  ['Pisadinha',        'pisadinha nordestina, teclado sintetizado, batida seca e dançante, vocal empolgado, BPM 128'],
-  ['Forró',            'forró pé-de-serra, sanfona, zabumba e triângulo, alegre e dançante, clima de festa junina, BPM 135'],
-  ['Pop',              'pop brasileiro comercial, sintetizadores brilhantes, refrão grudento, produção limpa e moderna, BPM 118'],
-  ['Gospel',           'gospel contemporâneo, piano e cordas emotivas, coral no refrão, clima de fé e esperança, BPM 75'],
-  ['Pagode',           'pagode romântico, cavaquinho, pandeiro e tantã, suingue leve e apaixonado, BPM 92'],
-  ['Funk',             'funk carioca comercial, batida de tamborzão, graves fortes, refrão chiclete e cantado, BPM 130'],
-  ['Rock',             'rock nacional, guitarras distorcidas, baixo pulsante e bateria potente, vocal marcante, BPM 140'],
-  ['Romântico',        'romântico brasileiro, piano e cordas suaves, violão dedilhado, vocal sentimental e intimista, BPM 70'],
-  ['Infantil',         'música infantil alegre, melodia simples e cantável, xilofone e teclado divertido, vozes animadas, BPM 120'],
-  ['Kids',             'canção infantil moderna, sons lúdicos e coloridos, refrão fácil de repetir, clima de brincadeira, BPM 122'],
-  ['Country',          'country pop, banjo e slide guitar, batida animada de estrada, vocal caloroso, BPM 125'],
-  ['Vanerão',          'vanerão gaúcho, gaita ponto marcante, ritmo dançante de baile, clima de galpão, BPM 130'],
-  ['Gaúcha',           'música gaúcha tradicional, gaita e violão, ritmo de chamamé, clima campeiro, BPM 110'],
-  ['Dance',            'dance pop eletrônico, sintetizadores brilhantes, drop dançante e refrão energético, BPM 128'],
-  ['Eletrônica',       'música eletrônica, sintetizadores em camadas, batida four-on-the-floor, build-up e drop, BPM 126'],
-  ['Flashback Disco',  'flashback disco anos 80, baixo slap, naipe de metais, cordas e batida dançante retrô, BPM 118'],
-  ['Trap',             'trap brasileiro, 808 graves e hi-hats rápidos, atmosfera moderna, flow cadenciado, BPM 140'],
-  ['MPB',              'MPB, violão de nylon, percussão orgânica e arranjo sofisticado, vocal suave e expressivo, BPM 95'],
-  ['Axé',              'axé baiano, percussão de timbau e surdo, metais festivos, energia de carnaval, BPM 140'],
-  ['Rap',              'rap nacional, boom bap com 808 graves, batida marcada e scratchs, flow firme e articulado, BPM 90'],
-  ['Samba',            'samba brasileiro, cavaquinho, pandeiro, surdo e tamborim, suingue tradicional e alegre, BPM 100'],
-  ['Bossa Nova',       'bossa nova, violão com harmonia rica, batida suave de bossa, vocal sussurrado e elegante, BPM 78'],
-  ['Brega',            'brega romântico, teclado e guitarra melódica, clima nostálgico e emotivo, vocal sentido, BPM 85'],
-  ['Reggae',           'reggae brasileiro, guitarra no contratempo, baixo grave e groove relaxado, clima praiano, BPM 76'],
-  ['Marchinha',        'marchinha de carnaval, metais festivos, bumbo marcado e coro animado, clima de folia, BPM 120']
+  ['Piseiro',           'piseiro animado, teclado marcante e batida eletrônica dançante, groove de arrasta-pé moderno, BPM 130'],
+  ['Forró',             'forró pé-de-serra, sanfona, zabumba e triângulo, alegre e dançante, clima de festa junina, BPM 135'],
+  ['Sertanejo',         'sertanejo universitário, animado e envolvente, viola caipira, guitarra e bateria marcada, vocal limpo à frente, BPM 120'],
+  ['Sertanejo Raiz',    'sertanejo raiz, viola caipira dedilhada, sanfona suave, clima interiorano e nostálgico, dupla em terças, BPM 95'],
+  ['Country',           'country pop, banjo e slide guitar, batida animada de estrada, vocal caloroso, BPM 125'],
+  ['Pop',               'pop brasileiro comercial, sintetizadores brilhantes, refrão grudento, produção limpa e moderna, BPM 118'],
+  ['Dance',             'dance pop eletrônico, sintetizadores brilhantes, drop dançante e refrão energético, BPM 128'],
+  ['Eletrônica',        'música eletrônica, sintetizadores em camadas, batida four-on-the-floor, build-up e drop, BPM 126'],
+  ['Funk',              'funk carioca comercial, batida de tamborzão, graves fortes, refrão chiclete e cantado, BPM 130'],
+  ['Trap',              'trap brasileiro, 808 graves e hi-hats rápidos, atmosfera moderna, flow cadenciado, BPM 140'],
+  ['Pagode',            'pagode romântico, cavaquinho, pandeiro e tantã, suingue leve e apaixonado, BPM 92'],
+  ['Samba',             'samba brasileiro, cavaquinho, pandeiro, surdo e tamborim, suingue tradicional e alegre, BPM 100'],
+  ['Rock',              'rock nacional, guitarras distorcidas, baixo pulsante e bateria potente, vocal marcante, BPM 140'],
+  ['Pop Rock',          'pop rock brasileiro, guitarras com drive médio, baixo marcante e bateria energética, refrão grande e cantável, vocal com garra, BPM 128'],
+  ['Axé',               'axé baiano, percussão de timbau e surdo, metais festivos, energia de carnaval, BPM 140'],
+  ['Gaúcha',            'música gaúcha tradicional, gaita e violão, ritmo de chamamé, clima campeiro, BPM 110'],
+  ['MPB',               'MPB, violão de nylon, percussão orgânica e arranjo sofisticado, vocal suave e expressivo, BPM 95'],
+  ['Bossa Nova',        'bossa nova, violão com harmonia rica, batida suave de bossa, vocal sussurrado e elegante, BPM 78'],
+  ['Flashback Disco',   'flashback disco anos 80, baixo slap, naipe de metais, cordas e batida dançante retrô, BPM 118'],
+  ['Gospel',            'gospel contemporâneo, piano e cordas emotivas, coral no refrão, clima de fé e esperança, BPM 75'],
+  ['Kids',              'canção infantil moderna, sons lúdicos e coloridos, refrão fácil de repetir, clima de brincadeira, BPM 122'],
+  ['Romântico',         'romântico brasileiro, piano e cordas suaves, violão dedilhado, vocal sentimental e intimista, BPM 70']
 ];
 
 let vozEscolhida   = 'male';   // masculina por padrão
@@ -686,9 +671,74 @@ function tocarChip(el){
   // prompts inteiros só confunde o gerador.
   document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
 
+  esqueceDesfazer();
   if(jaEstava){ campo.value = ''; return; }   // clicar de novo limpa
   el.classList.add('on');
   campo.value = par ? par[1] : nome;
+}
+
+// ── A VARINHA (aprimorar o prompt de estilo) ───────────────────
+// Manda o ritmo + a LETRA pro servidor. Lá a letra vira um resumo de
+// clima antes de chegar no gerador — mandar a letra crua faz ele ler
+// as palavras dela como instrução de estilo.
+// Custa 0,4 crédito (~R$ 0,01) por clique.
+let estiloAnterior = null;
+
+async function aprimorarEstilo(){
+  const campo = $('estilo');
+  const base  = campo.value.trim();
+  const letra = $('letra').value.trim();
+
+  if(!base && !letra){
+    erro('Toque num ritmo ou escreva o estilo antes de aprimorar.');
+    return;
+  }
+
+  const btn = $('btnAprimorar');
+  btn.disabled = true;
+  $('icAprimorar').innerHTML = '<span class="spin"></span>';
+  $('txtAprimorar').textContent = 'Aprimorando...';
+  limparAvisos();
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/aprimorarEstilo', {
+      method:'POST',
+      body: JSON.stringify({ estilo: base, letra })
+    });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui aprimorar o prompt.'); return; }
+
+    estiloAnterior = campo.value;          // dá pra voltar atrás
+    campo.value = d.estilo;
+    $('btnDesfazerEstilo').style.display = 'inline-flex';
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    sucesso(d.usouLetra
+      ? 'Prompt aprimorado a partir da letra. Leia e mude o que quiser antes de criar.'
+      : 'Prompt aprimorado. Leia e mude o que quiser antes de criar.');
+    campo.scrollIntoView({behavior:'smooth', block:'center'});
+  }catch(e){
+    erro('Falha ao falar com o servidor: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    $('icAprimorar').textContent = '✨';
+    $('txtAprimorar').textContent = 'Aprimorar prompt';
+  }
+}
+
+function desfazerEstilo(){
+  if(estiloAnterior === null) return;
+  $('estilo').value = estiloAnterior;
+  estiloAnterior = null;
+  $('btnDesfazerEstilo').style.display = 'none';
+  sucesso('Voltei o ritmo pro texto anterior.');
+}
+
+// qualquer outra mexida no campo tira o desfazer da tela: ele só
+// vale pro texto que a varinha substituiu
+function esqueceDesfazer(){
+  estiloAnterior = null;
+  const b = $('btnDesfazerEstilo');
+  if(b) b.style.display = 'none';
 }
 
 // ── voz ────────────────────────────────────────────────────────
@@ -713,7 +763,10 @@ function limpar(campo){
   if(!el) return;
   el.value = ''; el.focus();
   if(campo === 'letra')  contarLetra();
-  if(campo === 'estilo') document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+  if(campo === 'estilo'){
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    esqueceDesfazer();
+  }
 }
 async function copiarLetra(){
   const txt = $('letra').value;
@@ -851,8 +904,7 @@ async function criarMusica(){
 
   const corpo = {
     lyrics: letra, style: estilo,
-    title: $('titulo').value.trim(), gender: vozEscolhida,
-    duracao: duracaoEscolhida()
+    title: $('titulo').value.trim(), gender: vozEscolhida
   };
   if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
   else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
@@ -1044,17 +1096,24 @@ function mmss(s){
   s = Math.max(0, Math.floor(Number(s) || 0));
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
-function htmlPlayer(src){
-  return '<div class="player">' +
+// duracaoConhecida (segundos) evita baixar o MP3 só pra saber o tamanho:
+// a aba Pedidos já recebe a duração do servidor, e a rota /baixar não
+// aceita download parcial — sem isso, cada player puxaria o arquivo
+// inteiro só pra escrever "1:17" na tela.
+function htmlPlayer(src, duracaoConhecida){
+  const d = Number(duracaoConhecida) || 0;
+  return '<div class="player"' + (d ? ' data-dur="' + d + '"' : '') + '>' +
     '<button class="pp" type="button" title="Tocar / pausar">▶</button>' +
     '<div class="trilha"><div class="cheio"></div><div class="bolinha"></div></div>' +
-    '<span class="tempo">0:00 / 0:00</span>' +
-    '<audio preload="metadata" src="' + esc(src) + '"></audio>' +
+    '<span class="tempo">0:00 / ' + mmss(d) + '</span>' +
+    '<audio preload="' + (d ? 'none' : 'metadata') + '" src="' + esc(src) + '"></audio>' +
   '</div>';
 }
 function pintarPlayer(a){
   const p = a.closest('.player'); if(!p) return;
-  const d = (isFinite(a.duration) && a.duration) ? a.duration : 0;
+  const d = (isFinite(a.duration) && a.duration)
+    ? a.duration
+    : (Number(p.getAttribute('data-dur')) || 0);
   const pct = d ? (a.currentTime / d * 100) : 0;
   p.querySelector('.cheio').style.width  = pct.toFixed(2) + '%';
   p.querySelector('.bolinha').style.left = pct.toFixed(2) + '%';
@@ -1076,9 +1135,14 @@ function ligarPlayers(){
     const tr = ev.target.closest('.player .trilha');
     if(tr){
       const a = tr.closest('.player').querySelector('audio');
-      if(!a || !a.duration || !isFinite(a.duration)) return;
+      if(!a) return;
       const r = tr.getBoundingClientRect();
-      a.currentTime = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)) * a.duration;
+      const frac = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+      if(a.duration && isFinite(a.duration)){ a.currentTime = frac * a.duration; return; }
+      // player que ainda não carregou (preload none): carrega e pula
+      // pro ponto assim que souber o tamanho, em vez de ignorar o clique
+      a.addEventListener('loadedmetadata', function(){ a.currentTime = frac * a.duration; }, { once:true });
+      a.load();
     }
   });
 
@@ -1117,21 +1181,6 @@ function fecharPlayer(){
   if(coverObjectUrl){ URL.revokeObjectURL(coverObjectUrl); coverObjectUrl = null; }
 }
 
-// ── DURAÇÃO ───────────────────────────────────────────────────
-// Só o modelo V5_5 aceita duração, e é o que a Lux usa. Marcando
-// "a IA escolhe", o campo não é enviado e ela decide o tamanho.
-function mostrarDuracao(){
-  const auto = $('durAuto').checked;
-  const el   = $('duracao');
-  const alvo = $('durValor');
-  el.disabled = auto;
-  alvo.classList.toggle('auto', auto);
-  alvo.textContent = auto ? 'a IA escolhe' : mmss(Number(el.value));
-}
-function duracaoEscolhida(){
-  if($('durAuto').checked) return null;
-  return Number($('duracao').value) || null;
-}
 
 // ── COVER a partir de uma música já pronta ─────────────────────
 // Traz a letra de volta e marca a origem: ao clicar em Criar música,
@@ -1213,48 +1262,6 @@ function periodoManual(){
   carregarPedidos();
 }
 
-// ── OUVIR as versões sem sair da lista ────────────────────────
-// A lista guarda só o resumo (é o metadata do KV, sem os links). Os
-// links vêm quando o atendente clica em Ouvir — uma chamada por
-// pedido aberto, e não uma por linha da tela.
-async function ouvirPedido(taskId, botao){
-  const caixa = document.getElementById('aud-' + taskId);
-  if(!caixa) return;
-
-  if(caixa.innerHTML){                       // já aberto: fecha
-    caixa.innerHTML = '';
-    if(botao) botao.innerHTML = '▶ Ouvir';
-    return;
-  }
-
-  caixa.innerHTML = '<div class="aviso-linha"><span class="spin"></span>Abrindo as versões…</div>';
-  if(botao) botao.innerHTML = '▼ Fechar';
-
-  try{
-    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
-    const d = await r.json();
-    if(!d.ok){
-      caixa.innerHTML = '<div class="aviso-linha">' + esc(d.error || 'Não consegui abrir esse pedido.') + '</div>';
-      return;
-    }
-    const prontas = (d.musicas || []).filter(m => m.pronta && m.link);
-    if(!prontas.length){
-      const aviso = d.estado === 'GERANDO'
-        ? 'Ainda está sendo gerada. Volte daqui a pouco.'
-        : 'Esse pedido não tem música pronta.';
-      caixa.innerHTML = '<div class="aviso-linha">' + aviso + '</div>';
-      return;
-    }
-    caixa.innerHTML = prontas.map(m =>
-      '<div class="faixa">' +
-        '<span class="faixa-nome">Versão ' + String.fromCharCode(65 + m.indice) + '</span>' +
-        htmlPlayer(WORKER + m.link) +
-      '</div>').join('');
-  }catch(e){
-    caixa.innerHTML = '<div class="aviso-linha">Falha ao abrir: ' + esc(e.message) + '</div>';
-  }
-}
-
 // ── ABA PEDIDOS ────────────────────────────────────────────────
 function buscarPedidosComPausa(){
   clearTimeout(buscaTimer);
@@ -1301,22 +1308,48 @@ function pintarPedidos(itens, busca){
     return;
   }
 
-  alvo.innerHTML = itens.map(p => `
-    <div class="pedido" id="ped-${esc(p.taskId)}">
-      <div class="pedido-info">
-        <div class="pedido-nome">${esc(p.titulo)}${p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : ''}</div>
-        <div class="pedido-meta">
-          ${esc(p.dia)} às ${esc(p.hora)}${p.estilo ? ' · ' + esc(String(p.estilo).slice(0,42)) : ''}
-        </div>
-      </div>
-      <div class="pedido-valor">${esc(reais(p.custoBRL))}</div>
-      <div class="pedido-acoes">
-        <button class="btn btn-ghost" onclick="ouvirPedido('${esc(p.taskId)}', this)">▶ Ouvir</button>
-        <button class="btn btn-gold" onclick="editarPedido('${esc(p.taskId)}')">Editar</button>
-        <button class="btn btn-ghost" onclick="baixarPedido('${esc(p.taskId)}')">Baixar</button>
-      </div>
-      <div class="pedido-audio" id="aud-${esc(p.taskId)}"></div>
-    </div>`).join('');
+  // ESTEIRA: cada pedido mostra as DUAS versões de cara, cada uma com
+  // o seu player e o seu Baixar. São músicas diferentes da mesma letra
+  // — o atendente precisa ouvir as duas pra escolher.
+  alvo.innerHTML = itens.map(p => {
+    const versoes = p.versoes || [];
+    let corpo;
+
+    if(versoes.length){
+      corpo = versoes.map(v => {
+        const link = WORKER + v.link;
+        return '<div class="faixa">' +
+          '<span class="faixa-nome">Versão ' + String.fromCharCode(65 + v.indice) + '</span>' +
+          htmlPlayer(link, v.duracao) +
+          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
+        '</div>';
+      }).join('');
+    }else{
+      corpo = '<div class="aviso-linha">' + (
+        p.estado === 'GERANDO' ? '<span class="spin"></span>Ainda sendo gerada — abra a aba de novo daqui a pouco.'
+        : p.estado === 'FALHOU' ? 'O gerador não conseguiu criar esta música.'
+        : 'Sem versão pronta para ouvir.'
+      ) + '</div>';
+    }
+
+    return '<div class="pedido">' +
+      '<div class="pedido-topo">' +
+        '<div class="pedido-info">' +
+          '<div class="pedido-nome">' + esc(p.titulo) +
+            (p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : '') +
+          '</div>' +
+          '<div class="pedido-meta">' + esc(p.dia) + ' às ' + esc(p.hora) +
+            (p.estilo ? ' · ' + esc(String(p.estilo).slice(0, 42)) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="pedido-valor">' + esc(reais(p.custoBRL)) + '</div>' +
+        '<div class="pedido-acoes">' +
+          '<button class="btn btn-ghost" onclick="editarPedido(\'' + esc(p.taskId) + '\')">Editar</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pedido-versoes">' + corpo + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // Editar: volta pra tela de criação com tudo preenchido
@@ -1358,26 +1391,11 @@ async function editarPedido(taskId){
   }
 }
 
-// Baixar: pega a primeira versão pronta do pedido
-async function baixarPedido(taskId){
-  try{
-    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
-    const d = await r.json();
-    if(!d.ok){ erro(d.error || 'Não consegui abrir esse pedido.'); return; }
-    const pronta = (d.musicas || []).find(m => m.pronta && m.link);
-    if(!pronta){ erro('Esse pedido não tem música pronta para baixar.'); return; }
-    window.open(WORKER + pronta.link + '&dl=1', '_blank');
-  }catch(e){
-    erro('Falha ao baixar: ' + e.message);
-  }
-}
-
 // ── início ─────────────────────────────────────────────────────
 montarChips();
 contarLetra();
 escolherVoz('male');
 ligarPlayers();
-mostrarDuracao();
 carregarCusto();
 </script>
 </body>
