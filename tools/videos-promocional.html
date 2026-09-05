@@ -403,6 +403,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div id="editorCortes">
       <div class="sec-title">✂️ As 4 cenas</div>
       <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O corte do fim de cada cena é feito sozinho. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
+      <div class="btn-row" style="margin-bottom:.9rem">
+        <button class="btn-ghost" onclick="refazerTodasAsCenas()">🔄 Refazer as 4 cenas com o personagem atual</button>
+      </div>
       <div id="boxCortes"></div>
 
       <!-- a trilha vem DEPOIS das cenas: o atendente escolhe a música já tendo ouvido as falas -->
@@ -1031,15 +1034,9 @@ async function gerarPersonagem(silencioso){
 // Descarta os clipes quando o personagem muda. Eles foram feitos a partir da imagem ANTIGA:
 // manter é entregar vídeo com o personagem que o atendente acabou de rejeitar.
 // Custa caro (US$ 0,40 por cena), então pergunta antes — e só pergunta se houver o que perder.
-function invalidarCenas(){
-  const feitas = cenas.filter(s=>s.video_url).length;
-  if(!feitas) return true;                       // nada gerado ainda: segue sem perguntar
-  const ok = confirm('Você já tem '+feitas+' cena(s) gerada(s) com o personagem ATUAL.\n\n' +
-    'Mudando a imagem, esses vídeos serão descartados e as '+cenas.length+' cenas terão que ser geradas de novo ' +
-    '(US$ 0,40 cada).\n\nContinuar?');
-  if(!ok) return false;
+function limparCenas(){
   cenas.forEach(function(s){
-    s.video_url=''; s.video_status=''; s.video_error='';
+    s.video_url=''; s.video_status=''; s.video_error=''; s._personagemUsado='';
     s._marcacoes=null; s._fimFala=null; s._inicioFala=null; s._palavra='';
     s._vozId=null; s._vozUrl=''; s._vozErro=''; s._audio=null; s._pron=null;
     s.cortaIni=0; s.cortaFim=0; s._cortouManual=false;
@@ -1048,8 +1045,31 @@ function invalidarCenas(){
   const v=document.getElementById('videoFinal'); if(v) v.removeAttribute('src');
   const bx=document.getElementById('telaFinal'); if(bx) bx.classList.add('hide');
   if(typeof renderCortes==='function') renderCortes();
+}
+
+function invalidarCenas(){
+  const feitas = cenas.filter(s=>s.video_url).length;
+  if(!feitas) return true;                       // nada gerado ainda: segue sem perguntar
+  const ok = confirm('Você já tem '+feitas+' cena(s) gerada(s) com o personagem ATUAL.\n\n' +
+    'Mudando a imagem, esses vídeos serão descartados e as '+cenas.length+' cenas terão que ser geradas de novo ' +
+    '(US$ 0,40 cada).\n\nContinuar?');
+  if(!ok) return false;
+  limparCenas();
   toast('🗑️ Cenas antigas descartadas — clique em GERAR VÍDEO pra refazer com o personagem novo.');
   return true;
+}
+
+// Escape hatch: serve pra projeto antigo (sem carimbo) e pra qualquer caso em que o atendente
+// simplesmente queira as 4 cenas de novo. É o único caminho que NÃO depende de detecção.
+async function refazerTodasAsCenas(){
+  if(!cenas.length){ toast('📝 Gere o roteiro antes.'); return; }
+  if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  const feitas = cenas.filter(s=>s.video_url).length;
+  if(feitas && !confirm('Isto descarta as '+feitas+' cena(s) atuais e gera as '+cenas.length+' de novo, ' +
+    'com o personagem que está no passo 2.\n\nCusto: US$ 0,40 por cena.\n\nRefazer tudo?')) return;
+  limparCenas();
+  await salvarProjeto(true);
+  await iniciarCenasSeNecessario();
 }
 
 // Sobe a arte pronta JÁ no passo 2, substituindo o personagem que a IA tinha gerado.
@@ -1315,6 +1335,7 @@ async function acompanharVideo(i, predictionId){
 
       if(d.status==='done' && d.url){
         s.video_url=d.url; s.video_status='pronto'; s.video_error='';
+        s._personagemUsado = personagemImg;   // de qual imagem esta cena nasceu (vai salvo no projeto)
         // ⚠️ o corte já vem junto com o clipe (28/08). Antes a tela pedia a transcrição num
         // segundo pedido, que baixava o clipe DE NOVO — eram ~15s com a linha de corte vazia.
         // ⚠️ VOZ LIMPA (28/08): o Veo cria uma trilha própria em cada cena, que brigava com a
@@ -2334,9 +2355,26 @@ async function refazerCena(i){
 // MONTAR O VÍDEO, embaixo, que sempre usa os clipes ATUAIS e os cortes que estiverem na tela.
 let gerandoCenas = false;
 
+// Clipes feitos a partir de OUTRA imagem de personagem. Só dá pra afirmar quando o carimbo
+// existe — projeto antigo (gerado antes de 05/09) não tem, e aí ficamos quietos: o atendente
+// tem o botão "Refazer as 4 cenas" pra resolver na mão.
+function cenasDesatualizadas(){
+  return cenas.some(function(s){
+    return s.video_url && s._personagemUsado && s._personagemUsado !== personagemImg;
+  });
+}
+
 async function iniciarCenasSeNecessario(){
   if(gerandoCenas) return;                                   // já está rodando
   if(!cenas.length || !personagemImg) return;                // roteiro/personagem ainda não existem
+  // ⚠️ ANTES de desistir por "todas prontas": elas podem ser do personagem ANTIGO.
+  if(cenasDesatualizadas()){
+    const ok = confirm('O personagem mudou depois que estas cenas foram geradas.\n\n' +
+      'As ' + cenas.length + ' cenas antigas serão descartadas e geradas de novo com o personagem atual ' +
+      '(US$ 0,40 cada).\n\nRefazer agora?');
+    if(!ok){ toast('As cenas continuam com o personagem antigo. Use "Refazer as 4 cenas" quando quiser.'); return; }
+    limparCenas();
+  }
   if(cenas.every(function(s){ return !!s.video_url; })) return;   // todas já prontas
   gerandoCenas = true;
   try{
