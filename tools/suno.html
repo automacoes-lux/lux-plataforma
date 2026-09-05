@@ -151,6 +151,14 @@
   .musica audio{width:100%;margin-top:12px;height:36px}
   .musica-acoes{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
   .musica-acoes .btn{flex:1;min-width:130px}
+  /* música que o Suno ainda está preparando */
+  .musica.preparando{border-style:dashed;opacity:.85}
+  .preparo{
+    margin-top:12px;background:var(--bg);border:1px solid #35322b;
+    border-radius:9px;padding:11px 13px;font-size:12.5px;
+    color:var(--muted);line-height:1.55;
+  }
+
   .letra{
     display:none;margin-top:12px;background:var(--bg);border:1px solid #2a2822;
     border-radius:9px;padding:13px;font-size:13px;line-height:1.7;
@@ -254,7 +262,8 @@
       </div>
       <div class="card-hint" style="margin:10px 0 0">
         Só chegam aqui as músicas <strong>públicas</strong>. No Suno, música nova nasce
-        privada — publique ela lá que em segundos ela aparece nesta lista.
+        privada — publique ela lá que ela aparece nesta lista sozinha. O arquivo pra baixar
+        costuma liberar 1 ou 2 minutos depois.
       </div>
     </div>
   </div>
@@ -568,6 +577,11 @@ function pintarLista(busca){
   }
 
   alvo.innerHTML = musicas.map((m,i) => {
+    // Música que o Suno ainda está preparando: aparece na lista (pro
+    // atendente ver que chegou), mas sem player e sem botões — eles não
+    // funcionariam. Some o aviso assim que o arquivo sai.
+    if(m.pronto === false) return cardPreparando(m);
+
     const link = WORKER + m.link;
     return `
       <div class="musica">
@@ -596,6 +610,35 @@ function pintarLista(busca){
         ${m.letra ? `<div class="letra" id="letra${i}">${esc(m.letra)}</div>` : ''}
       </div>`;
   }).join('');
+}
+
+// Card da música que o Suno ainda está preparando. O texto muda com o
+// tempo: quase sempre sai em 1 ou 2 minutos, mas às vezes o Suno demora
+// bem mais (já medimos 31 min) — nesse caso avisa, em vez de deixar o
+// atendente achando que travou.
+function cardPreparando(m){
+  const min = m.salvoTs ? Math.floor((Date.now() - m.salvoTs)/60000) : 0;
+  const recado = min < 5
+    ? 'O Suno está preparando o arquivo. Costuma sair em 1 ou 2 minutos.'
+    : ('O Suno está demorando mais que o normal com esta (' + min + ' min). ' +
+       'Pode deixar a aba aberta — ela libera sozinha.');
+  return `
+    <div class="musica preparando">
+      <div class="musica-topo">
+        ${m.capa ? `<img class="musica-capa" src="${esc(m.capa)}" alt="" loading="lazy"/>`
+                 : `<div class="musica-capa"></div>`}
+        <div class="musica-info">
+          <div class="musica-titulo">${esc(m.titulo)}</div>
+          <div class="musica-meta">
+            ${m.duracao ? esc(fmtDuracao(m.duracao)) + ' · ' : ''}${esc(fmtData(m.criadoEm))}
+          </div>
+          ${m.estilo ? `<div class="musica-estilo">${esc(m.estilo)}</div>` : ''}
+        </div>
+      </div>
+      <div class="preparo">
+        <span class="spin"></span>${esc(recado)}
+      </div>
+    </div>`;
 }
 
 function verLetra(i){
@@ -658,7 +701,8 @@ async function gerarMp3(m, onProgresso){
 // Coloca as mais recentes na fila de conversão adiantada
 function adiantarMp3(){
   if(typeof lamejs === 'undefined') return;   // conversor ainda carregando
-  musicas.slice(0, MAX_ADIANTADAS).forEach(m => {
+  musicas.filter(m => m.pronto !== false)   // sem arquivo não há o que converter
+         .slice(0, MAX_ADIANTADAS).forEach(m => {
     if(mp3Pronto.has(m.id) || mp3Fazendo.has(m.id)) return;
     if(!filaMp3.includes(m.id)) filaMp3.push(m.id);
   });
