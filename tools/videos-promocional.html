@@ -997,6 +997,8 @@ async function gerarPersonagem(silencioso){
     return false;
   }
   if(!refs.product.length && !personagemMontado){ toast('📸 Suba a foto do produto.'); return false; }
+  // silencioso = veio do gerarTudo (1ª geração, sem cenas ainda): não pergunta nada
+  if(!silencioso && !invalidarCenas()) return false;
   const btn=silencioso?null:document.getElementById('btnPersonagem');
   const old=btn?btn.innerHTML:'';
   const nota=document.getElementById('notaPersonagem');
@@ -1026,10 +1028,35 @@ async function gerarPersonagem(silencioso){
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
   finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
+// Descarta os clipes quando o personagem muda. Eles foram feitos a partir da imagem ANTIGA:
+// manter é entregar vídeo com o personagem que o atendente acabou de rejeitar.
+// Custa caro (US$ 0,40 por cena), então pergunta antes — e só pergunta se houver o que perder.
+function invalidarCenas(){
+  const feitas = cenas.filter(s=>s.video_url).length;
+  if(!feitas) return true;                       // nada gerado ainda: segue sem perguntar
+  const ok = confirm('Você já tem '+feitas+' cena(s) gerada(s) com o personagem ATUAL.\n\n' +
+    'Mudando a imagem, esses vídeos serão descartados e as '+cenas.length+' cenas terão que ser geradas de novo ' +
+    '(US$ 0,40 cada).\n\nContinuar?');
+  if(!ok) return false;
+  cenas.forEach(function(s){
+    s.video_url=''; s.video_status=''; s.video_error='';
+    s._marcacoes=null; s._fimFala=null; s._inicioFala=null; s._palavra='';
+    s._vozId=null; s._vozUrl=''; s._vozErro=''; s._audio=null; s._pron=null;
+    s.cortaIni=0; s.cortaFim=0; s._cortouManual=false;
+  });
+  videoFinalUrl='';                              // o vídeo montado também era do personagem velho
+  const v=document.getElementById('videoFinal'); if(v) v.removeAttribute('src');
+  const bx=document.getElementById('telaFinal'); if(bx) bx.classList.add('hide');
+  if(typeof renderCortes==='function') renderCortes();
+  toast('🗑️ Cenas antigas descartadas — clique em GERAR VÍDEO pra refazer com o personagem novo.');
+  return true;
+}
+
 // Sobe a arte pronta JÁ no passo 2, substituindo o personagem que a IA tinha gerado.
 // Não gera nada, não custa nada — só troca a referência que as 4 cenas vão usar.
 async function onMontadoPasso2(ev){
   const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
+  if(!invalidarCenas()) return;                  // desistiu: não troca nada
   try{
     const img = await fileToOptimizedImage(f);
     refs.montado = [img];
