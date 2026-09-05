@@ -86,11 +86,6 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
 /* frase já corrigida pela IA: avisar sem resolver joga o trabalho pro atendente, que é
    justamente quem não sabe qual palavra escapa da armadilha */
-.sug-cx{margin-top:.6rem;background:var(--bg-input);border:.5px solid rgba(201,168,76,.45);border-radius:var(--radius);padding:.7rem .8rem}
-.sug-rot{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.35rem}
-.sug-txt{font-size:13.5px;color:var(--text);line-height:1.5;margin-bottom:.6rem}
-.sug-bt{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border:none;border-radius:8px;padding:.5rem .9rem;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
-.sug-bt:hover{filter:brightness(1.08)}
 /* seletor de atendente (só admin) — usado pra devolver o projeto pra quem pediu ajuda */
 .atr-fundo{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:90}
 .atr-cx{background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.1rem;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column}
@@ -402,7 +397,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
          clica em MONTAR O VÍDEO embaixo — que sempre usa os clipes ATUAIS. -->
     <div id="editorCortes">
       <div class="sec-title">✂️ As 4 cenas</div>
-      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">O corte do fim de cada cena é feito sozinho. Arraste as alças se quiser mudar, baixe uma cena ou refaça só a que não ficou boa.</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">As alças amarelas começam nas pontas — arraste-as pra escolher onde cada cena entra e termina. Você também pode baixar uma cena ou refazer só a que não ficou boa.</div>
       <div class="btn-row" style="margin-bottom:.9rem">
         <button class="btn-ghost" onclick="refazerTodasAsCenas()">🔄 Refazer as 4 cenas com o personagem atual</button>
       </div>
@@ -767,27 +762,6 @@ async function carregarProjetos(){
     if(lp) lp.innerHTML=m; if(lr) lr.innerHTML=m;
   }
 }
-// Aplica a frase sugerida na caixa da FALA. A legenda NÃO é tocada aqui: ela é reescrita
-// sozinha a partir da fala nova quando o atendente clica em Refazer (/rotLegenda) — é o mesmo
-// caminho de quando ele digita à mão, então não há dois jeitos diferentes de mexer na fala.
-function usarSugestao(i){
-  const s = cenas[i];
-  const nova = s && s._pron && s._pron.sugestao;
-  if(!nova) return;
-  s.fala = nova; s.palavras = contarPalavras(nova); s._legendaSuja = true;
-  const cx = document.querySelector('#boxCortes [data-faed="'+i+'"]');
-  if(cx) cx.value = nova;
-  const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
-  if(espelho){ espelho.value = nova; alertaFala(i); }
-  const av = document.querySelector('[data-avisoleg="'+i+'"]');
-  if(av) av.textContent = 'A legenda será reescrita quando você clicar em Refazer.';
-  s._pron = null;                       // o alerta já cumpriu o papel
-  const alp = document.querySelector('#boxCortes [data-pron="'+i+'"]');
-  if(alp){ alp.className='alerta hide'; alp.innerHTML=''; }   // some da tela sem redesenhar o card
-  alertaFalaEditor(i);
-  toast('✅ Frase trocada. Agora clique em Refazer nesta cena.');
-}
-
 // ══ ATRIBUIR PROJETO A OUTRO ATENDENTE (só admin) ══════════════════════════
 // Nasceu de um caso real: o admin abria o projeto do atendente pra ajudar, salvava, e o
 // projeto passava pra ele — o atendente não conseguia mais terminar. O Worker parou de
@@ -1360,21 +1334,14 @@ async function acompanharVideo(i, predictionId){
         // nossa música. A separação roda em segundo plano — a cena já aparece pro atendente e a
         // voz chega depois. Não travamos a tela por causa disso.
         if(d.vozId){ s._vozId = d.vozId; esperarVoz(i); }
-        // Conferência de pronúncia: o Worker ouve o clipe SEM dica e compara com o que está escrito.
-        // É assim que pegamos "carinho" saindo como "carinjo" sem ninguém precisar assistir tudo.
-        s._pron = (d.pronuncia && Array.isArray(d.pronuncia.suspeitas) && d.pronuncia.suspeitas.length)
-                    ? d.pronuncia : null;
-        if(d.pronuncia) custoUSD += (d.pronuncia.custoUSD||0);
         if(d.transcricao){
           s._fimFala   = Number(d.transcricao.fimFala);
           s._inicioFala= Number(d.transcricao.inicioFala||0);
           s._palavra   = d.transcricao.palavra||'';
           s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
           custoUSD += (d.transcricao.custoUSD||0);
-          if(!s._cortouManual){
-            const corte = Math.max(0, CLIPE_SEG - pontoDeCorte(s._fimFala));
-            s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
-          }
+          // ⚠️ NÃO corta sozinho (05/09). As alças nascem nas pontas e quem escolhe o trecho
+          // é o atendente. A transcrição fica só pela legenda e pelo início da fala.
         }
         renderVideos();
         await salvarProjeto(true);    // ⚠️ SALVA A CADA CENA: fechar a aba aqui não perde mais nada
@@ -1886,15 +1853,32 @@ async function esperarVoz(i){
   s._vozErro = 'demorou demais';
 }
 
-// Reescreve a LEGENDA a partir da fala atual. Só roda quando o atendente mexeu na fala — senão a
-// legenda que a IA já escreveu no roteiro continua valendo e não se gasta chamada à toa.
+// Deixa a LEGENDA sendo a MESMA frase da fala. A única coisa que pode mudar entre as duas é a
+// forma do número, do @ e do telefone — é só isso que o /rotLegenda faz.
+// Não chama a IA à toa: se a legenda já é igual à fala, não há o que converter.
 async function refazerLegenda(i){
-  const s = cenas[i]; if(!s || !s._legendaSuja) return;
+  const s = cenas[i]; if(!s) return;
+  if(s._legendaManual) return;                 // esta legenda foi escrita à mão: é dela que mandamos
+  const fala = String(s.fala||'').trim();
+  if(!fala) return;
+  if(String(s.legenda||'').trim() === fala){ s._legendaSuja = false; s._legendaDe = fala; return; }
+  if(s._legendaDe === fala){ s._legendaSuja = false; return; }   // esta legenda JÁ saiu desta fala
+  const av = document.querySelector('[data-avisoleg="'+i+'"]');
+  if(av) av.textContent = 'Ajustando a legenda pra acompanhar a fala…';
+  let nova = '';
   try{
-    const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: s.fala||'' }) });
+    const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: fala }) });
     const d = await r.json();
-    if(d.ok && d.legenda){ s.legenda = d.legenda; s._legendaSuja = false; custoUSD += (d.aiCostUSD||0); }
-  }catch(e){ /* se falhar, a legenda velha fica — melhor que nenhuma */ }
+    if(d.ok && d.legenda){ nova = d.legenda; custoUSD += (d.aiCostUSD||0); }
+  }catch(e){ /* cai na própria fala, logo abaixo */ }
+  // Falhou a conversão? A legenda vira a PRÓPRIA fala. Número por extenso na tela é feio, mas
+  // legenda dizendo uma frase diferente da falada é pior — e era exatamente o problema.
+  s.legenda = nova || fala;
+  s._legendaDe = fala;          // recibo: da próxima vez não gasta nem arrisca de novo
+  s._legendaSuja = false;
+  const cx = document.querySelector('#boxCortes [data-leg="'+i+'"]');
+  if(cx && document.activeElement !== cx) cx.value = s.legenda;
+  if(av) av.textContent = '';
 }
 
 // baixa UM clipe já gerado. Nome do arquivo sai com o cliente e o número da cena, pra
@@ -1963,18 +1947,10 @@ function mmss(t){ const s=Math.max(0,t); return Math.floor(s/60)+':'+String(Math
 // distância entre o SILÊNCIO do próprio clipe (percentil 20) e a FALA (percentil 95),
 // e exige 100ms seguidos acima dele pra contar como fala.
 // ═══════════════════════════════════════════════════════════════════════════════
-// ⚠️ FOLGA depois da última palavra — era 0,5s e o Thiago pediu pra apertar (25/08): meio segundo
-// de sobra já pegava o começo das oscilações do Veo, que é justamente o que a gente quer jogar fora.
-// Por que 0,15s e não ZERO: a marca de tempo do Whisper cai numa grade de ~20-40ms, e a última
-// palavra tem uma cauda curta (a vogal decaindo). Cortar exatamente no número faz a palavra soar
-// truncada. Medimos: a marca de fim DAS PALAVRAS DO MEIO é só a fronteira pra próxima palavra
-// (fim de uma == início da seguinte em 11 de 13 pares), mas a ÚLTIMA não tem seguinte — ali o
-// número é acústico de verdade. Daí dar pra chegar tão perto sem comer a fala.
-const FOLGA_POS_FALA = 0.50;   // corte automático: 0,5s depois da última palavra (Thiago, 28/08)
-const TETO_FIM = 7.0;          // nunca guardar além disto: dos ~7s pros 8s o Veo distorce
-// o ponto onde o corte automático cai, a partir do fim da fala. Usado no cálculo do corte,
-// na LISTRA BRANCA da barra e (por consequência) na alça — os três sempre no MESMO lugar.
-function pontoDeCorte(fimFala){ return Math.min(CLIPE_SEG, TETO_FIM, Number(fimFala) + FOLGA_POS_FALA); }
+// ⚠️ (05/09) O CORTE AUTOMÁTICO FOI DESLIGADO a pedido do Thiago. Não existe mais
+// FOLGA_POS_FALA / TETO_FIM / pontoDeCorte: as alças nascem nas duas pontas e o trecho de
+// cada cena é escolhido pelo atendente, arrastando. A transcrição continua (legenda + início
+// da fala); o que saiu foi USAR o fim da fala pra cortar sozinho.
 let audioCtx = null;
 const analiseCache = {};
 
@@ -2027,16 +2003,8 @@ function desenharOnda(i){
     ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
     ctx.fillRect(x, (A-h)/2, 1, h);
   }
-  // a LISTRA BRANCA marca o PONTO DE CORTE AUTOMÁTICO (fim da fala + 0,5s, com teto) — o MESMO
-  // lugar onde a alça amarela nasce. Ela é a referência fixa: se o atendente arrastar a alça, a
-  // listra continua mostrando onde o automático tinha cortado. (Antes ela marcava o fim da FALA,
-  // e apareciam dois riscos separados na barra sem explicação.)
-  const fimF = (cenas[i]._fimFala !== undefined && cenas[i]._fimFala !== null) ? cenas[i]._fimFala : a.fimFala;
-  const marca = pontoDeCorte(fimF);
-  if(marca < CLIPE_SEG - 0.02){
-    const x = Math.round(marca/CLIPE_SEG*L);
-    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(x-1,0,2,A);
-  }
+  // (05/09) A listra branca do corte automático saiu junto com o corte automático.
+  // O que sobra na barra é o marcador da reprodução e as duas alças amarelas.
 }
 
 function renderCortes(){
@@ -2071,8 +2039,11 @@ function renderCortes(){
       box.appendChild(f);
       return;
     }
-    if(typeof s.cortaIni!=='number') s.cortaIni=0;
-    if(typeof s.cortaFim!=='number') s.cortaFim=0;
+    // as alças nascem NAS PONTAS: o atendente sempre acha as duas e arrasta de onde quiser.
+    // Só sobrevive o que ELE já arrastou (_cortouManual) — inclusive em projeto antigo, que
+    // vinha com o corte automático gravado.
+    if(typeof s.cortaIni!=='number' || !s._cortouManual) s.cortaIni=0;
+    if(typeof s.cortaFim!=='number' || !s._cortouManual) s.cortaFim=0;
     const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
@@ -2089,7 +2060,6 @@ function renderCortes(){
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
       '</div>'+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
-      '<div class="alerta hide" data-pron="'+i+'"></div>'+
       // ⚠️ DUAS CAIXAS (28/08). São o MESMO conteúdo em formatos diferentes, e os dois importam:
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
       //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
@@ -2099,7 +2069,7 @@ function renderCortes(){
       '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
       '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
-      '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda será reescrita quando você clicar em Refazer.':'')+'</div>'+
+      '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda vai acompanhar esta fala.':'')+'</div>'+
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
       // removemos, deixando só a voz. Se falhar, o atendente precisa saber ANTES de montar.
       '<div class="soon-note" style="margin-top:.2rem">'+(
@@ -2121,20 +2091,23 @@ function renderCortes(){
     el.addEventListener('input', function(){
       const i=+el.dataset.faed;
       cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
-      // a legenda ficou desatualizada: quem reescreve é o Refazer, com a fala nova
       cenas[i]._legendaSuja = true;
+      cenas[i]._legendaManual = false;   // mexeu na fala: a legenda volta a seguir ela
       alertaFalaEditor(i);
       const av = document.querySelector('[data-avisoleg="'+i+'"]');
-      if(av) av.textContent = 'A legenda será reescrita quando você clicar em Refazer.';
+      if(av) av.textContent = 'A legenda vai acompanhar esta fala.';
       const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
       if(espelho && espelho.value !== el.value){ espelho.value = el.value; alertaFala(i); }
     });
+    // 'change' = ele terminou de digitar e saiu da caixa. Aqui a legenda já se acerta, pra ele
+    // VER na tela que as duas batem — sem depender de clicar em Refazer nem de montar.
+    el.addEventListener('change', function(){ refazerLegenda(+el.dataset.faed); });
   });
   // a legenda também pode ser corrigida na mão; nesse caso ela deixa de estar "suja"
   box.querySelectorAll('[data-leg]').forEach(function(el){
     el.addEventListener('input', function(){
       const i=+el.dataset.leg;
-      cenas[i].legenda = el.value; cenas[i]._legendaSuja = false;
+      cenas[i].legenda = el.value; cenas[i]._legendaSuja = false; cenas[i]._legendaManual = true;
     });
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
@@ -2164,7 +2137,7 @@ async function umCorte(s,i){
     // e a legenda saía vazia sem ninguém saber por quê.
     if(s._fimFala !== undefined && ((s._marcacoes||[]).length || s._porEnergia)) return;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
-    if(nota) nota.innerHTML='🎧 Transcrevendo a fala pra achar o corte exato…';
+    if(nota) nota.innerHTML='🎧 Ouvindo a fala pra sincronizar a legenda…';
     try{
       const r = await api('/promoFimDaFala', { method:'POST', body: JSON.stringify({ url:s.video_url, fala:s.fala||'' }) });
       const d = await r.json();
@@ -2177,13 +2150,6 @@ async function umCorte(s,i){
     }catch(e){
       s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
       s._porEnergia = true;
-    }
-    if(s._fimFala !== null && s._fimFala !== undefined && !s._cortouManual){
-      // guarda o respiro, mas trava no TETO_FIM pra não trazer a distorção junto
-      const corte = Math.max(0, CLIPE_SEG - pontoDeCorte(s._fimFala));
-      // o piso caiu junto com a folga: com 0,15s de folga, um piso de 0,15s descartava
-      // cortes pequenos que agora valem a pena fazer.
-      s.cortaFim = corte > 0.05 ? Number(corte.toFixed(2)) : 0;
     }
   }
 }
@@ -2198,46 +2164,7 @@ async function prepararAudios(){
     const s=cenas[i]; if(!s.video_url) continue;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
     desenharOnda(i); pintarTrim(i);
-    // Alerta de pronúncia. Some sozinho quando o atendente troca a palavra e o motor acerta.
-    const alp = document.querySelector('#boxCortes [data-pron="'+i+'"]');
-    if(alp){
-      if(s._pron && s._pron.suspeitas.length){
-        const lista = s._pron.suspeitas.map(function(x){
-          return '<b>'+esc(x.escrito)+'</b>'+(x.ouvido?(' soou como <b>'+esc(x.ouvido)+'</b>'):'');
-        }).join(' · ');
-        alp.className='alerta aviso';
-        const sug = s._pron.sugestao || '';
-        alp.innerHTML='🗣️ <b>Confira a pronúncia:</b> '+lista+'.<br>'+
-          'Se o personagem falou errado mesmo, <b>refazer não resolve</b> — o motor erra sempre igual.'+
-          (sug
-            ? ('<div class="sug-cx">'+
-                 '<div class="sug-rot">Sugestão de frase corrigida</div>'+
-                 '<div class="sug-txt">'+esc(sug)+'</div>'+
-                 '<button type="button" class="sug-bt" data-usarsug="'+i+'">✓ Usar esta frase</button>'+
-               '</div>')
-            : ' Troque a palavra por outra de mesmo sentido (nas DUAS caixas) e refaça a cena.');
-        const btSug = alp.querySelector('[data-usarsug]');
-        if(btSug) btSug.addEventListener('click', function(){ usarSugestao(i); });
-      } else { alp.className='alerta hide'; alp.innerHTML=''; }
-    }
-    if(nota){
-      if(s._fimFala === null || s._fimFala === undefined){
-        nota.innerHTML='⚠️ Não consegui ler o áudio desta cena — arraste a alça se o fim ficar estranho.';
-      } else if(s.cortaFim){
-        const respiro = Math.max(0, (CLIPE_SEG - Number(s.cortaFim)) - s._fimFala);
-        nota.innerHTML = '✂️ A fala termina em <b>'+s._fimFala.toFixed(1)+'s</b>'+
-          (s._palavra?(' (na palavra "'+esc(s._palavra)+'")'):'')+
-          ' — cortei <b>'+s.cortaFim.toFixed(1)+'s</b> do fim, deixando <b>'+respiro.toFixed(1)+'s</b> de respiro pra emendar na próxima cena.'+
-          (s._porEnergia?' <i>(pelo som, não pela transcrição)</i>':'');
-      } else {
-        // sem sobra = fala longa demais. Medimos: cada palavra come ~0,5s e o clipe tem 8s fixos.
-        // Nesse caso o último segundo (onde o Veo costuma distorcer) fica no vídeo, e o atendente
-        // precisa saber que a solução é ENCURTAR A FALA e refazer a cena — não arrastar a alça.
-        nota.innerHTML = '⚠️ A fala ocupa o clipe inteiro (vai até <b>'+s._fimFala.toFixed(1)+'s</b> de 8s), '+
-          'então não dá pra cortar o finalzinho. Se o fim da cena ficou estranho, <b>encurte a fala</b> '+
-          'no passo anterior (frases de 11 a 13 palavras) e gere a cena de novo.';
-      }
-    }
+    if(nota) nota.innerHTML='';   // a transcrição terminou; nada a dizer sobre corte
   }
 }
 
@@ -2250,8 +2177,8 @@ function pintarTrim(i){
   if(fe) fe.style.width=pi+'%';
   if(fd) fd.style.width=(100-pf)+'%';
   if(se){ se.style.left=pi+'%'; se.style.width=(pf-pi)+'%'; }
-  if(hi) hi.style.left=pi+'%';
-  if(hf) hf.style.left=pf+'%';
+  if(hi) hi.style.left='max(11px, '+pi+'%)';
+  if(hf) hf.style.left='min(calc(100% - 11px), '+pf+'%)';
   const ti=q('[data-ti'), tf=q('[data-tf'), td=q('[data-td'), du=q('[data-dur');
   if(ti) ti.textContent=mmss(ini)+' (início)';
   if(tf) tf.textContent=mmss(fim)+' (fim)';
@@ -2415,6 +2342,14 @@ async function finalizar(){
     await Promise.all(cenas.map(function(x,i){
       return (x.video_url && x._vozId && !x._vozUrl && !x._vozErro) ? esperarVoz(i) : Promise.resolve();
     }));
+  }
+  // ⚠️ A legenda que entra no vídeo é SEMPRE a frase da fala (só o número/@/telefone muda de
+  // forma). Confere as 4 aqui, no último instante: é o que conserta projeto antigo salvo com as
+  // duas frases diferentes, sem depender de o atendente ter clicado em Refazer.
+  if(legendas){
+    const bl=document.getElementById('btnFinal');
+    if(bl) bl.innerHTML='<span class="spin"></span>Conferindo as legendas…';
+    await Promise.all(cenas.map(function(x,i){ return x.video_url ? refazerLegenda(i) : Promise.resolve(); }));
   }
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
     const bt=document.getElementById('btnFinal');

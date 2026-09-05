@@ -89,7 +89,7 @@
   .btn-campo{
     background:rgba(10,10,11,.85);border:1px solid #35322b;border-radius:7px;
     width:28px;height:28px;display:grid;place-items:center;
-    color:var(--muted);cursor:pointer;font-size:13px;line-height:1;
+    color:#D6D3CD;cursor:pointer;font-size:13px;line-height:1;
     transition:all .13s;font-family:var(--font);padding:0;
   }
   .btn-campo:hover{border-color:var(--gold);color:var(--gold-bright)}
@@ -130,6 +130,70 @@
     font-size:13px;margin-top:11px;flex-wrap:wrap;
   }
   .cover-arquivo .nome{color:var(--gold-bright);word-break:break-all;flex:1;min-width:120px}
+
+  /* ── RODAPÉ DO CAMPO (contador + botão Copiar) ──
+     O copiar saiu de dentro da caixa: fica embaixo do bloco, escrito,
+     branco — é uma ação que se lê, não um ícone que se adivinha. */
+  .rodape-campo{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;margin-top:9px;flex-wrap:wrap;
+  }
+  .rodape-campo .contador{margin-top:0}
+  .btn-copiar{
+    background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:8px;
+    padding:8px 14px;color:#FFFFFF;font-family:var(--font);font-size:12.5px;
+    font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+    transition:all .13s;line-height:1;
+  }
+  .btn-copiar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
+  .btn-copiar.ok{border-color:var(--green);color:var(--green)}
+
+  /* ── PLAYER DO COVER — play e linha do tempo, brancos ── */
+  .player{
+    display:flex;align-items:center;gap:12px;margin-top:11px;
+    background:var(--bg3);border:1px solid var(--line);
+    border-radius:9px;padding:11px 13px;
+  }
+  .player audio{display:none}
+  .player .pp{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;
+    background:#FFFFFF;border:none;color:#111114;font-size:12px;line-height:1;
+    display:grid;place-items:center;padding:0;transition:transform .1s;
+  }
+  .player .pp:hover{transform:scale(1.07)}
+  .player .trilha{
+    flex:1;min-width:70px;height:5px;border-radius:3px;
+    background:rgba(255,255,255,.24);position:relative;cursor:pointer;
+  }
+  .player .trilha::before{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+  .player .cheio{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:#FFFFFF;border-radius:3px;pointer-events:none;
+  }
+  .player .bolinha{
+    position:absolute;top:50%;left:0%;width:11px;height:11px;border-radius:50%;
+    background:#FFFFFF;transform:translate(-50%,-50%);pointer-events:none;
+    box-shadow:0 0 0 3px rgba(255,255,255,.16);
+  }
+  .player .tempo{
+    font-size:12px;color:#FFFFFF;white-space:nowrap;flex-shrink:0;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ── UMA GERAÇÃO (as duas versões daquele clique) ──
+     Gerar de novo NÃO substitui: empilha, a mais nova em cima. */
+  .geracao{margin-bottom:20px}
+  .geracao + .geracao{border-top:1px solid rgba(201,168,76,.14);padding-top:16px}
+  .geracao-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:10px;margin-bottom:9px;
+  }
+  .geracao-nome{
+    font-family:'Cinzel',serif;font-size:12px;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--gold-dim);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .geracao-hora{font-size:11.5px;color:var(--muted);flex-shrink:0}
 
   /* ── CHIPS DE RITMO ── */
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -298,12 +362,21 @@
       <div class="card cover-box">
         <div class="card-head"><span class="titulo-secao">Cover de música</span></div>
         <button class="btn btn-ghost" id="btnEscolherAudio" onclick="document.getElementById('arqCover').click()">
-          🎵 Enviar música para cover
+          🎵 Enviar música
         </button>
         <input type="file" id="arqCover" accept="audio/*,.mp3,.wav,.m4a,.ogg" style="display:none" onchange="subirCover(this)"/>
         <div class="cover-arquivo" id="coverArquivo" style="display:none">
           <span class="nome" id="coverNome">—</span>
           <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio">🗑</button>
+        </div>
+        <div class="player" id="coverPlayer" style="display:none">
+          <button class="pp" id="coverPP" type="button" onclick="coverPlayPause()" title="Tocar / pausar">▶</button>
+          <div class="trilha" id="coverTrilha" onclick="coverBuscar(event)">
+            <div class="cheio" id="coverCheio"></div>
+            <div class="bolinha" id="coverBolinha"></div>
+          </div>
+          <span class="tempo" id="coverTempo">0:00 / 0:00</span>
+          <audio id="coverAudio" preload="metadata"></audio>
         </div>
       </div>
 
@@ -336,13 +409,17 @@
         <div class="card-head"><span class="titulo-secao">Letra</span></div>
         <div class="campo">
           <div class="campo-acoes">
-            <button class="btn-campo" id="btnCopiar" onclick="copiarLetra()" title="Copiar a letra">⧉</button>
             <button class="btn-campo lixo" onclick="limpar('letra')" title="Apagar a letra">🗑</button>
           </div>
           <textarea id="letra" placeholder="A letra gerada aparece aqui. Você pode editar à vontade antes de criar a música — ou escrever a sua do zero."
             oninput="contarLetra()"></textarea>
         </div>
-        <div class="contador" id="contadorLetra">0 / 5.000 caracteres</div>
+        <div class="rodape-campo">
+          <button class="btn-copiar" id="btnCopiar" type="button" onclick="copiarLetra()">
+            <span id="btnCopiarIc">⧉</span><span id="btnCopiarTxt">Copiar</span>
+          </button>
+          <div class="contador" id="contadorLetra">0 / 5.000 caracteres</div>
+        </div>
       </div>
 
       <!-- 3. RITMO -->
@@ -362,7 +439,6 @@
       <div class="card">
         <div class="card-head"><span class="titulo-secao">Voz e identificação</span></div>
 
-        <span class="titulo-secao solto">Quem canta</span>
         <div class="voz" id="voz">
           <button data-voz="male"   onclick="escolherVoz('male')" class="on"><span class="ic">♂</span>Masculina</button>
           <button data-voz="female" onclick="escolherVoz('female')"><span class="ic">♀</span>Feminina</button>
@@ -462,7 +538,9 @@ let vozEscolhida   = 'male';   // masculina por padrão
 let taskAtual      = null;
 let pollTimer      = null;
 let inicioGeracao  = null;
-let cortaveis      = [];       // {url, nome} de cada versão pronta
+let cortaveis      = {};       // {url, nome} por 'taskId|indice'
+let geracoes       = [];       // cada clique em Criar música vira um bloco
+let coverObjectUrl = null;     // URL local do MP3 que está tocando no player
 let coverUploadUrl = '';       // preenchido quando o atendente sobe um MP3
 let coverDeTask    = null;     // {taskId, indice} quando o cover vem de uma música da lista
 let buscaTimer     = null;
@@ -511,9 +589,8 @@ async function carregarCusto(){
     const r = await window.__luxFetch(WORKER + '/saldo');
     const d = await r.json();
     if(!d.ok || !d.custoPorGeracao) return;
-    const cr = d.creditosPorGeracao ? (d.creditosPorGeracao + ' créditos') : 'créditos';
     $('notaCusto').innerHTML =
-      'Cada criação gasta ' + cr + ' (' + reais(d.custoPorGeracao) +
+      'Cada criação gasta (' + reais(d.custoPorGeracao) +
       ') e devolve duas versões da mesma música.';
   }catch(e){ /* silencioso: o custo é informativo */ }
 }
@@ -554,11 +631,11 @@ function contarLetra(){
   el.textContent = n.toLocaleString('pt-BR') + ' / 5.000 caracteres';
   el.className = 'contador' + (n > 5000 ? ' estourou' : (n > 4000 ? ' alto' : ''));
 }
+// Sem confirmação: apagar um campo se desfaz gerando de novo, e a
+// pergunta só atrasava quem já sabia o que queria.
 function limpar(campo){
   const el = $(campo);
-  if(!el || !el.value.trim()) return;
-  const nomes = { briefing:'o briefing', letra:'a letra', estilo:'o ritmo' };
-  if(!confirm('Apagar ' + (nomes[campo] || 'este campo') + '?')) return;
+  if(!el) return;
   el.value = ''; el.focus();
   if(campo === 'letra')  contarLetra();
   if(campo === 'estilo') document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
@@ -569,8 +646,12 @@ async function copiarLetra(){
   const btn = $('btnCopiar');
   try{
     await navigator.clipboard.writeText(txt);
-    btn.textContent = '✓'; btn.classList.add('ok');
-    setTimeout(()=>{ btn.textContent = '⧉'; btn.classList.remove('ok'); }, 1600);
+    $('btnCopiarIc').textContent = '✓'; $('btnCopiarTxt').textContent = 'Copiado';
+    btn.classList.add('ok');
+    setTimeout(()=>{
+      $('btnCopiarIc').textContent = '⧉'; $('btnCopiarTxt').textContent = 'Copiar';
+      btn.classList.remove('ok');
+    }, 1600);
   }catch(e){
     $('letra').select();
     erro('Não consegui copiar sozinho — a letra está selecionada, use Ctrl+C.');
@@ -605,6 +686,11 @@ async function subirCover(input){
     coverDeTask = null;
     $('coverNome').textContent = arq.name;
     $('coverArquivo').style.display = 'flex';
+
+    // toca direto do arquivo que já está no computador: nada pra baixar
+    if(coverObjectUrl) URL.revokeObjectURL(coverObjectUrl);
+    coverObjectUrl = URL.createObjectURL(arq);
+    montarPlayer(coverObjectUrl);
     if(d.titulo) $('titulo').value = d.titulo;      // "Cover - nome do arquivo"
 
     if(d.letra){
@@ -618,13 +704,14 @@ async function subirCover(input){
     erro('Falha ao enviar o áudio: ' + e.message);
   }finally{
     btn.disabled = false;
-    btn.innerHTML = '🎵 Enviar música para cover';
+    btn.innerHTML = '🎵 Enviar música';
     input.value = '';
   }
 }
 function limparCover(){
   coverUploadUrl = '';
   coverDeTask = null;
+  fecharPlayer();
   $('coverArquivo').style.display = 'none';
   $('coverNome').textContent = '—';
   sucesso('Áudio removido. A próxima criação será uma música nova.');
@@ -686,7 +773,6 @@ async function criarMusica(){
   btn.innerHTML = '<span class="spin"></span>Enviando...';
   limparAvisos();
   inicioGeracao = null;
-  pintarVersoes(null);
 
   const corpo = {
     lyrics: letra, style: estilo,
@@ -702,16 +788,17 @@ async function criarMusica(){
     const d = await r.json();
     if(!d.ok){
       erro(d.error || 'Não deu para criar a música.');
-      mostrarPainelVazio(); restaurarBotao(); return;
+      desenharGeracoes(); restaurarBotao(); return;
     }
 
     taskAtual = d.taskId;
     inicioGeracao = Date.now();
+    novaGeracao(d.taskId, $('titulo').value.trim());
     btn.innerHTML = '<span class="spin"></span>' + (ehCover ? 'Refazendo...' : 'Gerando as duas versões...');
     iniciarPolling();
   }catch(e){
     erro('Falha ao falar com o servidor: ' + e.message);
-    mostrarPainelVazio(); restaurarBotao();
+    desenharGeracoes(); restaurarBotao();
   }
 }
 
@@ -749,12 +836,14 @@ async function consultar(){
     const d = await r.json();
     if(!d.ok) return;
 
-    pintarVersoes(d);
+    atualizarGeracao(taskAtual, d);
 
     if(d.estado === 'PRONTO'){
       pararPolling(); restaurarBotao();
       const seg = Math.round((Date.now() - inicioGeracao)/1000);
-      sucesso('Pronto em ' + seg + ' segundos. Ouça as duas, corte se precisar e baixe a melhor.');
+      sucesso('Pronto em ' + seg + ' segundos. Ouça as duas, corte se precisar e baixe a melhor. ' +
+              'Este pedido já ficou guardado na aba Pedidos.');
+      carregarPedidos(true);   // aparece na aba Pedidos sem recarregar a página
     }else if(d.estado === 'FALHOU'){
       pararPolling(); restaurarBotao();
       erro('O gerador não conseguiu criar esta música. Veja o motivo em cada versão.');
@@ -762,56 +851,100 @@ async function consultar(){
   }catch(e){ /* rede instável: o próximo ciclo tenta */ }
 }
 
-// ── as duas versões ────────────────────────────────────────────
-function pintarVersoes(d){
-  const alvo = $('resultados');
+// ── AS GERAÇÕES (empilhadas, a mais nova em cima) ──────────────
+// Criar de novo NÃO apaga o que já saiu: as duas versões novas
+// entram no topo e as anteriores descem. Tudo que foi criado
+// naquele projeto continua à vista, na ordem em que nasceu.
+function agora(){
+  return new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+function novaGeracao(taskId, titulo){
+  const g = { taskId, titulo: titulo || '', hora: agora(), dados: null };
+  geracoes.unshift(g);
+  // entra no topo SEM refazer os blocos de baixo: se o atendente estiver
+  // ouvindo uma versao anterior, a musica dele nao para.
+  if(geracoes.length === 1) desenharGeracoes();
+  else $('resultados').insertAdjacentHTML('afterbegin', blocoDaGeracao(g));
+}
+function atualizarGeracao(taskId, d){
+  let g = geracoes.find(x => x.taskId === taskId);
+  if(g){ g.dados = d; if(!g.titulo && d && d.titulo) g.titulo = d.titulo; }
+  else { g = { taskId, titulo:(d && d.titulo) || '', hora: agora(), dados: d }; geracoes.unshift(g); }
+
+  // troca só o bloco que mudou. Refazer a coluna inteira a cada 3s
+  // reiniciaria o áudio de uma geração anterior que esteja tocando.
+  const el = document.getElementById('ger-' + taskId);
+  if(el) el.innerHTML = conteudoDaGeracao(g);
+  else desenharGeracoes();
+}
+
+function desenharGeracoes(){
+  if(!geracoes.length){ mostrarPainelVazio(); return; }
+  cortaveis = {};
+  $('resultados').innerHTML = geracoes.map(blocoDaGeracao).join('');
+}
+
+function blocoDaGeracao(g){
+  return '<div class="geracao" id="ger-' + esc(g.taskId) + '">' + conteudoDaGeracao(g) + '</div>';
+}
+
+function conteudoDaGeracao(g){
+  const d = g.dados;
   const musicas = (d && d.musicas && d.musicas.length)
     ? d.musicas
     : [{indice:0,pronta:false,falhou:false},{indice:1,pronta:false,falhou:false}];
 
-  const decorrido = inicioGeracao ? Math.round((Date.now() - inicioGeracao)/1000) : 0;
-  const arquivo   = (d && d.arquivo) || 'musica.mp3';
-  const dono      = (d && d.taskId) || taskAtual || '';
-  cortaveis = [];
+  const arquivo = (d && d.arquivo) || 'musica.mp3';
+  const titulo  = (d && d.titulo) || g.titulo || 'Música';
+  const ehAtual = (g.taskId === taskAtual);
+  const decorrido = (ehAtual && inicioGeracao) ? Math.round((Date.now() - inicioGeracao)/1000) : 0;
 
-  alvo.innerHTML = musicas.map((m, i) => {
+  const versoes = musicas.map((m, i) => {
     const nome = 'Versão ' + String.fromCharCode(65 + i);
+    const chave = g.taskId + '|' + i;
     let classe, estado, corpo;
 
     if(m.falhou){
-      classe='falhou'; estado=m.erro || 'não deu certo'; corpo='';
+      classe='falhou'; estado = m.erro || 'não deu certo'; corpo='';
     }else if(m.pronta){
       classe='pronta';
       estado = m.duracao ? (m.duracao + ' segundos') : 'pronta para baixar';
       const link = WORKER + m.link;
-      cortaveis[i] = { url: link, nome: arquivo };
+      cortaveis[chave] = { url: link, nome: arquivo };
       corpo =
-        `<audio controls preload="none" src="${esc(link)}"></audio>` +
-        `<div class="versao-acoes">` +
-          `<button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>` +
-          `<button class="btn btn-ghost" onclick="coverDesta('${esc(dono)}',${i})">🎤 Cover</button>` +
-          `<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px"
-              href="${esc(link + '&dl=1')}">Baixar</a>` +
-        `</div>`;
+        '<audio controls preload="none" src="' + esc(link) + '"></audio>' +
+        '<div class="versao-acoes">' +
+          '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">✂️ Cortar</button>' +
+          '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">🎤 Cover</button>' +
+          '<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
+             esc(link + '&dl=1') + '">Baixar</a>' +
+        '</div>';
     }else{
       classe='gerando';
       estado = decorrido ? ('gerando há ' + decorrido + 's · leva ~1min') : 'na fila';
       corpo='';
     }
 
-    return `
-      <div class="versao ${classe}">
-        <div class="versao-head">
-          <div class="versao-letra">${String.fromCharCode(65 + i)}</div>
-          <div>
-            <div class="versao-nome">${esc(nome)}</div>
-            <div class="versao-estado">${esc(estado)}</div>
-          </div>
-        </div>
-        <div class="eq">${barrasEq(i)}</div>
-        ${corpo}
-      </div>`;
+    return '' +
+      '<div class="versao ' + classe + '">' +
+        '<div class="versao-head">' +
+          '<div class="versao-letra">' + String.fromCharCode(65 + i) + '</div>' +
+          '<div>' +
+            '<div class="versao-nome">' + esc(nome) + '</div>' +
+            '<div class="versao-estado">' + esc(estado) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="eq">' + barrasEq(i) + '</div>' +
+        corpo +
+      '</div>';
   }).join('');
+
+  return '' +
+    '<div class="geracao-head">' +
+      '<span class="geracao-nome">' + esc(titulo) + '</span>' +
+      '<span class="geracao-hora">' + esc(g.hora || '') + '</span>' +
+    '</div>' +
+    versoes;
 }
 
 function barrasEq(versao){
@@ -820,9 +953,63 @@ function barrasEq(versao){
   for(let n = 0; n < TOTAL; n++){
     const onda = Math.sin((n / TOTAL) * Math.PI * 3 + versao * 1.7);
     const alt  = Math.round(34 + Math.abs(onda) * 58);
-    html += `<i style="--h:${alt}%;animation-delay:${(n * 0.045).toFixed(3)}s"></i>`;
+    html += '<i style="--h:' + alt + '%;animation-delay:' + (n * 0.045).toFixed(3) + 's"></i>';
   }
   return html;
+}
+
+// ── PLAYER DO COVER (play/pausa + linha do tempo) ──────────────
+// Player próprio, e não o do navegador, porque o nativo muda de cara
+// em cada browser — aqui o atendente sempre vê o mesmo play branco.
+function mmss(s){
+  s = Math.max(0, Math.floor(Number(s) || 0));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function montarPlayer(src){
+  const a = $('coverAudio');
+  a.pause();
+  a.src = src;
+  $('coverPP').textContent = '▶';
+  $('coverCheio').style.width = '0%';
+  $('coverBolinha').style.left = '0%';
+  $('coverTempo').textContent = '0:00 / 0:00';
+  $('coverPlayer').style.display = 'flex';
+}
+function fecharPlayer(){
+  const a = $('coverAudio');
+  a.pause();
+  a.removeAttribute('src');
+  a.load();
+  $('coverPlayer').style.display = 'none';
+  if(coverObjectUrl){ URL.revokeObjectURL(coverObjectUrl); coverObjectUrl = null; }
+}
+function coverPlayPause(){
+  const a = $('coverAudio');
+  if(!a.getAttribute('src')) return;
+  if(a.paused) a.play().catch(()=>{}); else a.pause();
+}
+function coverBuscar(ev){
+  const a = $('coverAudio');
+  if(!a.duration || !isFinite(a.duration)) return;
+  const r = $('coverTrilha').getBoundingClientRect();
+  const p = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+  a.currentTime = p * a.duration;
+}
+function ligarPlayer(){
+  const a = $('coverAudio');
+  a.addEventListener('play',  function(){ $('coverPP').textContent = '❚❚'; });
+  a.addEventListener('pause', function(){ $('coverPP').textContent = '▶'; });
+  a.addEventListener('ended', function(){ $('coverPP').textContent = '▶'; });
+  a.addEventListener('loadedmetadata', function(){
+    $('coverTempo').textContent = '0:00 / ' + mmss(a.duration);
+  });
+  a.addEventListener('timeupdate', function(){
+    const d = (isFinite(a.duration) && a.duration) ? a.duration : 0;
+    const p = d ? (a.currentTime / d * 100) : 0;
+    $('coverCheio').style.width  = p.toFixed(2) + '%';
+    $('coverBolinha').style.left = p.toFixed(2) + '%';
+    $('coverTempo').textContent  = mmss(a.currentTime) + ' / ' + mmss(d);
+  });
 }
 
 // ── COVER a partir de uma música já pronta ─────────────────────
@@ -838,7 +1025,7 @@ async function coverDesta(taskId, indice){
     $('letra').value  = d.letra || '';
     $('estilo').value = d.estilo || '';
     // o titulo do cover segue o padrao "Cover - nome da musica"
-    const base = String(d.titulo || 'musica').replace(/^Covers*-s*/i, '');
+    const base = String(d.titulo || 'musica').replace(/^Cover\s*-\s*/i, '');
     $('titulo').value = ('Cover - ' + base).slice(0, 80);
     if(d.genero) escolherVoz(d.genero);
     contarLetra();
@@ -847,6 +1034,10 @@ async function coverDesta(taskId, indice){
     coverDeTask = { taskId, indice };
     $('coverNome').textContent = 'Versão ' + String.fromCharCode(65 + indice) + ' de "' + (d.titulo || 'música') + '"';
     $('coverArquivo').style.display = 'flex';
+
+    // deixa a versão de origem tocável, pra conferir a melodia antes
+    const orig = (d.musicas || []).find(m => m.indice === indice && m.link);
+    if(orig) montarPlayer(WORKER + orig.link); else fecharPlayer();
 
     trocarAba('criar');
     sucesso('Letra carregada. Mude o que quiser (palavra, voz, ritmo) e clique em Criar música — a melodia é mantida.');
@@ -857,8 +1048,8 @@ async function coverDesta(taskId, indice){
 }
 
 // ── mandar pro Corte ───────────────────────────────────────────
-function cortar(i){
-  const alvo = cortaveis[i];
+function cortar(chave){
+  const alvo = cortaveis[chave];
   if(!alvo){ erro('Essa versão ainda não está pronta pra cortar.'); return; }
   try{
     sessionStorage.setItem('lux:corte:pendente', JSON.stringify(alvo));
@@ -874,14 +1065,18 @@ function buscarPedidosComPausa(){
   buscaTimer = setTimeout(()=>carregarPedidos(), 300);
 }
 
-async function carregarPedidos(){
+// silencioso = atualização em segundo plano (quando uma música fica
+// pronta). Aí um erro de rede não pode roubar a tela de quem está
+// ouvindo a música que acabou de sair.
+async function carregarPedidos(silencioso){
   const q = $('buscaPedido').value.trim();
   try{
     const r = await window.__luxFetch(WORKER + '/historico' + (q ? ('?q='+encodeURIComponent(q)) : ''));
     const d = await r.json();
-    if(!d.ok){ erro(d.error || 'Não consegui carregar os pedidos.'); return; }
+    if(!d.ok){ if(!silencioso) erro(d.error || 'Não consegui carregar os pedidos.'); return; }
     pintarPedidos(d.itens || [], q);
   }catch(e){
+    if(silencioso) return;
     $('listaPedidos').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
       'Não consegui carregar os pedidos agora. Tente recarregar a página.</div>';
   }
@@ -940,11 +1135,15 @@ async function editarPedido(taskId){
     }
 
     // mostra as músicas daquele pedido na coluna da direita
+    // abrir um pedido recomeça a coluna: aparece só ele. Criar de
+    // novo daqui empilha por cima.
     taskAtual = taskId;
     inicioGeracao = null;
     coverUploadUrl = ''; coverDeTask = null;
     $('coverArquivo').style.display = 'none';
-    pintarVersoes(d);
+    fecharPlayer();
+    geracoes = [];
+    atualizarGeracao(taskId, d);
 
     trocarAba('criar');
     sucesso('Pedido carregado. Altere o que quiser e crie de novo — ou use o botão Cover numa das versões para manter a melodia.');
@@ -971,6 +1170,7 @@ async function baixarPedido(taskId){
 montarChips();
 contarLetra();
 escolherVoz('male');
+ligarPlayer();
 carregarCusto();
 </script>
 </body>
