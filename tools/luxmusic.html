@@ -303,6 +303,65 @@
     margin-left:7px;vertical-align:1px;letter-spacing:.05em;
   }
 
+  /* ── DURAÇÃO (barrinha) ── */
+  .dur{display:flex;align-items:center;gap:14px}
+  .dur input[type=range]{
+    flex:1;-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;
+    background:rgba(201,168,76,.25);outline:none;cursor:pointer;
+  }
+  .dur input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),var(--gold-bright));cursor:pointer;
+    border:none;box-shadow:0 0 0 3px rgba(201,168,76,.16);
+  }
+  .dur input[type=range]::-moz-range-thumb{
+    width:17px;height:17px;border-radius:50%;border:none;
+    background:linear-gradient(135deg,var(--gold),var(--gold-bright));cursor:pointer;
+  }
+  .dur input[type=range]:disabled{opacity:.35;cursor:not-allowed}
+  .dur-valor{
+    font-family:'Cinzel',serif;font-size:19px;color:var(--gold-bright);
+    min-width:62px;text-align:right;font-variant-numeric:tabular-nums;
+  }
+  .dur-valor.auto{font-size:13px;color:var(--muted);font-family:var(--font)}
+
+  /* ── FILTRO DE PERÍODO (aba Pedidos) ── */
+  .periodo{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px;
+  }
+  .periodo-rot{
+    font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--gold-dim);
+  }
+  .periodo input[type=date]{
+    background:var(--bg);border:1px solid #35322b;border-radius:8px;
+    padding:8px 10px;color:var(--text);font-family:var(--font);font-size:13px;
+    color-scheme:dark;cursor:pointer;
+  }
+  .periodo input[type=date]:focus{outline:none;border-color:var(--gold)}
+  .periodo .ate{color:var(--muted);font-size:12.5px}
+  .chip-per{
+    background:var(--bg3);border:1px solid #35322b;border-radius:18px;
+    padding:6px 12px;font-size:12px;color:#bdb8ad;cursor:pointer;
+    font-family:var(--font);transition:all .13s;
+  }
+  .chip-per:hover{border-color:var(--gold);color:var(--gold-bright)}
+  .chip-per.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+
+  /* ── AS VERSÕES DENTRO DA LINHA DO PEDIDO ── */
+  .pedido-audio{flex-basis:100%}
+  .pedido-audio:empty{display:none}
+  .faixa{display:flex;align-items:center;gap:11px;margin-top:10px;flex-wrap:wrap}
+  .faixa-nome{
+    font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--muted);min-width:74px;
+  }
+  .faixa .player{flex:1;margin-top:0;min-width:200px}
+  .aviso-linha{
+    margin-top:10px;font-size:12.5px;color:var(--muted);
+    display:flex;align-items:center;gap:7px;
+  }
+
   /* ── AVISOS ── */
   .aviso{
     border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;
@@ -369,15 +428,7 @@
           <span class="nome" id="coverNome">—</span>
           <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio">🗑</button>
         </div>
-        <div class="player" id="coverPlayer" style="display:none">
-          <button class="pp" id="coverPP" type="button" onclick="coverPlayPause()" title="Tocar / pausar">▶</button>
-          <div class="trilha" id="coverTrilha" onclick="coverBuscar(event)">
-            <div class="cheio" id="coverCheio"></div>
-            <div class="bolinha" id="coverBolinha"></div>
-          </div>
-          <span class="tempo" id="coverTempo">0:00 / 0:00</span>
-          <audio id="coverAudio" preload="metadata"></audio>
-        </div>
+        <div id="coverPlayer" style="display:none"></div>
       </div>
 
       <!-- 1. BRIEFING -->
@@ -435,7 +486,20 @@
         <div class="chips" id="chips"></div>
       </div>
 
-      <!-- 4. VOZ E IDENTIFICAÇÃO -->
+      <!-- 4. DURAÇÃO -->
+      <div class="card">
+        <div class="card-head"><span class="titulo-secao">Duração</span></div>
+        <div class="card-hint">É um alvo, não uma medida exata: quem manda no tamanho é a letra. Medido em teste — pedindo 3:00 com uma letra completa, saiu 2:37 numa versão e 1:17 na outra.</div>
+        <div class="dur">
+          <input type="range" id="duracao" min="30" max="360" step="15" value="180" oninput="mostrarDuracao()"/>
+          <span class="dur-valor" id="durValor">3:00</span>
+        </div>
+        <label class="politico" style="margin-top:12px">
+          <input type="checkbox" id="durAuto" onchange="mostrarDuracao()"/> Deixar a IA escolher o tamanho
+        </label>
+      </div>
+
+      <!-- 5. VOZ E IDENTIFICAÇÃO -->
       <div class="card">
         <div class="card-head"><span class="titulo-secao">Voz e identificação</span></div>
 
@@ -451,7 +515,7 @@
         </div>
       </div>
 
-      <!-- 5. CRIAR -->
+      <!-- 6. CRIAR -->
       <div class="card">
         <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
         <div class="custo-nota" id="notaCusto">
@@ -475,6 +539,17 @@
 
   <!-- ═══════════════ ABA PEDIDOS ═══════════════ -->
   <div id="viewPedidos" style="display:none">
+    <div class="periodo">
+      <span class="periodo-rot">Período</span>
+      <input type="date" id="dataDe"  onchange="periodoManual()"/>
+      <span class="ate">até</span>
+      <input type="date" id="dataAte" onchange="periodoManual()"/>
+      <button class="chip-per" type="button" onclick="periodoRapido('hoje', this)">Hoje</button>
+      <button class="chip-per" type="button" onclick="periodoRapido('ontem', this)">Ontem</button>
+      <button class="chip-per" type="button" onclick="periodoRapido('7', this)">7 dias</button>
+      <button class="chip-per" type="button" onclick="periodoRapido('mes', this)">30 dias</button>
+      <button class="chip-per on" type="button" onclick="periodoRapido('', this)">Tudo</button>
+    </div>
     <div class="busca-wrap">
       <span class="lupa">🔍</span>
       <input type="text" id="buscaPedido" placeholder="Procurar por nome, ritmo ou trecho da letra…"
@@ -776,7 +851,8 @@ async function criarMusica(){
 
   const corpo = {
     lyrics: letra, style: estilo,
-    title: $('titulo').value.trim(), gender: vozEscolhida
+    title: $('titulo').value.trim(), gender: vozEscolhida,
+    duracao: duracaoEscolhida()
   };
   if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
   else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
@@ -825,7 +901,7 @@ function pararPolling(){
 
 async function consultar(){
   if(!taskAtual) return;
-  if(inicioGeracao && (Date.now() - inicioGeracao) > 360000){
+  if(inicioGeracao && (Date.now() - inicioGeracao) > 600000){
     pararPolling(); restaurarBotao();
     erro('A música está demorando muito mais que o normal. O pedido continua salvo — ' +
          'veja na aba Pedidos daqui a pouco.');
@@ -912,7 +988,7 @@ function conteudoDaGeracao(g){
       const link = WORKER + m.link;
       cortaveis[chave] = { url: link, nome: arquivo };
       corpo =
-        '<audio controls preload="none" src="' + esc(link) + '"></audio>' +
+        htmlPlayer(link) +
         '<div class="versao-acoes">' +
           '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">✂️ Cortar</button>' +
           '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">🎤 Cover</button>' +
@@ -921,7 +997,7 @@ function conteudoDaGeracao(g){
         '</div>';
     }else{
       classe='gerando';
-      estado = decorrido ? ('gerando há ' + decorrido + 's · leva ~1min') : 'na fila';
+      estado = decorrido ? ('gerando há ' + decorrido + 's · leva 2 a 3 min') : 'na fila';
       corpo='';
     }
 
@@ -958,58 +1034,103 @@ function barrasEq(versao){
   return html;
 }
 
-// ── PLAYER DO COVER (play/pausa + linha do tempo) ──────────────
+// ── PLAYER (play/pausa + linha do tempo) ──────────────────────
 // Player próprio, e não o do navegador, porque o nativo muda de cara
 // em cada browser — aqui o atendente sempre vê o mesmo play branco.
+// É GENÉRICO: o mesmo componente serve o cover, as versões prontas e
+// a aba Pedidos. Os cliques são pegos por delegação, então player
+// criado depois já nasce funcionando.
 function mmss(s){
   s = Math.max(0, Math.floor(Number(s) || 0));
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
+function htmlPlayer(src){
+  return '<div class="player">' +
+    '<button class="pp" type="button" title="Tocar / pausar">▶</button>' +
+    '<div class="trilha"><div class="cheio"></div><div class="bolinha"></div></div>' +
+    '<span class="tempo">0:00 / 0:00</span>' +
+    '<audio preload="metadata" src="' + esc(src) + '"></audio>' +
+  '</div>';
+}
+function pintarPlayer(a){
+  const p = a.closest('.player'); if(!p) return;
+  const d = (isFinite(a.duration) && a.duration) ? a.duration : 0;
+  const pct = d ? (a.currentTime / d * 100) : 0;
+  p.querySelector('.cheio').style.width  = pct.toFixed(2) + '%';
+  p.querySelector('.bolinha').style.left = pct.toFixed(2) + '%';
+  p.querySelector('.tempo').textContent  = mmss(a.currentTime) + ' / ' + mmss(d);
+}
+function marcarPlayer(a, tocando){
+  const p = a.closest('.player'); if(!p) return;
+  p.querySelector('.pp').textContent = tocando ? '❚❚' : '▶';
+}
+function ligarPlayers(){
+  document.addEventListener('click', function(ev){
+    const pp = ev.target.closest('.player .pp');
+    if(pp){
+      const a = pp.closest('.player').querySelector('audio');
+      if(!a) return;
+      if(a.paused) a.play().catch(()=>{}); else a.pause();
+      return;
+    }
+    const tr = ev.target.closest('.player .trilha');
+    if(tr){
+      const a = tr.closest('.player').querySelector('audio');
+      if(!a || !a.duration || !isFinite(a.duration)) return;
+      const r = tr.getBoundingClientRect();
+      a.currentTime = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)) * a.duration;
+    }
+  });
+
+  // Evento de mídia não sobe na árvore: escutar na captura (o true no
+  // fim) pega qualquer <audio>, inclusive os criados depois.
+  document.addEventListener('play', function(ev){
+    if(ev.target.tagName !== 'AUDIO') return;
+    // uma de cada vez: começar uma pausa a outra
+    document.querySelectorAll('audio').forEach(o => { if(o !== ev.target && !o.paused) o.pause(); });
+    marcarPlayer(ev.target, true);
+  }, true);
+  document.addEventListener('pause', function(ev){
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, false);
+  }, true);
+  document.addEventListener('ended', function(ev){
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, false);
+  }, true);
+  document.addEventListener('timeupdate', function(ev){
+    if(ev.target.tagName === 'AUDIO') pintarPlayer(ev.target);
+  }, true);
+  document.addEventListener('loadedmetadata', function(ev){
+    if(ev.target.tagName === 'AUDIO') pintarPlayer(ev.target);
+  }, true);
+}
+
+// ── o player do cover (mesmo componente, numa caixa fixa) ──────
 function montarPlayer(src){
-  const a = $('coverAudio');
-  a.pause();
-  a.src = src;
-  $('coverPP').textContent = '▶';
-  $('coverCheio').style.width = '0%';
-  $('coverBolinha').style.left = '0%';
-  $('coverTempo').textContent = '0:00 / 0:00';
-  $('coverPlayer').style.display = 'flex';
+  const box = $('coverPlayer');
+  box.innerHTML = htmlPlayer(src);
+  box.style.display = 'block';
 }
 function fecharPlayer(){
-  const a = $('coverAudio');
-  a.pause();
-  a.removeAttribute('src');
-  a.load();
-  $('coverPlayer').style.display = 'none';
+  const box = $('coverPlayer');
+  box.innerHTML = '';            // tirar do DOM já para o áudio
+  box.style.display = 'none';
   if(coverObjectUrl){ URL.revokeObjectURL(coverObjectUrl); coverObjectUrl = null; }
 }
-function coverPlayPause(){
-  const a = $('coverAudio');
-  if(!a.getAttribute('src')) return;
-  if(a.paused) a.play().catch(()=>{}); else a.pause();
+
+// ── DURAÇÃO ───────────────────────────────────────────────────
+// Só o modelo V5_5 aceita duração, e é o que a Lux usa. Marcando
+// "a IA escolhe", o campo não é enviado e ela decide o tamanho.
+function mostrarDuracao(){
+  const auto = $('durAuto').checked;
+  const el   = $('duracao');
+  const alvo = $('durValor');
+  el.disabled = auto;
+  alvo.classList.toggle('auto', auto);
+  alvo.textContent = auto ? 'a IA escolhe' : mmss(Number(el.value));
 }
-function coverBuscar(ev){
-  const a = $('coverAudio');
-  if(!a.duration || !isFinite(a.duration)) return;
-  const r = $('coverTrilha').getBoundingClientRect();
-  const p = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
-  a.currentTime = p * a.duration;
-}
-function ligarPlayer(){
-  const a = $('coverAudio');
-  a.addEventListener('play',  function(){ $('coverPP').textContent = '❚❚'; });
-  a.addEventListener('pause', function(){ $('coverPP').textContent = '▶'; });
-  a.addEventListener('ended', function(){ $('coverPP').textContent = '▶'; });
-  a.addEventListener('loadedmetadata', function(){
-    $('coverTempo').textContent = '0:00 / ' + mmss(a.duration);
-  });
-  a.addEventListener('timeupdate', function(){
-    const d = (isFinite(a.duration) && a.duration) ? a.duration : 0;
-    const p = d ? (a.currentTime / d * 100) : 0;
-    $('coverCheio').style.width  = p.toFixed(2) + '%';
-    $('coverBolinha').style.left = p.toFixed(2) + '%';
-    $('coverTempo').textContent  = mmss(a.currentTime) + ' / ' + mmss(d);
-  });
+function duracaoEscolhida(){
+  if($('durAuto').checked) return null;
+  return Number($('duracao').value) || null;
 }
 
 // ── COVER a partir de uma música já pronta ─────────────────────
@@ -1059,6 +1180,81 @@ function cortar(chave){
   }
 }
 
+// ── PERÍODO (aba Pedidos) ─────────────────────────────────────
+function dataISO(d){
+  return d.getFullYear() + '-' +
+         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
+function periodoRapido(qual, botao){
+  const hoje = new Date();
+  const de = new Date(hoje);
+  let ate = new Date(hoje);
+
+  if(qual === 'hoje')       { /* de = ate = hoje */ }
+  else if(qual === 'ontem') { de.setDate(de.getDate() - 1); ate = new Date(de); }
+  else if(qual === '7')     { de.setDate(de.getDate() - 6); }
+  else if(qual === 'mes')   { de.setDate(de.getDate() - 29); }
+
+  if(qual){
+    $('dataDe').value  = dataISO(de);
+    $('dataAte').value = dataISO(ate);
+  }else{
+    $('dataDe').value  = '';
+    $('dataAte').value = '';
+  }
+  document.querySelectorAll('.chip-per').forEach(c => c.classList.remove('on'));
+  if(botao) botao.classList.add('on');
+  carregarPedidos();
+}
+// mexer na data à mão desmarca o atalho
+function periodoManual(){
+  document.querySelectorAll('.chip-per').forEach(c => c.classList.remove('on'));
+  carregarPedidos();
+}
+
+// ── OUVIR as versões sem sair da lista ────────────────────────
+// A lista guarda só o resumo (é o metadata do KV, sem os links). Os
+// links vêm quando o atendente clica em Ouvir — uma chamada por
+// pedido aberto, e não uma por linha da tela.
+async function ouvirPedido(taskId, botao){
+  const caixa = document.getElementById('aud-' + taskId);
+  if(!caixa) return;
+
+  if(caixa.innerHTML){                       // já aberto: fecha
+    caixa.innerHTML = '';
+    if(botao) botao.innerHTML = '▶ Ouvir';
+    return;
+  }
+
+  caixa.innerHTML = '<div class="aviso-linha"><span class="spin"></span>Abrindo as versões…</div>';
+  if(botao) botao.innerHTML = '▼ Fechar';
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(taskId));
+    const d = await r.json();
+    if(!d.ok){
+      caixa.innerHTML = '<div class="aviso-linha">' + esc(d.error || 'Não consegui abrir esse pedido.') + '</div>';
+      return;
+    }
+    const prontas = (d.musicas || []).filter(m => m.pronta && m.link);
+    if(!prontas.length){
+      const aviso = d.estado === 'GERANDO'
+        ? 'Ainda está sendo gerada. Volte daqui a pouco.'
+        : 'Esse pedido não tem música pronta.';
+      caixa.innerHTML = '<div class="aviso-linha">' + aviso + '</div>';
+      return;
+    }
+    caixa.innerHTML = prontas.map(m =>
+      '<div class="faixa">' +
+        '<span class="faixa-nome">Versão ' + String.fromCharCode(65 + m.indice) + '</span>' +
+        htmlPlayer(WORKER + m.link) +
+      '</div>').join('');
+  }catch(e){
+    caixa.innerHTML = '<div class="aviso-linha">Falha ao abrir: ' + esc(e.message) + '</div>';
+  }
+}
+
 // ── ABA PEDIDOS ────────────────────────────────────────────────
 function buscarPedidosComPausa(){
   clearTimeout(buscaTimer);
@@ -1069,9 +1265,15 @@ function buscarPedidosComPausa(){
 // pronta). Aí um erro de rede não pode roubar a tela de quem está
 // ouvindo a música que acabou de sair.
 async function carregarPedidos(silencioso){
-  const q = $('buscaPedido').value.trim();
+  const q   = $('buscaPedido').value.trim();
+  const de  = $('dataDe').value;
+  const ate = $('dataAte').value;
+  const p = [];
+  if(q)   p.push('q='   + encodeURIComponent(q));
+  if(de)  p.push('de='  + encodeURIComponent(de));
+  if(ate) p.push('ate=' + encodeURIComponent(ate));
   try{
-    const r = await window.__luxFetch(WORKER + '/historico' + (q ? ('?q='+encodeURIComponent(q)) : ''));
+    const r = await window.__luxFetch(WORKER + '/historico' + (p.length ? ('?' + p.join('&')) : ''));
     const d = await r.json();
     if(!d.ok){ if(!silencioso) erro(d.error || 'Não consegui carregar os pedidos.'); return; }
     pintarPedidos(d.itens || [], q);
@@ -1092,13 +1294,15 @@ function pintarPedidos(itens, busca){
     alvo.innerHTML = '<div class="vazio"><span class="ic">' + (busca ? '🔍' : '🎵') + '</span>' +
       (busca
         ? ('Nenhuma música encontrada para <strong>' + esc(busca) + '</strong>.')
-        : 'Você ainda não criou nenhuma música.<br/>As que criar aparecem aqui por 1 mês.') +
+        : ($('dataDe').value || $('dataAte').value
+            ? 'Nenhuma música nesse período.'
+            : 'Você ainda não criou nenhuma música.<br/>As que criar aparecem aqui por 1 mês.')) +
       '</div>';
     return;
   }
 
   alvo.innerHTML = itens.map(p => `
-    <div class="pedido">
+    <div class="pedido" id="ped-${esc(p.taskId)}">
       <div class="pedido-info">
         <div class="pedido-nome">${esc(p.titulo)}${p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : ''}</div>
         <div class="pedido-meta">
@@ -1107,9 +1311,11 @@ function pintarPedidos(itens, busca){
       </div>
       <div class="pedido-valor">${esc(reais(p.custoBRL))}</div>
       <div class="pedido-acoes">
+        <button class="btn btn-ghost" onclick="ouvirPedido('${esc(p.taskId)}', this)">▶ Ouvir</button>
         <button class="btn btn-gold" onclick="editarPedido('${esc(p.taskId)}')">Editar</button>
         <button class="btn btn-ghost" onclick="baixarPedido('${esc(p.taskId)}')">Baixar</button>
       </div>
+      <div class="pedido-audio" id="aud-${esc(p.taskId)}"></div>
     </div>`).join('');
 }
 
@@ -1170,7 +1376,8 @@ async function baixarPedido(taskId){
 montarChips();
 contarLetra();
 escolherVoz('male');
-ligarPlayer();
+ligarPlayers();
+mostrarDuracao();
 carregarCusto();
 </script>
 </body>
