@@ -77,7 +77,7 @@
   textarea:focus,input[type=text]:focus{outline:none;border-color:var(--gold)}
   textarea::placeholder,input::placeholder{color:#57534b}
   #briefing{min-height:130px}
-  #letra{min-height:300px}
+  #letra{min-height:400px}
   #estilo{min-height:120px}
 
   /* ── FERRAMENTAS DENTRO DA CAIXA (lixeira / copiar) ──
@@ -382,7 +382,7 @@
     h1{font-size:18px}
     body{padding:16px 11px 50px}
     .card{padding:15px}
-    #letra{min-height:240px}
+    #letra{min-height:320px}
     .versao-acoes{grid-template-columns:1fr}
     .faixa-nome{min-width:100%}
     /* no celular o player fica numa linha so pra nao espremer o tempo */
@@ -875,7 +875,7 @@ async function gerarLetra(){
     const res = d.result || {};
     $('letra').value = res.lyrics || '';
     contarLetra();
-    if(res.style_prompt && !$('estilo').value.trim()) $('estilo').value = res.style_prompt;
+    // o RITMO é escolha do atendente: a letra não preenche esse campo
     if(res.musica_nome) $('titulo').value = String(res.musica_nome).slice(0,80);
 
     sucesso('Letra pronta. Revise, ajuste o que quiser e crie a música.');
