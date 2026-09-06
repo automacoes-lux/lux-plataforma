@@ -55,11 +55,11 @@
      porque é a ação de recomeçar, não a principal. */
   .btn-zerar{
     display:block;width:100%;margin-top:10px;background:transparent;
-    border:1px solid #35322b;border-radius:9px;padding:10px;
-    color:var(--muted);font-family:var(--font);font-size:12.5px;
+    border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:10px;
+    color:#FFFFFF;font-family:var(--font);font-size:12.5px;
     cursor:pointer;transition:all .13s;
   }
-  .btn-zerar:hover{border-color:var(--red);color:var(--red)}
+  .btn-zerar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
 
   /* selos da aba Histórico */
   .selo-pronto,.selo-andamento{
@@ -421,8 +421,8 @@
 
   <div class="abas">
     <button class="aba on" id="abaCriar"     onclick="trocarAba('criar')">Criar música</button>
-    <button class="aba"    id="abaHistorico" onclick="trocarAba('historico')">Histórico</button>
-    <button class="aba"    id="abaPedidos"   onclick="trocarAba('pedidos')">Pedidos</button>
+    <button class="aba"    id="abaHistorico" onclick="trocarAba('historico')">Letra salva</button>
+    <button class="aba"    id="abaPedidos"   onclick="trocarAba('pedidos')">Finalizado</button>
   </div>
 
   <div class="aviso aviso-erro" id="avisoErro"></div>
@@ -966,7 +966,7 @@ async function gerarLetra(){
     await guardarRascunho();
 
     sucesso('Letra pronta. Revise, ajuste o que quiser e crie a música. ' +
-            'Ela já está guardada na aba Histórico.');
+            'Ela já está guardada na aba Letra salva.');
     $('letra').scrollIntoView({behavior:'smooth', block:'center'});
   }catch(e){
     erro('Falha ao falar com o servidor: ' + e.message);
@@ -1054,7 +1054,7 @@ async function consultar(){
   if(inicioGeracao && (Date.now() - inicioGeracao) > 600000){
     pararPolling(); restaurarBotao();
     erro('A música está demorando muito mais que o normal. O pedido continua salvo — ' +
-         'veja na aba Pedidos daqui a pouco.');
+         'veja na aba Finalizado daqui a pouco.');
     return;
   }
   try{
@@ -1068,7 +1068,7 @@ async function consultar(){
       pararPolling(); restaurarBotao();
       const seg = Math.round((Date.now() - inicioGeracao)/1000);
       sucesso('Pronto em ' + seg + ' segundos. Ouça as duas, corte se precisar e baixe a melhor. ' +
-              'Este pedido já ficou guardado na aba Pedidos.');
+              'Este pedido já ficou guardado na aba Finalizado.');
       carregarPedidos(true);   // aparece na aba Pedidos sem recarregar a página
     }else if(d.estado === 'FALHOU'){
       pararPolling(); restaurarBotao();
