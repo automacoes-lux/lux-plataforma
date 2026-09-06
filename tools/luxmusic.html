@@ -51,6 +51,23 @@
   }
   .aba:hover{border-color:var(--gold)}
   .aba.on{background:rgba(201,168,76,.14);border-color:var(--gold);color:var(--gold-bright)}
+  /* Zerar fica no fim do fluxo, embaixo do Criar música: discreto,
+     porque é a ação de recomeçar, não a principal. */
+  .btn-zerar{
+    display:block;width:100%;margin-top:10px;background:transparent;
+    border:1px solid #35322b;border-radius:9px;padding:10px;
+    color:var(--muted);font-family:var(--font);font-size:12.5px;
+    cursor:pointer;transition:all .13s;
+  }
+  .btn-zerar:hover{border-color:var(--red);color:var(--red)}
+
+  /* selos da aba Histórico */
+  .selo-pronto,.selo-andamento{
+    display:inline-block;border-radius:20px;padding:1px 9px;font-size:10.5px;
+    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
+  }
+  .selo-pronto{background:rgba(127,184,122,.14);border:1px solid rgba(127,184,122,.4);color:var(--green)}
+  .selo-andamento{background:var(--bg4);border:1px solid #35322b;color:var(--muted)}
 
   /* ── LAYOUT ── */
   .layout{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
@@ -403,8 +420,9 @@
   </header>
 
   <div class="abas">
-    <button class="aba on" id="abaCriar"   onclick="trocarAba('criar')">Criar música</button>
-    <button class="aba"    id="abaPedidos" onclick="trocarAba('pedidos')">Pedidos</button>
+    <button class="aba on" id="abaCriar"     onclick="trocarAba('criar')">Criar música</button>
+    <button class="aba"    id="abaHistorico" onclick="trocarAba('historico')">Histórico</button>
+    <button class="aba"    id="abaPedidos"   onclick="trocarAba('pedidos')">Pedidos</button>
   </div>
 
   <div class="aviso aviso-erro" id="avisoErro"></div>
@@ -512,6 +530,9 @@
       <!-- 5. CRIAR -->
       <div class="card">
         <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
+        <!-- Zerar mora aqui, no fim do fluxo: é o "terminei, começar outra".
+             Longe das abas de propósito, pra ninguém apagar a tela sem querer. -->
+        <button class="btn-zerar" id="btnZerar" type="button" onclick="zerarTela()">↺ Zerar e começar outra música</button>
         <div class="custo-nota" id="notaCusto">
           Cada criação devolve duas versões da mesma música.
         </div>
@@ -529,6 +550,22 @@
     </div>
 
   </div>
+  </div>
+
+  <!-- ═══════════════ ABA HISTÓRICO ═══════════════ -->
+  <div id="viewHistorico" style="display:none">
+    <div class="busca-wrap">
+      <span class="lupa">🔍</span>
+      <input type="text" id="buscaRascunho" placeholder="Procurar por nome, briefing ou trecho da letra…"
+        oninput="buscarRascunhosComPausa()"/>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+      <span id="contadorRascunhos">—</span>
+      <span>Tudo que você começou fica aqui por 1 mês</span>
+    </div>
+    <div id="listaRascunhos">
+      <div class="vazio"><span class="ic">⏳</span>Carregando…</div>
+    </div>
   </div>
 
   <!-- ═══════════════ ABA PEDIDOS ═══════════════ -->
@@ -638,13 +675,17 @@ function reais(v){
 
 // ── abas ───────────────────────────────────────────────────────
 function trocarAba(qual){
-  const criar = qual === 'criar';
-  $('viewCriar').style.display   = criar ? 'block' : 'none';
-  $('viewPedidos').style.display = criar ? 'none'  : 'block';
-  $('abaCriar').classList.toggle('on', criar);
-  $('abaPedidos').classList.toggle('on', !criar);
+  const abas = { criar:'viewCriar', historico:'viewHistorico', pedidos:'viewPedidos' };
+  const botoes = { criar:'abaCriar', historico:'abaHistorico', pedidos:'abaPedidos' };
+  if(!abas[qual]) qual = 'criar';
+
+  for(const k of Object.keys(abas)){
+    $(abas[k]).style.display = (k === qual) ? 'block' : 'none';
+    $(botoes[k]).classList.toggle('on', k === qual);
+  }
   limparAvisos();
-  if(!criar) carregarPedidos();
+  if(qual === 'pedidos')   carregarPedidos();
+  if(qual === 'historico') carregarRascunhos();
 }
 
 // ── custo (o valor vem do servidor) ────────────────────────────
@@ -816,6 +857,7 @@ async function subirCover(input){
 
     coverUploadUrl = d.uploadUrl;
     coverDeTask = null;
+    limparCamposDoProjeto();      // briefing, instruções e ritmo eram de outra música
     $('coverNome').textContent = arq.name;
     $('coverArquivo').style.display = 'flex';
 
@@ -849,6 +891,47 @@ function limparCover(){
   sucesso('Áudio removido. A próxima criação será uma música nova.');
 }
 
+// Limpa o que pertencia ao projeto anterior. Usado quando entra um
+// áudio pra cover: o briefing, as instruções e o ritmo que estavam
+// na tela eram de outra música e só atrapalhariam.
+function limparCamposDoProjeto(){
+  $('briefing').value   = '';
+  $('instrucoes').value = '';
+  $('estilo').value     = '';
+  document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+  esqueceDesfazer();
+}
+
+// ── ZERAR: volta a tela ao estado de página recém-aberta ───────
+// Não pergunta nada: o que já foi criado está guardado na aba
+// Pedidos, então não há o que perder.
+function zerarTela(){
+  pararPolling();
+  rascunhoAtual = null;      // a próxima letra abre um pedido NOVO no Histórico
+
+  limparCamposDoProjeto();
+  $('letra').value  = '';
+  $('titulo').value = '';
+  $('ehPolitica').checked = false;
+  contarLetra();
+  escolherVoz('male');
+
+  limparCover();
+  $('coverArquivo').style.display = 'none';
+  $('coverNome').textContent = '—';
+
+  geracoes = [];
+  cortaveis = {};
+  taskAtual = null;
+  inicioGeracao = null;
+  restaurarBotao();
+  mostrarPainelVazio();
+
+  limparAvisos();
+  trocarAba('criar');
+  $('briefing').focus();
+}
+
 // ── letra ──────────────────────────────────────────────────────
 async function gerarLetra(){
   const briefing = $('briefing').value.trim();
@@ -878,7 +961,12 @@ async function gerarLetra(){
     // o RITMO é escolha do atendente: a letra não preenche esse campo
     if(res.musica_nome) $('titulo').value = String(res.musica_nome).slice(0,80);
 
-    sucesso('Letra pronta. Revise, ajuste o que quiser e crie a música.');
+    // é aqui que o pedido entra no Histórico: já existe nome de
+    // música, e o atendente pode ir cuidar de outra coisa sem perder
+    await guardarRascunho();
+
+    sucesso('Letra pronta. Revise, ajuste o que quiser e crie a música. ' +
+            'Ela já está guardada na aba Histórico.');
     $('letra').scrollIntoView({behavior:'smooth', block:'center'});
   }catch(e){
     erro('Falha ao falar com o servidor: ' + e.message);
@@ -908,7 +996,12 @@ async function criarMusica(){
 
   const corpo = {
     lyrics: letra, style: estilo,
-    title: $('titulo').value.trim(), gender: vozEscolhida
+    title: $('titulo').value.trim(), gender: vozEscolhida,
+    // vão junto pro pedido guardar a tela inteira, e o Editar
+    // devolver tudo depois — não só a letra
+    briefing:   $('briefing').value.trim(),
+    instrucoes: $('instrucoes').value.trim(),
+    politica:   $('ehPolitica').checked
   };
   if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
   else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
@@ -926,6 +1019,7 @@ async function criarMusica(){
     taskAtual = d.taskId;
     inicioGeracao = Date.now();
     novaGeracao(d.taskId, $('titulo').value.trim());
+    guardarRascunho({ taskId: d.taskId });   // o Histórico acompanha
     btn.innerHTML = '<span class="spin"></span>' + (ehCover ? 'Refazendo...' : 'Gerando as duas versões...');
     iniciarPolling();
   }catch(e){
@@ -1198,8 +1292,7 @@ async function coverDesta(taskId, indice){
     const d = await r.json();
     if(!d.ok){ erro(d.error || 'Não consegui abrir essa música.'); return; }
 
-    $('letra').value  = d.letra || '';
-    $('estilo').value = d.estilo || '';
+    $('letra').value = d.letra || '';
     // o titulo do cover segue o padrao "Cover - nome da musica"
     const base = String(d.titulo || 'musica').replace(/^Cover\s*-\s*/i, '');
     $('titulo').value = ('Cover - ' + base).slice(0, 80);
@@ -1208,6 +1301,7 @@ async function coverDesta(taskId, indice){
 
     coverUploadUrl = '';
     coverDeTask = { taskId, indice };
+    limparCamposDoProjeto();      // no cover quem manda é a melodia, não o ritmo
     $('coverNome').textContent = 'Versão ' + String.fromCharCode(65 + indice) + ' de "' + (d.titulo || 'música') + '"';
     $('coverArquivo').style.display = 'flex';
 
@@ -1266,6 +1360,164 @@ function periodoRapido(qual, botao){
 function periodoManual(){
   document.querySelectorAll('.chip-per').forEach(c => c.classList.remove('on'));
   carregarPedidos();
+}
+
+// ── HISTÓRICO: o trabalho não se perde no meio ─────────────────
+// O atendente gera a letra, manda pro cliente aprovar e vai fazer
+// outra música. Quando o cliente responde, ele volta aqui e continua
+// de onde parou — sem refazer briefing, letra, ritmo nem título.
+//
+// O rascunho nasce na hora que a LETRA fica pronta (que é quando já
+// existe um nome de música) e é atualizado a cada passo seguinte.
+let rascunhoAtual = null;   // id do rascunho que está aberto na tela
+let buscaRascTimer = null;
+
+function telaAtual(){
+  return {
+    id:         rascunhoAtual,
+    titulo:     $('titulo').value.trim(),
+    briefing:   $('briefing').value.trim(),
+    instrucoes: $('instrucoes').value.trim(),
+    letra:      $('letra').value,
+    estilo:     $('estilo').value.trim(),
+    genero:     vozEscolhida,
+    politica:   $('ehPolitica').checked,
+    tipo:       (coverUploadUrl || coverDeTask) ? 'cover' : 'novo'
+  };
+}
+
+// Guarda sem atrapalhar: se falhar, o atendente nem fica sabendo —
+// ele não pediu pra salvar, foi a tela que salvou sozinha.
+async function guardarRascunho(extra){
+  try{
+    const r = await window.__luxFetch(WORKER + '/rascunho', {
+      method:'POST',
+      body: JSON.stringify({ ...telaAtual(), ...(extra || {}) })
+    });
+    const d = await r.json();
+    if(d.ok && d.id) rascunhoAtual = d.id;
+  }catch(e){ /* silencioso de propósito */ }
+}
+
+async function carregarRascunhos(){
+  const q = $('buscaRascunho').value.trim();
+  try{
+    const r = await window.__luxFetch(WORKER + '/rascunhos' + (q ? ('?q='+encodeURIComponent(q)) : ''));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui carregar o histórico.'); return; }
+    pintarRascunhos(d.itens || [], q);
+  }catch(e){
+    $('listaRascunhos').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
+      'Não consegui carregar o histórico agora. Tente recarregar a página.</div>';
+  }
+}
+function buscarRascunhosComPausa(){
+  clearTimeout(buscaRascTimer);
+  buscaRascTimer = setTimeout(()=>carregarRascunhos(), 300);
+}
+
+function pintarRascunhos(itens, busca){
+  const alvo = $('listaRascunhos');
+  $('contadorRascunhos').textContent = itens.length
+    ? (itens.length + (itens.length === 1 ? ' pedido' : ' pedidos'))
+    : '';
+
+  if(!itens.length){
+    alvo.innerHTML = '<div class="vazio"><span class="ic">' + (busca ? '🔍' : '📝') + '</span>' +
+      (busca
+        ? ('Nada encontrado para <strong>' + esc(busca) + '</strong>.')
+        : 'Nada em andamento.<br/>Assim que você gerar uma letra, o pedido aparece aqui para continuar depois.') +
+      '</div>';
+    return;
+  }
+
+  alvo.innerHTML = itens.map(p =>
+    '<div class="pedido">' +
+      '<div class="pedido-topo">' +
+        '<div class="pedido-info">' +
+          '<div class="pedido-nome">' + esc(p.titulo) +
+            (p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : '') +
+            (p.temMusica ? '<span class="selo-pronto">MÚSICA PRONTA</span>'
+                         : '<span class="selo-andamento">SÓ A LETRA</span>') +
+          '</div>' +
+          '<div class="pedido-meta">mexido em ' + esc(p.dia) + ' às ' + esc(p.hora) + '</div>' +
+        '</div>' +
+        '<div class="pedido-acoes">' +
+          '<button class="btn btn-gold" onclick="continuarRascunho(\'' + esc(p.id) + '\')">Continuar</button>' +
+          '<button class="btn btn-ghost" onclick="apagarRascunho(\'' + esc(p.id) + '\', this)">Apagar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>').join('');
+}
+
+// Continuar: devolve a tela exatamente como estava
+async function continuarRascunho(id){
+  try{
+    const r = await window.__luxFetch(WORKER + '/rascunho?id=' + encodeURIComponent(id));
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui abrir esse pedido.'); return; }
+
+    $('briefing').value   = d.briefing   || '';
+    $('instrucoes').value = d.instrucoes || '';
+    $('letra').value      = d.letra      || '';
+    $('estilo').value     = d.estilo     || '';
+    $('titulo').value     = d.titulo     || '';
+    $('ehPolitica').checked = !!d.politica;
+    escolherVoz(d.genero || '');
+    contarLetra();
+    esqueceDesfazer();
+
+    // marca o chip do ritmo, se bater com algum
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    const par = RITMOS.find(([, prompt]) => prompt === d.estilo);
+    if(par){
+      const el = document.querySelector('.chip[data-r="' + par[0] + '"]');
+      if(el) el.classList.add('on');
+    }
+
+    // o áudio do cover não volta: o arquivo era da sessão anterior
+    coverUploadUrl = ''; coverDeTask = null;
+    $('coverArquivo').style.display = 'none';
+    fecharPlayer();
+
+    rascunhoAtual = id;
+
+    // se já tinha virado música, mostra as versões junto
+    geracoes = [];
+    if(d.taskId){
+      taskAtual = d.taskId;
+      inicioGeracao = null;
+      try{
+        const rs = await window.__luxFetch(WORKER + '/pedido?taskId=' + encodeURIComponent(d.taskId));
+        const ds = await rs.json();
+        if(ds.ok) atualizarGeracao(d.taskId, ds);
+      }catch(e){ mostrarPainelVazio(); }
+    }else{
+      taskAtual = null;
+      mostrarPainelVazio();
+    }
+
+    trocarAba('criar');
+    sucesso(d.tipo === 'cover'
+      ? 'Pedido retomado. No cover, envie o áudio de novo antes de criar a música.'
+      : 'Pedido retomado de onde você parou.');
+  }catch(e){
+    erro('Falha ao abrir o pedido: ' + e.message);
+  }
+}
+
+async function apagarRascunho(id, botao){
+  if(botao){ botao.disabled = true; botao.textContent = 'Apagando...'; }
+  try{
+    await window.__luxFetch(WORKER + '/rascunho/apagar', {
+      method:'POST', body: JSON.stringify({ id })
+    });
+    if(rascunhoAtual === id) rascunhoAtual = null;
+    carregarRascunhos();
+  }catch(e){
+    erro('Não consegui apagar: ' + e.message);
+    if(botao){ botao.disabled = false; botao.textContent = 'Apagar'; }
+  }
 }
 
 // ── ABA PEDIDOS ────────────────────────────────────────────────
@@ -1367,11 +1619,17 @@ async function editarPedido(taskId){
     const d = await r.json();
     if(!d.ok){ erro(d.error || 'Não consegui abrir esse pedido.'); return; }
 
-    $('letra').value  = d.letra || '';
-    $('estilo').value = d.estilo || '';
-    $('titulo').value = d.titulo || '';
-    if(d.genero) escolherVoz(d.genero);
+    // devolve a tela como ela estava: briefing, instruções, letra,
+    // ritmo, voz e título
+    $('briefing').value   = d.briefing   || '';
+    $('instrucoes').value = d.instrucoes || '';
+    $('letra').value      = d.letra  || '';
+    $('estilo').value     = d.estilo || '';
+    $('titulo').value     = d.titulo || '';
+    $('ehPolitica').checked = !!d.politica;
+    escolherVoz(d.genero || '');
     contarLetra();
+    esqueceDesfazer();
 
     // marca o chip do ritmo, se o estilo bater com algum
     document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
