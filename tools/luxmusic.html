@@ -306,6 +306,10 @@
   .pedido-valor{font-family:'Cinzel',serif;color:var(--gold-bright);font-size:14px;white-space:nowrap}
   .pedido-acoes{display:flex;gap:7px;flex-wrap:wrap}
   .pedido-acoes .btn{padding:9px 15px;font-size:11.5px}
+  .nao-cobrado{
+    font-family:var(--font);font-size:10.5px;color:var(--green);
+    letter-spacing:.02em;margin-top:2px;font-weight:500;
+  }
   .selo-cover{
     display:inline-block;background:rgba(201,168,76,.14);border:1px solid var(--line);
     border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--gold-bright);
@@ -974,9 +978,35 @@ async function consultar(){
       carregarPedidos(true);   // aparece na aba Pedidos sem recarregar a página
     }else if(d.estado === 'FALHOU'){
       pararPolling(); restaurarBotao();
-      erro('O gerador não conseguiu criar esta música. Veja o motivo em cada versão.');
+      erro('O gerador não conseguiu criar esta música — e por isso ela NÃO foi cobrada. ' +
+           'O motivo está em cada versão.');
     }
   }catch(e){ /* rede instável: o próximo ciclo tenta */ }
+}
+
+// ── POR QUE NÃO DEU CERTO ──────────────────────────────────────
+// O gerador recusa em inglês. Traduzir aqui, e não no servidor, deixa
+// o texto original guardado pra investigar depois — e o atendente lê
+// o que ele pode FAZER, não o que aconteceu.
+function motivoAmigavel(erro){
+  const e = String(erro || '').toLowerCase();
+
+  if(e.includes('matches an existing recording'))
+    return 'O Suno reconheceu essa gravação no catálogo dele e não faz cover de música ' +
+           'comercial. Vale para o áudio do próprio cliente ou para uma música que a Lux criou.';
+
+  if(e.includes('copyright') || e.includes('artist name') || e.includes('third-party'))
+    return 'O Suno recusou por direitos autorais — costuma ser nome de artista ou de música ' +
+           'famosa no ritmo ou na letra. Tire a referência e tente de novo.';
+
+  if(e.includes('moderation') || e.includes('policy') || e.includes('inappropriate'))
+    return 'A letra foi barrada pela moderação do Suno. Reveja palavras que possam soar ' +
+           'ofensivas ou sensíveis.';
+
+  if(e.includes('timeout') || e.includes('timed out'))
+    return 'O gerador demorou demais e desistiu. Tente criar de novo.';
+
+  return erro || 'não deu certo';
 }
 
 // ── AS GERAÇÕES (empilhadas, a mais nova em cima) ──────────────
@@ -1033,7 +1063,7 @@ function conteudoDaGeracao(g){
     let classe, estado, corpo;
 
     if(m.falhou){
-      classe='falhou'; estado = m.erro || 'não deu certo'; corpo='';
+      classe='falhou'; estado = motivoAmigavel(m.erro); corpo='';
     }else if(m.pronta){
       classe='pronta';
       estado = m.duracao ? (m.duracao + ' segundos') : 'pronta para baixar';
@@ -1327,7 +1357,7 @@ function pintarPedidos(itens, busca){
     }else{
       corpo = '<div class="aviso-linha">' + (
         p.estado === 'GERANDO' ? '<span class="spin"></span>Ainda sendo gerada — abra a aba de novo daqui a pouco.'
-        : p.estado === 'FALHOU' ? 'O gerador não conseguiu criar esta música.'
+        : p.estado === 'FALHOU' ? 'O gerador não conseguiu criar esta música — os créditos voltaram.'
         : 'Sem versão pronta para ouvir.'
       ) + '</div>';
     }
@@ -1342,7 +1372,9 @@ function pintarPedidos(itens, busca){
             (p.estilo ? ' · ' + esc(String(p.estilo).slice(0, 42)) : '') +
           '</div>' +
         '</div>' +
-        '<div class="pedido-valor">' + esc(reais(p.custoBRL)) + '</div>' +
+        '<div class="pedido-valor">' + esc(reais(p.custoBRL)) +
+        (p.estado === 'FALHOU' ? '<div class="nao-cobrado">não cobrado</div>' : '') +
+      '</div>' +
         '<div class="pedido-acoes">' +
           '<button class="btn btn-ghost" onclick="editarPedido(\'' + esc(p.taskId) + '\')">Editar</button>' +
         '</div>' +
