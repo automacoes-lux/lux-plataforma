@@ -226,8 +226,8 @@ body{
 .bal-kpi span{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
 .bal-kpi.alerta b{color:var(--danger)}
 
-.bal-row{display:grid;grid-template-columns:172px 1fr 118px 104px 132px;gap:14px;align-items:center;
-  padding:11px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
+.bal-row{display:grid;grid-template-columns:172px 1fr 132px 104px 132px;gap:14px;align-items:center;
+  padding:14px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
 .bal-row:last-child{border-bottom:none}
 .bal-nome{display:flex;align-items:center;gap:7px;min-width:0}
 .bal-nome b{font-size:16px;font-weight:500;color:#EDE6D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -241,9 +241,10 @@ body{
 .bal-fill.baixo{background:linear-gradient(90deg,rgba(90,140,255,.4),rgba(90,140,255,.7))}
 .bal-fill.zero{background:rgba(255,255,255,.05)}
 .bal-media{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.65)}
-.bal-num{text-align:right;font-variant-numeric:tabular-nums;line-height:1.25}
+.bal-num{text-align:right;font-variant-numeric:tabular-nums;line-height:1.35}
 .bal-num b{font-size:17px;color:#EDE6D6;font-weight:600}
 .bal-num span{display:block;font-size:13px;color:var(--text-mid)}
+.bal-num .bal-anun{color:var(--gold-dim);font-size:12px;margin-top:1px}
 
 .bal-peso{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
 .bal-peso button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
@@ -267,6 +268,7 @@ body{
   text-transform:uppercase;color:var(--text-mid)}
 .bal-grupo:first-of-type{margin-top:.4rem}
 .bal-grupo.agora{color:var(--gold)}
+.bal-grupo em{font-family:'DM Sans',sans-serif;font-style:normal;font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--gold-dim);white-space:nowrap}
 .bal-grupo span{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.06em;
   text-transform:none;padding:2px 9px;border-radius:20px;
   background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
@@ -897,15 +899,19 @@ function renderBalanceador(d) {
   const turnoTxt = d.turno === 'manha' ? 'Manhã (até 14h)' : d.turno === 'tarde' ? 'Tarde (a partir das 14h)' : 'Dia inteiro';
   const idade = d.cargaIdadeSeg == null ? '—'
     : d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + 's atrás' : Math.round(d.cargaIdadeSeg / 60) + ' min atrás';
-  const fora = eq.filter(e => !e.naRoleta).length;
+
+  // cota = uma pessoa atendendo. Solo vale 1, dupla vale 2 — e só conta quem está na roleta.
+  const cotasDe = lista => lista.filter(e => e.naRoleta).reduce((s, e) => s + (e.peso || 1), 0);
+  const cotasTotais = cotasDe(eq);
+  const reais = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   let html = '<div class="bal-topo">' +
     '<div class="bal-kpi txt"><b>' + turnoTxt + '</b><span>turno agora</span></div>' +
-    '<div class="bal-kpi"><b>' + naRoleta.length + '</b><span>equipes na roleta</span></div>' +
+    '<div class="bal-kpi"><b>' + cotasTotais + '</b><span>cotas ativas</span></div>' +
     '<div class="bal-kpi"><b>' + d.totalLeadsDia + '</b><span>leads hoje</span></div>' +
     '<div class="bal-kpi' + (dif > 2 ? ' alerta' : '') + '"><b>' + dif.toFixed(1) + '</b><span>diferença no turno</span></div>' +
+    (d.anuncioTotalBRL != null ? '<div class="bal-kpi txt"><b>' + reais(d.anuncioTotalBRL) + '</b><span>anúncio do dia</span></div>' : '') +
     '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
-    (d.rotatorConsultas ? '<div class="bal-kpi"><b>' + d.rotatorConsultas + '</b><span>consultas do rotator</span></div>' : '') +
     '</div>';
 
   // Separado por turno: cada grupo é uma disputa própria, e comparar entre turnos não faz sentido.
@@ -916,7 +922,9 @@ function renderBalanceador(d) {
   ].filter(g => g.lista.length);
 
   grupos.forEach(g => {
+    const c = cotasDe(g.lista);
     html += '<div class="bal-grupo' + (g.ativo ? ' agora' : '') + '">' + g.titulo +
+      '<em>' + c + (c === 1 ? ' cota ativa' : ' cotas ativas') + '</em>' +
       (g.ativo ? '<span>atendendo agora</span>' : '') + '</div>';
     linhasDoGrupo(g.lista);
   });
@@ -941,7 +949,10 @@ function renderBalanceador(d) {
         '<div class="bal-fill ' + classe + '" style="width:' + pct + '%"></div>' +
         (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
       '</div>' +
-      '<div class="bal-num"><b>' + e.porPessoa.toFixed(1) + '</b><span>' + e.cargaTurno + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span></div>' +
+      '<div class="bal-num"><b>' + e.porPessoa.toFixed(1) + '</b>' +
+        '<span>' + e.cargaTurno + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span>' +
+        (e.anuncioBRL != null ? '<span class="bal-anun" title="fatia do anúncio do dia, proporcional aos leads">' + reais(e.anuncioBRL) + '</span>' : '') +
+      '</div>' +
       '<div class="bal-peso">' +
         '<button class="' + (e.peso === 1 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',1)" title="Trabalha sozinha hoje">1×</button>' +
         '<button class="' + (e.peso === 2 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
@@ -957,13 +968,6 @@ function renderBalanceador(d) {
     '</div>';
   });
   }
-
-  html += '<div class="bal-legenda">' +
-    'A barra compara os leads <b>por pessoa</b> dentro do turno; o risco branco marca a média. Azul = abaixo da média, é quem recebe os próximos leads.<br>' +
-    'O peso <b>2×</b> é a dupla completa; mude para <b>1×</b> no dia em que só uma pessoa estiver atendendo.<br>' +
-    'Quem você desliga na tela do Rotator aparece aqui como <b>desligada no Rotator</b> e sai da distribuição sozinha — não precisa repetir o ajuste.' +
-    (fora ? '<br>' + fora + ' equipe(s) fora da roleta agora.' : '') +
-    '</div>';
 
   document.getElementById('balContainer').innerHTML = html;
 }
