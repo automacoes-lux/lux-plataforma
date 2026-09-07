@@ -16,7 +16,7 @@
     --bg:#0A0A0B; --bg2:#111114; --bg3:#18181C; --bg4:#1F1F25;
     --text:#E8E4DC; --muted:#8A8680;
     --line:rgba(201,168,76,.2); --line-bright:rgba(201,168,76,.4);
-    --green:#7FB87A; --red:#E87A7A; --neon:#39FF6A;
+    --green:#7FB87A; --red:#E87A7A; --verde-fav:#00ad5a;
     --radius:14px;
     --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
@@ -65,22 +65,23 @@
      olho de longe qual versão foi a escolhida. */
   .joinha{
     background:var(--bg3);border:1px solid #35322b;border-radius:9px;
-    width:38px;height:38px;flex-shrink:0;cursor:pointer;font-size:16px;
-    line-height:1;display:grid;place-items:center;padding:0;
-    filter:grayscale(1) opacity(.55);transition:all .15s;
+    width:38px;height:38px;flex-shrink:0;cursor:pointer;
+    display:grid;place-items:center;padding:0;transition:all .15s;
   }
-  .joinha:hover{border-color:var(--neon);filter:grayscale(0) opacity(1)}
+  /* o polegar é SEMPRE #c8c8c8; quem muda é a caixa em volta */
+  .joinha svg{width:18px;height:18px;display:block;fill:#c8c8c8}
+  .joinha:hover{border-color:var(--verde-fav)}
   .joinha.on{
-    filter:none;background:rgba(57,255,106,.12);border-color:var(--neon);
-    box-shadow:0 0 10px rgba(57,255,106,.45);
+    background:var(--verde-fav);border-color:var(--verde-fav);
+    box-shadow:0 0 10px rgba(0,173,90,.5);
   }
   .joinha.ocupado{opacity:.5;cursor:wait}
   .pedido.saindo{opacity:.4}
   .versao-acoes .joinha{width:100%;height:auto;padding:11px 6px}
 
   /* a aba Favoritos se anuncia em verde */
-  .aba.fav{color:var(--neon)}
-  .aba.fav.on{background:rgba(57,255,106,.12);border-color:var(--neon);color:var(--neon)}
+  .aba.fav{color:var(--verde-fav)}
+  .aba.fav.on{background:rgba(0,173,90,.16);border-color:var(--verde-fav);color:var(--verde-fav)}
 
   .selo-versao{
     display:inline-block;background:var(--bg4);border:1px solid #35322b;
@@ -1421,11 +1422,17 @@ function ehFavorito(taskId, indice){
   return favoritos.has(taskId + '|' + indice);
 }
 
+// Desenho do polegar. Vem como SVG, e não emoji, por dois motivos:
+// emoji não aceita cor, e o do Windows 10 antigo às vezes nem existe
+// (foi o que aconteceu com a varinha, que virou quadradinho).
+const SVG_JOINHA = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
+
 function htmlJoinha(taskId, indice){
   const on = ehFavorito(taskId, indice);
   return '<button class="joinha' + (on ? ' on' : '') + '" type="button" ' +
          'onclick="alternarFavorito(\'' + esc(taskId) + '\',' + indice + ',this)" ' +
-         'title="' + (on ? 'Tirar dos favoritos' : 'Guardar nos favoritos') + '">👍</button>';
+         'title="' + (on ? 'Tirar dos favoritos' : 'Guardar nos favoritos') + '">' + SVG_JOINHA + '</button>';
 }
 
 // Marcar copia o MP3 pro nosso armazenamento — por isso demora um
