@@ -205,6 +205,65 @@ body{
 .toast.error{border-color:var(--danger);color:#FFB0B0}
 .toast.info{border-color:var(--border-bright)}
 
+/* ─── Abas do Admin ─────────────────────────────────────── */
+.tabs{display:flex;gap:6px;margin-bottom:1.1rem;flex-wrap:wrap}
+.tab-btn{
+  font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding:10px 18px;border-radius:var(--radius);cursor:pointer;
+  background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;
+}
+.tab-btn:hover{border-color:var(--border-bright);color:var(--gold-dim)}
+.tab-btn.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+
+/* ─── Monitoramento de Equipes ──────────────────────────── */
+.bal-topo{display:flex;flex-wrap:wrap;gap:1.6rem;align-items:baseline;margin-bottom:1.6rem;padding-bottom:1.1rem;border-bottom:.5px solid var(--border)}
+.bal-kpi{display:flex;flex-direction:column;gap:3px}
+.bal-kpi b{font-family:'Cinzel',serif;font-size:19px;color:var(--gold);font-weight:600;line-height:1.15}
+.bal-kpi.txt b{font-size:13px;letter-spacing:.04em}
+.bal-kpi span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
+.bal-kpi.alerta b{color:var(--danger)}
+
+.bal-row{display:grid;grid-template-columns:150px 1fr 104px 92px 116px;gap:14px;align-items:center;
+  padding:11px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
+.bal-row:last-child{border-bottom:none}
+.bal-nome{display:flex;align-items:center;gap:7px;min-width:0}
+.bal-nome b{font-size:13px;font-weight:500;color:#EDE6D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bal-luz{width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:#4ADE80}
+.bal-luz.off{background:var(--danger)}
+.bal-luz.pausa{background:#6B6B6B}
+
+/* a barra é o coração da tela: mostra num olhar quem está atrás e quem está à frente da média */
+.bal-barra{position:relative;height:20px;background:var(--bg-input);border-radius:4px;overflow:hidden}
+.bal-fill{height:100%;background:linear-gradient(90deg,rgba(201,168,76,.5),rgba(201,168,76,.8));transition:width .4s ease}
+.bal-fill.baixo{background:linear-gradient(90deg,rgba(90,140,255,.4),rgba(90,140,255,.7))}
+.bal-fill.zero{background:rgba(255,255,255,.05)}
+.bal-media{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.65)}
+.bal-num{text-align:right;font-variant-numeric:tabular-nums;line-height:1.25}
+.bal-num b{font-size:14px;color:#EDE6D6;font-weight:600}
+.bal-num span{display:block;font-size:10px;color:var(--text-mid)}
+
+.bal-peso{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
+.bal-peso button{flex:1;padding:6px 0;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;
+  background:transparent;border:none;border-left:.5px solid var(--border-bright);color:var(--text-mid);transition:.15s}
+.bal-peso button:first-child{border-left:none}
+.bal-peso button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
+.bal-peso button:disabled{opacity:.45;cursor:wait}
+
+.bal-acao{display:flex;justify-content:flex-end}
+.bal-toggle{padding:6px 12px;font-size:11px;font-family:'DM Sans',sans-serif;border-radius:4px;cursor:pointer;
+  background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;white-space:nowrap}
+.bal-toggle:hover{border-color:var(--border-bright)}
+.bal-toggle.off{border-color:var(--danger-border);color:var(--danger);background:var(--danger-bg)}
+.bal-tag{font-size:9px;padding:2px 7px;border-radius:20px;border:.5px solid var(--border);
+  color:var(--text-mid);letter-spacing:.05em;white-space:nowrap}
+.bal-legenda{margin-top:1.2rem;font-size:11px;color:var(--text-mid);line-height:1.7}
+
+@media(max-width:720px){
+  .bal-row{grid-template-columns:1fr 1fr;gap:8px 12px}
+  .bal-barra{grid-column:1/-1;order:3}
+  .bal-peso{order:4}
+  .bal-acao{order:5}
+}
 </style>
 </head>
 <body>
@@ -219,12 +278,31 @@ body{
     <button class="btn-primary" onclick="openAddModal()">+ Adicionar Usuário</button>
   </div>
 
-  <div class="card">
-    <div class="card-title">Usuários Cadastrados</div>
-    <div id="usersContainer">
-      <div class="state-msg">
-        <span class="icon">⏳</span>
-        <div>Carregando usuários…</div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabUsuarios" onclick="abrirAba('usuarios')">Usuários</button>
+    <button class="tab-btn" id="tabEquipes" onclick="abrirAba('equipes')">Monitoramento de Equipes</button>
+  </div>
+
+  <div id="secUsuarios">
+    <div class="card">
+      <div class="card-title">Usuários Cadastrados</div>
+      <div id="usersContainer">
+        <div class="state-msg">
+          <span class="icon">⏳</span>
+          <div>Carregando usuários…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="secEquipes" style="display:none">
+    <div class="card">
+      <div class="card-title">Distribuição de Leads — Ao Vivo</div>
+      <div id="balContainer">
+        <div class="state-msg">
+          <span class="icon">⏳</span>
+          <div>Carregando…</div>
+        </div>
       </div>
     </div>
   </div>
@@ -763,6 +841,118 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) {
   return String(s||'').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════════════════════
+// MONITORAMENTO DE EQUIPES
+// Mostra, no turno que está rodando agora, quantos leads reais cada equipe
+// recebeu por pessoa — e deixa ajustar peso e ligar/desligar na hora.
+// A barra com a marca da média responde de um olhar: "está equilibrado?"
+// ════════════════════════════════════════════════════════════
+let balTimer = null;
+
+function abrirAba(qual) {
+  const ehEquipes = qual === 'equipes';
+  document.getElementById('secUsuarios').style.display = ehEquipes ? 'none' : '';
+  document.getElementById('secEquipes').style.display  = ehEquipes ? '' : 'none';
+  document.getElementById('tabUsuarios').classList.toggle('active', !ehEquipes);
+  document.getElementById('tabEquipes').classList.toggle('active', ehEquipes);
+  clearInterval(balTimer);
+  if (ehEquipes) { carregarBalanceador(); balTimer = setInterval(carregarBalanceador, 30000); }
+}
+
+async function carregarBalanceador() {
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/balanceador');
+    const d = await resp.json();
+    if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
+    renderBalanceador(d);
+  } catch (err) {
+    document.getElementById('balContainer').innerHTML =
+      '<div class="state-msg"><span class="icon">⚠️</span><div>' + escapeHtml(err.message) + '</div></div>';
+  }
+}
+
+function renderBalanceador(d) {
+  const eq = d.equipes || [];
+  const naRoleta = eq.filter(e => e.naRoleta);
+  const vals = naRoleta.filter(e => e.cargaTurno > 0).map(e => e.porPessoa);
+  const media = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  const maior = Math.max(1, ...eq.map(e => e.porPessoa));
+  const dif = vals.length ? (Math.max(...vals) - Math.min(...vals)) : 0;
+  const turnoTxt = d.turno === 'manha' ? 'Manhã (até 14h)' : d.turno === 'tarde' ? 'Tarde (a partir das 14h)' : 'Dia inteiro';
+  const idade = d.cargaIdadeSeg == null ? '—'
+    : d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + 's atrás' : Math.round(d.cargaIdadeSeg / 60) + ' min atrás';
+  const fora = eq.filter(e => !e.naRoleta).length;
+
+  let html = '<div class="bal-topo">' +
+    '<div class="bal-kpi txt"><b>' + turnoTxt + '</b><span>turno agora</span></div>' +
+    '<div class="bal-kpi"><b>' + naRoleta.length + '</b><span>equipes na roleta</span></div>' +
+    '<div class="bal-kpi"><b>' + d.totalLeadsDia + '</b><span>leads hoje</span></div>' +
+    '<div class="bal-kpi' + (dif > 2 ? ' alerta' : '') + '"><b>' + dif.toFixed(1) + '</b><span>diferença no turno</span></div>' +
+    '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
+    (d.rotatorConsultas ? '<div class="bal-kpi"><b>' + d.rotatorConsultas + '</b><span>consultas do rotator</span></div>' : '') +
+    '</div>';
+
+  eq.forEach(e => {
+    const pct = Math.max(2, (e.porPessoa / maior) * 100);
+    const classe = e.cargaTurno === 0 ? 'zero' : (e.porPessoa < media - 0.01 ? 'baixo' : '');
+    const luz = !e.conectado ? 'off' : (!e.ativo ? 'pausa' : '');
+    const tituloLuz = !e.conectado ? 'WhatsApp desconectado' : (!e.ativo ? 'Desligada por você' : 'Conectada e recebendo');
+    const mediaPct = maior ? (media / maior) * 100 : 0;
+    html += '<div class="bal-row">' +
+      '<div class="bal-nome">' +
+        '<span class="bal-luz ' + luz + '" title="' + tituloLuz + '"></span>' +
+        '<b title="' + escapeHtml(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
+        (e.estimado ? '<span class="bal-tag" title="WhatsApp ficou cego: valor estimado pelos cliques">estimado</span>' : '') +
+      '</div>' +
+      '<div class="bal-barra" title="' + (media > 0 ? 'a linha branca é a média do turno (' + media.toFixed(1) + ')' : '') + '">' +
+        '<div class="bal-fill ' + classe + '" style="width:' + pct + '%"></div>' +
+        (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
+      '</div>' +
+      '<div class="bal-num"><b>' + e.porPessoa.toFixed(1) + '</b><span>' + e.cargaTurno + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span></div>' +
+      '<div class="bal-peso">' +
+        '<button class="' + (e.peso === 1 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',1)" title="Trabalha sozinha hoje">1×</button>' +
+        '<button class="' + (e.peso === 2 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
+      '</div>' +
+      '<div class="bal-acao">' +
+        (e.conectado
+          ? '<button class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + e.email + '\',' + (!e.ativo) + ')">' +
+            (e.ativo ? 'Desligar' : 'Religar') + '</button>'
+          : '<span class="bal-tag" title="Ela volta sozinha quando reconectar">fora: sem WhatsApp</span>') +
+      '</div>' +
+    '</div>';
+  });
+
+  html += '<div class="bal-legenda">' +
+    'A barra compara os leads <b>por pessoa</b> dentro do turno; o risco branco marca a média. Azul = abaixo da média, é quem recebe os próximos leads.<br>' +
+    'O peso <b>2×</b> é a dupla completa; mude para <b>1×</b> no dia em que só uma pessoa estiver atendendo.' +
+    (fora ? '<br>' + fora + ' equipe(s) fora da roleta agora.' : '') +
+    '</div>';
+
+  document.getElementById('balContainer').innerHTML = html;
+}
+
+async function mudarPeso(email, peso) {
+  await salvarAjuste({ email, peso }, 'Peso de ' + peso + '× aplicado');
+}
+async function mudarAtivo(email, ativo) {
+  await salvarAjuste({ email, ativo }, ativo ? 'Equipe religada' : 'Equipe desligada da roleta');
+}
+async function salvarAjuste(body, msgOk) {
+  document.querySelectorAll('.bal-peso button, .bal-toggle').forEach(b => b.disabled = true);
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/balanceador', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const d = await resp.json();
+    if (!d.ok) throw new Error(d.error || 'Não salvou');
+    toast(msgOk, 'success');
+    await carregarBalanceador();
+  } catch (err) {
+    toast(err.message, 'error');
+    document.querySelectorAll('.bal-peso button, .bal-toggle').forEach(b => b.disabled = false);
+  }
 }
 
 </script>
