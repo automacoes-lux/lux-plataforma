@@ -208,7 +208,7 @@ body{
 /* ─── Abas do Admin ─────────────────────────────────────── */
 .tabs{display:flex;gap:6px;margin-bottom:1.1rem;flex-wrap:wrap}
 .tab-btn{
-  font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
   padding:10px 18px;border-radius:var(--radius);cursor:pointer;
   background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;
 }
@@ -216,47 +216,50 @@ body{
 .tab-btn.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
 
 /* ─── Monitoramento de Equipes ──────────────────────────── */
-.bal-topo{display:flex;flex-wrap:wrap;gap:1.6rem;align-items:baseline;margin-bottom:1.6rem;padding-bottom:1.1rem;border-bottom:.5px solid var(--border)}
-.bal-kpi{display:flex;flex-direction:column;gap:3px}
-.bal-kpi b{font-family:'Cinzel',serif;font-size:19px;color:var(--gold);font-weight:600;line-height:1.15}
-.bal-kpi.txt b{font-size:13px;letter-spacing:.04em}
-.bal-kpi span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
+/* grade em vez de flex-wrap: com a fonte maior, o wrap partia um indicador ao meio */
+.bal-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1rem 1.3rem;
+  margin-bottom:1.6rem;padding-bottom:1.2rem;border-bottom:.5px solid var(--border)}
+.bal-kpi{display:flex;flex-direction:column;gap:4px;min-width:0}
+.bal-kpi span{line-height:1.3}   /* deixa o rótulo quebrar em vez de cortar no celular */
+.bal-kpi b{font-family:'Cinzel',serif;font-size:22px;color:var(--gold);font-weight:600;line-height:1.15}
+.bal-kpi.txt b{font-size:16px;letter-spacing:.04em}
+.bal-kpi span{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
 .bal-kpi.alerta b{color:var(--danger)}
 
-.bal-row{display:grid;grid-template-columns:150px 1fr 104px 92px 116px;gap:14px;align-items:center;
+.bal-row{display:grid;grid-template-columns:172px 1fr 118px 104px 132px;gap:14px;align-items:center;
   padding:11px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
 .bal-row:last-child{border-bottom:none}
 .bal-nome{display:flex;align-items:center;gap:7px;min-width:0}
-.bal-nome b{font-size:13px;font-weight:500;color:#EDE6D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bal-luz{width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:#4ADE80}
+.bal-nome b{font-size:16px;font-weight:500;color:#EDE6D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bal-luz{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#4ADE80}
 .bal-luz.off{background:var(--danger)}
 .bal-luz.pausa{background:#6B6B6B}
 
 /* a barra é o coração da tela: mostra num olhar quem está atrás e quem está à frente da média */
-.bal-barra{position:relative;height:20px;background:var(--bg-input);border-radius:4px;overflow:hidden}
+.bal-barra{position:relative;height:24px;background:var(--bg-input);border-radius:4px;overflow:hidden}
 .bal-fill{height:100%;background:linear-gradient(90deg,rgba(201,168,76,.5),rgba(201,168,76,.8));transition:width .4s ease}
 .bal-fill.baixo{background:linear-gradient(90deg,rgba(90,140,255,.4),rgba(90,140,255,.7))}
 .bal-fill.zero{background:rgba(255,255,255,.05)}
 .bal-media{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.65)}
 .bal-num{text-align:right;font-variant-numeric:tabular-nums;line-height:1.25}
-.bal-num b{font-size:14px;color:#EDE6D6;font-weight:600}
-.bal-num span{display:block;font-size:10px;color:var(--text-mid)}
+.bal-num b{font-size:17px;color:#EDE6D6;font-weight:600}
+.bal-num span{display:block;font-size:13px;color:var(--text-mid)}
 
 .bal-peso{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
-.bal-peso button{flex:1;padding:6px 0;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;
+.bal-peso button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
   background:transparent;border:none;border-left:.5px solid var(--border-bright);color:var(--text-mid);transition:.15s}
 .bal-peso button:first-child{border-left:none}
 .bal-peso button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
 .bal-peso button:disabled{opacity:.45;cursor:wait}
 
 .bal-acao{display:flex;justify-content:flex-end}
-.bal-toggle{padding:6px 12px;font-size:11px;font-family:'DM Sans',sans-serif;border-radius:4px;cursor:pointer;
+.bal-toggle{padding:6px 12px;font-size:14px;font-family:'DM Sans',sans-serif;border-radius:4px;cursor:pointer;
   background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;white-space:nowrap}
 .bal-toggle:hover{border-color:var(--border-bright)}
 .bal-toggle.off{border-color:var(--danger-border);color:var(--danger);background:var(--danger-bg)}
-.bal-tag{font-size:9px;padding:2px 7px;border-radius:20px;border:.5px solid var(--border);
+.bal-tag{font-size:12px;padding:2px 7px;border-radius:20px;border:.5px solid var(--border);
   color:var(--text-mid);letter-spacing:.05em;white-space:nowrap}
-.bal-legenda{margin-top:1.2rem;font-size:11px;color:var(--text-mid);line-height:1.7}
+.bal-legenda{margin-top:1.2rem;font-size:14px;color:var(--text-mid);line-height:1.7}
 
 @media(max-width:720px){
   .bal-row{grid-template-columns:1fr 1fr;gap:8px 12px}
@@ -897,8 +900,10 @@ function renderBalanceador(d) {
   eq.forEach(e => {
     const pct = Math.max(2, (e.porPessoa / maior) * 100);
     const classe = e.cargaTurno === 0 ? 'zero' : (e.porPessoa < media - 0.01 ? 'baixo' : '');
-    const luz = !e.conectado ? 'off' : (!e.ativo ? 'pausa' : '');
-    const tituloLuz = !e.conectado ? 'WhatsApp desconectado' : (!e.ativo ? 'Desligada por você' : 'Conectada e recebendo');
+    const luz = !e.conectado ? 'off' : ((!e.ativo || e.ligadoRotator === false) ? 'pausa' : '');
+    const tituloLuz = !e.conectado ? 'WhatsApp desconectado'
+      : e.ligadoRotator === false ? 'Desligada na tela do Rotator'
+      : (!e.ativo ? 'Desligada aqui no painel' : 'Conectada e recebendo');
     const mediaPct = maior ? (media / maior) * 100 : 0;
     html += '<div class="bal-row">' +
       '<div class="bal-nome">' +
@@ -916,17 +921,20 @@ function renderBalanceador(d) {
         '<button class="' + (e.peso === 2 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
       '</div>' +
       '<div class="bal-acao">' +
-        (e.conectado
-          ? '<button class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + e.email + '\',' + (!e.ativo) + ')">' +
-            (e.ativo ? 'Desligar' : 'Religar') + '</button>'
-          : '<span class="bal-tag" title="Ela volta sozinha quando reconectar">fora: sem WhatsApp</span>') +
+        (e.ligadoRotator === false
+          ? '<span class="bal-tag" title="Para religar, use a tela de Números do Rotator — o painel só espelha">desligada no Rotator</span>'
+          : e.conectado
+            ? '<button class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + e.email + '\',' + (!e.ativo) + ')">' +
+              (e.ativo ? 'Desligar' : 'Religar') + '</button>'
+            : '<span class="bal-tag" title="Ela volta sozinha quando reconectar">fora: sem WhatsApp</span>') +
       '</div>' +
     '</div>';
   });
 
   html += '<div class="bal-legenda">' +
     'A barra compara os leads <b>por pessoa</b> dentro do turno; o risco branco marca a média. Azul = abaixo da média, é quem recebe os próximos leads.<br>' +
-    'O peso <b>2×</b> é a dupla completa; mude para <b>1×</b> no dia em que só uma pessoa estiver atendendo.' +
+    'O peso <b>2×</b> é a dupla completa; mude para <b>1×</b> no dia em que só uma pessoa estiver atendendo.<br>' +
+    'Quem você desliga na tela do Rotator aparece aqui como <b>desligada no Rotator</b> e sai da distribuição sozinha — não precisa repetir o ajuste.' +
     (fora ? '<br>' + fora + ' equipe(s) fora da roleta agora.' : '') +
     '</div>';
 
