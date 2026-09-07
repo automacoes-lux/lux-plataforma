@@ -16,7 +16,7 @@
     --bg:#0A0A0B; --bg2:#111114; --bg3:#18181C; --bg4:#1F1F25;
     --text:#E8E4DC; --muted:#8A8680;
     --line:rgba(201,168,76,.2); --line-bright:rgba(201,168,76,.4);
-    --green:#7FB87A; --red:#E87A7A;
+    --green:#7FB87A; --red:#E87A7A; --neon:#39FF6A;
     --radius:14px;
     --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
@@ -59,6 +59,34 @@
     cursor:pointer;transition:all .13s;
   }
   .btn-zerar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
+
+  /* ── O JOINHA 👍 ──
+     Apagado é discreto; ligado é verde neon com brilho, pra dar no
+     olho de longe qual versão foi a escolhida. */
+  .joinha{
+    background:var(--bg3);border:1px solid #35322b;border-radius:9px;
+    width:38px;height:38px;flex-shrink:0;cursor:pointer;font-size:16px;
+    line-height:1;display:grid;place-items:center;padding:0;
+    filter:grayscale(1) opacity(.55);transition:all .15s;
+  }
+  .joinha:hover{border-color:var(--neon);filter:grayscale(0) opacity(1)}
+  .joinha.on{
+    filter:none;background:rgba(57,255,106,.12);border-color:var(--neon);
+    box-shadow:0 0 10px rgba(57,255,106,.45);
+  }
+  .joinha.ocupado{opacity:.5;cursor:wait}
+  .pedido.saindo{opacity:.4}
+  .versao-acoes .joinha{width:100%;height:auto;padding:11px 6px}
+
+  /* a aba Favoritos se anuncia em verde */
+  .aba.fav{color:var(--neon)}
+  .aba.fav.on{background:rgba(57,255,106,.12);border-color:var(--neon);color:var(--neon)}
+
+  .selo-versao{
+    display:inline-block;background:var(--bg4);border:1px solid #35322b;
+    border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--muted);
+    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
+  }
 
   /* selos da aba Histórico */
   .selo-pronto,.selo-andamento{
@@ -291,7 +319,7 @@
 
   .versao audio{width:100%;margin-bottom:10px;height:38px}
   /* três ações por música: cortar, cover e baixar */
-  .versao-acoes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .versao-acoes{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:7px}
   .versao-acoes .btn{padding:11px 6px;font-size:11.5px;letter-spacing:.05em}
 
   .vazio{
@@ -399,7 +427,9 @@
     body{padding:16px 11px 50px}
     .card{padding:15px}
     #letra{min-height:320px}
-    .versao-acoes{grid-template-columns:1fr}
+    .versao-acoes{grid-template-columns:auto 1fr 1fr}
+    .versao-acoes .btn:last-child{grid-column:1 / -1}
+    .versao-acoes .joinha{width:42px;padding:11px 0}
     .faixa-nome{min-width:100%}
     /* no celular o player fica numa linha so pra nao espremer o tempo */
     .faixa .player{min-width:100%}
@@ -422,6 +452,7 @@
     <button class="aba on" id="abaCriar"     onclick="trocarAba('criar')">Criar música</button>
     <button class="aba"    id="abaHistorico" onclick="trocarAba('historico')">Letra salva</button>
     <button class="aba"    id="abaPedidos"   onclick="trocarAba('pedidos')">Finalizado</button>
+    <button class="aba fav" id="abaFavoritos" onclick="trocarAba('favoritos')">Favoritos</button>
   </div>
 
   <div class="aviso aviso-erro" id="avisoErro"></div>
@@ -567,6 +598,22 @@
     </div>
   </div>
 
+  <!-- ═══════════════ ABA FAVORITOS ═══════════════ -->
+  <div id="viewFavoritos" style="display:none">
+    <div class="busca-wrap">
+      <span class="lupa">🔍</span>
+      <input type="text" id="buscaFavorito" placeholder="Procurar por nome da música…"
+        oninput="buscarFavoritosComPausa()"/>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+      <span id="contadorFavoritos">—</span>
+      <span>As favoritas ficam guardadas para sempre</span>
+    </div>
+    <div id="listaFavoritos">
+      <div class="vazio"><span class="ic">⏳</span>Carregando…</div>
+    </div>
+  </div>
+
   <!-- ═══════════════ ABA PEDIDOS ═══════════════ -->
   <div id="viewPedidos" style="display:none">
     <div class="periodo">
@@ -674,8 +721,8 @@ function reais(v){
 
 // ── abas ───────────────────────────────────────────────────────
 function trocarAba(qual){
-  const abas = { criar:'viewCriar', historico:'viewHistorico', pedidos:'viewPedidos' };
-  const botoes = { criar:'abaCriar', historico:'abaHistorico', pedidos:'abaPedidos' };
+  const abas = { criar:'viewCriar', historico:'viewHistorico', pedidos:'viewPedidos', favoritos:'viewFavoritos' };
+  const botoes = { criar:'abaCriar', historico:'abaHistorico', pedidos:'abaPedidos', favoritos:'abaFavoritos' };
   if(!abas[qual]) qual = 'criar';
 
   for(const k of Object.keys(abas)){
@@ -685,6 +732,7 @@ function trocarAba(qual){
   limparAvisos();
   if(qual === 'pedidos')   carregarPedidos();
   if(qual === 'historico') carregarRascunhos();
+  if(qual === 'favoritos') carregarFavoritos(true);
 }
 
 // ── custo (o valor vem do servidor) ────────────────────────────
@@ -1141,6 +1189,7 @@ function conteudoDaGeracao(g){
       corpo =
         htmlPlayer(link) +
         '<div class="versao-acoes">' +
+          htmlJoinha(g.taskId, i) +
           '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">✂️ Cortar</button>' +
           '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">🎤 Cover</button>' +
           '<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
@@ -1361,6 +1410,137 @@ function periodoManual(){
   carregarPedidos();
 }
 
+// ── FAVORITOS: o joinha 👍 ─────────────────────────────────────
+// A tela guarda em memória quais versões estão marcadas, no formato
+// "<taskId>|<indice>". Assim o botão desenha certo em qualquer lugar
+// (resultado, Finalizado, Favoritos) sem uma ida ao servidor por
+// música que aparece na tela.
+let favoritos = new Set();
+
+function ehFavorito(taskId, indice){
+  return favoritos.has(taskId + '|' + indice);
+}
+
+function htmlJoinha(taskId, indice){
+  const on = ehFavorito(taskId, indice);
+  return '<button class="joinha' + (on ? ' on' : '') + '" type="button" ' +
+         'onclick="alternarFavorito(\'' + esc(taskId) + '\',' + indice + ',this)" ' +
+         'title="' + (on ? 'Tirar dos favoritos' : 'Guardar nos favoritos') + '">👍</button>';
+}
+
+// Marcar copia o MP3 pro nosso armazenamento — por isso demora um
+// instante e o botão mostra que está trabalhando.
+async function alternarFavorito(taskId, indice, botao){
+  const ligar = !ehFavorito(taskId, indice);
+  if(botao){ botao.disabled = true; botao.classList.add('ocupado'); }
+
+  try{
+    const r = await window.__luxFetch(WORKER + '/favorito', {
+      method:'POST',
+      body: JSON.stringify({ taskId, indice, favorito: ligar })
+    });
+    const d = await r.json();
+    if(!d.ok){ erro(d.error || 'Não consegui favoritar.'); return; }
+
+    const chave = taskId + '|' + indice;
+    if(d.favorito) favoritos.add(chave); else favoritos.delete(chave);
+
+    // atualiza TODOS os joinhas dessa música que estiverem na tela
+    document.querySelectorAll('.joinha').forEach(b => {
+      const oc = b.getAttribute('onclick') || '';
+      if(oc.includes("'" + taskId + "'," + indice + ",")){
+        b.classList.toggle('on', d.favorito);
+        b.title = d.favorito ? 'Tirar dos favoritos' : 'Guardar nos favoritos';
+      }
+    });
+
+    // Dentro da aba Favoritos, a linha desmarcada fica apagada em vez
+    // de sumir: se foi clique errado, é só clicar de novo. Ela sai de
+    // vez na próxima abertura da aba.
+    if(botao){
+      const linha = botao.closest('#listaFavoritos .pedido');
+      if(linha) linha.classList.toggle('saindo', !d.favorito);
+    }
+
+    sucesso(d.favorito
+      ? 'Guardada nos Favoritos — essa não é apagada, fica salva pra sempre.'
+      : 'Tirada dos Favoritos. Some da lista quando você abrir a aba de novo.');
+  }catch(e){
+    erro('Falha ao favoritar: ' + e.message);
+  }finally{
+    if(botao){ botao.disabled = false; botao.classList.remove('ocupado'); }
+  }
+}
+
+// Carrega o conjunto uma vez, pra tela saber o que já está marcado
+async function carregarFavoritos(pintar){
+  const q = pintar ? $('buscaFavorito').value.trim() : '';
+  try{
+    const r = await window.__luxFetch(WORKER + '/favoritos' + (q ? ('?q='+encodeURIComponent(q)) : ''));
+    const d = await r.json();
+    if(!d.ok){ if(pintar) erro(d.error || 'Não consegui carregar os favoritos.'); return; }
+
+    if(!q) favoritos = new Set((d.itens || []).map(x => x.taskId + '|' + x.indice));
+    if(pintar) pintarFavoritos(d.itens || [], q);
+  }catch(e){
+    if(pintar){
+      $('listaFavoritos').innerHTML = '<div class="vazio"><span class="ic">⚠️</span>' +
+        'Não consegui carregar os favoritos agora. Tente recarregar a página.</div>';
+    }
+  }
+}
+function buscarFavoritosComPausa(){
+  clearTimeout(buscaFavTimer);
+  buscaFavTimer = setTimeout(()=>carregarFavoritos(true), 300);
+}
+let buscaFavTimer = null;
+
+function pintarFavoritos(itens, busca){
+  const alvo = $('listaFavoritos');
+  $('contadorFavoritos').textContent = itens.length
+    ? (itens.length + (itens.length === 1 ? ' música' : ' músicas'))
+    : '';
+
+  if(!itens.length){
+    alvo.innerHTML = '<div class="vazio"><span class="ic">' + (busca ? '🔍' : '👍') + '</span>' +
+      (busca
+        ? ('Nenhuma música encontrada para <strong>' + esc(busca) + '</strong>.')
+        : 'Nenhuma música favoritada ainda.<br/>Toque no 👍 de uma música pronta e ela fica guardada aqui para sempre.') +
+      '</div>';
+    return;
+  }
+
+  // mesma cara da aba Finalizado, com os mesmos recursos
+  alvo.innerHTML = itens.map(p => {
+    const link = WORKER + p.link;
+    return '<div class="pedido">' +
+      '<div class="pedido-topo">' +
+        '<div class="pedido-info">' +
+          '<div class="pedido-nome">' + esc(p.titulo) +
+            (p.tipo === 'cover' ? '<span class="selo-cover">COVER</span>' : '') +
+            '<span class="selo-versao">VERSÃO ' + String.fromCharCode(65 + p.indice) + '</span>' +
+          '</div>' +
+          '<div class="pedido-meta">guardada em ' + esc(p.dia) + ' às ' + esc(p.hora) + '</div>' +
+        '</div>' +
+        '<div class="pedido-acoes">' +
+          '<button class="btn btn-ghost" onclick="editarPedido(\'' + esc(p.taskId) + '\')">Editar</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pedido-versoes">' +
+        '<div class="faixa">' +
+          htmlJoinha(p.taskId, p.indice) +
+          htmlPlayer(link, p.duracao) +
+          '<button class="btn btn-ghost faixa-baixar" onclick="cortar(\'' + esc(p.taskId + '|' + p.indice) + '\')">✂️ Cortar</button>' +
+          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // deixa as faixas prontas pro botão Cortar
+  itens.forEach(p => { cortaveis[p.taskId + '|' + p.indice] = { url: WORKER + p.link, nome: 'musica.mp3' }; });
+}
+
 // ── HISTÓRICO: o trabalho não se perde no meio ─────────────────
 // O atendente gera a letra, manda pro cliente aprovar e vai fazer
 // outra música. Quando o cliente responde, ele volta aqui e continua
@@ -1568,6 +1748,11 @@ function pintarPedidos(itens, busca){
   // ESTEIRA: cada pedido mostra as DUAS versões de cara, cada uma com
   // o seu player e o seu Baixar. São músicas diferentes da mesma letra
   // — o atendente precisa ouvir as duas pra escolher.
+  // o servidor já diz quais versões têm joinha — alimenta o conjunto
+  itens.forEach(p => (p.versoes || []).forEach(v => {
+    if(v.favorito) favoritos.add(p.taskId + '|' + v.indice);
+  }));
+
   alvo.innerHTML = itens.map(p => {
     const versoes = p.versoes || [];
     let corpo;
@@ -1577,6 +1762,7 @@ function pintarPedidos(itens, busca){
         const link = WORKER + v.link;
         return '<div class="faixa">' +
           '<span class="faixa-nome">Versão ' + String.fromCharCode(65 + v.indice) + '</span>' +
+          htmlJoinha(p.taskId, v.indice) +
           htmlPlayer(link, v.duracao) +
           '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
         '</div>';
@@ -1662,6 +1848,7 @@ contarLetra();
 escolherVoz('male');
 ligarPlayers();
 carregarCusto();
+carregarFavoritos(false);   // só o conjunto, pro joinha nascer certo
 </script>
 </body>
 </html>
