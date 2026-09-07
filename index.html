@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20260907f';</script>
+<script>window.__LUX_VERSION = '20260907g';</script>
 <script type="module" src="js/auth.js?v=20260904a"></script>
 </head>
 <body>
@@ -119,9 +119,9 @@
         <div class="nav-icon">⬇️</div> Suno Download
         <span class="nav-badge badge-new">NOVO</span>
       </a>
-      <a class="nav-item" data-tool="luxmusic" href="#" data-role-required="admin" style="display:none">
+      <a class="nav-item" data-tool="luxmusic" href="#">
         <div class="nav-icon">🎼</div> Lux Music
-        <span class="nav-badge badge-live">ADMIN</span>
+        <span class="nav-badge badge-new">NOVO</span>
       </a>
       <a class="nav-item" data-tool="figurinhas" href="#">
         <div class="nav-icon">🎭</div> Figurinhas
@@ -238,12 +238,12 @@
           </div>
         </div>
 
-        <div class="tool-card" data-card-tool="luxmusic" data-role-required="admin" style="display:none" onclick="loadTool('luxmusic')">
+        <div class="tool-card" data-card-tool="luxmusic" onclick="loadTool('luxmusic')">
           <div class="tool-card-icon">🎼</div>
           <div class="tool-card-name">LUX MUSIC</div>
           <div class="tool-card-desc">A letra vira música de verdade. Escolha o ritmo e a voz, e receba duas versões prontas em cerca de um minuto e meio.</div>
           <div class="tool-card-footer">
-            <span class="status-live">● Em teste — só admin</span>
+            <span class="status-live">● Disponível</span>
             <span class="tool-arrow">→</span>
           </div>
         </div>
@@ -369,8 +369,8 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
-    <!-- LUX MUSIC — música em áudio (Musicful). Admin only, em teste. -->
-    <div id="view-luxmusic" class="tool-panel" data-role-required="admin" style="display:none">
+    <!-- LUX MUSIC — música em áudio. Liberada pros atendentes em 07/09/2026. -->
+    <div id="view-luxmusic" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">🎼 LUX MUSIC</span>
