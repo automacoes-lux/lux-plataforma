@@ -261,6 +261,17 @@ body{
   color:var(--text-mid);letter-spacing:.05em;white-space:nowrap}
 .bal-legenda{margin-top:1.2rem;font-size:14px;color:var(--text-mid);line-height:1.7}
 
+/* cabeçalho de cada turno */
+.bal-grupo{display:flex;align-items:center;gap:10px;margin:1.5rem 0 .4rem;
+  font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-mid)}
+.bal-grupo:first-of-type{margin-top:.4rem}
+.bal-grupo.agora{color:var(--gold)}
+.bal-grupo span{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.06em;
+  text-transform:none;padding:2px 9px;border-radius:20px;
+  background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
+.bal-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
+
 @media(max-width:720px){
   .bal-row{grid-template-columns:1fr 1fr;gap:8px 12px}
   .bal-barra{grid-column:1/-1;order:3}
@@ -897,10 +908,25 @@ function renderBalanceador(d) {
     (d.rotatorConsultas ? '<div class="bal-kpi"><b>' + d.rotatorConsultas + '</b><span>consultas do rotator</span></div>' : '') +
     '</div>';
 
-  eq.forEach(e => {
+  // Separado por turno: cada grupo é uma disputa própria, e comparar entre turnos não faz sentido.
+  const grupos = [
+    { titulo: 'Turno A — manhã (até 14h)',        lista: eq.filter(e => e.turnoEquipe === 'A'), ativo: d.turno === 'manha' },
+    { titulo: 'Turno B — tarde (a partir das 14h)', lista: eq.filter(e => e.turnoEquipe === 'B'), ativo: d.turno === 'tarde' },
+    { titulo: 'Sem turno definido',                lista: eq.filter(e => !e.turnoEquipe),        ativo: false }
+  ].filter(g => g.lista.length);
+
+  grupos.forEach(g => {
+    html += '<div class="bal-grupo' + (g.ativo ? ' agora' : '') + '">' + g.titulo +
+      (g.ativo ? '<span>atendendo agora</span>' : '') + '</div>';
+    linhasDoGrupo(g.lista);
+  });
+
+  function linhasDoGrupo(lista) {
+  lista.forEach(e => {
     const pct = Math.max(2, (e.porPessoa / maior) * 100);
     const classe = e.cargaTurno === 0 ? 'zero' : (e.porPessoa < media - 0.01 ? 'baixo' : '');
-    const luz = !e.conectado ? 'off' : ((!e.ativo || e.ligadoRotator === false) ? 'pausa' : '');
+    // verde = recebendo · vermelho = fora da distribuição, seja qual for o motivo
+    const luz = e.naRoleta ? '' : 'off';
     const tituloLuz = !e.conectado ? 'WhatsApp desconectado'
       : e.ligadoRotator === false ? 'Desligada na tela do Rotator'
       : (!e.ativo ? 'Desligada aqui no painel' : 'Conectada e recebendo');
@@ -930,6 +956,7 @@ function renderBalanceador(d) {
       '</div>' +
     '</div>';
   });
+  }
 
   html += '<div class="bal-legenda">' +
     'A barra compara os leads <b>por pessoa</b> dentro do turno; o risco branco marca a média. Azul = abaixo da média, é quem recebe os próximos leads.<br>' +
