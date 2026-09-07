@@ -272,9 +272,15 @@ body{
 .bal-grupo span{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.06em;
   text-transform:none;padding:2px 9px;border-radius:20px;
   background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
+.bal-grupo span.fim{background:rgba(212,175,55,.10);color:var(--gold-dim);border-color:rgba(212,175,55,.30)}
 .bal-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
 
 @media(max-width:720px){
+  /* cabeçalho do turno no celular: título + selo na 1ª linha, os números embaixo */
+  .bal-grupo{flex-wrap:wrap;gap:6px 10px}
+  .bal-grupo em{flex:1 0 100%;white-space:normal;order:3}
+  .bal-grupo span{order:2}
+  .bal-grupo::after{display:none}
   .bal-row{grid-template-columns:1fr 1fr;gap:8px 12px}
   .bal-barra{grid-column:1/-1;order:3}
   .bal-peso{order:4}
@@ -892,11 +898,17 @@ async function carregarBalanceador() {
 
 function renderBalanceador(d) {
   const eq = d.equipes || [];
-  const naRoleta = eq.filter(e => e.naRoleta);
-  const vals = naRoleta.filter(e => e.cargaTurno > 0).map(e => e.porPessoa);
-  const media = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-  const maior = Math.max(1, ...eq.map(e => e.porPessoa));
-  const dif = vals.length ? (Math.max(...vals) - Math.min(...vals)) : 0;
+  // Cada turno é uma disputa própria: média, escala da barra e diferença saem SEMPRE
+  // de dentro do grupo — misturar manhã com tarde não diria nada.
+  const medir = lista => {
+    const vals = lista.filter(e => e.naRoleta && e.cargaTurno > 0).map(e => e.porPessoa);
+    return {
+      media: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0,
+      maior: Math.max(1, ...lista.map(e => e.porPessoa)),
+      dif: vals.length ? (Math.max(...vals) - Math.min(...vals)) : 0,
+      leads: lista.reduce((s, e) => s + (e.cargaTurno || 0), 0)
+    };
+  };
   const turnoTxt = d.turno === 'manha' ? 'Manhã (até 14h)' : d.turno === 'tarde' ? 'Tarde (a partir das 14h)' : 'Dia inteiro';
   const idade = d.cargaIdadeSeg == null ? '—'
     : d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + 's atrás' : Math.round(d.cargaIdadeSeg / 60) + ' min atrás';
@@ -905,6 +917,18 @@ function renderBalanceador(d) {
   const cotasDe = lista => lista.filter(e => e.naRoleta).reduce((s, e) => s + (e.peso || 1), 0);
   const cotasTotais = cotasDe(eq);
   const reais = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Separado por turno: cada grupo é uma disputa própria. O turno que já passou continua
+  // na tela com os números dele até a virada do dia — é o registro do que aconteceu.
+  const grupos = [
+    { titulo: 'Turno A — manhã (até 14h)',          lista: eq.filter(e => e.turnoEquipe === 'A'), ativo: d.turno === 'manha' || d.turno === 'dia' },
+    { titulo: 'Turno B — tarde (a partir das 14h)', lista: eq.filter(e => e.turnoEquipe === 'B'), ativo: d.turno === 'tarde' || d.turno === 'dia' },
+    { titulo: 'Sem turno definido',                 lista: eq.filter(e => !e.turnoEquipe),        ativo: false }
+  ].filter(g => g.lista.length);
+
+  // "diferença no turno" = dispersão de quem está atendendo AGORA (no fim de semana, todo mundo).
+  const dif = d.turno === 'dia' ? medir(eq).dif
+            : medir((grupos.find(g => g.ativo) || { lista: [] }).lista).dif;
 
   let html = '<div class="bal-topo">' +
     '<div class="bal-kpi txt"><b>' + turnoTxt + '</b><span>turno agora</span></div>' +
@@ -915,22 +939,20 @@ function renderBalanceador(d) {
     '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
     '</div>';
 
-  // Separado por turno: cada grupo é uma disputa própria, e comparar entre turnos não faz sentido.
-  const grupos = [
-    { titulo: 'Turno A — manhã (até 14h)',        lista: eq.filter(e => e.turnoEquipe === 'A'), ativo: d.turno === 'manha' },
-    { titulo: 'Turno B — tarde (a partir das 14h)', lista: eq.filter(e => e.turnoEquipe === 'B'), ativo: d.turno === 'tarde' },
-    { titulo: 'Sem turno definido',                lista: eq.filter(e => !e.turnoEquipe),        ativo: false }
-  ].filter(g => g.lista.length);
-
   grupos.forEach(g => {
+    const s = medir(g.lista);
     const c = cotasDe(g.lista);
     html += '<div class="bal-grupo' + (g.ativo ? ' agora' : '') + '">' + g.titulo +
-      '<em>' + c + (c === 1 ? ' cota ativa' : ' cotas ativas') + '</em>' +
-      (g.ativo ? '<span>atendendo agora</span>' : '') + '</div>';
-    linhasDoGrupo(g.lista);
+      '<em>' + c + (c === 1 ? ' cota ativa' : ' cotas ativas') +
+        ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
+        (s.dif > 0 ? ' · diferença ' + s.dif.toFixed(1) : '') + '</em>' +
+      (g.ativo ? '<span>atendendo agora</span>'
+               : s.leads > 0 ? '<span class="fim">registro de hoje</span>' : '') + '</div>';
+    linhasDoGrupo(g.lista, s);
   });
 
-  function linhasDoGrupo(lista) {
+  function linhasDoGrupo(lista, s) {
+    const media = s.media, maior = s.maior;
   lista.forEach(e => {
     const pct = Math.max(2, (e.porPessoa / maior) * 100);
     const classe = e.cargaTurno === 0 ? 'zero' : (e.porPessoa < media - 0.01 ? 'baixo' : '');
