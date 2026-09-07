@@ -175,6 +175,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .trim-fora{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.62)}
 .trim-sel{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,rgba(201,168,76,.30),rgba(201,168,76,.14));border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
 .trim-h{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:3}
+.trim-h.na-ponta-ini{margin-left:0;justify-content:flex-start}   /* colada no 0:00 */
+.trim-h.na-ponta-fim{margin-left:-22px;justify-content:flex-end} /* colada no último quadro */
 .trim-h::after{content:'';width:7px;height:64%;background:var(--gold);border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
 .trim-cur{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.9;pointer-events:none;z-index:2}
 .trim-lab{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--gold);font-weight:600;margin-top:.4rem;gap:.5rem;flex-wrap:wrap}
@@ -2177,8 +2179,9 @@ function pintarTrim(i){
   if(fe) fe.style.width=pi+'%';
   if(fd) fd.style.width=(100-pf)+'%';
   if(se){ se.style.left=pi+'%'; se.style.width=(pf-pi)+'%'; }
-  if(hi) hi.style.left='max(11px, '+pi+'%)';
-  if(hf) hf.style.left='min(calc(100% - 11px), '+pf+'%)';
+  // na ponta a alça ENCOSTA na borda (classe), fora dela volta a ficar centrada no ponto exato
+  if(hi){ hi.style.left=pi+'%'; hi.classList.toggle('na-ponta-ini', pi <= 0.05); }
+  if(hf){ hf.style.left=pf+'%'; hf.classList.toggle('na-ponta-fim', pf >= 99.95); }
   const ti=q('[data-ti'), tf=q('[data-tf'), td=q('[data-td'), du=q('[data-dur');
   if(ti) ti.textContent=mmss(ini)+' (início)';
   if(tf) tf.textContent=mmss(fim)+' (fim)';
