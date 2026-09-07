@@ -76,7 +76,6 @@
     box-shadow:0 0 10px rgba(0,173,90,.5);
   }
   .joinha.ocupado{opacity:.5;cursor:wait}
-  .pedido.saindo{opacity:.4}
   .versao-acoes .joinha{width:100%;height:auto;padding:11px 6px}
 
   /* a aba Favoritos se anuncia em verde */
@@ -1461,17 +1460,21 @@ async function alternarFavorito(taskId, indice, botao){
       }
     });
 
-    // Dentro da aba Favoritos, a linha desmarcada fica apagada em vez
-    // de sumir: se foi clique errado, é só clicar de novo. Ela sai de
-    // vez na próxima abertura da aba.
-    if(botao){
+    // Desmarcou estando DENTRO da aba Favoritos? A linha sai na hora —
+    // sem recarregar a lista, pra não piscar a tela inteira.
+    if(botao && !d.favorito){
       const linha = botao.closest('#listaFavoritos .pedido');
-      if(linha) linha.classList.toggle('saindo', !d.favorito);
+      if(linha){
+        linha.remove();
+        const restam = document.querySelectorAll('#listaFavoritos .pedido').length;
+        if(restam) $('contadorFavoritos').textContent = restam + (restam === 1 ? ' música' : ' músicas');
+        else pintarFavoritos([], $('buscaFavorito').value.trim());
+      }
     }
 
     sucesso(d.favorito
       ? 'Guardada nos Favoritos — essa não é apagada, fica salva pra sempre.'
-      : 'Tirada dos Favoritos. Some da lista quando você abrir a aba de novo.');
+      : 'Tirada dos Favoritos.');
   }catch(e){
     erro('Falha ao favoritar: ' + e.message);
   }finally{
