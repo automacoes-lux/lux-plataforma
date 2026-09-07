@@ -9,415 +9,426 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
+  /* ══════════════════════════════════════════════════════════
+     LINGUAGEM VISUAL — referência: telas do Suno (07/09/2026)
+     ══════════════════════════════════════════════════════════
+     Trocamos o dourado+serifa da plataforma pelo neutro escuro do
+     Suno: cinza quase preto, cantos MUITO arredondados, tipografia
+     sans, botões em pílula e um único gradiente laranja→rosa na ação
+     principal. Nenhuma função mudou — só a casca.
+     ══════════════════════════════════════════════════════════ */
   :root{
-    --gold:#C9A84C; --gold-bright:#E2BA5F; --gold-dim:#9A7A38;
-    --bg:#0A0A0B; --bg2:#111114; --bg3:#18181C; --bg4:#1F1F25;
-    --text:#E8E4DC; --muted:#8A8680;
-    --line:rgba(201,168,76,.2); --line-bright:rgba(201,168,76,.4);
-    --green:#7FB87A; --red:#E87A7A; --verde-fav:#00ad5a;
-    --radius:14px;
-    --font:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* fundos, do mais escuro ao mais claro */
+    --bg:#0D0D0F;          /* fundo da página */
+    --card:#191A1D;        /* painel (Lyrics, Styles, linha da lista) */
+    --campo:#212226;       /* caixa de texto dentro do painel */
+    --sup:#2A2B30;         /* chip, pílula inativa, botão secundário */
+    --line:#2E2F35;        /* traço, quase invisível */
+
+    /* texto */
+    --txt:#F2F2F3;         /* principal */
+    --txt2:#9B9BA3;        /* secundário, legenda */
+    --txt3:#6B6C74;        /* placeholder */
+
+    /* acentos — os mesmos da referência */
+    --azul:#2F7FF6;        /* varinha ligada */
+    --cta-a:#C9932F;       /* Criar música: dourado fechado … */
+    --cta-b:#F0CE68;       /* … → dourado claro */
+    --verde-fav:#00ad5a;   /* favoritos */
+    --red:#F26D6D;
+    --green:#4ADE80;
+
+    --r-card:16px;         /* raio do painel */
+    --r:12px;              /* raio de campo e botão */
+    --pill:999px;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{min-height:100%}
   body{
-    font-family:var(--font);
-    background:radial-gradient(ellipse at top, rgba(201,168,76,.05) 0%, var(--bg) 60%);
-    color:var(--text);min-height:100vh;padding:20px 14px 60px;line-height:1.5;
+    font-family:var(--font);background:var(--bg);color:var(--txt);
+    min-height:100vh;padding:20px 14px 60px;line-height:1.5;
     display:flex;flex-direction:column;align-items:center;
+    -webkit-font-smoothing:antialiased;
   }
   .wrap{width:100%;max-width:1180px}
 
   /* ── CABEÇALHO ── */
-  header{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
-  .mark{
-    width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  header{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .mark{width:44px;height:44px;border-radius:50%;flex-shrink:0;
     background:url("data:image/png;base64,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") center/cover no-repeat;
-    box-shadow:0 0 0 4px rgba(201,168,76,.12);
-  }
-  h1{font-family:'Cinzel',serif;font-size:20px;font-weight:600;letter-spacing:.04em}
-  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+    box-shadow:0 0 0 4px rgba(201,168,76,.12);}
+  h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+  .sub{color:var(--txt2);font-size:13.5px;margin-top:2px}
 
-  /* ── ABAS (Criar / Pedidos) ── */
-  .abas{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  /* ── ABAS: o segmentado "Simple / Advanced / Sounds" ── */
+  .abas{
+    display:inline-flex;gap:4px;margin-bottom:18px;flex-wrap:wrap;
+    background:var(--card);border-radius:var(--pill);padding:4px;
+  }
   .aba{
-    background:var(--bg2);border:1px solid var(--line);border-radius:10px;
-    padding:10px 18px;color:var(--muted);cursor:pointer;font-family:'Cinzel',serif;
-    font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-    transition:all .15s;
+    background:transparent;border:none;border-radius:var(--pill);
+    padding:9px 18px;color:var(--txt2);cursor:pointer;font-family:var(--font);
+    font-size:13.5px;font-weight:500;transition:all .15s;white-space:nowrap;
   }
-  .aba:hover{border-color:var(--gold)}
-  .aba.on{background:rgba(201,168,76,.14);border-color:var(--gold);color:var(--gold-bright)}
-  /* Zerar fica no fim do fluxo, embaixo do Criar música: discreto,
-     porque é a ação de recomeçar, não a principal. */
-  .btn-zerar{
-    display:block;width:100%;margin-top:10px;background:transparent;
-    border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:10px;
-    color:#FFFFFF;font-family:var(--font);font-size:12.5px;
-    cursor:pointer;transition:all .13s;
-  }
-  .btn-zerar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
-
-  /* ── O JOINHA 👍 ──
-     Apagado é discreto; ligado é verde neon com brilho, pra dar no
-     olho de longe qual versão foi a escolhida. */
-  .joinha{
-    background:var(--bg3);border:1px solid #35322b;border-radius:9px;
-    width:38px;height:38px;flex-shrink:0;cursor:pointer;
-    display:grid;place-items:center;padding:0;transition:all .15s;
-  }
-  /* o polegar é SEMPRE #c8c8c8; quem muda é a caixa em volta */
-  .joinha svg{width:18px;height:18px;display:block;fill:#c8c8c8}
-  .joinha:hover{border-color:var(--verde-fav)}
-  .joinha.on{
-    background:var(--verde-fav);border-color:var(--verde-fav);
-    box-shadow:0 0 10px rgba(0,173,90,.5);
-  }
-  .joinha.ocupado{opacity:.5;cursor:wait}
-  .versao-acoes .joinha{width:100%;height:auto;padding:11px 6px}
-
-  /* a aba Favoritos se anuncia em verde */
+  .aba:hover{color:var(--txt)}
+  .aba.on{background:var(--sup);color:var(--txt);font-weight:600}
   .aba.fav{color:var(--verde-fav)}
-  .aba.fav.on{background:rgba(0,173,90,.16);border-color:var(--verde-fav);color:var(--verde-fav)}
-
-  .selo-versao{
-    display:inline-block;background:var(--bg4);border:1px solid #35322b;
-    border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--muted);
-    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
-  }
-
-  /* selos da aba Histórico */
-  .selo-pronto,.selo-andamento{
-    display:inline-block;border-radius:20px;padding:1px 9px;font-size:10.5px;
-    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
-  }
-  .selo-pronto{background:rgba(127,184,122,.14);border:1px solid rgba(127,184,122,.4);color:var(--green)}
-  .selo-andamento{background:var(--bg4);border:1px solid #35322b;color:var(--muted)}
+  .aba.fav.on{background:rgba(0,173,90,.15);color:var(--verde-fav)}
 
   /* ── LAYOUT ── */
-  .layout{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
+  .layout{display:grid;grid-template-columns:1fr 400px;gap:14px;align-items:start}
 
   .card{
-    background:var(--bg2);border:1px solid var(--line);
-    border-radius:var(--radius);padding:18px;margin-bottom:16px;
+    background:var(--card);border:none;
+    border-radius:var(--r-card);padding:16px;margin-bottom:12px;
   }
   .card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 
-  /* Todo título de seção usa este estilo — mesmo tamanho, cor e fonte. */
+  /* título de seção: "Lyrics", "Styles" — sem caixa alta, sem serifa */
   .titulo-secao{
-    font-family:'Cinzel',serif;color:var(--gold-bright);font-size:13.5px;
-    font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    font-family:var(--font);color:var(--txt);font-size:14.5px;
+    font-weight:600;letter-spacing:-.01em;
   }
   .titulo-secao.solto{display:block;margin-bottom:9px}
-  .card-hint{color:var(--muted);font-size:12.5px;margin-bottom:12px;line-height:1.55}
+  .card-hint{color:var(--txt2);font-size:13px;margin-bottom:12px;line-height:1.55}
 
   textarea,input[type=text]{
-    width:100%;background:var(--bg);border:1px solid #35322b;border-radius:9px;
-    padding:12px 13px;color:var(--text);font-family:var(--font);font-size:14px;
+    width:100%;background:var(--campo);border:1px solid transparent;border-radius:var(--r);
+    padding:13px 14px;color:var(--txt);font-family:var(--font);font-size:14px;
     line-height:1.6;transition:border-color .15s;resize:vertical;
   }
-  textarea:focus,input[type=text]:focus{outline:none;border-color:var(--gold)}
-  textarea::placeholder,input::placeholder{color:#57534b}
+  textarea:focus,input[type=text]:focus{outline:none;border-color:var(--line)}
+  textarea::placeholder,input::placeholder{color:var(--txt3)}
   #briefing{min-height:130px}
   #letra{min-height:400px}
   #estilo{min-height:120px}
 
-  /* ── FERRAMENTAS DENTRO DA CAIXA (lixeira / copiar) ──
-     Ficam no canto superior direito do próprio campo, e não no cabeçalho
-     do card: a ação fica junto do texto que ela afeta. */
+  /* ── AÇÕES DENTRO DA CAIXA (lixeira) ── */
   .campo{position:relative}
   .campo > textarea{padding-right:46px}
-  .campo-acoes{position:absolute;top:8px;right:8px;display:flex;gap:5px;z-index:2}
+  .campo-acoes{position:absolute;top:9px;right:9px;display:flex;gap:5px;z-index:2}
   .btn-campo{
-    background:rgba(10,10,11,.85);border:1px solid #35322b;border-radius:7px;
-    width:28px;height:28px;display:grid;place-items:center;
-    color:#D6D3CD;cursor:pointer;font-size:13px;line-height:1;
+    background:transparent;border:none;border-radius:8px;
+    width:30px;height:30px;display:grid;place-items:center;
+    color:#c8c8c8;cursor:pointer;font-size:14px;line-height:1;
     transition:all .13s;font-family:var(--font);padding:0;
   }
-  .btn-campo:hover{border-color:var(--gold);color:var(--gold-bright)}
-  .btn-campo.lixo:hover{border-color:var(--red);color:var(--red)}
-  .btn-campo.ok{border-color:var(--green);color:var(--green)}
+  .btn-campo:hover{background:var(--sup);color:var(--txt)}
+  .btn-campo.lixo:hover{color:var(--red)}
+  .btn-campo.ok{color:var(--green)}
 
-  .contador{font-size:11.5px;color:var(--muted);text-align:right;margin-top:5px}
-  .contador.alto{color:var(--gold-bright)}
-  .contador.estourou{color:var(--red);font-weight:600}
+  .contador{font-size:12px;color:var(--txt3);text-align:right;margin-top:6px}
+  .contador.alto{color:var(--txt2)}
+  .contador.estourou{color:var(--red);font-weight:500}
 
-  /* ── BOTÕES ── */
-  .btn{
-    border:none;border-radius:9px;padding:12px 16px;cursor:pointer;
-    font-family:'Cinzel',serif;font-size:12.5px;font-weight:600;
-    letter-spacing:.1em;text-transform:uppercase;transition:filter .15s,transform .1s;
-  }
-  .btn:disabled{opacity:.45;cursor:not-allowed}
-  .btn:not(:disabled):hover{filter:brightness(1.1)}
-  .btn:not(:disabled):active{transform:translateY(1px)}
-  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:#1A1A1A}
-  .btn-ghost{
-    background:transparent;border:1px solid var(--line-bright);color:var(--gold-bright);
-    font-family:var(--font);font-size:13px;letter-spacing:.03em;text-transform:none;
-    font-weight:600;padding:11px 14px;border-radius:9px;
-  }
-  .btn-ghost:not(:disabled):hover{background:rgba(201,168,76,.08)}
-  .btn-lg{width:100%;padding:15px;font-size:13.5px}
-  .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
-  /* ── CAIXA DO COVER (fica ANTES do briefing) ── */
-  .cover-box{
-    background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.02));
-    border:1px dashed var(--line-bright);
-  }
-  .cover-arquivo{
-    display:flex;align-items:center;gap:10px;background:var(--bg3);
-    border:1px solid var(--line);border-radius:9px;padding:11px 13px;
-    font-size:13px;margin-top:11px;flex-wrap:wrap;
-  }
-  .cover-arquivo .nome{color:var(--gold-bright);word-break:break-all;flex:1;min-width:120px}
-
-  /* ── RODAPÉ DO CAMPO (contador + botão Copiar) ──
-     O copiar saiu de dentro da caixa: fica embaixo do bloco, escrito,
-     branco — é uma ação que se lê, não um ícone que se adivinha. */
+  /* ── RODAPÉ DO CAMPO (Copiar, Aprimorar) ── */
   .rodape-campo{
     display:flex;align-items:center;justify-content:space-between;
-    gap:10px;margin-top:9px;flex-wrap:wrap;
+    gap:10px;margin-top:10px;flex-wrap:wrap;
   }
   .rodape-campo .contador{margin-top:0}
   .btn-copiar{
-    background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:8px;
-    padding:8px 14px;color:#FFFFFF;font-family:var(--font);font-size:12.5px;
+    background:var(--sup);border:none;border-radius:var(--pill);
+    padding:9px 16px;color:var(--txt);font-family:var(--font);font-size:13px;
     font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
     transition:all .13s;line-height:1;
   }
-  .btn-copiar:hover{border-color:#FFFFFF;background:rgba(255,255,255,.09)}
-  .btn-copiar.ok{border-color:var(--green);color:var(--green)}
-
-  /* A varinha é a mesma casca do Copiar, em dourado: é uma ação que
-     chama a IA, então tem que se anunciar. */
-  .btn-copiar.varinha{
-    border-color:var(--line-bright);color:var(--gold-bright);
-  }
-  .btn-copiar.varinha:hover{border-color:var(--gold);background:rgba(201,168,76,.09)}
+  .btn-copiar:hover{background:#35363C}
+  .btn-copiar.ok{color:var(--green)}
   .btn-copiar:disabled{opacity:.5;cursor:not-allowed}
+  /* a varinha é só o círculo azul da referência — sem rótulo */
+  .btn-copiar.varinha{
+    background:var(--azul);color:#fff;width:38px;height:38px;
+    padding:0;border-radius:50%;display:inline-grid;place-items:center;
+  }
+  .btn-copiar.varinha .ic-sv{width:17px;height:17px}
+  .btn-copiar.varinha:hover{background:#4A90F7}
+  .btn-copiar.varinha .spin{margin:0;border-color:rgba(255,255,255,.35);border-top-color:#fff}
 
-  /* ── PLAYER DO COVER — play e linha do tempo, brancos ── */
-  .player{
-    display:flex;align-items:center;gap:12px;margin-top:11px;
-    background:var(--bg3);border:1px solid var(--line);
-    border-radius:9px;padding:11px 13px;
+  /* ── BOTÕES ── */
+  .btn{
+    border:none;border-radius:var(--r);padding:12px 16px;cursor:pointer;
+    font-family:var(--font);font-size:13.5px;font-weight:500;
+    letter-spacing:0;text-transform:none;transition:filter .15s,background .15s;
   }
-  .player audio{display:none}
-  .player .pp{
-    width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;
-    background:#FFFFFF;border:none;color:#111114;font-size:12px;line-height:1;
-    display:grid;place-items:center;padding:0;transition:transform .1s;
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:not(:disabled):hover{filter:brightness(1.12)}
+  /* Ação primária comum: pílula clara, como o "Published" da
+     referência. O GRADIENTE fica só para o Criar música — na tela do
+     Suno ele é exclusivo do Create, e repetir tira a força dele. */
+  .btn-gold{background:#F2F2F3;color:#111;font-weight:600}
+  .btn-gold:not(:disabled):hover{background:#fff;filter:none}
+  .btn-gold.btn-lg{
+    background:linear-gradient(90deg,var(--cta-a),var(--cta-b));color:#1A1A1A;
   }
-  .player .pp:hover{transform:scale(1.07)}
-  .player .trilha{
-    flex:1;min-width:70px;height:5px;border-radius:3px;
-    background:rgba(255,255,255,.24);position:relative;cursor:pointer;
+  .btn-gold.btn-lg:not(:disabled):hover{filter:brightness(1.1)}
+  .btn-ghost{
+    background:var(--sup);border:none;color:var(--txt);
+    font-size:13px;font-weight:500;padding:11px 15px;border-radius:var(--r);
   }
-  .player .trilha::before{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
-  .player .cheio{
-    position:absolute;left:0;top:0;bottom:0;width:0%;
-    background:#FFFFFF;border-radius:3px;pointer-events:none;
-  }
-  .player .bolinha{
-    position:absolute;top:50%;left:0%;width:11px;height:11px;border-radius:50%;
-    background:#FFFFFF;transform:translate(-50%,-50%);pointer-events:none;
-    box-shadow:0 0 0 3px rgba(255,255,255,.16);
-  }
-  .player .tempo{
-    font-size:12px;color:#FFFFFF;white-space:nowrap;flex-shrink:0;
-    font-variant-numeric:tabular-nums;
-  }
+  .btn-ghost:not(:disabled):hover{background:#35363C}
+  .btn-lg{width:100%;padding:15px;font-size:14.5px;border-radius:var(--pill)}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  /* ── UMA GERAÇÃO (as duas versões daquele clique) ──
-     Gerar de novo NÃO substitui: empilha, a mais nova em cima. */
-  .geracao{margin-bottom:20px}
-  .geracao + .geracao{border-top:1px solid rgba(201,168,76,.14);padding-top:16px}
-  .geracao-head{
-    display:flex;align-items:baseline;justify-content:space-between;
-    gap:10px;margin-bottom:9px;
+  .btn-zerar{
+    display:block;width:100%;margin-top:10px;background:transparent;
+    border:1px solid var(--line);border-radius:var(--pill);padding:11px;
+    color:var(--txt);font-family:var(--font);font-size:13px;
+    cursor:pointer;transition:all .13s;
   }
-  .geracao-nome{
-    font-family:'Cinzel',serif;font-size:12px;letter-spacing:.07em;
-    text-transform:uppercase;color:var(--gold-dim);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .btn-zerar:hover{background:var(--sup)}
+
+  /* ── CAIXA DO COVER ── */
+  .cover-box{background:var(--card)}
+  .cover-arquivo{
+    display:flex;align-items:center;gap:10px;background:var(--campo);
+    border:none;border-radius:var(--r);padding:12px 14px;
+    font-size:13px;margin-top:11px;flex-wrap:wrap;
   }
-  .geracao-hora{font-size:11.5px;color:var(--muted);flex-shrink:0}
+  .cover-arquivo .nome{color:var(--txt);word-break:break-all;flex:1;min-width:120px}
 
   /* ── CHIPS DE RITMO ── */
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
   .chip{
-    background:var(--bg3);border:1px solid #35322b;border-radius:20px;
-    padding:6px 13px;font-size:12.5px;color:#bdb8ad;cursor:pointer;
+    background:var(--sup);border:none;border-radius:var(--pill);
+    padding:8px 15px;font-size:13px;color:var(--txt);cursor:pointer;
     transition:all .13s;font-family:var(--font);
   }
-  .chip:hover{border-color:var(--gold);color:var(--gold-bright)}
-  .chip.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+  .chip:hover{background:#35363C}
+  .chip.on{background:var(--txt);color:#111;font-weight:600}
 
   /* ── VOZ ── */
   .voz{display:flex;gap:8px}
   .voz button{
-    flex:1;background:var(--bg3);border:1px solid #35322b;border-radius:9px;
-    padding:12px 8px;color:#bdb8ad;cursor:pointer;font-family:var(--font);
+    flex:1;background:var(--sup);border:none;border-radius:var(--r);
+    padding:13px 8px;color:var(--txt2);cursor:pointer;font-family:var(--font);
     font-size:13px;transition:all .13s;display:flex;flex-direction:column;
-    align-items:center;gap:4px;
+    align-items:center;gap:5px;
   }
-  .voz button .ic{font-size:19px;line-height:1}
-  .voz button:hover{border-color:var(--gold)}
-  .voz button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+  .voz button .ic{font-size:18px;line-height:1}
+  .voz button:hover{background:#35363C;color:var(--txt)}
+  .voz button.on{background:var(--txt);color:#111;font-weight:600}
 
   .politico{
-    display:flex;align-items:center;gap:8px;font-size:13px;color:#bdb8ad;
+    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);
     cursor:pointer;user-select:none;
   }
-  .politico input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+  .politico input{accent-color:var(--azul);width:16px;height:16px;cursor:pointer}
 
   /* ══ AS DUAS VERSÕES ══ */
   .versao{
-    background:var(--bg2);border:1px solid var(--line);
-    border-radius:var(--radius);padding:16px;margin-bottom:14px;
+    background:var(--card);border:none;
+    border-radius:var(--r-card);padding:14px;margin-bottom:10px;
   }
-  .versao.pronta{border-color:var(--line-bright)}
-  .versao.falhou{border-color:rgba(232,122,122,.4)}
   .versao-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}
   .versao-letra{
-    width:34px;height:34px;border-radius:50%;flex-shrink:0;
-    display:grid;place-items:center;font-family:'Cinzel',serif;font-weight:700;
-    font-size:15px;background:var(--bg4);color:var(--muted);
-    border:1px solid #35322b;transition:all .3s;
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    display:grid;place-items:center;font-weight:600;
+    font-size:15px;background:var(--sup);color:var(--txt2);
+    border:none;transition:all .3s;
   }
   .versao.pronta .versao-letra{
-    background:linear-gradient(135deg,var(--gold),var(--gold-bright));
-    color:#10131a;border-color:transparent;
+    background:linear-gradient(135deg,var(--cta-a),var(--cta-b));color:#1A1A1A;
   }
-  .versao-nome{font-family:'Cinzel',serif;font-size:13px;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--text)}
-  .versao-estado{font-size:11.5px;color:var(--muted);margin-top:2px}
-  .versao.pronta .versao-estado{color:var(--green)}
+  .versao-nome{font-size:14px;font-weight:600;color:var(--txt)}
+  .versao-estado{font-size:12.5px;color:var(--txt2);margin-top:2px}
+  .versao.pronta .versao-estado{color:var(--txt2)}
   .versao.falhou .versao-estado{color:var(--red)}
 
-  /* equalizador — a onda da música que está nascendo */
-  .eq{display:flex;align-items:flex-end;gap:2px;height:38px;margin-bottom:12px}
+  /* equalizador — a onda da música nascendo */
+  .eq{display:flex;align-items:flex-end;gap:2px;height:34px;margin-bottom:12px}
   .eq i{
-    flex:1;background:linear-gradient(180deg,var(--gold-bright),var(--gold-dim));
-    border-radius:1px;height:var(--h,30%);opacity:.4;
+    flex:1;background:var(--sup);border-radius:2px;height:var(--h,30%);
     transition:height .4s ease,opacity .4s ease;
   }
   .versao.gerando .eq i{animation:eqPulse 1.1s ease-in-out infinite}
-  .versao.pronta .eq i{opacity:.8}
-  .versao.falhou .eq i{background:#4a3a3a;height:10%;opacity:.5}
+  .versao.pronta .eq i{background:#3A3B41}
+  .versao.falhou .eq i{background:#3A2E2E;height:10%}
   @keyframes eqPulse{
-    0%,100%{height:calc(var(--h,30%) * .35);opacity:.28}
-    50%    {height:var(--h,30%);opacity:.8}
+    0%,100%{height:calc(var(--h,30%) * .35);opacity:.4}
+    50%    {height:var(--h,30%);opacity:1}
   }
   @media (prefers-reduced-motion:reduce){
-    .versao.gerando .eq i{animation:none;opacity:.5}
+    .versao.gerando .eq i{animation:none;opacity:.6}
   }
 
   .versao audio{width:100%;margin-bottom:10px;height:38px}
-  /* três ações por música: cortar, cover e baixar */
   .versao-acoes{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:7px}
-  .versao-acoes .btn{padding:11px 6px;font-size:11.5px;letter-spacing:.05em}
+  .versao-acoes .btn{padding:11px 6px;font-size:12.5px}
 
   .vazio{
-    background:var(--bg2);border:1px dashed var(--line);border-radius:var(--radius);
-    padding:34px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.65;
+    background:var(--card);border:none;border-radius:var(--r-card);
+    padding:36px 20px;text-align:center;color:var(--txt2);font-size:13.5px;line-height:1.65;
   }
-  .vazio .ic{font-size:30px;display:block;margin-bottom:10px;opacity:.5}
+  .vazio .ic{font-size:28px;display:block;margin-bottom:10px;opacity:.6}
 
-  /* ── ABA PEDIDOS ── */
-  .busca-wrap{position:relative;margin-bottom:14px}
+  /* ── LISTAS (Finalizado, Letra salva, Favoritos) ── */
+  .busca-wrap{position:relative;margin-bottom:12px}
   .busca-wrap .lupa{
-    position:absolute;left:13px;top:50%;transform:translateY(-50%);
-    color:var(--muted);font-size:15px;pointer-events:none;
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    color:var(--txt3);font-size:14px;pointer-events:none;
   }
-  .busca-wrap input{padding-left:38px}
+  .busca-wrap input{padding-left:40px;border-radius:var(--pill);background:var(--card)}
   .pedido{
-    background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+    background:var(--card);border:none;border-radius:var(--r-card);
     padding:14px 16px;margin-bottom:10px;
   }
   .pedido-topo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .pedido-versoes{margin-top:6px}
   .pedido-info{flex:1;min-width:190px}
   .pedido-nome{
-    font-family:'Cinzel',serif;font-size:14.5px;color:var(--text);
+    font-size:14.5px;font-weight:600;color:var(--txt);
     line-height:1.35;word-break:break-word;
   }
-  .pedido-meta{color:var(--muted);font-size:12.5px;margin-top:4px}
-  .pedido-valor{font-family:'Cinzel',serif;color:var(--gold-bright);font-size:14px;white-space:nowrap}
+  .pedido-meta{color:var(--txt2);font-size:12.5px;margin-top:3px}
+  .pedido-valor{color:var(--txt2);font-size:13.5px;white-space:nowrap;text-align:right}
   .pedido-acoes{display:flex;gap:7px;flex-wrap:wrap}
-  .pedido-acoes .btn{padding:9px 15px;font-size:11.5px}
+  .pedido-acoes .btn{padding:9px 16px;font-size:12.5px;border-radius:var(--pill)}
   .nao-cobrado{
-    font-family:var(--font);font-size:10.5px;color:var(--green);
-    letter-spacing:.02em;margin-top:2px;font-weight:500;
-  }
-  .selo-cover{
-    display:inline-block;background:rgba(201,168,76,.14);border:1px solid var(--line);
-    border-radius:20px;padding:1px 9px;font-size:10.5px;color:var(--gold-bright);
-    margin-left:7px;vertical-align:1px;letter-spacing:.05em;
+    font-size:11px;color:var(--green);margin-top:2px;font-weight:500;
   }
 
-  /* ── FILTRO DE PERÍODO (aba Pedidos) ── */
-  .periodo{
-    display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px;
+  /* selos: pílulas claras, como o "Published" da referência */
+  .selo-cover,.selo-versao,.selo-pronto,.selo-andamento{
+    display:inline-block;border-radius:var(--pill);padding:2px 10px;
+    font-size:11px;margin-left:8px;vertical-align:1px;font-weight:500;
   }
-  .periodo-rot{
-    font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--gold-dim);
-  }
-  .periodo input[type=date]{
-    background:var(--bg);border:1px solid #35322b;border-radius:8px;
-    padding:8px 10px;color:var(--text);font-family:var(--font);font-size:13px;
-    color-scheme:dark;cursor:pointer;
-  }
-  .periodo input[type=date]:focus{outline:none;border-color:var(--gold)}
-  .periodo .ate{color:var(--muted);font-size:12.5px}
-  .chip-per{
-    background:var(--bg3);border:1px solid #35322b;border-radius:18px;
-    padding:6px 12px;font-size:12px;color:#bdb8ad;cursor:pointer;
-    font-family:var(--font);transition:all .13s;
-  }
-  .chip-per:hover{border-color:var(--gold);color:var(--gold-bright)}
-  .chip-per.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-bright);font-weight:600}
+  .selo-cover{background:var(--sup);color:var(--txt2)}
+  .selo-versao{background:var(--sup);color:var(--txt2)}
+  .selo-pronto{background:rgba(74,222,128,.14);color:var(--green)}
+  .selo-andamento{background:var(--sup);color:var(--txt2)}
 
-  /* ── AS DUAS VERSÕES, SEMPRE À VISTA ──
-     Cada versão é uma música diferente: o atendente precisa ouvir as
-     duas e baixar a que preferir, sem abrir nada antes. */
-  .faixa{display:flex;align-items:center;gap:11px;margin-top:9px;flex-wrap:wrap}
+  /* ── O JOINHA ── */
+  .joinha{
+    background:var(--sup);border:none;border-radius:var(--r);
+    width:38px;height:38px;flex-shrink:0;cursor:pointer;
+    display:grid;place-items:center;padding:0;transition:all .15s;
+  }
+  .joinha svg{width:18px;height:18px;display:block;fill:#c8c8c8}
+  .joinha:hover{background:#35363C}
+  .joinha.on{background:var(--verde-fav)}
+  .joinha.on svg{fill:#fff}
+  .joinha.ocupado{opacity:.5;cursor:wait}
+
+  /* ── AS DUAS VERSÕES DENTRO DA LINHA ── */
+  .faixa{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
   .faixa-nome{
-    font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.07em;
-    text-transform:uppercase;color:var(--muted);min-width:74px;
+    font-size:12.5px;color:var(--txt2);min-width:74px;font-weight:500;
   }
   .faixa .player{flex:1;margin-top:0;min-width:190px}
   .faixa-baixar{
-    padding:10px 16px;font-size:11.5px;text-decoration:none;text-align:center;
-    white-space:nowrap;
+    padding:10px 16px;font-size:12.5px;text-decoration:none;text-align:center;
+    white-space:nowrap;border-radius:var(--pill);
   }
   .aviso-linha{
-    margin-top:10px;font-size:12.5px;color:var(--muted);
+    margin-top:10px;font-size:12.5px;color:var(--txt2);
     display:flex;align-items:center;gap:7px;
   }
 
+  /* ── FILTRO DE PERÍODO ── */
+  .periodo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+  .periodo-rot{font-size:12.5px;color:var(--txt2);font-weight:500}
+  .periodo input[type=date]{
+    background:var(--card);border:none;border-radius:var(--pill);
+    padding:9px 14px;color:var(--txt);font-family:var(--font);font-size:13px;
+    color-scheme:dark;cursor:pointer;
+  }
+  .periodo input[type=date]:focus{outline:none}
+  .periodo .ate{color:var(--txt3);font-size:12.5px}
+  .chip-per{
+    background:var(--card);border:none;border-radius:var(--pill);
+    padding:8px 14px;font-size:12.5px;color:var(--txt2);cursor:pointer;
+    font-family:var(--font);transition:all .13s;
+  }
+  .chip-per:hover{background:var(--sup);color:var(--txt)}
+  .chip-per.on{background:var(--txt);color:#111;font-weight:600}
+
+  /* ── DURAÇÃO (barrinha) ── */
+  .dur{display:flex;align-items:center;gap:14px}
+  .dur-valor{font-size:18px;color:var(--txt);min-width:62px;text-align:right;font-weight:600}
+  .dur-valor.auto{font-size:13px;color:var(--txt2);font-weight:400}
+
+  /* ── PLAYER ── */
+  .player{
+    display:flex;align-items:center;gap:12px;margin-top:11px;
+    background:var(--campo);border:none;border-radius:var(--pill);padding:8px 14px 8px 8px;
+  }
+  .player audio{display:none}
+  .player .pp{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;
+    background:#fff;border:none;color:#111;font-size:12px;line-height:1;
+    display:grid;place-items:center;padding:0;transition:transform .1s;
+  }
+  .player .pp:hover{transform:scale(1.07)}
+  .player .trilha{
+    flex:1;min-width:70px;height:4px;border-radius:3px;
+    background:#3A3B41;position:relative;cursor:pointer;
+  }
+  .player .trilha::before{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+  .player .cheio{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:#fff;border-radius:3px;pointer-events:none;
+  }
+  .player .bolinha{
+    position:absolute;top:50%;left:0%;width:11px;height:11px;border-radius:50%;
+    background:#fff;transform:translate(-50%,-50%);pointer-events:none;
+  }
+  .player .tempo{
+    font-size:12px;color:var(--txt2);white-space:nowrap;flex-shrink:0;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ── UMA GERAÇÃO ── */
+  .geracao{margin-bottom:18px}
+  .geracao + .geracao{border-top:1px solid var(--line);padding-top:16px}
+  .geracao-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:10px;margin-bottom:9px;padding:0 2px;
+  }
+  .geracao-nome{
+    font-size:12.5px;color:var(--txt2);font-weight:500;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .geracao-hora{font-size:12px;color:var(--txt3);flex-shrink:0}
+
   /* ── AVISOS ── */
   .aviso{
-    border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;
+    border-radius:var(--r);padding:12px 15px;font-size:13px;line-height:1.6;
     margin-bottom:14px;display:none;
   }
   .aviso.on{display:block}
-  .aviso-erro{background:rgba(232,122,122,.1);border:1px solid rgba(232,122,122,.35);color:#F0A0A0}
-  .aviso-ok{background:rgba(127,184,122,.1);border:1px solid rgba(127,184,122,.35);color:#A5D3A0}
+  .aviso-erro{background:rgba(242,109,109,.12);color:#F9B4B4}
+  .aviso-ok{background:rgba(74,222,128,.12);color:#A7E9BE}
 
-  .custo-nota{font-size:12px;color:var(--muted);text-align:center;margin-top:9px;line-height:1.5}
+  .custo-nota{font-size:12.5px;color:var(--txt2);text-align:center;margin-top:10px;line-height:1.5}
 
   .spin{
-    display:inline-block;width:12px;height:12px;border:2px solid rgba(201,168,76,.3);
-    border-top-color:var(--gold-bright);border-radius:50%;
+    display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);
+    border-top-color:#fff;border-radius:50%;
     animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;
   }
   @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── ÍCONES ──
+     Desenho, não emoji: herda a cor do texto e é igual em todo
+     sistema. */
+  .ic-sv{width:16px;height:16px;fill:currentColor;display:block;flex-shrink:0}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .btn-copiar .ic-sv{width:15px;height:15px}
+  .btn-campo .ic-sv{width:15px;height:15px}
+  .busca-wrap .lupa .ic-sv{width:16px;height:16px}
+  .btn-zerar{display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-zerar .ic-sv{width:14px;height:14px}
+  #btnEscolherAudio{display:inline-flex;align-items:center;gap:8px}
+  .player .pp .ic-sv{width:15px;height:15px;fill:#111}
+
+  /* ── FOCO VISÍVEL (acessibilidade) ── */
+  button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{
+    outline:2px solid var(--azul);outline-offset:2px;
+  }
 
   /* ── MOBILE ── */
   @media (max-width:900px){
@@ -425,16 +436,18 @@
     header{gap:11px}
     h1{font-size:18px}
     body{padding:16px 11px 50px}
-    .card{padding:15px}
+    .card{padding:14px}
     #letra{min-height:320px}
+    .abas{display:grid;grid-template-columns:1fr 1fr;gap:4px;width:100%}
+    .aba{padding:10px;font-size:12.5px}
     .versao-acoes{grid-template-columns:auto 1fr 1fr}
     .versao-acoes .btn:last-child{grid-column:1 / -1}
-    .versao-acoes .joinha{width:42px;padding:11px 0}
+    .versao-acoes .joinha{width:42px;height:auto;padding:11px 0}
     .faixa-nome{min-width:100%}
-    /* no celular o player fica numa linha so pra nao espremer o tempo */
     .faixa .player{min-width:100%}
     .faixa-baixar{flex:1}
   }
+
 </style>
 </head>
 <body>
@@ -468,12 +481,12 @@
       <div class="card cover-box">
         <div class="card-head"><span class="titulo-secao">Cover de música</span></div>
         <button class="btn btn-ghost" id="btnEscolherAudio" onclick="document.getElementById('arqCover').click()">
-          🎵 Enviar música
+          <span class="ic-sv-wrap"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></span> Enviar música
         </button>
         <input type="file" id="arqCover" accept="audio/*,.mp3,.wav,.m4a,.ogg" style="display:none" onchange="subirCover(this)"/>
         <div class="cover-arquivo" id="coverArquivo" style="display:none">
           <span class="nome" id="coverNome">—</span>
-          <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio">🗑</button>
+          <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
         </div>
         <div id="coverPlayer" style="display:none"></div>
       </div>
@@ -483,7 +496,7 @@
         <div class="card-head"><span class="titulo-secao">Briefing do cliente</span></div>
         <div class="campo">
           <div class="campo-acoes">
-            <button class="btn-campo lixo" onclick="limpar('briefing')" title="Apagar o briefing">🗑</button>
+            <button class="btn-campo lixo" onclick="limpar('briefing')" title="Apagar o briefing"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
           <textarea id="briefing" placeholder="Ex: Pizzaria do João, no Centro de Cabo Frio. Massa artesanal, forno a lenha, entrega até 23h. Telefone (22) 99988-2227. Quero algo animado, que dê vontade de pedir."></textarea>
         </div>
@@ -499,7 +512,7 @@
             <input type="checkbox" id="ehPolitica"/> Jingle político
           </label>
         </div>
-        <div class="custo-nota">A letra, a transcrição do cover e o ✨ são por conta da Lux — você paga só a criação da música.</div>
+        <div class="custo-nota">A letra, a transcrição do cover e o Aprimorar prompt são por conta da Lux — você paga só a criação da música.</div>
       </div>
 
       <!-- 2. LETRA -->
@@ -507,14 +520,14 @@
         <div class="card-head"><span class="titulo-secao">Letra</span></div>
         <div class="campo">
           <div class="campo-acoes">
-            <button class="btn-campo lixo" onclick="limpar('letra')" title="Apagar a letra">🗑</button>
+            <button class="btn-campo lixo" onclick="limpar('letra')" title="Apagar a letra"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
           <textarea id="letra" placeholder="A letra gerada aparece aqui. Você pode editar à vontade antes de criar a música — ou escrever a sua do zero."
             oninput="contarLetra()"></textarea>
         </div>
         <div class="rodape-campo">
           <button class="btn-copiar" id="btnCopiar" type="button" onclick="copiarLetra()">
-            <span id="btnCopiarIc">⧉</span><span id="btnCopiarTxt">Copiar</span>
+            <span id="btnCopiarIc"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></span><span id="btnCopiarTxt">Copiar</span>
           </button>
           <div class="contador" id="contadorLetra">0 / 5.000 caracteres</div>
         </div>
@@ -523,16 +536,16 @@
       <!-- 3. RITMO -->
       <div class="card">
         <div class="card-head"><span class="titulo-secao">Ritmo</span></div>
-        <div class="card-hint">Toque num ritmo e o estilo completo é montado sozinho. A varinha ✨ melhora o texto usando o assunto da letra — e você pode editar tudo depois.</div>
+        <div class="card-hint">Toque num ritmo e o estilo completo é montado sozinho. O Aprimorar prompt melhora o texto usando o assunto da letra — e você pode editar tudo depois.</div>
         <div class="campo">
           <div class="campo-acoes">
-            <button class="btn-campo lixo" onclick="limpar('estilo')" title="Apagar o ritmo">🗑</button>
+            <button class="btn-campo lixo" onclick="limpar('estilo')" title="Apagar o ritmo"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
           <textarea id="estilo" placeholder="Ex: sertanejo universitário, animado, viola e guitarra, voz masculina marcante"></textarea>
         </div>
         <div class="rodape-campo">
-          <button class="btn-copiar varinha" id="btnAprimorar" type="button" onclick="aprimorarEstilo()">
-            <span id="icAprimorar">✨</span><span id="txtAprimorar">Aprimorar prompt</span>
+          <button class="btn-copiar varinha" id="btnAprimorar" type="button" onclick="aprimorarEstilo()" title="Aprimorar prompt" aria-label="Aprimorar prompt">
+            <span id="icAprimorar"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.6 10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7l2.5-1.4zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14l-2.5 1.4zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5L22 2zm-7.63 5.29a.9959.9959 0 0 0-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg></span>
           </button>
           <button class="btn-copiar" id="btnDesfazerEstilo" type="button" onclick="desfazerEstilo()" style="display:none">
             ↩ Voltar ao anterior
@@ -562,7 +575,7 @@
         <button class="btn btn-gold btn-lg" id="btnCriar" onclick="criarMusica()">Criar música</button>
         <!-- Zerar mora aqui, no fim do fluxo: é o "terminei, começar outra".
              Longe das abas de propósito, pra ninguém apagar a tela sem querer. -->
-        <button class="btn-zerar" id="btnZerar" type="button" onclick="zerarTela()">↺ Zerar e começar outra música</button>
+        <button class="btn-zerar" id="btnZerar" type="button" onclick="zerarTela()"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg> Zerar e começar outra música</button>
         <div class="custo-nota" id="notaCusto">
           Cada criação devolve duas versões da mesma música.
         </div>
@@ -585,7 +598,7 @@
   <!-- ═══════════════ ABA HISTÓRICO ═══════════════ -->
   <div id="viewHistorico" style="display:none">
     <div class="busca-wrap">
-      <span class="lupa">🔍</span>
+      <span class="lupa"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
       <input type="text" id="buscaRascunho" placeholder="Procurar por nome, briefing ou trecho da letra…"
         oninput="buscarRascunhosComPausa()"/>
     </div>
@@ -601,7 +614,7 @@
   <!-- ═══════════════ ABA FAVORITOS ═══════════════ -->
   <div id="viewFavoritos" style="display:none">
     <div class="busca-wrap">
-      <span class="lupa">🔍</span>
+      <span class="lupa"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
       <input type="text" id="buscaFavorito" placeholder="Procurar por nome da música…"
         oninput="buscarFavoritosComPausa()"/>
     </div>
@@ -628,7 +641,7 @@
       <button class="chip-per on" type="button" onclick="periodoRapido('', this)">Tudo</button>
     </div>
     <div class="busca-wrap">
-      <span class="lupa">🔍</span>
+      <span class="lupa"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
       <input type="text" id="buscaPedido" placeholder="Procurar por nome, ritmo ou trecho da letra…"
         oninput="buscarPedidosComPausa()"/>
     </div>
@@ -789,7 +802,6 @@ async function aprimorarEstilo(){
   const btn = $('btnAprimorar');
   btn.disabled = true;
   $('icAprimorar').innerHTML = '<span class="spin"></span>';
-  $('txtAprimorar').textContent = 'Aprimorando...';
   limparAvisos();
 
   try{
@@ -812,8 +824,7 @@ async function aprimorarEstilo(){
     erro('Falha ao falar com o servidor: ' + e.message);
   }finally{
     btn.disabled = false;
-    $('icAprimorar').textContent = '✨';
-    $('txtAprimorar').textContent = 'Aprimorar prompt';
+    $('icAprimorar').innerHTML = IC.varinha;
   }
 }
 
@@ -869,7 +880,7 @@ async function copiarLetra(){
     $('btnCopiarIc').textContent = '✓'; $('btnCopiarTxt').textContent = 'Copiado';
     btn.classList.add('ok');
     setTimeout(()=>{
-      $('btnCopiarIc').textContent = '⧉'; $('btnCopiarTxt').textContent = 'Copiar';
+      $('btnCopiarIc').innerHTML = IC.copiar; $('btnCopiarTxt').textContent = 'Copiar';
       btn.classList.remove('ok');
     }, 1600);
   }catch(e){
@@ -925,7 +936,7 @@ async function subirCover(input){
     erro('Falha ao enviar o áudio: ' + e.message);
   }finally{
     btn.disabled = false;
-    btn.innerHTML = '🎵 Enviar música';
+    btn.innerHTML = IC.nota + ' Enviar música';
     input.value = '';
   }
 }
@@ -1190,8 +1201,8 @@ function conteudoDaGeracao(g){
         htmlPlayer(link) +
         '<div class="versao-acoes">' +
           htmlJoinha(g.taskId, i) +
-          '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">✂️ Cortar</button>' +
-          '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">🎤 Cover</button>' +
+          '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">' + IC.tesoura + ' Cortar</button>' +
+          '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">' + IC.mic + ' Cover</button>' +
           '<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
              esc(link + '&dl=1') + '">Baixar</a>' +
         '</div>';
@@ -1251,7 +1262,7 @@ function mmss(s){
 function htmlPlayer(src, duracaoConhecida){
   const d = Number(duracaoConhecida) || 0;
   return '<div class="player"' + (d ? ' data-dur="' + d + '"' : '') + '>' +
-    '<button class="pp" type="button" title="Tocar / pausar">▶</button>' +
+    '<button class="pp" type="button" title="Tocar / pausar">' + IC.play + '</button>' +
     '<div class="trilha"><div class="cheio"></div><div class="bolinha"></div></div>' +
     '<span class="tempo">0:00 / ' + mmss(d) + '</span>' +
     '<audio preload="' + (d ? 'none' : 'metadata') + '" src="' + esc(src) + '"></audio>' +
@@ -1269,7 +1280,7 @@ function pintarPlayer(a){
 }
 function marcarPlayer(a, tocando){
   const p = a.closest('.player'); if(!p) return;
-  p.querySelector('.pp').textContent = tocando ? '❚❚' : '▶';
+  p.querySelector('.pp').innerHTML = tocando ? IC.pausa : IC.play;
 }
 function ligarPlayers(){
   document.addEventListener('click', function(ev){
@@ -1424,6 +1435,19 @@ function ehFavorito(taskId, indice){
 // Desenho do polegar. Vem como SVG, e não emoji, por dois motivos:
 // emoji não aceita cor, e o do Windows 10 antigo às vezes nem existe
 // (foi o que aconteceu com a varinha, que virou quadradinho).
+const IC = {
+  tesoura: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM6 8c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm0 12c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm6-7.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM19 3l-6 6 2 2 7-7V3z"/></svg>',
+  mic: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V22h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
+  nota: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>',
+  varinha: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.6 10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7l2.5-1.4zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14l-2.5 1.4zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5L22 2zm-7.63 5.29a.9959.9959 0 0 0-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>',
+  lixo: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+  copiar: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
+  lupa: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
+  voltar: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>',
+  play: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+  pausa: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+};
+
 const SVG_JOINHA = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
   '<path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
 
@@ -1540,7 +1564,7 @@ function pintarFavoritos(itens, busca){
         '<div class="faixa">' +
           htmlJoinha(p.taskId, p.indice) +
           htmlPlayer(link, p.duracao) +
-          '<button class="btn btn-ghost faixa-baixar" onclick="cortar(\'' + esc(p.taskId + '|' + p.indice) + '\')">✂️ Cortar</button>' +
+          '<button class="btn btn-ghost faixa-baixar" onclick="cortar(\'' + esc(p.taskId + '|' + p.indice) + '\')">' + IC.tesoura + ' Cortar</button>' +
           '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
         '</div>' +
       '</div>' +
