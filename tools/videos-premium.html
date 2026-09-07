@@ -109,6 +109,13 @@ body{
 .card-hint{font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:1rem}
 .edit-lock{display:none;background:rgba(220,80,80,.1);border:1px solid rgba(220,80,80,.45);border-radius:10px;padding:11px 13px;margin:6px 0 10px;font-size:12.5px;color:#E87A7A;font-weight:600;line-height:1.55}
 .edit-lock.show{display:block}
+/* botão que LIBERA trocar avatar/música dentro da edição (avisa o custo antes) */
+.btn-destrava{
+  display:inline-block;margin-top:9px;padding:8px 14px;border-radius:var(--radius);
+  font-size:12.5px;font-weight:700;cursor:pointer;
+  background:rgba(212,175,55,.14);border:1px solid var(--gold);color:var(--gold);
+}
+.btn-destrava:hover{background:var(--gold);color:#0d0d0f}
 .avatar-tipo-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .avatar-tipo-seg .seg-btn{flex:1;padding:11px 8px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:var(--bg-input);border:1px solid var(--border-bright);color:var(--text-dim);transition:border-color .15s,color .15s,background .15s}
 .avatar-tipo-seg .seg-btn:hover{border-color:var(--gold);color:var(--gold)}
@@ -405,7 +412,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
       <div class="card-title">Quem vai cantar</div>
-      <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original e <b>não pode ser trocado</b> na edição — ele já cantou a música deste vídeo. Para usar outro avatar, crie um <b>vídeo novo</b>.</div>
+      <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original — o canto já está gravado com ele. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
+        <button type="button" class="btn-destrava" onclick="destravarAvatar()">🎤 Quero trocar o avatar</button>
+      </div>
 
       <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
            pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
@@ -455,7 +464,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
       <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 1 minuto)</span></div>
       <div class="card-hint">Envie em <b style="color:var(--text-mid)">MP3</b>. A <b style="color:var(--text-mid)">duração da música é a duração do clipe</b> (no máximo 1 minuto): se for maior, o editor de corte abre pra você escolher o trecho; se for menor, usa a música inteira.</div>
-      <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original e <b>não pode ser trocada</b> na edição — é ela que define o que o avatar canta. Para outra música, crie um <b>vídeo novo</b>.</div>
+      <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original — é ela que o avatar está cantando. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
+        <button type="button" class="btn-destrava" onclick="destravarMusica()">🎵 Quero trocar a música</button>
+      </div>
       <div class="upload-tile" id="musicTile" role="button" tabindex="0" onclick="document.getElementById('musicInput').click()">
         <span class="big">🎵</span>
         <span>Enviar a música (MP3)</span>
@@ -741,6 +752,12 @@ let avatarTipo = 'universal';   // UI universal 19/08: sem tipos — o prompt un
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
 let editState = null;              // null = criar do zero; { sourceOrderId, musicChanged } = EDITANDO um vídeo pronto
+// EDIÇÃO (07/09) — o avatar e a música PODEM ser trocados, mas só depois de a atendente confirmar o
+// custo. Enquanto travados, o canto do vídeo original é reaproveitado e a edição sai por ~R$1.
+let editDados = null;              // dados do vídeo-fonte (guardados p/ redesenhar a tela ao destravar)
+let editTrocaAvatar = false;       // atendente liberou trocar o avatar
+let editTrocaMusica = false;       // atendente liberou trocar a música
+let _avisouMidia = false;          // aviso de custo ao mexer nas mídias — 1x por edição
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
@@ -905,7 +922,9 @@ function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; rende
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
 // com avatar não aprovado → preview; aprovado → selo.
 function refreshAvatarUI() {
-  if (editState) {   // modo edição: avatar travado (vem do original) — esconde a UI de gerar/aprovar
+  // (07/09) Na edição o Passo 1 fica escondido SÓ enquanto o avatar está travado. Se a atendente
+  // destravou (botão "Quero trocar o avatar"), a tela de gerar/aprovar volta a funcionar igual à criação.
+  if (editState && !editTrocaAvatar) {
     ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
@@ -1417,6 +1436,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
       } else {
         const opt = await fileToOptimizedImage(file, false);
         scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'photo', ...opt, name: file.name, origBase64: opt.base64 });
+        avisarCustoMidia();   // foto NOVA na edição → passa pelo melhoramento e é cobrada (avisa 1x)
       }
       renderScenes(); renderStoryboard();
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
@@ -1833,6 +1853,7 @@ function removeScene(id) {
   const s = scenes.find(x => x.id === id);
   if (s && s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} }
   scenes = scenes.filter(x => x.id !== id);
+  avisarCustoMidia();   // mexeu nas mídias da edição → avisa o custo (1x)
   renderScenes();
   renderStoryboard();
 }
@@ -2513,10 +2534,12 @@ function renderStoryboard() {
   if (durEl) durEl.textContent = fmtTime(D);
 
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;   // dupla = InfiniteTalk (2×)
-  const usd = EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC);   // cartoon + melhoria das fotos + lipsync + recorte + montagem
-  const brl = usd * EST_CAMBIO;
+  // Na EDIÇÃO o preço depende do que a atendente destravou: só remontar (~R$1) × regravar o canto (caro).
+  const brl = editState
+    ? custoEdicaoBRL()
+    : (EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC)) * EST_CAMBIO;   // cartoon + melhoria das fotos + lipsync + recorte + montagem
   const costEl = document.getElementById('sbCost');
-  if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por clipe</small>';
+  if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por clipe') + '</small>';
 }
 
 // ───────────────────────────────────────────────
@@ -2526,6 +2549,11 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
+    // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
+    if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
+      return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 1) — ou recarregue a página pra manter o avatar antigo.';
+    if (editTrocaMusica && !(music && music.base64))
+      return 'Você liberou a troca da música: envie o novo MP3 (Passo 2) — ou recarregue a página pra manter a música antiga.';
     if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 3).';
     if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
     if (scenes.some(s => s.at != null)) {
@@ -2589,6 +2617,11 @@ async function gerarClipe() {
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
+      }
+      // AVATAR NOVO (07/09): manda o cartoon recém-aprovado — o Worker regrava o canto e o recorte com ele.
+      if (editTrocaAvatar && avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64) {
+        payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 };
+        payloadE.tipo = avatarTipo;
       }
       const re = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadE) });
       const de = await re.json();
@@ -2786,6 +2819,7 @@ async function editarClipe(orderId) {
     const d = await resp.json();
     if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui abrir a edição.')); return; }
     editState = { sourceOrderId: orderId, musicChanged: false };
+    editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false;   // toda edição começa com avatar e música TRAVADOS
     document.getElementById('clientName').value = d.clientName || '';
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
@@ -2818,44 +2852,106 @@ async function editarClipe(orderId) {
     if (typeof renderStoryboard === 'function') renderStoryboard();
     showTab('criar');
     window.scrollTo(0, 0);
-    toast('✏️ Editando "' + (d.clientName || '') + '". Troque só as imagens/vídeos de fundo e salve.');
+    toast('✏️ Editando "' + (d.clientName || '') + '". Troque as imagens e salve. Se precisar, dá pra trocar também o avatar ou a música — os botões estão nos Passos 1 e 2.');
   } catch (e) { toast('⚠️ Erro ao abrir a edição: ' + e.message); }
 }
 
 function aplicarModoEdicao(d) {
+  if (d) editDados = d;            // guarda p/ conseguir redesenhar quando destravar avatar/música
+  d = d || editDados;
   const on = !!editState;
+  const avTravado = on && !editTrocaAvatar;   // avatar ainda preso ao vídeo original
+  const muTravada = on && !editTrocaMusica;   // música ainda presa ao vídeo original
   const banner = document.getElementById('editBanner');
   if (banner) {
     banner.style.display = on ? 'flex' : 'none';
     if (on) {
+      const trocou = [editTrocaAvatar ? 'avatar' : '', editTrocaMusica ? 'música' : ''].filter(Boolean).join(' e ');
       document.getElementById('editBannerText').textContent =
-        '"' + ((d && d.clientName) || '') + '" — só as imagens/vídeos de fundo podem ser trocados. O avatar e a música são mantidos; só a edição é cobrada.';
+        '"' + ((d && d.clientName) || '') + '" — ' + (trocou
+          ? ('trocando o ' + trocou + ': o canto vai ser regravado. As fotos já melhoradas são preservadas.')
+          : 'troque as imagens/vídeos de fundo. O avatar e a música são mantidos; só a edição é cobrada.');
       const img = document.getElementById('editBannerImg'); if (img && d) img.src = d.cartoonUrl || '';
     }
   }
-  // avatar TRAVADO → esconde upload da foto + geração + preview + badge
-  // (+ btnCasarLetra: a música é travada na edição, então casar-com-a-letra não se aplica)
-  ['avatarTipoSeg', 'clientPhotoRow', 'avatarGenRow', 'avatarPreview', 'avatarApproved', 'btnCasarLetra'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = on ? 'none' : '';
+  // Passo 1: escondido enquanto o avatar está travado. Destravou → volta a tela normal de criar avatar
+  // (quem manda no detalhe é o refreshAvatarUI; aqui só liberamos/escondemos o bloco).
+  ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = avTravado ? 'none' : '';
   });
-  // tarjas vermelhas de bloqueio (avatar + música) — aparecem só na edição
-  ['avatarLock', 'musicLock'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.classList.toggle('show', on);
-  });
-  // música TRAVADA → esconde o upload, o "trocar a música" e o corte; mostra só o player da música atual
-  const tile = document.getElementById('musicTile'); if (tile) tile.style.display = on ? 'none' : '';
-  const btnTroca = document.getElementById('btnTrocarMusica'); if (btnTroca) btnTroca.style.display = on ? 'none' : '';
-  const btnRem = document.getElementById('btnRemoverMusica'); if (btnRem) btnRem.style.display = on ? 'none' : '';
-  const btnReab = document.getElementById('btnReabrirCorte'); if (btnReab && on) btnReab.style.display = 'none';
-  const cutEd = document.getElementById('cutEditor'); if (cutEd && on) cutEd.classList.remove('show');
-  if (on && d) {
+  if (!avTravado && typeof refreshAvatarUI === 'function') refreshAvatarUI();   // mostra o bloco CERTO do Passo 1
+  // casar-com-a-letra só faz sentido com música nova (ele remapeia as cenas pela letra)
+  const bcl = document.getElementById('btnCasarLetra'); if (bcl) bcl.style.display = (on && !editTrocaMusica) ? 'none' : '';
+  // tarjas de bloqueio: some assim que a atendente destrava
+  const al = document.getElementById('avatarLock'); if (al) al.classList.toggle('show', avTravado);
+  const ml = document.getElementById('musicLock');  if (ml) ml.classList.toggle('show', muTravada);
+  // música travada → esconde upload/troca/corte e mostra só o player da música atual
+  const tile = document.getElementById('musicTile'); if (tile) tile.style.display = muTravada ? 'none' : '';
+  const btnTroca = document.getElementById('btnTrocarMusica'); if (btnTroca) btnTroca.style.display = muTravada ? 'none' : '';
+  const btnRem = document.getElementById('btnRemoverMusica'); if (btnRem) btnRem.style.display = muTravada ? 'none' : '';
+  const btnReab = document.getElementById('btnReabrirCorte'); if (btnReab && muTravada) btnReab.style.display = 'none';
+  const cutEd = document.getElementById('cutEditor'); if (cutEd && muTravada) cutEd.classList.remove('show');
+  if (muTravada && d) {
     const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.add('show');
     const nm = document.getElementById('musicName'); if (nm) nm.textContent = 'Música atual (mantida)';
     const du = document.getElementById('musicDur'); if (du) du.textContent = '';
     const pl = document.getElementById('player'); if (pl) pl.src = d.musicUrl || '';
   }
   const btn = document.getElementById('btnGerar');
-  if (btn) btn.textContent = on ? '💾 Salvar edição' : '🎬 Gerar o clipe';
+  if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : '🎬 Gerar o clipe';
+}
+
+// ── EDIÇÃO: destravar avatar / música (sempre avisando o custo e o tempo ANTES) ──────────────
+// Trocar qualquer um dos dois obriga a REGRAVAR o canto e o recorte — é o pedaço caro do vídeo.
+// O que a edição preserva de verdade é o melhoramento das FOTOS, que não é refeito nem recobrado.
+function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTrocaMusica); }
+function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && !s.srcKey).length; }
+// Quanto esta edição vai custar, do jeito que a tela está agora.
+function custoEdicaoBRL() {
+  const D = videoDur() || VIDEO_SECONDS;
+  const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
+  let usd = D * EST_USD_J2VSEC;                                        // a montagem sempre acontece
+  if (editTrocaAvatar) usd += EST_USD_CENA;                            // desenhar o avatar de novo
+  if (editRegravaCanto()) usd += D * (_lipsec + EST_USD_MATTESEC);     // regravar o canto + recortar
+  usd += fotosNovasNaEdicao() * EST_USD_EXPAND;                        // só as fotos NOVAS
+  return usd * EST_CAMBIO;
+}
+function _avisoRegravar(oQue, extraCartoon) {
+  const D = videoDur() || VIDEO_SECONDS;
+  const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
+  const usd = D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC) + (extraCartoon ? EST_USD_CENA : 0);
+  const brl = (usd * EST_CAMBIO).toFixed(2).replace('.', ',');
+  return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do avatar do zero.\n\n' +
+         '• Custo: cerca de R$ ' + brl + ' (quase o preço de um vídeo novo)\n' +
+         '• Tempo: de 15 a 20 minutos\n\n' +
+         'As fotos que já foram melhoradas continuam como estão e NÃO são cobradas de novo.\n\n' +
+         'Quer continuar?';
+}
+function destravarAvatar() {
+  if (!editState || editTrocaAvatar) return;
+  if (!confirm(_avisoRegravar('o avatar', true))) return;
+  editTrocaAvatar = true;
+  avatarPreview = null; clientPhoto = null; clientPhoto2 = null;   // Passo 1 volta a zero
+  try { renderClientPhoto2(); } catch (e) {}
+  aplicarModoEdicao(null);
+  renderStoryboard();
+  toast('🎤 Avatar liberado — envie a imagem no Passo 1, gere e APROVE o novo avatar.');
+}
+function destravarMusica() {
+  if (!editState || editTrocaMusica) return;
+  if (!confirm(_avisoRegravar('a música', false))) return;
+  editTrocaMusica = true;
+  music = null;                                       // obriga a enviar a nova (abre o editor de corte igual ao normal)
+  const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
+  aplicarModoEdicao(null);
+  renderStoryboard();
+  toast('🎵 Música liberada — envie o MP3. Se passar de 1 minuto, o editor de corte abre normalmente.');
+}
+// Aviso ÚNICO por edição quando a atendente mexe nas mídias (add/troca). Só reordenar não avisa nada.
+function avisarCustoMidia() {
+  if (!editState || _avisouMidia) return;
+  _avisouMidia = true;
+  toast('ℹ️ Imagem nova entra no melhoramento (~R$ 0,07 cada) e o vídeo é remontado. Só mudar a ORDEM não custa nada a mais.');
 }
 
 // limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
@@ -2881,6 +2977,7 @@ function resetCreateForm() {
 
 function sairEdicao() {
   editState = null;
+  editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false; editDados = null;
   avatarPreview = null; clientPhoto = null; clientPhoto2 = null; music = null;
   try { renderClientPhoto2(); } catch (e) {}
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
