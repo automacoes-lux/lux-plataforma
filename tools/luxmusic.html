@@ -190,6 +190,42 @@
   }
   .cover-arquivo .nome{color:var(--txt);word-break:break-all;flex:1;min-width:120px}
 
+  /* ── ETAPAS DO COVER ──
+     O preparo do cover leva minutos. Em vez de uma rodinha muda, a tela
+     conta o que esta acontecendo, igual a ferramenta Cover faz. */
+  .etapas{
+    background:var(--campo);border-radius:var(--r);
+    padding:13px 14px;margin-top:11px;
+  }
+  .etapa{
+    display:flex;align-items:center;gap:9px;
+    font-size:12.5px;color:var(--txt3);padding:5px 0;
+    transition:color .15s;
+  }
+  .etapa.ativo{color:var(--txt)}
+  .etapa.ok{color:var(--txt2)}
+  .etapa.falhou{color:var(--red)}
+  .etapa-ic{
+    width:15px;height:15px;flex-shrink:0;
+    display:inline-grid;place-items:center;
+  }
+  .etapa-ic .ic-sv{width:14px;height:14px}
+  .etapa-ic .spin{margin:0;width:11px;height:11px;vertical-align:0}
+  .etapa .ponto{
+    width:6px;height:6px;border-radius:50%;background:var(--line);display:block;
+  }
+  .etapa.ok .etapa-ic{color:var(--green)}
+  .etapa-txt{flex:1}
+  .etapa-det{color:var(--txt3);font-size:11.5px;text-align:right;max-width:48%}
+  .etapa-barra{
+    height:4px;border-radius:99px;background:#3A3B41;
+    margin-top:10px;overflow:hidden;
+  }
+  .etapa-barra i{
+    display:block;height:100%;width:0;border-radius:99px;
+    background:var(--txt);transition:width .3s;
+  }
+
   /* ── CHIPS DE RITMO ── */
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
   .chip{
@@ -489,6 +525,34 @@
           <button class="btn-campo lixo" onclick="limparCover()" title="Tirar este áudio"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
         </div>
         <div id="coverPlayer" style="display:none"></div>
+        <div class="etapas" id="coverEtapas" style="display:none">
+          <div class="etapa" id="et-letra">
+            <span class="etapa-ic"><span class="ponto"></span></span>
+            <span class="etapa-txt">Ouvindo a letra da música</span>
+            <span class="etapa-det"></span>
+          </div>
+          <div class="etapa" id="et-vocal">
+            <span class="etapa-ic"><span class="ponto"></span></span>
+            <span class="etapa-txt">Separando a voz do instrumental</span>
+            <span class="etapa-det"></span>
+          </div>
+          <div class="etapa" id="et-baixar">
+            <span class="etapa-ic"><span class="ponto"></span></span>
+            <span class="etapa-txt">Trazendo o instrumental</span>
+            <span class="etapa-det"></span>
+          </div>
+          <div class="etapa" id="et-tom">
+            <span class="etapa-ic"><span class="ponto"></span></span>
+            <span class="etapa-txt">Baixando o tom</span>
+            <span class="etapa-det"></span>
+          </div>
+          <div class="etapa" id="et-preparar">
+            <span class="etapa-ic"><span class="ponto"></span></span>
+            <span class="etapa-txt">Deixando pronto pro cover</span>
+            <span class="etapa-det"></span>
+          </div>
+          <div class="etapa-barra"><i id="coverBarra"></i></div>
+        </div>
       </div>
 
       <!-- 1. BRIEFING -->
@@ -887,7 +951,57 @@ async function copiarLetra(){
   }
 }
 
-// ── COVER: subir um MP3 ────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// COVER — o mesmo preparo da ferramenta Cover, antes de gerar
+// ══════════════════════════════════════════════════════════════
+// A musica que o atendente sobe NAO vai crua pro gerador. Ela passa
+// pelas mesmas etapas da aba Cover, na mesma ordem:
+//
+//   1. a LETRA sai do audio ORIGINAL (o instrumental nao tem voz pra
+//      transcrever — por isso a letra vem primeiro)
+//   2. o vocal e separado do instrumental (Worker lux-cover)
+//   3. o instrumental volta pro navegador
+//   4. o tom cai 12 semitons, em duas passadas de 6 (identico ao Cover:
+//      cada passada separada preserva a qualidade)
+//   5. o resultado sobe pro gerador e vira a base do cover
+//
+// Se qualquer etapa do disfarce falhar, o audio NAO e aproveitado: sem
+// o preparo ele iria identificavel pro gerador, que e justamente o que
+// a ferramenta Cover existe pra evitar.
+const COVER_WORKER   = 'https://lux-cover.plataformalux.workers.dev';
+const COVER_ESPERA   = 5000;    // 5s entre cada pergunta de "ja terminou?"
+const COVER_MAX      = 360;     // 360 x 5s = 30 min, o teto da ferramenta Cover
+const COVER_SEMITONS = -12;     // total do tom grave
+const COVER_PASSADA  = 6;       // tamanho de cada passada
+
+function etapaCover(id, estado, detalhe){
+  const el = $('et-' + id);
+  if(!el) return;
+  el.classList.remove('ativo','ok','falhou');
+  if(estado) el.classList.add(estado);
+  const ic = el.querySelector('.etapa-ic');
+  if(estado === 'ativo')       ic.innerHTML = '<span class="spin"></span>';
+  else if(estado === 'ok')     ic.innerHTML = IC.certo;
+  else if(estado === 'falhou') ic.innerHTML = IC.falha;
+  else                         ic.innerHTML = '<span class="ponto"></span>';
+  if(detalhe !== undefined) el.querySelector('.etapa-det').textContent = detalhe || '';
+}
+function barraCover(pct){
+  const b = $('coverBarra');
+  if(b) b.style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+function abrirEtapas(){
+  $('coverEtapas').style.display = 'block';
+  ['letra','vocal','baixar','tom','preparar'].forEach(id => etapaCover(id, '', ''));
+  barraCover(0);
+}
+function fecharEtapas(){
+  const el = $('coverEtapas');
+  if(el) el.style.display = 'none';
+}
+function esperar(ms){ return new Promise(r => setTimeout(r, ms)); }
+function emMB(bytes){ return (bytes / 1048576).toFixed(1) + ' MB'; }
+
 async function subirCover(input){
   const arq = input.files && input.files[0];
   if(!arq) return;
@@ -898,53 +1012,274 @@ async function subirCover(input){
 
   const btn = $('btnEscolherAudio');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span>Enviando e ouvindo a letra...';
+  btn.innerHTML = '<span class="spin"></span>Preparando o áudio...';
   limparAvisos();
+  limparCover(true);          // começa do zero, sem avisar
+  abrirEtapas();
+  $('coverNome').textContent = arq.name;
+  $('coverArquivo').style.display = 'flex';
 
+  let ctx = null;
   try{
-    const r = await window.__luxFetch(
-      WORKER + '/transcrever?nome=' + encodeURIComponent(arq.name), {
+    // ── 1. A LETRA (do áudio original, que ainda tem voz) ──────
+    etapaCover('letra', 'ativo', '');
+    barraCover(4);
+    const rLetra = await window.__luxFetch(
+      WORKER + '/transcrever?etapa=letra&nome=' + encodeURIComponent(arq.name), {
         method:'POST',
         headers:{ 'Content-Type': arq.type || 'audio/mpeg' },
         body: arq
       });
-    const d = await r.json();
-    if(!d.ok){ erro(d.error || 'Não consegui preparar esse áudio.'); return; }
+    const dLetra = await rLetra.json();
+    if(!dLetra.ok) throw new Error(dLetra.error || 'Não consegui ouvir esse áudio.');
 
-    coverUploadUrl = d.uploadUrl;
-    coverDeTask = null;
-    limparCamposDoProjeto();      // briefing, instruções e ritmo eram de outra música
-    $('coverNome').textContent = arq.name;
-    $('coverArquivo').style.display = 'flex';
+    limparCamposDoProjeto();   // briefing, instruções e ritmo eram de outra música
+    if(dLetra.titulo) $('titulo').value = dLetra.titulo;
+    if(dLetra.letra){
+      $('letra').value = dLetra.letra;
+      contarLetra();
+      etapaCover('letra', 'ok', 'Letra transcrita');
+    }else{
+      etapaCover('letra', 'ok', 'Sem letra — escreva abaixo');
+    }
+    barraCover(12);
 
-    // toca direto do arquivo que já está no computador: nada pra baixar
+    // toca o arquivo do computador: é o que o atendente reconhece
     if(coverObjectUrl) URL.revokeObjectURL(coverObjectUrl);
     coverObjectUrl = URL.createObjectURL(arq);
     montarPlayer(coverObjectUrl);
-    if(d.titulo) $('titulo').value = d.titulo;      // "Cover - nome do arquivo"
 
-    if(d.letra){
-      $('letra').value = d.letra;
-      contarLetra();
-      sucesso('Áudio pronto e letra transcrita. Ajuste o que quiser e crie a música — a melodia é mantida.');
-    }else{
-      sucesso('Áudio pronto. ' + (d.avisoLetra || 'Não consegui transcrever a letra') + ' — escreva a letra abaixo.');
+    // ── 2. SEPARAR A VOZ ───────────────────────────────────────
+    // A duração vai junto porque a separação é cobrada por segundo:
+    // sem ela o Worker chuta 3,5 min e cobra a mais das músicas curtas.
+    etapaCover('vocal', 'ativo', '');
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const bytesOrig = await arq.arrayBuffer();
+    const bufOrig   = await ctx.decodeAudioData(bytesOrig);
+    const duracao   = bufOrig.duration;
+
+    const form = new FormData();
+    form.append('file', arq, arq.name);
+    form.append('durationSec', String(Math.round(duracao)));
+    const rProc = await window.__luxFetch(COVER_WORKER + '/process', { method:'POST', body: form });
+    const dProc = await rProc.json();
+    if(!rProc.ok || !dProc.ok) throw new Error(dProc.error || 'Não consegui separar a voz.');
+
+    const tarefa = dProc.taskId;
+    let stems = [], tentativas = 0;
+    while(true){
+      if(tentativas++ >= COVER_MAX) throw new Error('A separação da voz passou de 30 minutos.');
+      await esperar(COVER_ESPERA);
+      let d;
+      try{
+        const r = await window.__luxFetch(COVER_WORKER + '/check/' + tarefa);
+        d = await r.json();
+        if(!r.ok || !d.ok) throw new Error(d.error || 'falha ao perguntar');
+      }catch(e){ continue; }        // erro passageiro: pergunta de novo
+
+      if(d.state === 'error') throw new Error(d.error || 'A separação da voz falhou.');
+      if(d.state === 'success' && d.ready){ stems = d.instrumentalStems || []; break; }
+
+      const p = Math.max(0, Math.min(100, d.progress || 0));
+      etapaCover('vocal', 'ativo', p + '%');
+      barraCover(12 + p * 0.43);    // 12% -> 55%
     }
+    if(!stems.length) throw new Error('A separação terminou sem o instrumental.');
+    etapaCover('vocal', 'ok', 'Voz removida');
+    barraCover(55);
+
+    // ── 3. TRAZER O INSTRUMENTAL ───────────────────────────────
+    etapaCover('baixar', 'ativo', '');
+    const rDown = await window.__luxFetch(COVER_WORKER + '/download/' + tarefa + '/' + stems[0]);
+    if(!rDown.ok) throw new Error('O instrumental voltou com erro ' + rDown.status + '.');
+    const bytesInst = await rDown.arrayBuffer();
+    let audio = await ctx.decodeAudioData(bytesInst);
+    etapaCover('baixar', 'ok', Math.round(audio.duration) + 's');
+    barraCover(62);
+
+    // ── 4. BAIXAR O TOM ────────────────────────────────────────
+    etapaCover('tom', 'ativo', '');
+    audio = await tomGrave(audio, COVER_SEMITONS, COVER_PASSADA);
+    etapaCover('tom', 'ok', '−' + Math.abs(COVER_SEMITONS) + ' semitons');
+    barraCover(92);
+
+    // ── 5. DEIXAR PRONTO E MANDAR PRO GERADOR ──────────────────
+    etapaCover('preparar', 'ativo', '');
+    const paraSubir = await enxugar(audio);
+    const wav = paraWav(paraSubir);
+    const rUp = await window.__luxFetch(
+      WORKER + '/transcrever?etapa=audio&nome=' + encodeURIComponent(trocarExtensao(arq.name)), {
+        method:'POST',
+        headers:{ 'Content-Type': 'audio/wav' },
+        body: wav
+      });
+    const dUp = await rUp.json();
+    if(!dUp.ok || !dUp.uploadUrl) throw new Error(dUp.error || 'Não consegui guardar o áudio preparado.');
+
+    coverUploadUrl = dUp.uploadUrl;
+    coverDeTask = null;
+    etapaCover('preparar', 'ok', emMB(wav.size));
+    barraCover(100);
+
+    sucesso($('letra').value
+      ? 'Áudio preparado e letra transcrita. Ajuste o que quiser e crie a música — a melodia é mantida.'
+      : 'Áudio preparado. Escreva a letra abaixo e crie a música.');
+
   }catch(e){
-    erro('Falha ao enviar o áudio: ' + e.message);
+    // marca a etapa que estava rodando e NÃO aproveita o áudio cru
+    const rodando = document.querySelector('#coverEtapas .etapa.ativo');
+    if(rodando) etapaCover(rodando.id.replace('et-',''), 'falhou', e.message.slice(0, 60));
+    coverUploadUrl = '';
+    coverDeTask = null;
+    erro('Não consegui preparar o áudio: ' + e.message);
   }finally{
+    if(ctx) try{ ctx.close(); }catch(e){}
     btn.disabled = false;
     btn.innerHTML = IC.nota + ' Enviar música';
     input.value = '';
   }
 }
-function limparCover(){
+
+function trocarExtensao(nome){
+  const i = String(nome || 'audio').lastIndexOf('.');
+  return (i > 0 ? String(nome).slice(0, i) : String(nome || 'audio')) + '.wav';
+}
+
+function limparCover(calado){
   coverUploadUrl = '';
   coverDeTask = null;
   fecharPlayer();
+  fecharEtapas();
   $('coverArquivo').style.display = 'none';
   $('coverNome').textContent = '—';
-  sucesso('Áudio removido. A próxima criação será uma música nova.');
+  if(!calado) sucesso('Áudio removido. A próxima criação será uma música nova.');
+}
+
+// ══════════════════════════════════════════════════════════════
+// O TOM GRAVE — o mesmo código da ferramenta Cover
+// ══════════════════════════════════════════════════════════════
+// SoundTouch (WSOLA) muda o tom SEM mexer no andamento: a música não
+// vira "vinil lento". O total (-12) é aplicado em passadas de 6 porque
+// cada passada separada preserva a qualidade — foi assim que o método
+// foi validado na aba Cover.
+const SOUNDTOUCH_URL = 'https://cdn.jsdelivr.net/npm/soundtouchjs@0.3.0/dist/soundtouch.min.js';
+let __soundtouch = null;
+async function carregarSoundTouch(){
+  if(!__soundtouch) __soundtouch = await import(SOUNDTOUCH_URL);
+  return __soundtouch;
+}
+
+async function umaPassada(buffer, semitons, base, fatia){
+  const lib = await carregarSoundTouch();
+  const st = new lib.SoundTouch();
+  st.pitchSemitones = Number(semitons) || 0;
+  st.tempo = 1;                                  // andamento intacto
+  const filtro = new lib.SimpleFilter(new lib.WebAudioBufferSource(buffer), st);
+
+  const total = buffer.length;
+  const PEDACO = 16384;
+  const tmp = new Float32Array(PEDACO * 2);
+  const esq = [], dir = [];
+  let escrito = 0, voltas = 0;
+
+  while(true){
+    const veio = filtro.extract(tmp, PEDACO);
+    if(!veio) break;
+    const l = new Float32Array(veio), r = new Float32Array(veio);
+    for(let i = 0; i < veio; i++){ l[i] = tmp[2*i]; r[i] = tmp[2*i+1]; }
+    esq.push(l); dir.push(r);
+    escrito += veio; voltas++;
+    if(voltas % 8 === 0){
+      barraCover(base + Math.min(fatia, (escrito / total) * fatia));
+      await new Promise(res => setTimeout(res, 0));   // deixa a tela respirar
+    }
+    if(escrito > total * 4) break;                    // trava de segurança
+  }
+  if(escrito === 0) throw new Error('o processamento não produziu áudio');
+
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const saida = new OfflineCtx(2, escrito, buffer.sampleRate)
+    .createBuffer(2, escrito, buffer.sampleRate);
+  const sL = saida.getChannelData(0), sR = saida.getChannelData(1);
+  let off = 0;
+  for(let c = 0; c < esq.length; c++){
+    sL.set(esq[c], off); sR.set(dir[c], off); off += esq[c].length;
+  }
+  return saida;
+}
+
+async function tomGrave(buffer, semitons, porPassada){
+  let falta = Number(semitons) || 0;
+  if(falta >= -0.01) return buffer;
+  const passo = -Math.abs(Number(porPassada) || 12);
+  const passadas = Math.ceil(Math.abs(falta) / Math.abs(passo));
+  let b = buffer, feitas = 0;
+  while(falta < -0.01){
+    const agora = Math.max(falta, passo);
+    feitas++;
+    etapaCover('tom', 'ativo', 'passada ' + feitas + ' de ' + passadas);
+    b = await umaPassada(b, agora, 62 + ((feitas - 1) / passadas) * 30, 30 / passadas);
+    falta -= agora;
+  }
+  return b;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ENXUGAR — mono e taxa menor antes de subir
+// ══════════════════════════════════════════════════════════════
+// WAV não tem compressão: 3 min em estéreo 44,1 kHz passa de 30 MB e
+// não sobe. Duas economias que aqui não custam nada:
+//   • MONO — o gerador usa a melodia, não a estereofonia
+//   • 32 kHz — depois de cair 12 semitons não sobrou nada de agudo
+// Junto isso divide o tamanho por ~3. Música muito longa desce mais a
+// taxa, até o piso de 16 kHz.
+const TETO_ENVIO = 20 * 1024 * 1024;    // folga pro teto de 30 MB do Worker
+
+async function enxugar(buffer){
+  const dur = buffer.duration;
+  let taxa = 32000;
+  if(dur * taxa * 2 > TETO_ENVIO) taxa = Math.floor(TETO_ENVIO / (dur * 2));
+  taxa = Math.max(16000, Math.min(32000, taxa));
+  if(dur * taxa * 2 > TETO_ENVIO){
+    throw new Error('a música é longa demais — corte um trecho na aba Corte');
+  }
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const off = new OfflineCtx(1, Math.ceil(dur * taxa), taxa);
+  const fonte = off.createBufferSource();
+  fonte.buffer = buffer;                 // o próprio contexto reamostra e junta os canais
+  fonte.connect(off.destination);
+  fonte.start(0);
+  return await off.startRendering();
+}
+
+// AudioBuffer -> WAV (PCM 16 bits), igual ao da ferramenta Cover
+function paraWav(buffer){
+  const canais = buffer.numberOfChannels;
+  const taxa = buffer.sampleRate;
+  const tamanho = buffer.length * canais * 2 + 44;
+  const ab = new ArrayBuffer(tamanho);
+  const v = new DataView(ab);
+  const texto = (pos, t) => { for(let i = 0; i < t.length; i++) v.setUint8(pos + i, t.charCodeAt(i)); };
+
+  texto(0, 'RIFF');            v.setUint32(4, tamanho - 8, true);
+  texto(8, 'WAVE');            texto(12, 'fmt ');
+  v.setUint32(16, 16, true);   v.setUint16(20, 1, true);            // PCM
+  v.setUint16(22, canais, true);
+  v.setUint32(24, taxa, true); v.setUint32(28, taxa * canais * 2, true);
+  v.setUint16(32, canais * 2, true); v.setUint16(34, 16, true);
+  texto(36, 'data');           v.setUint32(40, tamanho - 44, true);
+
+  let pos = 44;
+  const dados = [];
+  for(let c = 0; c < canais; c++) dados.push(buffer.getChannelData(c));
+  for(let i = 0; i < buffer.length; i++){
+    for(let c = 0; c < canais; c++){
+      const x = Math.max(-1, Math.min(1, dados[c][i]));
+      v.setInt16(pos, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+      pos += 2;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
 }
 
 // Limpa o que pertencia ao projeto anterior. Usado quando entra um
@@ -1434,6 +1769,8 @@ function ehFavorito(taskId, indice){
 // emoji não aceita cor, e o do Windows 10 antigo às vezes nem existe
 // (foi o que aconteceu com a varinha, que virou quadradinho).
 const IC = {
+  certo: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>',
+  falha: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
   tesoura: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM6 8c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm0 12c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm6-7.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM19 3l-6 6 2 2 7-7V3z"/></svg>',
   mic: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V22h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
   nota: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>',
