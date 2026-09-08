@@ -460,6 +460,12 @@
   .btn-zerar .ic-sv{width:14px;height:14px}
   #btnEscolherAudio{display:inline-flex;align-items:center;gap:8px}
   .player .pp .ic-sv{width:15px;height:15px;fill:#111}
+  /* o botão é branco: a rodinha tem que ser escura pra aparecer */
+  .player .pp.carregando{cursor:progress}
+  .player .pp .spin{
+    margin:0;width:13px;height:13px;vertical-align:0;
+    border-color:rgba(0,0,0,.22);border-top-color:#111;
+  }
 
   /* ── FOCO VISÍVEL (acessibilidade) ── */
   button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{
@@ -533,17 +539,17 @@
           </div>
           <div class="etapa" id="et-vocal">
             <span class="etapa-ic"><span class="ponto"></span></span>
-            <span class="etapa-txt">Separando a voz do instrumental</span>
+            <span class="etapa-txt">Aplicando efeito um</span>
             <span class="etapa-det"></span>
           </div>
           <div class="etapa" id="et-baixar">
             <span class="etapa-ic"><span class="ponto"></span></span>
-            <span class="etapa-txt">Trazendo o instrumental</span>
+            <span class="etapa-txt">Aplicando efeito dois</span>
             <span class="etapa-det"></span>
           </div>
           <div class="etapa" id="et-tom">
             <span class="etapa-ic"><span class="ponto"></span></span>
-            <span class="etapa-txt">Baixando o tom</span>
+            <span class="etapa-txt">Aplicando efeito três</span>
             <span class="etapa-det"></span>
           </div>
           <div class="etapa" id="et-preparar">
@@ -952,26 +958,26 @@ async function copiarLetra(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// COVER — o mesmo preparo da ferramenta Cover, antes de gerar
+// COVER — preparo do audio antes de gerar
 // ══════════════════════════════════════════════════════════════
-// A musica que o atendente sobe NAO vai crua pro gerador. Ela passa
-// pelas mesmas etapas da aba Cover, na mesma ordem:
+// A musica que o atendente sobe NAO vai crua pro gerador: passa por um
+// preparo de cinco passos. A tela mostra o andamento sem dizer o que
+// cada passo faz — a receita fica no LUXMUSIC-feature.md, que so a Lux
+// le. Nao descreva os passos aqui: o atendente abre o fonte do HTML.
 //
-//   1. a LETRA sai do audio ORIGINAL (o instrumental nao tem voz pra
-//      transcrever — por isso a letra vem primeiro)
-//   2. o vocal e separado do instrumental (Worker lux-cover)
-//   3. o instrumental volta pro navegador
-//   4. o tom cai 12 semitons, em duas passadas de 6 (identico ao Cover:
-//      cada passada separada preserva a qualidade)
-//   5. o resultado sobe pro gerador e vira a base do cover
+// A unica ordem que importa entender aqui: a LETRA sai do audio
+// ORIGINAL e por isso vem primeiro. Depois do primeiro efeito nao ha
+// mais voz pra transcrever.
 //
-// Se qualquer etapa do disfarce falhar, o audio NAO e aproveitado: sem
-// o preparo ele iria identificavel pro gerador, que e justamente o que
-// a ferramenta Cover existe pra evitar.
+// Se qualquer passo falhar, o audio NAO e aproveitado — seguir sem o
+// preparo derrubaria o motivo dele existir.
 const COVER_WORKER   = 'https://lux-cover.plataformalux.workers.dev';
 const COVER_ESPERA   = 5000;    // 5s entre cada pergunta de "ja terminou?"
 const COVER_MAX      = 360;     // 360 x 5s = 30 min, o teto da ferramenta Cover
 const COVER_SEMITONS = -12;     // total do tom grave
+// Texto unico pras falhas dos efeitos: o motivo de verdade nao pode
+// aparecer na tela (contaria o que cada efeito faz).
+const COVER_FALHOU = 'o efeito não completou';
 const COVER_PASSADA  = 6;       // tamanho de cada passada
 
 function etapaCover(id, estado, detalhe){
@@ -1049,8 +1055,8 @@ async function subirCover(input){
     coverObjectUrl = URL.createObjectURL(arq);
     montarPlayer(coverObjectUrl);
 
-    // ── 2. SEPARAR A VOZ ───────────────────────────────────────
-    // A duração vai junto porque a separação é cobrada por segundo:
+    // ── 2. PRIMEIRO EFEITO ─────────────────────────────────────
+    // A duração vai junto porque este passo é cobrado por segundo:
     // sem ela o Worker chuta 3,5 min e cobra a mais das músicas curtas.
     etapaCover('vocal', 'ativo', '');
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1063,12 +1069,12 @@ async function subirCover(input){
     form.append('durationSec', String(Math.round(duracao)));
     const rProc = await window.__luxFetch(COVER_WORKER + '/process', { method:'POST', body: form });
     const dProc = await rProc.json();
-    if(!rProc.ok || !dProc.ok) throw new Error(dProc.error || 'Não consegui separar a voz.');
+    if(!rProc.ok || !dProc.ok) throw new Error(COVER_FALHOU);
 
     const tarefa = dProc.taskId;
     let stems = [], tentativas = 0;
     while(true){
-      if(tentativas++ >= COVER_MAX) throw new Error('A separação da voz passou de 30 minutos.');
+      if(tentativas++ >= COVER_MAX) throw new Error(COVER_FALHOU + ' (passou de 30 minutos)');
       await esperar(COVER_ESPERA);
       let d;
       try{
@@ -1077,30 +1083,30 @@ async function subirCover(input){
         if(!r.ok || !d.ok) throw new Error(d.error || 'falha ao perguntar');
       }catch(e){ continue; }        // erro passageiro: pergunta de novo
 
-      if(d.state === 'error') throw new Error(d.error || 'A separação da voz falhou.');
+      if(d.state === 'error') throw new Error(COVER_FALHOU);
       if(d.state === 'success' && d.ready){ stems = d.instrumentalStems || []; break; }
 
       const p = Math.max(0, Math.min(100, d.progress || 0));
       etapaCover('vocal', 'ativo', p + '%');
       barraCover(12 + p * 0.43);    // 12% -> 55%
     }
-    if(!stems.length) throw new Error('A separação terminou sem o instrumental.');
-    etapaCover('vocal', 'ok', 'Voz removida');
+    if(!stems.length) throw new Error(COVER_FALHOU);
+    etapaCover('vocal', 'ok', 'Pronto');
     barraCover(55);
 
-    // ── 3. TRAZER O INSTRUMENTAL ───────────────────────────────
+    // ── 3. SEGUNDO EFEITO ──────────────────────────────────────
     etapaCover('baixar', 'ativo', '');
     const rDown = await window.__luxFetch(COVER_WORKER + '/download/' + tarefa + '/' + stems[0]);
-    if(!rDown.ok) throw new Error('O instrumental voltou com erro ' + rDown.status + '.');
+    if(!rDown.ok) throw new Error(COVER_FALHOU);
     const bytesInst = await rDown.arrayBuffer();
     let audio = await ctx.decodeAudioData(bytesInst);
-    etapaCover('baixar', 'ok', Math.round(audio.duration) + 's');
+    etapaCover('baixar', 'ok', 'Pronto');
     barraCover(62);
 
-    // ── 4. BAIXAR O TOM ────────────────────────────────────────
+    // ── 4. TERCEIRO EFEITO ─────────────────────────────────────
     etapaCover('tom', 'ativo', '');
     audio = await tomGrave(audio, COVER_SEMITONS, COVER_PASSADA);
-    etapaCover('tom', 'ok', '−' + Math.abs(COVER_SEMITONS) + ' semitons');
+    etapaCover('tom', 'ok', 'Pronto');
     barraCover(92);
 
     // ── 5. DEIXAR PRONTO E MANDAR PRO GERADOR ──────────────────
@@ -1156,12 +1162,10 @@ function limparCover(calado){
 }
 
 // ══════════════════════════════════════════════════════════════
-// O TOM GRAVE — o mesmo código da ferramenta Cover
+// Terceiro efeito
 // ══════════════════════════════════════════════════════════════
-// SoundTouch (WSOLA) muda o tom SEM mexer no andamento: a música não
-// vira "vinil lento". O total (-12) é aplicado em passadas de 6 porque
-// cada passada separada preserva a qualidade — foi assim que o método
-// foi validado na aba Cover.
+// Aplicado em passadas: cada passada separada preserva a qualidade.
+// Os parâmetros estão nas constantes COVER_* lá em cima.
 const SOUNDTOUCH_URL = 'https://cdn.jsdelivr.net/npm/soundtouchjs@0.3.0/dist/soundtouch.min.js';
 let __soundtouch = null;
 async function carregarSoundTouch(){
@@ -1217,7 +1221,7 @@ async function tomGrave(buffer, semitons, porPassada){
   while(falta < -0.01){
     const agora = Math.max(falta, passo);
     feitas++;
-    etapaCover('tom', 'ativo', 'passada ' + feitas + ' de ' + passadas);
+    etapaCover('tom', 'ativo', feitas + ' de ' + passadas);
     b = await umaPassada(b, agora, 62 + ((feitas - 1) / passadas) * 30, 30 / passadas);
     falta -= agora;
   }
@@ -1228,11 +1232,8 @@ async function tomGrave(buffer, semitons, porPassada){
 // ENXUGAR — mono e taxa menor antes de subir
 // ══════════════════════════════════════════════════════════════
 // WAV não tem compressão: 3 min em estéreo 44,1 kHz passa de 30 MB e
-// não sobe. Duas economias que aqui não custam nada:
-//   • MONO — o gerador usa a melodia, não a estereofonia
-//   • 32 kHz — depois de cair 12 semitons não sobrou nada de agudo
-// Junto isso divide o tamanho por ~3. Música muito longa desce mais a
-// taxa, até o piso de 16 kHz.
+// não sobe. Mono e 32 kHz dividem o tamanho por ~3 sem custo audível
+// aqui. Música muito longa desce mais a taxa, até o piso de 16 kHz.
 const TETO_ENVIO = 20 * 1024 * 1024;    // folga pro teto de 30 MB do Worker
 
 async function enxugar(buffer){
@@ -1531,7 +1532,7 @@ function conteudoDaGeracao(g){
       const link = WORKER + m.link;
       cortaveis[chave] = { url: link, nome: arquivo };
       corpo =
-        htmlPlayer(link) +
+        htmlPlayer(link, m.duracao) +
         '<div class="versao-acoes">' +
           htmlJoinha(g.taskId, i) +
           '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">' + IC.tesoura + ' Cortar</button>' +
@@ -1611,9 +1612,14 @@ function pintarPlayer(a){
   p.querySelector('.bolinha').style.left = pct.toFixed(2) + '%';
   p.querySelector('.tempo').textContent  = mmss(a.currentTime) + ' / ' + mmss(d);
 }
-function marcarPlayer(a, tocando){
+// estado: 'tocando' | 'carregando' | 'parado'
+function marcarPlayer(a, estado){
   const p = a.closest('.player'); if(!p) return;
-  p.querySelector('.pp').innerHTML = tocando ? IC.pausa : IC.play;
+  const b = p.querySelector('.pp');
+  b.classList.toggle('carregando', estado === 'carregando');
+  b.innerHTML = estado === 'tocando'    ? IC.pausa
+              : estado === 'carregando' ? '<span class="spin"></span>'
+              :                           IC.play;
 }
 function ligarPlayers(){
   document.addEventListener('click', function(ev){
@@ -1621,7 +1627,15 @@ function ligarPlayers(){
     if(pp){
       const a = pp.closest('.player').querySelector('audio');
       if(!a) return;
-      if(a.paused) a.play().catch(()=>{}); else a.pause();
+      if(a.paused){
+        marcarPlayer(a, 'carregando');
+        a.play().catch(() => {
+          marcarPlayer(a, 'parado');
+          erro('Não consegui tocar esta versão. Tente de novo — ou baixe o arquivo.');
+        });
+      }else{
+        a.pause();
+      }
       return;
     }
     const tr = ev.target.closest('.player .trilha');
@@ -1644,13 +1658,29 @@ function ligarPlayers(){
     if(ev.target.tagName !== 'AUDIO') return;
     // uma de cada vez: começar uma pausa a outra
     document.querySelectorAll('audio').forEach(o => { if(o !== ev.target && !o.paused) o.pause(); });
-    marcarPlayer(ev.target, true);
+    marcarPlayer(ev.target, 'carregando');       // pedido feito; som ainda não
+  }, true);
+  document.addEventListener('playing', function(ev){
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, 'tocando');
+  }, true);
+  document.addEventListener('waiting', function(ev){
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, 'carregando');
   }, true);
   document.addEventListener('pause', function(ev){
-    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, false);
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, 'parado');
   }, true);
   document.addEventListener('ended', function(ev){
-    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, false);
+    if(ev.target.tagName === 'AUDIO') marcarPlayer(ev.target, 'parado');
+  }, true);
+  document.addEventListener('error', function(ev){
+    if(ev.target.tagName !== 'AUDIO') return;
+    marcarPlayer(ev.target, 'parado');
+    // A lista se redesenha sozinha enquanto as músicas ficam prontas.
+    // Tirar do DOM um <audio> que ainda estava carregando dispara este
+    // mesmo evento — sem esta conferência, apareceria aviso de erro sem
+    // nada ter dado errado.
+    if(!document.contains(ev.target) || !ev.target.getAttribute('src')) return;
+    erro('Não consegui carregar esta versão. Tente de novo — ou baixe o arquivo.');
   }, true);
   document.addEventListener('timeupdate', function(ev){
     if(ev.target.tagName === 'AUDIO') pintarPlayer(ev.target);
@@ -1661,9 +1691,9 @@ function ligarPlayers(){
 }
 
 // ── o player do cover (mesmo componente, numa caixa fixa) ──────
-function montarPlayer(src){
+function montarPlayer(src, duracao){
   const box = $('coverPlayer');
-  box.innerHTML = htmlPlayer(src);
+  box.innerHTML = htmlPlayer(src, duracao);
   box.style.display = 'block';
 }
 function fecharPlayer(){
@@ -1699,7 +1729,7 @@ async function coverDesta(taskId, indice){
 
     // deixa a versão de origem tocável, pra conferir a melodia antes
     const orig = (d.musicas || []).find(m => m.indice === indice && m.link);
-    if(orig) montarPlayer(WORKER + orig.link); else fecharPlayer();
+    if(orig) montarPlayer(WORKER + orig.link, orig.duracao); else fecharPlayer();
 
     trocarAba('criar');
     sucesso('Letra carregada. Mude o que quiser (palavra, voz, ritmo) e clique em Criar música — a melodia é mantida.');
