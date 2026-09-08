@@ -1225,12 +1225,10 @@ function renderRoteiro(){
 function alertaFalaEditor(i){
   const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala);
-  // ⚠️ (08/09) O botão Refazer NÃO é mais desligado pelo tamanho da fala. O aviso abaixo explica o
-  // risco; quem decide é o atendente. (Continua desligado só enquanto a cena está sendo refeita.)
-  if(n > EDIT_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+EDIT_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
-  if(n < EDIT_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+EDIT_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
-  // acima de 13 ainda cabe, mas aperta: avisa sem travar, porque a decisão é do atendente
-  if(n > PALAVRAS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — acima de <b>'+PALAVRAS_MAX+'</b> a fala fica corrida e pode encostar no fim dos 8s. Dá pra refazer assim, mas confira o resultado.'; return; }
+  // ⚠️ (08/09) NADA de vermelho e NADA de ⛔ aqui — no passo 3 nenhum tamanho de texto impede o
+  // atendente de refazer a cena nem de montar o vídeo. É um aviso amarelo, informativo, e só.
+  if(n > PALAVRAS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto grande (<b>'+n+' palavras</b>) — pode não caber inteiro na fala do personagem. Não impede fazer o vídeo.'; return; }
+  if(n < EDIT_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto curto (<b>'+n+' palavras</b>) — o personagem pode falar arrastado. Não impede fazer o vídeo.'; return; }
   el.className='alerta hide'; el.innerHTML='';
 }
 
@@ -2455,21 +2453,8 @@ async function finalizar(){
   // do Veo por baixo da nossa, que é exatamente o que a separação existe pra evitar.
   // ⚠️ A condição antiga tinha `&& !x._vozErro`: bastava a tela ter desistido uma vez pra a
   // montagem nunca mais esperar — e a cena entrava com a música do motor por baixo.
-  // ⚠️ (08/09) Fala fora da faixa faz o Veo atropelar as palavras. Medido: 17 palavras = 2,30
-  // palavras/s contra 1,80 de uma cena dentro do limite. O clipe JÁ está gravado assim, então
-  // não adianta montar de novo: tem que encurtar a fala e refazer a cena.
-  // ⚠️ (08/09) INFORMA, mas NÃO impede. Fala acima de '+PALAVRAS_MAX+' palavras faz o personagem atropelar
-  // as palavras (medido: 17 palavras = 2,30 palavras/s contra 1,80 de uma cena no limite) — mas a
-  // decisão de montar assim é do atendente. Antes isso era um confirm que dava pra cancelar sem
-  // querer e travava o trabalho.
-  const longas = cenas.map(function(c,i){ return { n:i+1, q:contarPalavras(c.fala) }; })
-                      .filter(function(x){ return x.q > PALAVRAS_MAX; });
-  if(longas.length){
-    const lista = longas.map(function(x){ return 'cena '+x.n+' ('+x.q+')'; }).join(', ');
-    toast('⚠️ Fala longa em '+lista+' — acima de '+PALAVRAS_MAX+' palavras a fala sai corrida. Montando assim mesmo.');
-    const nm=document.getElementById('notaMontagem');
-    if(nm) nm.innerHTML='<span style="color:#F5B7B1">⚠️ Fala longa em '+lista+' — acima de '+PALAVRAS_MAX+' palavras o personagem atropela as palavras. Se não gostar do resultado, encurte a fala e refaça a cena.</span>';
-  }
+  // ⚠️ (08/09) A montagem NÃO avisa mais nada sobre o tamanho da fala: o aviso amarelo já está na
+  // cena, no editor, desde a hora em que ele digitou. Repetir aqui embaixo do botão só assustava.
   await garantirVozes();
   // ⚠️ A legenda que entra no vídeo é SEMPRE a frase da fala (só o número/@/telefone muda de
   // forma). Confere as 4 aqui, no último instante: é o que conserta projeto antigo salvo com as
