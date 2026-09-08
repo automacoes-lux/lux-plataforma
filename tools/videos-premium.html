@@ -463,15 +463,17 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
       <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 1 minuto)</span></div>
-      <div class="card-hint">Envie em <b style="color:var(--text-mid)">MP3</b>. A <b style="color:var(--text-mid)">duração da música é a duração do clipe</b> (no máximo 1 minuto): se for maior, o editor de corte abre pra você escolher o trecho; se for menor, usa a música inteira.</div>
+      <div class="card-hint">Pode enviar <b style="color:var(--text-mid)">qualquer formato de áudio</b> (MP3, M4A do iPhone, WAV, OGG, áudio de WhatsApp…) — a plataforma converte sozinha. A <b style="color:var(--text-mid)">duração da música é a duração do clipe</b> (no máximo 1 minuto): se for maior, o editor de corte abre pra você escolher o trecho; se for menor, usa a música inteira.</div>
       <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original — é ela que o avatar está cantando. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
         <button type="button" class="btn-destrava" onclick="destravarMusica()">🎵 Quero trocar a música</button>
       </div>
       <div class="upload-tile" id="musicTile" role="button" tabindex="0" onclick="document.getElementById('musicInput').click()">
         <span class="big">🎵</span>
-        <span>Enviar a música (MP3)</span>
+        <span>Enviar a música (qualquer formato)</span>
       </div>
-      <input type="file" id="musicInput" accept="audio/mpeg,audio/mp3,.mp3" hidden/>
+      <!-- (07/09) aceita QUALQUER áudio. As extensões vão listadas uma a uma porque só "audio/*"
+           deixava os arquivos cinza (não selecionáveis) no Android — mesmo problema já visto no Vídeo Padrão. -->
+      <input type="file" id="musicInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.wma,.aiff,.aif,.mp4,.webm" hidden/>
 
       <!-- música pronta -->
       <div class="music-loaded" id="musicLoaded">
@@ -2066,8 +2068,10 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  // (07/09) ACEITA QUALQUER ÁUDIO — M4A do iPhone, WAV, OGG, AAC, FLAC, OPUS, áudio de WhatsApp...
+  // O navegador decodifica e, se não for MP3, a própria tela converte antes de enviar (mesmo motor
+  // da ferramenta Corte: lamejs, que já está carregado aqui pro editor de corte).
   const isMp3 = /\.mp3$/i.test(file.name) || file.type === 'audio/mpeg' || file.type === 'audio/mp3';
-  if (!isMp3) { toast('⚠️ A música precisa ser MP3 — converta e envie de novo.'); return; }
 
   // música NOVA → os tempos das frases mudam: zera o "casar com a letra" (evita encaixes velhos)
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
@@ -2089,14 +2093,25 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     // SEM mínimo: aceita qualquer duração até ~1:00; só acima disso abre o editor de corte.
     if (dur <= VIDEO_SECONDS + DUR_TOLERANCE) {
       // ≤ ~1:00 → usa a música INTEIRA (a duração dela = a duração do clipe)
-      const dataUrl = await readFileAsDataURL(file);
+      if (isMp3) {
+        // já é MP3 → manda o arquivo ORIGINAL, sem re-comprimir (não perde qualidade à toa)
+        const dataUrl = await readFileAsDataURL(file);
+        setMusicReady({ base64: dataUrl.split(',')[1], name: file.name, duration: Math.round(dur), playerSrc: dataUrl, wasCut: false });
+        return;
+      }
+      // outro formato → converte pra MP3 aqui no navegador (o servidor só aceita MP3)
+      if (typeof lamejs === 'undefined') { toast('⚠️ O conversor de áudio não carregou. Recarregue a página (F5) e envie de novo.'); return; }
+      toast('🎧 Convertendo o áudio pra MP3…');
+      const mp3Blob = await encodeMP3(audioBuf, null);
+      const base64 = await blobToBase64(mp3Blob);
       setMusicReady({
-        base64: dataUrl.split(',')[1],
-        name: file.name,
+        base64,
+        name: file.name.replace(/\.[^.]+$/, '') + '.mp3',
         duration: Math.round(dur),
-        playerSrc: dataUrl,
+        playerSrc: URL.createObjectURL(mp3Blob),
         wasCut: false
       });
+      toast('✅ Áudio convertido pra MP3 e pronto.');
       return;
     }
 
@@ -2105,7 +2120,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     rawAudioName = file.name;
     abrirEditorCorte();
   } catch (err) {
-    toast('⚠️ Não consegui ler esse MP3: ' + err.message);
+    toast('⚠️ Não consegui ler esse áudio (arquivo corrompido ou formato que o navegador não abre): ' + err.message);
   }
 });
 

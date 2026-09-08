@@ -97,6 +97,21 @@ input[type="file"]{display:none}
 .list-row.debito .r{color:var(--danger)}
 .list-row .who{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .list-row .who small{display:block;color:var(--text-dim);font-size:12px}
+/* linha "Por atendente": nome · anúncio proporcional · total recebido */
+.list-row.atend .who{flex:1}
+.list-row.atend{gap:18px}
+.list-row.atend .anun{min-width:98px;text-align:right;white-space:nowrap;color:var(--text-mid);font-variant-numeric:tabular-nums;
+  border-right:.5px solid var(--border);padding-right:18px}
+.list-row.atend .anun small{display:block;color:var(--text-dim);font-size:12px}
+.list-row.atend .r{min-width:104px;text-align:right}
+/* celular: nome na 1ª linha inteira; anúncio e total dividem a 2ª */
+@media(max-width:520px){
+  .list-row.atend{flex-wrap:wrap;gap:4px 12px}
+  .list-row.atend .who{flex:1 0 100%}
+  .list-row.atend .anun{order:2;min-width:0;text-align:left;border-right:0;padding-right:0}
+  .list-row.atend .anun small{display:inline;margin-left:5px}
+  .list-row.atend .r{order:3;min-width:0;margin-left:auto}
+}
 
 /* % por atendente (imagem) */
 .pct-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 12px;background:rgba(255,255,255,.02);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:14px}
@@ -797,6 +812,7 @@ function updateAnuncioBRL(){
   const hint=document.getElementById('cambioHint');
   if(cambio){ hint.innerHTML=`Câmbio do dia: <b>R$ ${cambio.toFixed(2).replace('.',',')}</b> · ≈ <b>${fmtBRL(usd*cambio)}</b> em reais`; }
   else hint.textContent='Câmbio será buscado ao organizar.';
+  repintarPorAtendente();
 }
 // Puxa o gasto do Meta Ads do dia selecionado e preenche o campo de anúncio (US$).
 // silent=true → chamada automática (não incomoda com erro se o Meta ainda não estiver configurado).
@@ -911,7 +927,8 @@ function renderPct(soma){
       <span class="wpp-badge ${w?'':'vazio'}" title="WhatsApp real: conversas NOVAS do dia (1ª mensagem da história hoje)">${w?('Wpp '+w.percent.toFixed(2)+'% · '+w.novos):'Wpp —'}</span>`;
     t.appendChild(row);
   });
-  t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{ pctState[Number(e.target.dataset.i)].percent=parseNum(e.target.value); salvarRascunho({percentuais:pctState}); }));
+  t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{ pctState[Number(e.target.dataset.i)].percent=parseNum(e.target.value); salvarRascunho({percentuais:pctState}); repintarPorAtendente(); }));
+  repintarPorAtendente();
 }
 // ── % REAL do WhatsApp (conversas novas do dia; o VPS atualiza de hora em hora) ──
 let wppPct={}, wppMeta=null;
@@ -1748,6 +1765,23 @@ function avoLimparBusca(){
   const inp=document.getElementById('avoBusca'); if(inp){ inp.value=''; inp.focus(); }
   avoFiltrar();
 }
+// Anúncio proporcional por atendente: MESMA conta do fechamento —
+// total do dia (US$ × câmbio) × (% do atendente ÷ soma dos %). O % vem da etapa 4
+// (Rotator / WhatsApp real / imagem), então a coluna acompanha correção feita lá.
+function anuncioPorAtendente(){
+  const el=document.getElementById('inAnuncioUSD');
+  const usd=el?parseNum(el.value):0;
+  const total=(cambio && usd>0)?usd*cambio:0;
+  const lista=Array.isArray(pctState)?pctState:[];
+  const soma=lista.reduce((a,p)=>a+(Number(p.percent)||0),0);
+  const mapa={};
+  if(!(total>0)||!(soma>0)) return {ok:false,mapa};
+  lista.forEach(p=>{ if(p.email) mapa[String(p.email).toLowerCase()]=Math.round(total*(Number(p.percent)||0)/soma*100)/100; });
+  return {ok:true,mapa};
+}
+// chamado quando o anúncio ou os % mudam, pra coluna não ficar velha
+function repintarPorAtendente(){ try{ if(avoUltimo) aovivoRender(avoUltimo); }catch(e){} }
+
 function aovivoRender(d){
   avoUltimo=d;
   document.getElementById('avoTotal').textContent=fmtBRL(d.totalBRL);
@@ -1757,7 +1791,13 @@ function aovivoRender(d){
   document.getElementById('avoUpd').textContent='atualizado '+p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
   const ats=d.atendentes||[];
   document.getElementById('avoPorAtend').innerHTML = ats.length
-    ? ats.map((a,i)=>`<div class="list-row"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small></div><div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`).join('')
+    ? (()=>{ const an=anuncioPorAtendente();
+        return ats.map((a,i)=>{
+          const v = a.email ? (an.mapa[String(a.email).toLowerCase()]||0) : 0;
+          return `<div class="list-row atend"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small></div>`
+            + `<div class="anun" title="${an.ok?'fatia do anúncio do dia, proporcional ao % de atendimento':'informe o gasto de anúncio (etapa 2) e o % de atendimento (etapa 4)'}">${an.ok?fmtBRL(v):'—'}<small>anúncio</small></div>`
+            + `<div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`;
+        }).join(''); })()
     : '<div class="bd-note">Nenhum ainda.</div>';
   const feed=[];
   // e2e vai junto: é ele que casa a linha com a nota fiscal (nfSelo)
