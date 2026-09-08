@@ -1410,10 +1410,17 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
     const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|webm|m4v|avi)$/i.test(file.name);
     try {
       if (isVideo) {
-        const meta = await getVideoMeta(file);
-        let up = file, realDur = meta.duration;
-        // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB)
-        if (file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
+        // (08/09) O navegador pode NÃO conseguir abrir o vídeo (H.265 do iPhone/Android sem o codec do
+        // Windows). Isso NÃO é motivo pra recusar: o montador aceita H.265. Sem conseguir abrir, a gente
+        // perde só a miniatura e a compactação — a duração sai do cabeçalho do arquivo.
+        let meta = null;
+        try { meta = await getVideoMeta(file); } catch (e) { /* segue pelo cabeçalho */ }
+        const abriu = !!(meta && meta.duration > 0);
+        let up = file, realDur = abriu ? meta.duration : await lerDuracaoContainer(file);
+        if (!abriu) toast('ℹ️ ' + file.name + ': seu computador não abre esse formato de vídeo (H.265), mas ele funciona no clipe — enviando o original.');
+        // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB).
+        // Só dá pra compactar o que o navegador consegue abrir.
+        if (abriu && file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
           // PORTÃO DE QUALIDADE (incidente Diogo 13/07): só aceita o compactado se ele saiu SEM travadas
           // gravadas (maior buraco ≤1,2s e total parado ≤2,5s). Saiu ruim → refaz sozinho 1x; 2x ruim → recusa.
           let r = null, okComp = false;
@@ -1424,17 +1431,22 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
               const b = r.buracos || {};
               if (b.frames !== 0 && (b.maxGapMs || 0) <= 1200 && (b.totalGapMs || 0) <= 2500) { okComp = true; break; }
             }
-          } catch (err) { hideCompact(); toast('⚠️ Não consegui compactar ' + file.name + ': ' + err.message); continue; }
+          } catch (err) { hideCompact(); r = null; okComp = false; }
           hideCompact();
-          if (!okComp) { toast('⚠️ ' + file.name + ': a compactação saiu com travadas 2 vezes (computador sobrecarregado?). Feche outras abas/programas e tente de novo — ou use um vídeo menor que ' + COMPACT_ABOVE_MB + 'MB.'); continue; }
-          up = r.blob; if (r.dur > 0.3) realDur = r.dur;
-          toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
+          // (08/09) compactação ruim NÃO descarta mais a mídia: manda o ORIGINAL (melhor qualidade,
+          // só maior). Antes o vídeo sumia do Passo 3 e a atendente ficava sem entender.
+          if (okComp && r && r.blob) {
+            up = r.blob; if (r.dur > 0.3) realDur = r.dur;
+            toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
+          } else {
+            toast('ℹ️ ' + file.name + ': não deu pra compactar aqui — enviando o original (' + (file.size / 1048576).toFixed(0) + 'MB).');
+          }
         }
-        if (up.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ': mesmo compactado ficou acima de ' + CLIP_MAX_MB + 'MB. Use um vídeo mais curto.'); continue; }
+        if (up.size > CLIP_MAX_MB * 1024 * 1024) { toast('⚠️ ' + file.name + ' tem ' + (up.size / 1048576).toFixed(0) + 'MB e o limite é ' + CLIP_MAX_MB + 'MB. Peça um vídeo mais curto ao cliente.'); continue; }
         toast('⏳ Enviando ' + file.name + '…');
         const clipKey = await uploadClip(up);
         const dur = Math.min(VIDEO_SECONDS, Math.max(1, Math.round(realDur || 5)));
-        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: realDur || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: meta.thumbUrl || '', name: file.name, localUrl: URL.createObjectURL(file) });
+        scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'video', clipKey, dur, origDur: realDur || dur, trimStart: 0, scale: 1, offsetX: 0, offsetY: 0, thumbUrl: (meta && meta.thumbUrl) || '', semPreview: !abriu, name: file.name, localUrl: URL.createObjectURL(file) });
       } else {
         const opt = await fileToOptimizedImage(file, false);
         scenes.push({ id: 'sc' + Date.now() + Math.random().toString(36).slice(2, 6), kind: 'photo', ...opt, name: file.name, origBase64: opt.base64 });
@@ -1473,6 +1485,45 @@ function getVideoMeta(file) {
     v.onerror = () => { URL.revokeObjectURL(url); rej(new Error('vídeo inválido')); };
     setTimeout(finish, 4000);   // fallback se onseeked não disparar
   });
+}
+
+// (08/09) DURAÇÃO LIDA DIRETO DO ARQUIVO, sem precisar abrir o vídeo ─────────────────────────
+// Celular novo (iPhone e Android) grava em H.265/HEVC. O Chrome só decodifica H.265 se o Windows
+// tiver o codec instalado — na máquina da atendente pode não ter, e o envio morria em "vídeo
+// inválido". Mas o MONTADOR aceita H.265 numa boa (testado com render real do .MOV da Mariana),
+// então o navegador NÃO precisa abrir o vídeo: basta saber quanto tempo ele tem.
+// MP4 e MOV são o mesmo formato de caixa por dentro (ISO BMFF): a duração está na caixa 'mvhd',
+// dentro da 'moov'. Aqui eu ando de caixa em caixa lendo só 16 bytes de cada, sem carregar o
+// arquivo inteiro na memória. Devolve segundos, ou 0 se não achar.
+async function lerDuracaoContainer(file) {
+  try {
+    const leia = async (ini, tam) => new DataView(await file.slice(ini, ini + tam).arrayBuffer());
+    const fim = file.size;
+    let pos = 0;
+    while (pos + 8 <= fim) {
+      const c = await leia(pos, 16);
+      if (c.byteLength < 8) break;
+      let tam = c.getUint32(0), cab = 8;
+      const tipo = String.fromCharCode(c.getUint8(4), c.getUint8(5), c.getUint8(6), c.getUint8(7));
+      if (tam === 1) { if (c.byteLength < 16) break; tam = Number(c.getBigUint64(8)); cab = 16; }   // caixa gigante (>4GB)
+      else if (tam === 0) tam = fim - pos;                                                          // última caixa
+      if (tam < cab) break;
+      if (tipo === 'moov') {
+        const mv = await leia(pos, Math.min(tam, 8 * 1024 * 1024));   // o moov é pequeno (índice do vídeo)
+        for (let i = 0; i + 32 < mv.byteLength; i++) {
+          if (mv.getUint8(i) === 0x6D && mv.getUint8(i + 1) === 0x76 && mv.getUint8(i + 2) === 0x68 && mv.getUint8(i + 3) === 0x64) {
+            const versao = mv.getUint8(i + 4);   // 'mvhd' começa em i; versão vem logo depois do nome
+            const escala = versao === 1 ? mv.getUint32(i + 24) : mv.getUint32(i + 16);
+            const total  = versao === 1 ? Number(mv.getBigUint64(i + 28)) : mv.getUint32(i + 20);
+            return (escala > 0 && total > 0) ? (total / escala) : 0;
+          }
+        }
+        return 0;
+      }
+      pos += tam;
+    }
+  } catch (e) { /* qualquer surpresa no arquivo → 0, e a atendente ajusta o tempo na mão */ }
+  return 0;
 }
 
 // vídeo: upload BINÁRIO → /uploadClip → devolve a key no R2 (base64 estoura)
@@ -1690,7 +1741,9 @@ function renderScenes() {
     const tag = isVid ? '🎬 Vídeo' : (i === 0 ? '📌 Foto da capa' : 'Foto ' + (i + 1));   // 1ª mídia FOTO = capa (sai parada no vídeo)
     // (05/09) SÓ VÍDEO tem ✏️. Foto não se edita mais: o servidor melhora e estende toda foto sozinho,
     // depois do "Gerar o clipe" — se a atendente recortasse antes, o recorte seria refeito por cima.
-    const editBtn = isVid
+    // (08/09) vídeo que este computador não abre (H.265) não ganha ✏️: o editor precisa TOCAR o vídeo
+    // pra escolher trecho e enquadramento. O ⏱ (duração) continua funcionando normalmente.
+    const editBtn = (isVid && !s.semPreview)
       ? '<button class="edit" title="Editar vídeo (corte + 9:16)" onclick="openVideoEditor(\'' + s.id + '\')">✏️</button>'
       : '';
     const photoLbl = (Math.round(t.photoDur * 10) / 10).toString().replace('.', ',') + 's';
