@@ -1166,8 +1166,11 @@ function renderRoteiro(){
   box.querySelectorAll('[data-fa]').forEach(function(el){
     el.addEventListener('input', function(){
       const i=+el.dataset.fa; cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
+      cenas[i]._legendaSuja = true;   // ⚠️ AQUI nascia a divergência: a fala mudava e a legenda não
       alertaFala(i); atualizarBotaoVideo();
     });
+    // ao SAIR da caixa a legenda já se acerta — o atendente chega no passo 3 com as duas batendo
+    el.addEventListener('change', function(){ refazerLegenda(+el.dataset.fa); });
   });
   cenas.forEach(function(s,i){ alertaFala(i); });
   atualizarBotaoVideo();
@@ -1836,23 +1839,52 @@ function pintarProgresso(){
 
 // Espera a separação de voz de UMA cena, sem travar a tela. Se falhar, a montagem segue com o
 // áudio original do clipe (com a trilha do Veo) — pior, mas nunca sem som.
-async function esperarVoz(i){
+// Dispara OUTRA separação de voz pra esta cena. Só é chamada quando a anterior falhou de
+// verdade — custa US$ 0,008, contra US$ 0,40 de refazer o clipe inteiro.
+async function religarVoz(i){
+  const s = cenas[i]; if(!s || !s.video_url) return false;
+  try{
+    const r = await api('/promoVozStart', { method:'POST', body: JSON.stringify({ url: s.video_url }) });
+    const d = await r.json();
+    if(d.ok && d.vozId){ s._vozId = d.vozId; s._vozUrl=''; s._vozErro=''; return true; }
+  }catch(e){}
+  return false;
+}
+
+async function esperarVoz(i, tentativa){
   const s = cenas[i]; if(!s || !s._vozId || s._vozUrl) return;
-  for(let k=0;k<40;k++){                      // 40 x 5s = até 3min20 (costuma levar ~10s)
+  for(let k=0;k<60;k++){                      // 60 x 5s = até 5 min (costuma levar ~10s)
     await new Promise(r=>setTimeout(r,5000));
     if(!cenas[i] || cenas[i]!==s) return;      // a cena foi refeita no meio do caminho
     try{
       const r = await api('/promoVozStatus', { method:'POST', body: JSON.stringify({ vozId:s._vozId, projectId, cena:i+1 }) });
       const d = await r.json();
       if(d.ok && d.status==='done' && d.url){
-        s._vozUrl = d.url; custoUSD += (d.custoUSD||0);
+        s._vozUrl = d.url; s._vozErro=''; custoUSD += (d.custoUSD||0);
         pintarCusto(); salvarProjeto(true);
         return;
       }
-      if(d.ok && d.status==='failed'){ s._vozErro = d.error||'falhou'; return; }
+      if(d.ok && d.status==='failed'){
+        // falhou DE VERDADE: tenta outra separação, até 2 vezes
+        if((tentativa||0) < 2 && await religarVoz(i)) return await esperarVoz(i, (tentativa||0)+1);
+        s._vozErro = d.error||'falhou'; return;
+      }
     }catch(e){ /* rede: tenta no próximo ciclo */ }
   }
-  s._vozErro = 'demorou demais';
+  // ⚠️ Estourou a NOSSA espera — isso NÃO é erro. O trabalho continua vivo na WaveSpeed e o
+  // vozId fica salvo: quem pergunta de novo é o garantirVozes(), na hora de montar.
+  s._vozErro = '';
+}
+
+// Última chance antes de montar: qualquer cena que ainda não tenha a voz limpa é perguntada de
+// novo. Quase sempre o trabalho já terminou enquanto o atendente mexia em outra coisa.
+async function garantirVozes(){
+  const faltando = cenas.map(function(s,i){ return {s:s,i:i}; })
+                        .filter(function(x){ return x.s.video_url && x.s._vozId && !x.s._vozUrl; });
+  if(!faltando.length) return;
+  const bt=document.getElementById('btnFinal');
+  if(bt) bt.innerHTML='<span class="spin"></span>Terminando de limpar o áudio…';
+  await Promise.all(faltando.map(function(x){ return esperarVoz(x.i); }));
 }
 
 // Deixa a LEGENDA sendo a MESMA frase da fala. A única coisa que pode mudar entre as duas é a
@@ -1860,11 +1892,13 @@ async function esperarVoz(i){
 // Não chama a IA à toa: se a legenda já é igual à fala, não há o que converter.
 async function refazerLegenda(i){
   const s = cenas[i]; if(!s) return;
-  if(s._legendaManual) return;                 // esta legenda foi escrita à mão: é dela que mandamos
+  // (07/09) O `_legendaManual` SAIU: era ele que congelava a divergência. A legenda não é mais
+  // um campo livre, então não existe edição manual pra preservar.
   const fala = String(s.fala||'').trim();
   if(!fala) return;
-  if(String(s.legenda||'').trim() === fala){ s._legendaSuja = false; s._legendaDe = fala; return; }
-  if(s._legendaDe === fala){ s._legendaSuja = false; return; }   // esta legenda JÁ saiu desta fala
+  if(String(s.legenda||'').trim() === fala){ s._legendaSuja = false; s._legendaDe = fala; s._legendaFeita = fala; return; }
+  // o recibo só vale se a legenda AINDA for a que ele produziu (senão alguém mexeu por fora)
+  if(s._legendaDe === fala && s._legendaFeita === String(s.legenda||'').trim()){ s._legendaSuja = false; return; }
   const av = document.querySelector('[data-avisoleg="'+i+'"]');
   if(av) av.textContent = 'Ajustando a legenda pra acompanhar a fala…';
   let nova = '';
@@ -1876,7 +1910,8 @@ async function refazerLegenda(i){
   // Falhou a conversão? A legenda vira a PRÓPRIA fala. Número por extenso na tela é feio, mas
   // legenda dizendo uma frase diferente da falada é pior — e era exatamente o problema.
   s.legenda = nova || fala;
-  s._legendaDe = fala;          // recibo: da próxima vez não gasta nem arrisca de novo
+  s._legendaDe = fala;                                   // de qual fala esta legenda saiu
+  s._legendaFeita = String(s.legenda || '').trim();      // e qual legenda foi produzida
   s._legendaSuja = false;
   const cx = document.querySelector('#boxCortes [data-leg="'+i+'"]');
   if(cx && document.activeElement !== cx) cx.value = s.legenda;
@@ -2029,7 +2064,7 @@ function renderCortes(){
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
-          ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (numeral)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+          ? ('<textarea data-leg="'+i+'" readonly style="min-height:52px;font-size:13px;opacity:.75;cursor:not-allowed" placeholder="legenda (acompanha a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
              '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
@@ -2066,8 +2101,8 @@ function renderCortes(){
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
       //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
       // Mexer na fala suja a legenda: ao Refazer, ela é reescrita a partir da fala nova (/rotLegenda).
-      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito)</span></div>'+
-      '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(acompanha a fala — para mudar, edite a fala abaixo)</span></div>'+
+      '<textarea data-leg="'+i+'" readonly style="min-height:52px;font-size:13px;opacity:.75;cursor:not-allowed">'+esc(s.legenda||s.fala||'')+'</textarea>'+
       '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
       '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
@@ -2094,7 +2129,6 @@ function renderCortes(){
       const i=+el.dataset.faed;
       cenas[i].fala = el.value; cenas[i].palavras = contarPalavras(el.value);
       cenas[i]._legendaSuja = true;
-      cenas[i]._legendaManual = false;   // mexeu na fala: a legenda volta a seguir ela
       alertaFalaEditor(i);
       const av = document.querySelector('[data-avisoleg="'+i+'"]');
       if(av) av.textContent = 'A legenda vai acompanhar esta fala.';
@@ -2106,12 +2140,8 @@ function renderCortes(){
     el.addEventListener('change', function(){ refazerLegenda(+el.dataset.faed); });
   });
   // a legenda também pode ser corrigida na mão; nesse caso ela deixa de estar "suja"
-  box.querySelectorAll('[data-leg]').forEach(function(el){
-    el.addEventListener('input', function(){
-      const i=+el.dataset.leg;
-      cenas[i].legenda = el.value; cenas[i]._legendaSuja = false; cenas[i]._legendaManual = true;
-    });
-  });
+  // ⚠️ SEM listener de digitação na legenda: ela não é mais um campo livre. Quem quiser mudar o
+  // que aparece escrito muda a FALA — é a única forma de as duas nunca se separarem.
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
   prepararAudios();
 }
@@ -2339,13 +2369,9 @@ async function finalizar(){
   // legenda mesmo com a legenda ligada — silenciosamente. Agora espera o que faltar.
   // espera a separação de voz que ainda estiver a caminho — sem isso o vídeo sai com a trilha
   // do Veo por baixo da nossa, que é exatamente o que a separação existe pra evitar.
-  if(cenas.some(function(x){ return x.video_url && x._vozId && !x._vozUrl && !x._vozErro; })){
-    const bt0=document.getElementById('btnFinal');
-    if(bt0) bt0.innerHTML='<span class="spin"></span>Limpando o áudio das cenas…';
-    await Promise.all(cenas.map(function(x,i){
-      return (x.video_url && x._vozId && !x._vozUrl && !x._vozErro) ? esperarVoz(i) : Promise.resolve();
-    }));
-  }
+  // ⚠️ A condição antiga tinha `&& !x._vozErro`: bastava a tela ter desistido uma vez pra a
+  // montagem nunca mais esperar — e a cena entrava com a música do motor por baixo.
+  await garantirVozes();
   // ⚠️ A legenda que entra no vídeo é SEMPRE a frase da fala (só o número/@/telefone muda de
   // forma). Confere as 4 aqui, no último instante: é o que conserta projeto antigo salvo com as
   // duas frases diferentes, sem depender de o atendente ter clicado em Refazer.
