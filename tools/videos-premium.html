@@ -669,24 +669,30 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="editor-overlay" id="videoEditorOverlay">
   <div class="editor-box">
     <h3>🎬 Editar o vídeo</h3>
-    <div class="hint">Use o <b style="color:var(--text-mid)">zoom</b> pra enquadrar no 9:16. Na linha do tempo embaixo, arraste as <b style="color:var(--text-mid)">alças</b> pra escolher o trecho (início e fim) que vai aparecer.</div>
+    <div class="hint">Arraste as <b style="color:var(--gold)">alças douradas</b> na linha do tempo pra escolher o <b style="color:var(--text-mid)">início e o fim</b> do trecho que vai entrar no clipe. A onda mostra onde tem som. Use o <b style="color:var(--text-mid)">zoom</b> pra enquadrar no 9:16 e <b>▶ Ver o trecho</b> pra conferir antes de cortar.</div>
     <div id="veFrame" style="position:relative;width:200px;height:356px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;touch-action:none">
       <video id="veVideo" muted playsinline preload="metadata" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></video>
     </div>
     <div class="editor-zoom-row"><span>🔍</span><input type="range" id="veZoom" min="100" max="300" step="1" value="100"/></div>
     <div style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>0s</span><span id="veTotLbl">0s</span></div>
-      <div id="veTrack" style="position:relative;height:30px;background:#1c1c1c;border:1px solid rgba(255,255,255,.12);border-radius:8px;touch-action:none">
-        <div id="veSel" style="position:absolute;top:0;bottom:0;left:0;width:0;background:rgba(212,175,55,.28);border-left:2px solid var(--gold);border-right:2px solid var(--gold)"></div>
-        <div id="veHa" style="position:absolute;top:-4px;left:0;width:13px;height:38px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
-        <div id="veHb" style="position:absolute;top:-4px;left:0;width:13px;height:38px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
+      <div id="veTrack" style="position:relative;height:46px;background:#1c1c1c;border:1px solid rgba(255,255,255,.12);border-radius:8px;touch-action:none">
+        <canvas id="veOnda" style="position:absolute;left:0;top:0;width:100%;height:100%;border-radius:8px"></canvas>
+        <div id="veSel" style="position:absolute;top:0;bottom:0;left:0;width:0;background:rgba(212,175,55,.16);border-left:2px solid var(--gold);border-right:2px solid var(--gold)"></div>
+        <div id="veHa" style="position:absolute;top:-4px;left:0;width:13px;height:54px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
+        <div id="veHb" style="position:absolute;top:-4px;left:0;width:13px;height:54px;background:var(--gold);border-radius:4px;cursor:ew-resize;transform:translateX(-50%);box-shadow:0 0 5px rgba(0,0,0,.6)"></div>
       </div>
-      <div style="text-align:center;margin-top:9px;font-size:14px"><span id="veSelLbl" style="color:var(--gold)"><b>0s</b> selecionados</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:12px">
+        <span id="veLblIni" style="color:var(--gold);font-weight:600;white-space:nowrap">0:00.0 (início)</span>
+        <span id="veLblCorte" style="color:var(--text-dim);text-align:center">sem corte</span>
+        <span id="veLblFim" style="color:var(--gold);font-weight:600;white-space:nowrap">0:00.0 (fim)</span>
+      </div>
+      <div style="text-align:center;margin-top:7px;font-size:14px"><span id="veSelLbl" style="color:var(--gold)"><b>0s</b> selecionados</span></div>
     </div>
     <button class="btn-mini" onclick="vePreview()" style="margin-top:8px">▶ Ver o trecho</button>
     <div class="editor-actions" style="margin-top:10px">
       <button class="btn-ed-cancel" onclick="closeVideoEditor()">Cancelar</button>
-      <button class="btn-ed-save" onclick="saveVideoEditor()">Salvar</button>
+      <button class="btn-ed-save" onclick="saveVideoEditor()">✂ Cortar e usar</button>
     </div>
   </div>
 </div>
@@ -1812,6 +1818,55 @@ function computeTiming() {
 // ── Editor de VÍDEO: corte do trecho + enquadramento 9:16 (arrastar) + zoom ──
 let vee = null;   // { id, scale, dur, tStart, tEnd, dragH }
 function veFmt(x) { return (Math.round(x * 10) / 10).toString().replace('.', ',') + 's'; }
+// 0:07.2 — mesmo formato do editor do Personagem Animado
+function veRelogio(x) {
+  x = Math.max(0, Number(x) || 0);
+  const m = Math.floor(x / 60), s = x - m * 60;
+  return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1);
+}
+// ONDA DO ÁUDIO (08/09) — mesma leitura do Personagem Animado, mas lendo o arquivo LOCAL (não precisa
+// de rota no servidor). Serve pra atendente enxergar onde tem fala/movimento antes de escolher o trecho.
+// Vídeo que o navegador não decodifica (H.265) simplesmente não desenha onda — a barra continua usável.
+async function veCarregarOnda(url) {
+  try {
+    const r = await fetch(url);
+    const bruto = await r.arrayBuffer();
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const audio = await ac.decodeAudioData(bruto);
+    try { ac.close(); } catch (e) {}
+    const ch = audio.getChannelData(0), sr = audio.sampleRate;
+    const JAN = Math.max(1, Math.round(sr * 0.02));   // uma barrinha a cada 20ms
+    const env = [];
+    let pico = 0;
+    for (let p = 0; p < ch.length; p += JAN) {
+      let soma = 0, n = 0;
+      for (let k = p; k < p + JAN && k < ch.length; k++) { soma += ch[k] * ch[k]; n++; }
+      const v = Math.sqrt(soma / Math.max(1, n));
+      if (v > pico) pico = v;
+      env.push(v);
+    }
+    if (!env.length || pico <= 0) return null;
+    return { env: env.map(v => v / pico) };
+  } catch (e) { return null; }   // sem áudio, formato exótico ou vídeo mudo → sem onda
+}
+function veDesenharOnda() {
+  const cv = document.getElementById('veOnda');
+  if (!cv || !vee) return;
+  const L = Math.max(1, cv.clientWidth || 300), A = 46;
+  cv.width = L; cv.height = A;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, L, A);
+  const env = vee.onda && vee.onda.env;
+  if (!env || !env.length) return;
+  const n = env.length;
+  for (let x = 0; x < L; x++) {
+    const v = env[Math.floor(x / L * n)] || 0;
+    const h = Math.max(1, v * (A - 8));
+    const t = (x / L) * vee.dur;
+    ctx.fillStyle = (t >= vee.tStart && t <= vee.tEnd) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
+    ctx.fillRect(x, (A - h) / 2, 1, h);
+  }
+}
 function openVideoEditor(id) {
   const s = scenes.find(x => x.id === id);
   if (!s || s.kind !== 'video') return;
@@ -1840,6 +1895,10 @@ function openVideoEditor(id) {
     try { v.currentTime = vee.tStart; } catch (e) {}
   };
   v.src = s.localUrl;
+  // a onda vem em SEGUNDO PLANO: o editor abre na hora e ela aparece quando ficar pronta
+  // (vídeo de 1 minuto leva ~1s pra ler). Se o pedido mudar no meio, o resultado velho é descartado.
+  vee.onda = null;
+  veCarregarOnda(s.localUrl).then(o => { if (vee && vee.id === id) { vee.onda = o; veDesenharOnda(); } });
 }
 function veTransform() {
   if (!vee) return;
@@ -1854,6 +1913,18 @@ function veUpdate() {   // reposiciona as alças + a seleção + o rótulo a par
   sel.style.left = a + '%'; sel.style.width = (b - a) + '%';
   const len = vee.tEnd - vee.tStart;
   document.getElementById('veSelLbl').innerHTML = '<b>' + Math.round(len) + 's</b> selecionados <span style="color:var(--text-dim);font-weight:400">(' + veFmt(vee.tStart) + ' → ' + veFmt(vee.tEnd) + ')</span>';
+  // rótulos no estilo do Personagem Animado: início · quanto foi cortado · fim
+  const cIni = vee.tStart, cFim = Math.max(0, vee.dur - vee.tEnd);
+  const li = document.getElementById('veLblIni'); if (li) li.textContent = veRelogio(vee.tStart) + ' (início)';
+  const lf = document.getElementById('veLblFim'); if (lf) lf.textContent = veRelogio(vee.tEnd) + ' (fim)';
+  const lc = document.getElementById('veLblCorte');
+  if (lc) {
+    const partes = [];
+    if (cIni > 0.05) partes.push('−' + cIni.toFixed(1) + 's no início');
+    if (cFim > 0.05) partes.push('−' + cFim.toFixed(1) + 's no fim');
+    lc.textContent = partes.length ? ('corte: ' + partes.join(' · ')) : 'sem corte';
+  }
+  veDesenharOnda();
 }
 function vePreview() {   // toca SÓ a seleção (tStart → tEnd)
   const v = document.getElementById('veVideo');
