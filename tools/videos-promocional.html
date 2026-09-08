@@ -1170,10 +1170,12 @@ function renderRoteiro(){
       alertaFala(i); atualizarBotaoVideo();
     });
     // ao SAIR da caixa a legenda já se acerta — o atendente chega no passo 3 com as duas batendo
-    el.addEventListener('change', function(){ refazerLegenda(+el.dataset.fa); });
+    el.addEventListener('change', function(){ sincronizarTextos(+el.dataset.fa); });
   });
   cenas.forEach(function(s,i){ alertaFala(i); });
   atualizarBotaoVideo();
+  // ao abrir o passo 2, a fala cru do cliente já sai formatada (e a legenda junto)
+  cenas.forEach(function(s,i){ if(s.fala) sincronizarTextos(i); });
 }
 // mesmo alerta de tamanho, mas no card do EDITOR (o do passo 2 usa data-al)
 function alertaFalaEditor(i){
@@ -1887,32 +1889,45 @@ async function garantirVozes(){
   await Promise.all(faltando.map(function(x){ return esperarVoz(x.i); }));
 }
 
-// Deixa a LEGENDA sendo a MESMA frase da fala. A única coisa que pode mudar entre as duas é a
-// forma do número, do @ e do telefone — é só isso que o /rotLegenda faz.
-// Não chama a IA à toa: se a legenda já é igual à fala, não há o que converter.
-async function refazerLegenda(i){
+// ══ SINCRONIZAÇÃO DOS DOIS TEXTOS (07/09) ═══════════════════════════════════════════
+// A fala é a fonte. O servidor devolve a fala FORMATADA (espaço depois de vírgula, maiúsculas,
+// concordância, acento, número por extenso, telefone no formato do motor) e a legenda como a
+// MESMA frase escrita pra tela (numeral, @, telefone entre parênteses).
+// RECIBO: `_textosDe` = contra qual fala os textos valem; `_legendaFeita` = qual legenda saiu.
+// Vale tanto pro que o servidor produziu quanto pro que o atendente ajustou à mão na legenda.
+// Se a fala mudar, o recibo cai. Sem recibo válido, sincroniza — inclusive AO ABRIR o projeto.
+// Com recibo válido não custa nada (nem chamada).
+async function sincronizarTextos(i){
   const s = cenas[i]; if(!s) return;
-  // (07/09) O `_legendaManual` SAIU: era ele que congelava a divergência. A legenda não é mais
-  // um campo livre, então não existe edição manual pra preservar.
   const fala = String(s.fala||'').trim();
   if(!fala) return;
-  if(String(s.legenda||'').trim() === fala){ s._legendaSuja = false; s._legendaDe = fala; s._legendaFeita = fala; return; }
-  // o recibo só vale se a legenda AINDA for a que ele produziu (senão alguém mexeu por fora)
-  if(s._legendaDe === fala && s._legendaFeita === String(s.legenda||'').trim()){ s._legendaSuja = false; return; }
+  const legAtual = String(s.legenda||'').trim();
+  if(s._textosDe === fala && s._legendaFeita === legAtual){ s._legendaSuja = false; return; }
   const av = document.querySelector('[data-avisoleg="'+i+'"]');
-  if(av) av.textContent = 'Ajustando a legenda pra acompanhar a fala…';
-  let nova = '';
+  if(av) av.textContent = 'Acertando fala e legenda…';
+  let falaNova = '', legNova = '';
   try{
     const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: fala }) });
     const d = await r.json();
-    if(d.ok && d.legenda){ nova = d.legenda; custoUSD += (d.aiCostUSD||0); }
-  }catch(e){ /* cai na própria fala, logo abaixo */ }
-  // Falhou a conversão? A legenda vira a PRÓPRIA fala. Número por extenso na tela é feio, mas
-  // legenda dizendo uma frase diferente da falada é pior — e era exatamente o problema.
-  s.legenda = nova || fala;
-  s._legendaDe = fala;                                   // de qual fala esta legenda saiu
-  s._legendaFeita = String(s.legenda || '').trim();      // e qual legenda foi produzida
+    if(d.ok){ falaNova = String(d.fala||'').trim(); legNova = String(d.legenda||'').trim(); custoUSD += (d.aiCostUSD||0); }
+  }catch(e){ /* sem servidor: a legenda vira a própria fala, SEM recibo (tenta de novo na próxima) */ }
+  if(!cenas[i] || cenas[i] !== s) return;                 // a cena foi refeita/trocada no meio
+  if(String(s.fala||'').trim() !== fala) return;          // o atendente continuou digitando: esta resposta já é velha
+  if(falaNova && falaNova !== fala){
+    s.fala = falaNova; s.palavras = contarPalavras(falaNova);
+    ['[data-fa="'+i+'"]', '#boxCortes [data-faed="'+i+'"]'].forEach(function(sel){
+      const el = document.querySelector(sel);
+      if(el && document.activeElement !== el) el.value = falaNova;
+    });
+    if(typeof alertaFala==='function') alertaFala(i);
+    if(typeof alertaFalaEditor==='function') alertaFalaEditor(i);
+    if(typeof atualizarBotaoVideo==='function') atualizarBotaoVideo();
+  }
+  const falaFinal = String(s.fala||'').trim();
+  s.legenda = legNova || falaFinal;                       // nunca uma frase diferente da falada
   s._legendaSuja = false;
+  if(legNova){ s._textosDe = falaFinal; s._legendaFeita = String(s.legenda).trim(); }   // recibo só com resposta do servidor
+  else { s._textosDe = undefined; s._legendaFeita = undefined; }
   const cx = document.querySelector('#boxCortes [data-leg="'+i+'"]');
   if(cx && document.activeElement !== cx) cx.value = s.legenda;
   if(av) av.textContent = '';
@@ -2064,7 +2079,7 @@ function renderCortes(){
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
-          ? ('<textarea data-leg="'+i+'" readonly style="min-height:52px;font-size:13px;opacity:.75;cursor:not-allowed" placeholder="legenda (acompanha a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+          ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (segue a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
              '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
@@ -2101,8 +2116,8 @@ function renderCortes(){
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
       //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
       // Mexer na fala suja a legenda: ao Refazer, ela é reescrita a partir da fala nova (/rotLegenda).
-      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(acompanha a fala — para mudar, edite a fala abaixo)</span></div>'+
-      '<textarea data-leg="'+i+'" readonly style="min-height:52px;font-size:13px;opacity:.75;cursor:not-allowed">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito — segue a fala; você pode ajustar)</span></div>'+
+      '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
       '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
       '<textarea data-faed="'+i+'" maxlength="230" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
@@ -2137,13 +2152,25 @@ function renderCortes(){
     });
     // 'change' = ele terminou de digitar e saiu da caixa. Aqui a legenda já se acerta, pra ele
     // VER na tela que as duas batem — sem depender de clicar em Refazer nem de montar.
-    el.addEventListener('change', function(){ refazerLegenda(+el.dataset.faed); });
+    el.addEventListener('change', function(){ sincronizarTextos(+el.dataset.faed); });
   });
-  // a legenda também pode ser corrigida na mão; nesse caso ela deixa de estar "suja"
-  // ⚠️ SEM listener de digitação na legenda: ela não é mais um campo livre. Quem quiser mudar o
-  // que aparece escrito muda a FALA — é a única forma de as duas nunca se separarem.
+  // A legenda PODE ser ajustada à mão (07/09, pedido do Thiago) — ex.: "Láion" na fala pro motor
+  // pronunciar certo e "Lion" na legenda pra aparecer certo. O ajuste vale SÓ para a fala de
+  // agora: vira um recibo contra o texto atual. Se a fala mudar, o recibo cai e a legenda é
+  // derivada de novo. Assim nunca sobra uma legenda velha de uma fala que já não existe.
+  box.querySelectorAll('[data-leg]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.leg; const c=cenas[i]; if(!c) return;
+      c.legenda = el.value; c._legendaSuja = false;
+      c._textosDe = String(c.fala||'').trim(); c._legendaFeita = String(el.value||'').trim();
+    });
+  });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
   prepararAudios();
+  // ⚠️ AO ABRIR o passo 3 (07/09): toda cena sem recibo válido é sincronizada AQUI. Era o buraco
+  // que faltava — projeto antigo abria com a legenda velha e nada a corrigia até alguém mexer na
+  // fala. Com recibo válido, não custa nada.
+  cenas.forEach(function(s,i){ if(s.fala) sincronizarTextos(i); });
 }
 
 // ⚠️ O CORTE VEM DA TRANSCRIÇÃO (25/08), não da energia do áudio.
@@ -2314,10 +2341,10 @@ async function refazerCena(i){
   s._marcacoes=[]; s._inicioFala=undefined;   // o clipe é outro: marcações da fala antiga não valem
   s._vozId=undefined; s._vozUrl=''; s._vozErro='';   // e a voz isolada do clipe antigo também não
   try{
+    await sincronizarTextos(i);                   // fala formatada (números por extenso) ANTES de gerar
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     await calcularCortes();                       // corte novo, medido no clipe novo
-    await refazerLegenda(i);                      // a legenda acompanha a fala nova
     renderCortes(); pintarCusto(); toast('✅ Cena '+(i+1)+' refeita!');
     salvarProjeto(true);
   }catch(e){
@@ -2378,7 +2405,7 @@ async function finalizar(){
   if(legendas){
     const bl=document.getElementById('btnFinal');
     if(bl) bl.innerHTML='<span class="spin"></span>Conferindo as legendas…';
-    await Promise.all(cenas.map(function(x,i){ return x.video_url ? refazerLegenda(i) : Promise.resolve(); }));
+    await Promise.all(cenas.map(function(x,i){ return x.video_url ? sincronizarTextos(i) : Promise.resolve(); }));
   }
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
     const bt=document.getElementById('btnFinal');
