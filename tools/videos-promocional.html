@@ -645,6 +645,28 @@ let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
 let playheadFrac = -1, playheadRAF = 0, playheadAbs = -1;
 let _cutLigado = false;   // listeners dos sliders: só uma vez
 let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
+// (07/09) custoPor = { email: usd } — o que OUTRA pessoa (admin ajudando) gastou neste projeto;
+// custoPorLancado = o que disso já foi cobrado. meuEmail/projetoDeOutro vêm do servidor.
+let custoPor = {}, custoPorLancado = {}, meuEmail = '', projetoDeOutro = false;
+// TODO custo passa por aqui: entra no total do projeto e, se sou admin mexendo em projeto de
+// outro, TAMBÉM no meu balde — que a montagem cobra de mim, não do atendente.
+function somaCusto(x){
+  x = Number(x) || 0; if(!x) return;
+  custoUSD += x;
+  if(souAdmin && projetoDeOutro && meuEmail){
+    custoPor[meuEmail] = Number(((custoPor[meuEmail] || 0) + x).toFixed(4));
+  }
+}
+// o que ainda não foi lançado: a parcela de quem monta (aLancar) e, à parte, a de outras pessoas
+function custoPendente(){
+  const outros = {}; let somaOutros = 0;
+  Object.keys(custoPor).forEach(function(e){
+    const p = Number(((custoPor[e] || 0) - (custoPorLancado[e] || 0)).toFixed(4));
+    if(p > 0){ outros[e] = p; somaOutros += p; }
+  });
+  const aLancar = Math.max(0, Number((custoUSD - custoLancadoUSD - somaOutros).toFixed(4)));
+  return { aLancar: aLancar, outros: outros };
+}
 // A listagem do KV demora alguns segundos pra enxergar um projeto RECÉM-criado. Como o aviso de
 // salvamento manda conferir "na aba Projetos", o atendente chegava lá e não achava o que acabou
 // de salvar. Esta marca deixa a aba mostrar o projeto atual pela memória enquanto o servidor não alcança.
@@ -679,7 +701,8 @@ function estadoAtual(){
     categoria: categoriaNome(),
     personagem: personagemImg, personagemMontado: personagemMontado,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
-    trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD, videoUrl: videoFinalUrl||''
+    trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD,
+    custoPor: custoPor, custoPorLancado: custoPorLancado, videoUrl: videoFinalUrl||''
   };
 }
 async function salvarProjeto(silencioso){
@@ -745,7 +768,7 @@ async function carregarProjetos(){
   try{
     const r=await api('/histProjetos'); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
-    souAdmin = !!d.isAdmin;
+    souAdmin = !!d.isAdmin; if(d.email) meuEmail = String(d.email).toLowerCase();
     _ultProjetos = d.projetos||[]; _ultResultados = d.resultados||[];
     // ainda não propagou? mostra o projeto atual pela memória, pra ele nunca "sumir" logo após salvar
     if(projetoJaSalvo && projectId && !d.projetos.concat(d.resultados).some(function(p){ return p.projectId===projectId; })){
@@ -871,6 +894,10 @@ async function abrirProjeto(id){
     // projeto antigo (sem o campo) já teve tudo lançado na montagem dele — assume igual ao total,
     // senão reabrir e remontar cobraria o histórico inteiro de novo.
     custoLancadoUSD = (p.custoLancadoUSD===undefined) ? custoUSD : (Number(p.custoLancadoUSD)||0);
+    custoPor = (p.custoPor && typeof p.custoPor==='object') ? p.custoPor : {};
+    custoPorLancado = (p.custoPorLancado && typeof p.custoPorLancado==='object') ? p.custoPorLancado : {};
+    projetoDeOutro = (d.meu === false);          // o servidor sabe de quem é: o que eu gastar aqui vai pro meu balde
+    if(d.email) meuEmail = String(d.email).toLowerCase();
     trilhaSel = p.trilha||null; musica=null;
     legendas = (p.legendas === undefined) ? true : !!p.legendas;   // projeto antigo assume ligada
     marcarCor(/^#[0-9a-fA-F]{6}$/.test(String(p.corDestaque||'')) ? p.corDestaque : '#ffffff');
@@ -999,7 +1026,7 @@ async function gerarPersonagem(silencioso){
       ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
-    personagemImg = d.base64; custoUSD += (d.custoUSD||0);
+    personagemImg = d.base64; somaCusto(d.custoUSD);
     pintarPersonagem();
     if(nota) nota.innerHTML='';
     if(!silencioso){ toast('✅ Personagem pronto!'); rolarPara('boxPersonagem'); }
@@ -1119,7 +1146,7 @@ async function gerarRoteiro(ajuste, silencioso){
       briefing: briefTexto(), ajuste: String(ajuste||''), sexoVoz: sexoVoz }) });   // sem imagem: o roteiro é só texto
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
-    campanha = d.campanha; cenas = d.cenas; custoUSD += (d.aiCostUSD||0);
+    campanha = d.campanha; cenas = d.cenas; somaCusto(d.aiCostUSD);
     if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
     return true;
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); return false; }
@@ -1286,7 +1313,7 @@ async function gerarVideo(i){
       sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
-    custoUSD += (d.custoUSD||0);
+    somaCusto(d.custoUSD);
     await acompanharVideo(i, d.predictionId);
   } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
 }
@@ -1346,7 +1373,7 @@ async function acompanharVideo(i, predictionId){
           s._inicioFala= Number(d.transcricao.inicioFala||0);
           s._palavra   = d.transcricao.palavra||'';
           s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
-          custoUSD += (d.transcricao.custoUSD||0);
+          somaCusto(d.transcricao.custoUSD);
           // ⚠️ NÃO corta sozinho (05/09). As alças nascem nas pontas e quem escolhe o trecho
           // é o atendente. A transcrição fica só pela legenda e pelo início da fala.
         }
@@ -1862,7 +1889,7 @@ async function esperarVoz(i, tentativa){
       const r = await api('/promoVozStatus', { method:'POST', body: JSON.stringify({ vozId:s._vozId, projectId, cena:i+1 }) });
       const d = await r.json();
       if(d.ok && d.status==='done' && d.url){
-        s._vozUrl = d.url; s._vozErro=''; custoUSD += (d.custoUSD||0);
+        s._vozUrl = d.url; s._vozErro=''; somaCusto(d.custoUSD);
         pintarCusto(); salvarProjeto(true);
         return;
       }
@@ -1909,7 +1936,7 @@ async function sincronizarTextos(i){
   try{
     const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: fala }) });
     const d = await r.json();
-    if(d.ok){ falaNova = String(d.fala||'').trim(); legNova = String(d.legenda||'').trim(); custoUSD += (d.aiCostUSD||0); }
+    if(d.ok){ falaNova = String(d.fala||'').trim(); legNova = String(d.legenda||'').trim(); somaCusto(d.aiCostUSD); }
   }catch(e){ /* sem servidor: a legenda vira a própria fala, SEM recibo (tenta de novo na próxima) */ }
   if(!cenas[i] || cenas[i] !== s) return;                 // a cena foi refeita/trocada no meio
   if(String(s.fala||'').trim() !== fala) return;          // o atendente continuou digitando: esta resposta já é velha
@@ -2205,7 +2232,7 @@ async function umCorte(s,i){
       s._inicioFala = Number(d.inicioFala||0);   // ~0 = o Veo começou a falar no primeiro quadro
       s._marcacoes = Array.isArray(d.marcacoes) ? d.marcacoes : [];   // alimenta a legenda automática
       s._palavra = d.palavra || '';
-      custoUSD += (d.custoUSD||0);
+      somaCusto(d.custoUSD);
     }catch(e){
       s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
       s._porEnergia = true;
@@ -2443,14 +2470,16 @@ async function finalizar(){
     }
     for(let t=0;t<80;t++){
       await new Promise(x=>setTimeout(x, 6000));
-      const aLancar = Math.max(0, Number((custoUSD - custoLancadoUSD).toFixed(4)));
-      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, custoUSD: aLancar, segundos:d.segundos }) });
+      const pend = custoPendente();     // a minha parcela e, à parte, o que outra pessoa (admin) gastou aqui
+      const r2 = await api('/histMontarStatus', { method:'POST', body: JSON.stringify({ shotstackId:d.shotstackId, projectId, cliente: clienteNome(),
+        custoUSD: pend.aLancar, custoOutros: pend.outros, segundos:d.segundos }) });
       const d2 = await r2.json();
       if(d2.ok && d2.status==='done' && d2.url){
         videoFinalUrl = d2.url;
         // o render do Shotstack é calculado no servidor e cobrado em TODA montagem — entra no total
         custoUSD += Number(d2.montagemUSD||0);
         custoLancadoUSD = custoUSD;                 // daqui pra frente, só o que for novo é lançado
+        custoPorLancado = JSON.parse(JSON.stringify(custoPor));   // idem pro balde de cada pessoa
         document.getElementById('videoFinal').src = d2.url;
         pintarCusto();
         montando=false; pintarProgresso();
