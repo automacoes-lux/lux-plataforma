@@ -1929,6 +1929,7 @@ async function garantirVozes(){
                         .filter(function(x){ return x.s.video_url && x.s._vozId && !x.s._vozUrl; });
   if(!faltando.length) return;
   const bt=document.getElementById('btnFinal');
+  // (08/09) só o TEXTO muda; quem guarda o original é o finalizar(), no topo dele
   if(bt) bt.innerHTML='<span class="spin"></span>Terminando de limpar o áudio…';
   await Promise.all(faltando.map(function(x){ return esperarVoz(x.i); }));
 }
@@ -2433,38 +2434,56 @@ async function iniciarCenasSeNecessario(){
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
 // Chamada só pelo botão MONTAR O VÍDEO, no fim do editor. Sempre usa os clipes ATUAIS
 // (cenas[i].video_url) e os cortes que estiverem na tela naquele instante.
+const TXT_BTN_MONTAR = '🎬 MONTAR O VÍDEO';
 async function finalizar(){
   if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
+  // ⚠️ (08/09) O botão é capturado AQUI, ANTES de qualquer passo mexer no texto dele.
+  // Se o que estiver escrito já for um "carregando", volta pro padrão em vez de perpetuá-lo.
+  const btn = document.getElementById('btnFinal');
+  const old = (btn && btn.innerHTML.indexOf('spin') < 0) ? btn.innerHTML : TXT_BTN_MONTAR;
+  const passo = function(txt){ if(btn) btn.innerHTML = '<span class="spin"></span>' + txt; };
+  const soltarBotao = function(){ if(btn){ btn.disabled = false; btn.innerHTML = old; } };
+  if(btn) btn.disabled = true;
   // ⚠️ 28/08: dava pra clicar em MONTAR antes de a transcrição terminar, e o vídeo saía SEM
   // legenda mesmo com a legenda ligada — silenciosamente. Agora espera o que faltar.
   // espera a separação de voz que ainda estiver a caminho — sem isso o vídeo sai com a trilha
   // do Veo por baixo da nossa, que é exatamente o que a separação existe pra evitar.
   // ⚠️ A condição antiga tinha `&& !x._vozErro`: bastava a tela ter desistido uma vez pra a
   // montagem nunca mais esperar — e a cena entrava com a música do motor por baixo.
+  // ⚠️ (08/09) Fala fora da faixa faz o Veo atropelar as palavras. Medido: 17 palavras = 2,30
+  // palavras/s contra 1,80 de uma cena dentro do limite. O clipe JÁ está gravado assim, então
+  // não adianta montar de novo: tem que encurtar a fala e refazer a cena.
+  const longas = cenas.map(function(c,i){ return { n:i+1, q:contarPalavras(c.fala) }; })
+                      .filter(function(x){ return x.q > PALAVRAS_MAX; });
+  if(longas.length){
+    const lista = longas.map(function(x){ return 'cena '+x.n+' ('+x.q+' palavras)'; }).join(', ');
+    if(!confirm('⚠️ Fala longa em: '+lista+'.\n\nO máximo é '+PALAVRAS_MAX+' palavras. Acima disso o personagem ATROPELA as palavras — a fala sai acelerada e emendada, parecendo tropeço.\n\nPara corrigir: encurte a fala e clique em Refazer nessa cena (US$ 0,40).\n\nMontar assim mesmo?')){
+      soltarBotao();
+      return;
+    }
+  }
   await garantirVozes();
   // ⚠️ A legenda que entra no vídeo é SEMPRE a frase da fala (só o número/@/telefone muda de
   // forma). Confere as 4 aqui, no último instante: é o que conserta projeto antigo salvo com as
   // duas frases diferentes, sem depender de o atendente ter clicado em Refazer.
   if(legendas){
-    const bl=document.getElementById('btnFinal');
-    if(bl) bl.innerHTML='<span class="spin"></span>Conferindo as legendas…';
+    // só as cenas SEM recibo válido custam chamada; as demais voltam na hora
+    const pendentes = cenas.filter(function(x){ return x.video_url && !(x._textosDe === String(x.fala||'').trim() && x._legendaFeita === String(x.legenda||'').trim()); }).length;
+    if(pendentes) passo('Conferindo as legendas… ('+pendentes+')');
     await Promise.all(cenas.map(function(x,i){ return x.video_url ? sincronizarTextos(i) : Promise.resolve(); }));
   }
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
-    const bt=document.getElementById('btnFinal');
-    if(bt) bt.innerHTML='<span class="spin"></span>Preparando as legendas…';
+    passo('Preparando as legendas…');
     await calcularCortes();
     if(cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
       if(!confirm('Não consegui a transcrição de alguma cena.\n\nMontar mesmo assim, SEM legenda?')) {
-        if(bt) bt.innerHTML='🎬 MONTAR O VÍDEO';
+        soltarBotao();   // desistiu: o botão volta ao normal, clicável
         return;
       }
     }
   }
-  const btn=document.getElementById('btnFinal');
-  const old=btn?btn.innerHTML:'';
-  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Montando o vídeo…'; }
+  passo('Montando o vídeo…');
   montando=true; pintarProgresso();
   try{
     // inicioFala vai SEMPRE (mesmo com legenda desligada): é com ele que o Worker decide quanto
@@ -2510,7 +2529,7 @@ async function finalizar(){
     }
     throw new Error('a montagem demorou demais');
   } catch(e){ toast('⚠️ '+e.message); document.getElementById('notaMontagem').textContent='⚠️ '+e.message; }
-  finally { montando=false; pintarProgresso(); btn.disabled=false; btn.innerHTML=old; }
+  finally { montando=false; pintarProgresso(); soltarBotao(); }
 }
 function baixarFinal(){
   if(!videoFinalUrl) return;
