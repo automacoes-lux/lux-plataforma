@@ -333,8 +333,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <div class="step">
     <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
-    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta a campanha.</div>
-    <textarea id="fBriefing" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
+    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta a campanha. <b>Até 500 caracteres</b>: o que vende, o diferencial, a oferta e o contato.</div>
+    <textarea id="fBriefing" maxlength="500" oninput="pintarContadorBriefing()" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, quem treina na academia ganha 10% de desconto, aberto de segunda a sábado das 10h às 22h, pedidos pelo whatsapp"></textarea>
+    <div class="soon-note" id="contBriefing" style="text-align:right;margin-top:.25rem">0 / 500</div>
   </div>
 
   <div class="step">
@@ -554,6 +555,7 @@ const MAX_IMAGE_DIMENSION = 1536, IMAGE_QUALITY = 0.85;
 // com 16 palavras a fala ia até ~7,6s e não sobrava silêncio pra emendar na cena seguinte.
 // Com 13 sobram ~0,6s. Tem que bater com o Worker (ROT_PALAVRAS_*).
 const PALAVRAS_MIN = 11, PALAVRAS_MAX = 13;      // passo 2: o que a IA escreve
+const BRIEFING_MAX = 500;   // (07/09) informações do cliente: acima disso a IA tenta enfiar tudo e a fala estoura
 const EDIT_MIN = 10, EDIT_MAX = 20;              // passo 3: edição à mão, faixa mais larga
 const LIMITES = { product: 4, environment: 4, logo: 1, montado: 1 };
 
@@ -877,6 +879,7 @@ async function abrirProjeto(id){
     document.getElementById('fCliente').value = p.cliente||'';
     const elCat=document.getElementById('fCategoria'); if(elCat) elCat.value = p.categoria||'';
     document.getElementById('fBriefing').value = p.briefing||'';
+    pintarContadorBriefing();   // projeto antigo acima do teto aparece em vermelho e não gera de novo até resumir
     document.getElementById('fAmbienteTxt').value = p.ambienteTexto||'';
     // restaura o botão de voz do projeto salvo (a campanha guarda o sexo escolhido).
     // Projeto ANTIGO, salvo antes dos botões existirem, volta sem voz — e aí o briefing cobra.
@@ -954,6 +957,7 @@ function faltaNoBriefing(){
   if(!refs.product.length && !refs.montado.length)
     return { msg:'📸 Suba a foto do personagem — ou a arte pronta em "Personagem montado".', el:null };
   if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
+  if(briefingExcedeu())     return { msg: briefingExcedeu(), el:'fBriefing' };
   if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };
   return null;
 }
@@ -990,7 +994,19 @@ async function gerarTudo(){
     else if(okPers)     toast('⚠️ Personagem pronto, mas o roteiro falhou — tente de novo.');
   } finally { clearInterval(relogio); btn.disabled=false; btn.innerHTML=old; }
 }
-function briefTexto(){ return (document.getElementById('fBriefing')||{}).value.trim(); }
+function briefTexto(){ return ((document.getElementById('fBriefing')||{}).value||'').trim(); }
+// (07/09) contador do briefing. Vermelho acima do teto (projeto antigo pode abrir assim: o
+// maxlength só segura o que é DIGITADO), dourado quando está chegando perto.
+function pintarContadorBriefing(){
+  const el=document.getElementById('contBriefing'); if(!el) return;
+  const n=((document.getElementById('fBriefing')||{}).value||'').length;
+  el.textContent = n+' / '+BRIEFING_MAX;
+  el.style.color = n > BRIEFING_MAX ? '#F5B7B1' : (n >= BRIEFING_MAX*0.9 ? 'var(--gold)' : '');
+}
+function briefingExcedeu(){
+  const t = briefTexto().length;
+  return t > BRIEFING_MAX ? ('✂️ As informações do cliente têm '+t+' caracteres — o máximo é '+BRIEFING_MAX+'. Resuma: o que vende, o diferencial, a oferta e o contato.') : '';
+}
 function clienteNome(){ return (document.getElementById('fCliente')||{}).value.trim(); }
 function categoriaNome(){ return ((document.getElementById('fCategoria')||{}).value||'').trim(); }
 
@@ -1137,6 +1153,7 @@ function baixarPersonagem(){
 // ══════════════════ PASSO 2 — O ROTEIRO ══════════════════
 async function gerarRoteiro(ajuste, silencioso){
   if(!briefTexto()){ toast('📝 Escreva as informações do cliente.'); return false; }
+  if(briefingExcedeu()){ toast(briefingExcedeu()); return false; }   // vale também pro "Gerar outro roteiro"
   const btn=silencioso?null:document.getElementById('btnTudo'); const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando o roteiro…'; }
   const av=document.getElementById('avisoRoteiro');
@@ -2511,6 +2528,7 @@ function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link c
 
 // ── início ──
 pintarBarra();
+pintarContadorBriefing();
 (function(){
   const c=document.getElementById('fCliente');
   if(c){ c.addEventListener('input', checarSalvar); checarSalvar(); }
