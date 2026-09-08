@@ -1225,11 +1225,8 @@ function renderRoteiro(){
 function alertaFalaEditor(i){
   const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala);
-  // CONTENÇÃO: o aviso sozinho não impedia nada. Fora da faixa, o botão Refazer fica desligado —
-  // senão uma fala gigante escrita à mão ia direto pro Veo, saía cortada no meio e custava US$ 0,40.
-  // (não mexe no botão enquanto ele está no estado "Refazendo", pra não reabilitar no meio.)
-  const btR = document.querySelector('#boxCortes [data-refaz="'+i+'"]');
-  if(btR && !btR.classList.contains('refazendo')) btR.disabled = (n > EDIT_MAX || n < EDIT_MIN);
+  // ⚠️ (08/09) O botão Refazer NÃO é mais desligado pelo tamanho da fala. O aviso abaixo explica o
+  // risco; quem decide é o atendente. (Continua desligado só enquanto a cena está sendo refeita.)
   if(n > EDIT_MAX){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o máximo é <b>'+EDIT_MAX+'</b>. Passando disso a fala é cortada no meio no vídeo.'; return; }
   if(n < EDIT_MIN){ el.className='alerta'; el.innerHTML='⛔ <b>'+n+' palavras</b> — o mínimo é <b>'+EDIT_MIN+'</b>. Com pouco texto o personagem fala arrastado.'; return; }
   // acima de 13 ainda cabe, mas aperta: avisa sem travar, porque a decisão é do atendente
@@ -1288,6 +1285,15 @@ async function irParaVideo(){
       toast('🗑️ Cenas antigas descartadas — gerando as novas…');
     }
   }
+
+  // ⚠️ ÚLTIMA formatação automática: daqui pra frente (passo 3) o texto do atendente é soberano.
+  // Roda mesmo que ele não tenha saído da caixa da fala — é a passagem 2→3.
+  const bt = document.getElementById('btnIrVideo');
+  const txtBt = bt ? bt.innerHTML : '';
+  if(bt){ bt.disabled = true; bt.innerHTML = '<span class="spin"></span>Ajustando os textos…'; }
+  try{ await Promise.all(cenas.map(function(c,i){ return c.fala ? sincronizarTextos(i) : Promise.resolve(); })); }
+  catch(e){ /* sem servidor: segue com o que está — melhor entrar no editor do que travar */ }
+  finally{ if(bt){ bt.disabled = false; bt.innerHTML = txtBt; } }
 
   liberar(3);            // entrar no passo 3 dispara a geração do que estiver faltando
   await autoSalvar();
@@ -2195,9 +2201,8 @@ function renderCortes(){
       const espelho = document.querySelector('[data-fa="'+i+'"]');   // campo do passo 2
       if(espelho && espelho.value !== el.value){ espelho.value = el.value; alertaFala(i); }
     });
-    // 'change' = ele terminou de digitar e saiu da caixa. Aqui a legenda já se acerta, pra ele
-    // VER na tela que as duas batem — sem depender de clicar em Refazer nem de montar.
-    el.addEventListener('change', function(){ sincronizarTextos(+el.dataset.faed); });
+    // ⚠️ (08/09) NADA de sincronizar aqui. No passo 3 o texto do atendente é soberano: ele já veio
+    // formatado do passo 2, e o que ele mudar no editor vale como está. Só o aviso de tamanho roda.
   });
   // A legenda PODE ser ajustada à mão (07/09, pedido do Thiago) — ex.: "Láion" na fala pro motor
   // pronunciar certo e "Lion" na legenda pra aparecer certo. O ajuste vale SÓ para a fala de
@@ -2212,10 +2217,8 @@ function renderCortes(){
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
   prepararAudios();
-  // ⚠️ AO ABRIR o passo 3 (07/09): toda cena sem recibo válido é sincronizada AQUI. Era o buraco
-  // que faltava — projeto antigo abria com a legenda velha e nada a corrigia até alguém mexer na
-  // fala. Com recibo válido, não custa nada.
-  cenas.forEach(function(s,i){ if(s.fala) sincronizarTextos(i); });
+  // ⚠️ (08/09) O passo 3 NÃO sincroniza mais ao abrir. Quem formata é o passo 2 (ao abrir, ao sair
+  // da caixa e ao clicar em GERAR VÍDEO). Reescrever aqui apagava a edição manual do atendente.
 }
 
 // ⚠️ O CORTE VEM DA TRANSCRIÇÃO (25/08), não da energia do áudio.
@@ -2363,12 +2366,13 @@ function verTrecho(i){
 // Refaz UMA cena só — o atendente paga apenas essa (US$ 0,40), não as quatro.
 async function refazerCena(i){
   const s=cenas[i]; if(!s) return;
-  // Trava final: no passo 2 o botão de produzir já barra fora da faixa, mas aqui no editor a fala
-  // pode ter sido reescrita à mão depois. Barra ANTES do confirm, pra nem perguntar do custo.
+  // (08/09) O tamanho da fala vira ADVERTÊNCIA dentro do confirm, não uma barreira: o atendente vê
+  // o risco e o custo na mesma tela e decide. Antes o botão nem chegava aqui.
   const np = contarPalavras(s.fala);
-  if(np > EDIT_MAX){ toast('⛔ Fala com '+np+' palavras — o máximo é '+EDIT_MAX+'. Encurte antes de refazer.'); return; }
-  if(np < EDIT_MIN){ toast('⛔ Fala com '+np+' palavras — o mínimo é '+EDIT_MIN+'. Complete antes de refazer.'); return; }
-  if(!confirm('Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
+  const risco = (np > EDIT_MAX) ? ('⚠️ A fala tem '+np+' palavras (acima de '+EDIT_MAX+'): ela pode sair cortada no meio.\n\n')
+              : (np > PALAVRAS_MAX) ? ('⚠️ A fala tem '+np+' palavras (acima de '+PALAVRAS_MAX+'): pode sair corrida.\n\n')
+              : (np < EDIT_MIN) ? ('⚠️ A fala tem só '+np+' palavras (mínimo sugerido '+EDIT_MIN+'): o personagem pode falar arrastado.\n\n') : '';
+  if(!confirm(risco+'Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
   // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
   // senão ele clica de novo e paga US$ 0,40 duas vezes. Volta ao normal quando o card re-renderiza.
@@ -2386,7 +2390,7 @@ async function refazerCena(i){
   s._marcacoes=[]; s._inicioFala=undefined;   // o clipe é outro: marcações da fala antiga não valem
   s._vozId=undefined; s._vozUrl=''; s._vozErro='';   // e a voz isolada do clipe antigo também não
   try{
-    await sincronizarTextos(i);                   // fala formatada (números por extenso) ANTES de gerar
+    // ⚠️ (08/09) SEM sincronizar: vai pro motor exatamente a fala que está na tela.
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     await calcularCortes();                       // corte novo, medido no clipe novo
@@ -2454,25 +2458,24 @@ async function finalizar(){
   // ⚠️ (08/09) Fala fora da faixa faz o Veo atropelar as palavras. Medido: 17 palavras = 2,30
   // palavras/s contra 1,80 de uma cena dentro do limite. O clipe JÁ está gravado assim, então
   // não adianta montar de novo: tem que encurtar a fala e refazer a cena.
+  // ⚠️ (08/09) INFORMA, mas NÃO impede. Fala acima de '+PALAVRAS_MAX+' palavras faz o personagem atropelar
+  // as palavras (medido: 17 palavras = 2,30 palavras/s contra 1,80 de uma cena no limite) — mas a
+  // decisão de montar assim é do atendente. Antes isso era um confirm que dava pra cancelar sem
+  // querer e travava o trabalho.
   const longas = cenas.map(function(c,i){ return { n:i+1, q:contarPalavras(c.fala) }; })
                       .filter(function(x){ return x.q > PALAVRAS_MAX; });
   if(longas.length){
-    const lista = longas.map(function(x){ return 'cena '+x.n+' ('+x.q+' palavras)'; }).join(', ');
-    if(!confirm('⚠️ Fala longa em: '+lista+'.\n\nO máximo é '+PALAVRAS_MAX+' palavras. Acima disso o personagem ATROPELA as palavras — a fala sai acelerada e emendada, parecendo tropeço.\n\nPara corrigir: encurte a fala e clique em Refazer nessa cena (US$ 0,40).\n\nMontar assim mesmo?')){
-      soltarBotao();
-      return;
-    }
+    const lista = longas.map(function(x){ return 'cena '+x.n+' ('+x.q+')'; }).join(', ');
+    toast('⚠️ Fala longa em '+lista+' — acima de '+PALAVRAS_MAX+' palavras a fala sai corrida. Montando assim mesmo.');
+    const nm=document.getElementById('notaMontagem');
+    if(nm) nm.innerHTML='<span style="color:#F5B7B1">⚠️ Fala longa em '+lista+' — acima de '+PALAVRAS_MAX+' palavras o personagem atropela as palavras. Se não gostar do resultado, encurte a fala e refaça a cena.</span>';
   }
   await garantirVozes();
   // ⚠️ A legenda que entra no vídeo é SEMPRE a frase da fala (só o número/@/telefone muda de
   // forma). Confere as 4 aqui, no último instante: é o que conserta projeto antigo salvo com as
   // duas frases diferentes, sem depender de o atendente ter clicado em Refazer.
-  if(legendas){
-    // só as cenas SEM recibo válido custam chamada; as demais voltam na hora
-    const pendentes = cenas.filter(function(x){ return x.video_url && !(x._textosDe === String(x.fala||'').trim() && x._legendaFeita === String(x.legenda||'').trim()); }).length;
-    if(pendentes) passo('Conferindo as legendas… ('+pendentes+')');
-    await Promise.all(cenas.map(function(x,i){ return x.video_url ? sincronizarTextos(i) : Promise.resolve(); }));
-  }
+  // ⚠️ (08/09) A montagem usa os textos COMO ESTÃO na tela. Não conferimos, não reescrevemos:
+  // no passo 3 a palavra final é do atendente.
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
     passo('Preparando as legendas…');
     await calcularCortes();
