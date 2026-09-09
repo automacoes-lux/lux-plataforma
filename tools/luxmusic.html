@@ -161,10 +161,16 @@
      Suno ele é exclusivo do Create, e repetir tira a força dele. */
   .btn-gold{background:#F2F2F3;color:#111;font-weight:600}
   .btn-gold:not(:disabled):hover{background:#fff;filter:none}
-  .btn-gold.btn-lg{
+  .btn-gold.btn-lg,
+  .btn-gold.dourado{
     background:linear-gradient(90deg,var(--cta-a),var(--cta-b));color:#1A1A1A;
   }
   .btn-gold.btn-lg:not(:disabled):hover{filter:brightness(1.1)}
+  /* sem isto o :hover do .btn-gold (mais específico) lavaria o
+     gradiente e o botão piscaria branco ao passar o mouse */
+  .btn-gold.dourado:not(:disabled):hover{
+    background:linear-gradient(90deg,var(--cta-a),var(--cta-b));filter:brightness(1.1);
+  }
   .btn-ghost{
     background:var(--sup);border:none;color:var(--txt);
     font-size:13px;font-weight:500;padding:11px 15px;border-radius:var(--r);
@@ -282,13 +288,19 @@
   }
   .versao.gerando .eq i{animation:eqPulse 1.1s ease-in-out infinite}
   .versao.pronta .eq i{background:#3A3B41}
+  /* tocando: o dourado da plataforma, de baixo pra cima */
+  .versao.tocando .eq i{
+    background:linear-gradient(180deg,var(--cta-b),var(--cta-a));
+    animation:eqPulse 1.1s ease-in-out infinite;
+  }
   .versao.falhou .eq i{background:#3A2E2E;height:10%}
   @keyframes eqPulse{
     0%,100%{height:calc(var(--h,30%) * .35);opacity:.4}
     50%    {height:var(--h,30%);opacity:1}
   }
   @media (prefers-reduced-motion:reduce){
-    .versao.gerando .eq i{animation:none;opacity:.6}
+    .versao.gerando .eq i,
+    .versao.tocando .eq i{animation:none;opacity:.6}
   }
 
   .versao audio{width:100%;margin-bottom:10px;height:38px}
@@ -577,7 +589,7 @@
         </div>
 
         <div class="btn-row" style="margin-top:14px">
-          <button class="btn btn-gold" id="btnGerarLetra" onclick="gerarLetra()" style="flex:1">Gerar letra</button>
+          <button class="btn btn-gold dourado" id="btnGerarLetra" onclick="gerarLetra()" style="flex:1">Gerar letra</button>
           <label class="politico">
             <input type="checkbox" id="ehPolitica"/> Jingle político
           </label>
@@ -1419,6 +1431,20 @@ async function criarMusica(){
     taskAtual = d.taskId;
     inicioGeracao = Date.now();
     novaGeracao(d.taskId, $('titulo').value.trim());
+    // Espera a coluna terminar de redesenhar: novaGeracao troca o
+    // painel vazio pelo cartao da musica e a pagina muda de altura.
+    // Rolando antes disso, a rolagem para 344px fora do alvo (medido).
+    // E temporizador, nao requestAnimationFrame: rAF nao dispara com a
+    // aba em segundo plano, e ai a rolagem simplesmente nao acontecia.
+    setTimeout(() => {
+      const alvo = $('resultados');
+      if(!alvo) return;
+      // A conta e feita aqui em vez de scrollIntoView: assim o alvo e
+      // um numero que da pra conferir, e nao depende da altura da
+      // janela (que em iframe recem-montado as vezes vem zerada).
+      const y = alvo.getBoundingClientRect().top + window.scrollY - 12;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }, 80);
     guardarRascunho({ taskId: d.taskId });   // o Histórico acompanha
     btn.innerHTML = '<span class="spin"></span>' + (ehCover ? 'Refazendo...' : 'Gerando as duas versões...');
     iniciarPolling();
@@ -1621,6 +1647,11 @@ function pintarPlayer(a){
 }
 // estado: 'tocando' | 'carregando' | 'parado'
 function marcarPlayer(a, estado){
+  // a onda dourada acompanha o som: só mexe quando está tocando de
+  // verdade (o mesmo 'tocando' que faz o botão virar pausa)
+  const v = a.closest('.versao');
+  if(v) v.classList.toggle('tocando', estado === 'tocando');
+
   const p = a.closest('.player'); if(!p) return;
   const b = p.querySelector('.pp');
   b.classList.toggle('carregando', estado === 'carregando');
