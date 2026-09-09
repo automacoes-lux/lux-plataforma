@@ -432,7 +432,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
           <span id="clientPhotoLabel">Enviar ou colar as imagens (1 ou 2)</span>
         </div>
       </div>
-      <input type="file" id="clientPhotoInput" accept="image/*" multiple hidden/>
+      <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" multiple hidden/>
 
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
@@ -523,7 +523,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
       <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligadas (padrão), as cenas entram com fade/wipe. <b>Desligadas</b>, todas as imagens entram em <b style="color:var(--text-mid)">corte seco</b>, uma atrás da outra. A <b>1ª imagem é sempre corte seco</b> (pra capa do WhatsApp não sair preta).</div>
       <div class="thumb-row" id="scenesRow"></div>
-      <input type="file" id="scenesInput" accept="image/*,video/*" multiple hidden/>
+      <input type="file" id="scenesInput" accept="image/*,video/*,.heic,.heif,.mov,.m4v" multiple hidden/>
       <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
       <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
       <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
@@ -663,7 +663,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     </div>
   </div>
 </div>
-<input type="file" id="esSwapInput" accept="image/*" hidden/>
+<input type="file" id="esSwapInput" accept="image/*,.heic,.heif" hidden/>
 
 <!-- EDITOR DE VÍDEO (corte do trecho + enquadramento 9:16 + zoom) -->
 <div class="editor-overlay" id="videoEditorOverlay">
@@ -844,7 +844,61 @@ function blobToBase64(blob) {
   });
 }
 
+// (09/09) FOTO DO IPHONE (.HEIC/.HEIF) ───────────────────────────────────────────────────────
+// Nenhum navegador de PC abre esse formato: testei o arquivo real da atendente e falharam a tag
+// <img>, o createImageBitmap E a nossa fileToOptimizedImage ("Arquivo não é uma imagem válida").
+// Convertemos aqui pra JPEG com o libheif em WebAssembly, carregado SÓ quando aparece um HEIC
+// (a biblioteca tem ~2MB — não faz sentido pesar a tela de todo mundo por causa disso).
+// Medido no arquivo real: ~4,4s numa foto de 12MP (o heic2any levava 19,7s — 4,5x mais lento).
+// A ROTAÇÃO do iPhone já vem aplicada: o arquivo é 4032x3024 com irot=3 e a biblioteca devolve
+// 3024x4032 em pé. Não precisa girar nada por fora.
+let _heifMod = null;
+function ehHeic(file) {
+  return /\.(heic|heif)$/i.test(String(file && file.name || '')) || /image\/(heic|heif)/i.test(String(file && file.type || ''));
+}
+async function carregarHeif() {
+  if (_heifMod) return _heifMod;
+  if (typeof libheif === 'undefined') {
+    const fontes = [
+      'https://cdn.jsdelivr.net/npm/libheif-js@1.18.2/libheif-wasm/libheif-bundle.js',
+      'https://unpkg.com/libheif-js@1.18.2/libheif-wasm/libheif-bundle.js'   // reserva, se o 1º CDN cair
+    ];
+    for (const src of fontes) {
+      try {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = src; s.onload = res; s.onerror = () => rej(new Error('cdn'));
+          document.head.appendChild(s);
+        });
+        if (typeof libheif !== 'undefined') break;
+      } catch (e) { /* tenta o próximo */ }
+    }
+    if (typeof libheif === 'undefined') throw new Error('não consegui carregar o conversor de foto do iPhone. Confira a internet e tente de novo.');
+  }
+  _heifMod = (typeof libheif === 'function') ? await libheif() : libheif;
+  return _heifMod;
+}
+async function converterSeHeic(file) {
+  if (!ehHeic(file)) return file;
+  toast('📷 Convertendo a foto do iPhone… leva uns segundos.');
+  const mod = await carregarHeif();
+  const imgs = new mod.HeifDecoder().decode(new Uint8Array(await file.arrayBuffer()));
+  if (!imgs || !imgs.length) throw new Error('não consegui ler essa foto do iPhone. Peça pro cliente reenviar como JPG.');
+  const img = imgs[0];
+  const w = img.get_width(), h = img.get_height();
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  const dados = ctx.createImageData(w, h);
+  await new Promise((res, rej) => img.display(dados, (r) => r ? res(r) : rej(new Error('não consegui abrir essa foto do iPhone. Peça pro cliente reenviar como JPG.'))));
+  ctx.putImageData(dados, 0, 0);
+  const jpg = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.92));
+  try { if (img && img.free) img.free(); } catch (e) {}
+  cv.width = cv.height = 1;   // devolve a memória do canvas de 12MP
+  return new File([jpg], String(file.name || 'foto').replace(/\.(heic|heif)$/i, '') + '.jpg', { type: 'image/jpeg' });
+}
+
 async function fileToOptimizedImage(file, keepPng) {
+  file = await converterSeHeic(file);   // .HEIC do iPhone vira JPEG antes de qualquer outra coisa
   const dataUrl = await readFileAsDataURL(file);
   const img = await new Promise((res, rej) => {
     const i = new Image();
