@@ -287,8 +287,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div class="step">
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
 
-    <div class="mini">Cliente / empresa <span style="color:var(--gold)">*</span></div>
-    <div class="step-hint">Só nomeiam o projeto nas abas Projetos e Resultados — não entram no roteiro nem na imagem.</div>
+    <!-- (09/09) havia um rótulo "Cliente / empresa" solto AQUI, sem caixa embaixo: quem lia via
+         "Cliente / empresa" e escrevia o nome do cliente na caixa da Categoria (foi o que aconteceu
+         no projeto da Tico e Teco). Virou um cabeçalho único para os dois campos. -->
+    <div class="step-hint">Cliente e categoria só nomeiam o projeto nas abas Projetos e Resultados — não entram no roteiro nem na imagem.</div>
     <div class="mini">Categoria <span style="color:var(--gold)">*</span></div>
     <div class="step-hint">O ramo do cliente. É por aqui que todo mundo acha o vídeo depois, na aba Resultados.</div>
     <input type="text" id="fCategoria" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica · Loja de roupa" list="catSugestoes"/>
@@ -363,6 +365,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <!-- o personagem: aprovar com o cliente ou refazer -->
     <div id="boxPersonagem" class="step hide">
       <div class="step-head"><div class="step-title">O personagem</div></div>
+      <!-- (09/09) o porquê de a imagem não ter saído, no passo 2, onde o atendente está -->
+      <div class="alerta aviso hide" id="falhaPersonagem"></div>
       <img id="imgPersonagem" class="cena-img"/>
       <div class="btn-row" style="margin-top:.6rem">
         <button class="btn-ghost" onclick="baixarPersonagem()">⬇️ Baixar imagem</button>
@@ -911,7 +915,8 @@ async function abrirProjeto(id){
     pintarTrilhas();
     videoFinalUrl = p.videoUrl||'';
     renderThumbs('product'); renderThumbs('environment');
-    if(personagemImg) pintarPersonagem();
+    // (09/09) sem imagem TAMBÉM pinta: é assim que um projeto que falhou volta a ter saída.
+    if(personagemImg || (p.cenas||[]).length) pintarPersonagem();
     if(cenas.length) renderRoteiro();
     // ⚠️ 27/08: o editor NÃO abre sozinho ao reabrir um projeto. Se o vídeo já existe, o
     // atendente entra por "Editar" na tela final; se ainda não existe, ele só clica em GERAR VÍDEO.
@@ -1047,7 +1052,14 @@ async function gerarPersonagem(silencioso){
     if(nota) nota.innerHTML='';
     if(!silencioso){ toast('✅ Personagem pronto!'); rolarPara('boxPersonagem'); }
     return true;
-  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); if(nota) nota.innerHTML='⚠️ '+esc(e.message); return false; }
+  }catch(e){
+    // ⚠️ (09/09) o motivo fica NA TELA, no passo 2, com os botões do lado. O toast some em
+    // segundos e a nota do passo 1 fica escondida assim que o passo 2 abre.
+    if(!silencioso) toast('⚠️ '+e.message);
+    if(nota) nota.innerHTML='⚠️ '+esc(e.message);
+    pintarPersonagem(e.message);
+    return false;
+  }
   finally{ if(relogio) clearInterval(relogio); if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
 // Descarta os clipes quando o personagem muda. Eles foram feitos a partir da imagem ANTIGA:
@@ -1117,9 +1129,21 @@ function usarPersonagemMontado(){
   pintarPersonagem();
   return !!personagemImg;
 }
-function pintarPersonagem(){
+// (09/09) `falha` = por que não há imagem. A caixa aparece dos dois jeitos: com a imagem pronta
+// ou com o motivo escrito e os botões pra resolver. Nunca mais uma tela muda.
+function pintarPersonagem(falha){
   const box=document.getElementById('boxPersonagem'); if(!box) return;
-  document.getElementById('imgPersonagem').src = imgSrc(personagemImg);
+  const img=document.getElementById('imgPersonagem');
+  const av=document.getElementById('falhaPersonagem');
+  if(img){
+    if(personagemImg){ img.src = imgSrc(personagemImg); img.classList.remove('hide'); }
+    else { img.removeAttribute('src'); img.classList.add('hide'); }
+  }
+  if(av){
+    const txt = personagemImg ? '' : (falha || 'A imagem do personagem ainda não foi gerada.');
+    av.innerHTML = txt ? ('⚠️ '+esc(txt)+'<br><br>Você pode <b>gerar de novo</b>, pedir um <b>ajuste</b> no campo abaixo ou <b>subir a arte pronta</b> do cliente. O roteiro das 4 cenas continua o mesmo.') : '';
+    av.classList.toggle('hide', !txt);
+  }
   box.classList.remove('hide');
   // arte pronta: esconde "Gerar de novo" e o campo de ajuste. Mandar a IA mexer aqui é
   // justamente o que a gente está evitando.
@@ -1127,11 +1151,12 @@ function pintarPersonagem(){
   const aj = document.getElementById('fAjustePers');
   const rot = document.getElementById('rotAjustePers');
   // arte pronta: o botão vira "aplicar ajuste" e o campo passa a ser obrigatório
-  if(bt)  bt.innerHTML = personagemMontado ? '✏️ Aplicar ajuste' : '🔄 Gerar de novo';
-  if(rot) rot.innerHTML = personagemMontado
+  const montadoDeVerdade = personagemMontado && !!personagemImg;
+  if(bt)  bt.innerHTML = montadoDeVerdade ? '✏️ Aplicar ajuste' : '🔄 Gerar de novo';
+  if(rot) rot.innerHTML = montadoDeVerdade
     ? '✏️ O que mudar na imagem <span style="color:var(--gold)">*</span>'
     : '✏️ O que mudar no personagem (opcional)';
-  if(aj)  aj.placeholder = personagemMontado
+  if(aj)  aj.placeholder = montadoDeVerdade
     ? 'Ex: tire a língua para fora, coloque um boné, remova a placa do fundo'
     : 'Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro';
 }
