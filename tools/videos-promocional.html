@@ -1043,6 +1043,9 @@ async function gerarPersonagem(silencioso){
   try{
     const r = await api('/rotPersonagem', { method:'POST', body: JSON.stringify({
       client: clienteNome(), briefing: briefTexto(), ambienteTexto: ambienteTexto(), references: refsPayload(),
+      // (09/09) o desenho precisa saber a voz escolhida: cílio longo num mascote faz o motor de
+      // vídeo falar com voz de mulher mesmo quando o prompt pede voz de homem.
+      sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz || 'masculina',
       // na arte pronta a imagem atual vai SEMPRE: é ela que segura a composição do cliente
       ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
@@ -1355,8 +1358,10 @@ async function gerarVideo(i){
   try{
     // a voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre
     const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
+      // ⚠️ (09/09) o BOTÃO do atendente manda no sexo da voz. Antes a campanha vencia, e trocar o
+      // seletor não mudava nada em Refazer — só regerando o roteiro. O Worker acerta a descrição.
       projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
-      sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz }) });
+      sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
     somaCusto(d.custoUSD);
