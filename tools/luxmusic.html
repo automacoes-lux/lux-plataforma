@@ -294,12 +294,17 @@
     animation:eqPulse 1.1s ease-in-out infinite;
   }
   .versao.falhou .eq i{background:#3A2E2E;height:10%}
+  /* tentando de novo: não é erro (a ferramenta está resolvendo) nem
+     sucesso. Âmbar, e a onda continua andando pra mostrar que anda. */
+  .versao.retentando .eq i{background:#3A3327;animation:eqPulse 1.6s ease-in-out infinite}
+  .versao.retentando .versao-estado{color:#E0A83C}
   @keyframes eqPulse{
     0%,100%{height:calc(var(--h,30%) * .35);opacity:.4}
     50%    {height:var(--h,30%);opacity:1}
   }
   @media (prefers-reduced-motion:reduce){
     .versao.gerando .eq i,
+    .versao.retentando .eq i,
     .versao.tocando .eq i{animation:none;opacity:.6}
   }
 
@@ -1497,7 +1502,9 @@ async function consultar(){
       carregarPedidos(true);   // aparece na aba Pedidos sem recarregar a página
     }else if(d.estado === 'FALHOU'){
       pararPolling(); restaurarBotao();
+      const tentou = Number(d.tentativas) || 0;
       erro('Não deu para criar esta música — e por isso ela NÃO foi cobrada. ' +
+           (tentou ? ('Tentei sozinho ' + tentou + ' ' + (tentou === 1 ? 'vez' : 'vezes') + '. ') : '') +
            'O motivo está em cada versão.');
     }
   }catch(e){ /* rede instável: o próximo ciclo tenta */ }
@@ -1556,7 +1563,13 @@ function conteudoDaGeracao(g){
     const chave = g.taskId + '|' + i;
     let classe, estado, corpo;
 
-    if(m.falhou){
+    if(d && d.estado === 'RETENTANDO'){
+      // a ferramenta assumiu a repetição: o atendente não faz nada
+      classe='retentando';
+      estado = 'o gerador falhou — tentando de novo ' + contagem(d) +
+               ' (' + ((d.tentativas || 0) + 1) + ' de ' + (d.maxTentativas || 3) + ')';
+      corpo='';
+    }else if(m.falhou){
       // o servidor já manda o motivo traduzido e sem citar a origem
       classe='falhou'; estado = m.erro || 'não deu certo'; corpo='';
     }else if(m.pronta){
@@ -1599,6 +1612,15 @@ function conteudoDaGeracao(g){
       '<span class="geracao-hora">' + esc(g.hora || '') + '</span>' +
     '</div>' +
     versoes;
+}
+
+// "em 4:32" / "agora" — o servidor manda os segundos que faltam e a
+// tela só escreve; a cada consulta (3s) o número desce sozinho.
+function contagem(d){
+  const s = Number(d && d.faltaSegundos) || 0;
+  if(s <= 1) return 'agora';
+  if(s < 60) return 'em ' + s + 's';
+  return 'em ' + Math.floor(s/60) + ':' + String(s % 60).padStart(2,'0');
 }
 
 function barrasEq(versao){

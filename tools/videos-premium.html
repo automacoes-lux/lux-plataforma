@@ -455,12 +455,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="avatarGenRow" style="display:none;margin-top:12px">
         <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
         <div class="gerar-note" id="avatarGenNote" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
-        <button class="btn-mini" id="btnUsarComoAvatar" onclick="usarImagemComoAvatar()" style="width:100%;margin-top:10px;padding:11px">🖼️ A Imagem 1 JÁ é o avatar pronto — usar do jeito que está</button>
-        <div class="gerar-note" style="margin-top:6px;font-size:11.5px">Use quando a imagem já for o personagem <b>de corpo inteiro, de frente, com o microfone na mão e fundo liso</b> (ex.: feita no ChatGPT). Pula a geração: sai mais rápido, custa menos e não passa pelo filtro da OpenAI.</div>
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
         <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b>.</div>
+        <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
@@ -1156,32 +1155,20 @@ async function gerarAvatar() {
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
+    // (10/09) o Worker manda j.aviso quando o desenho saiu do MOTOR RESERVA. Antes ninguem mostrava,
+    // e o atendente aprovava sem saber. Ficou obrigatorio depois que o botao de subir arte pronta saiu.
+    const avEl = document.getElementById('avatarMotorAviso');
+    if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
     refreshAvatarUI();
   } catch (err) { toast('⚠️ ' + err.message); }
   finally { btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
 }
 
-// A Imagem 1 JÁ é o avatar pronto (personagem de corpo inteiro, microfone na mão, fundo liso) →
-// usa ela DIRETO como avatar, sem passar pela geração. Motivos (04/09, caso Aline/guias):
-//   • o filtro de segurança da OpenAI às vezes recusa a imagem do cliente e trava o pedido;
-//   • quando a imagem já está pronta, gerar de novo só custa dinheiro e pode piorar o personagem.
-// Passa pela MESMA normalização do avatar gerado (padroniza o formato e os pés), então tudo
-// daqui pra frente — calibração, canto, recorte e montagem — funciona igual.
-async function usarImagemComoAvatar() {
-  if (!clientPhoto || !clientPhoto.base64) { toast('Envie a Imagem 1 primeiro.'); return; }
-  const b = document.getElementById('btnUsarComoAvatar');
-  if (b) { b.disabled = true; b._t = b.textContent; b.textContent = '⏳ Preparando…'; }
-  try {
-    const normB64 = await normalizarAvatarPes(clientPhoto.base64);
-    avatarPreview = { cartoonBase64: normB64, approved: false, semIA: true };
-    avatarCalib = { dx: 0, dy: 0, px: 0 };
-    avScale = AVSCALE_MAX;
-    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
-    refreshAvatarUI();
-    toast('🖼️ Usando a sua imagem como avatar (sem gerar). Confira e aprove.');
-  } catch (err) { toast('⚠️ ' + err.message); }
-  finally { if (b) { b.disabled = false; if (b._t) b.textContent = b._t; } }
-}
+// (10/09/2026) O botão "A Imagem 1 JÁ é o avatar pronto" foi REMOVIDO a pedido do Thiago: a arte
+// subida vinha com o fundo que o atendente quisesse (quase sempre BRANCO) e furava o recorte —
+// personagem claro em fundo claro deixa calombo de fundo grudado. O caso que ele resolvia (a OpenAI
+// recusar a imagem) hoje é coberto pelo plano B do Gemini, que desenha no NOSSO padrão, fundo cinza.
+// Código antigo no .bak deste arquivo.
 
 function aprovarAvatar() {
   if (!avatarPreview) return;
