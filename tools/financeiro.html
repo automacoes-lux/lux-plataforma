@@ -506,7 +506,7 @@ input[type="file"]{display:none}
 
     <!-- Etapa 4: % de atendimento (imagem) -->
     <div class="card" id="cardPct">
-      <div class="card-title">4 · % de atendimento <span style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">automático do Rotator — divide o anúncio proporcional</span></div>
+      <div class="card-title">4 · % de atendimento <span id="pctFonte" style="font-size:12px;color:var(--text-dim);font-family:'DM Sans';letter-spacing:0;text-transform:none">divide o anúncio proporcional</span></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
         <button type="button" id="btnRotator" onclick="puxarAtendimentoRotator(false)" title="Puxar os leads por atendente do WhatsApp Rotator no dia selecionado" style="white-space:nowrap;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:9px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer">↻ Puxar do Rotator</button>
         <button type="button" id="btnWpp" onclick="usarWppPct()" title="Substituir os percentuais pela contagem REAL do WhatsApp (conversas novas do dia)" style="white-space:nowrap;background:rgba(46,160,67,.12);color:#3fb950;border:.5px solid rgba(63,185,80,.4);border-radius:8px;padding:9px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer">⚡ Usar % do WhatsApp</button>
@@ -912,6 +912,7 @@ async function lerImagemPct(file){
     pctState=d.percentuais||[];
     renderPct(d.soma);
     salvarRascunho({percentuais:pctState});   // imagem = correção sua (vale no fechamento automático)
+    marcarFontePct('imagem');
     toast('Percentuais lidos ✓ — confira antes de organizar','success');
   }catch(err){ toast('Erro na imagem: '+err.message,'error'); }
 }
@@ -951,12 +952,41 @@ async function carregarWppPct(rerender){
   }
   if(rerender && Array.isArray(pctState) && pctState.length) renderPct(pctState.reduce((a,p)=>a+(Number(p.percent)||0),0));
 }
+// De onde vieram os % que estão na tela AGORA. Existe porque o fechamento automático usa o
+// WhatsApp real: se a tela mostrar outra fonte, o anúncio que aparece aqui NÃO é o que vai ser
+// cobrado — foi exatamente o que confundiu em 09/09/2026 (até R$ 124 de diferença por atendente).
+function marcarFontePct(f){
+  const el=document.getElementById('pctFonte'); if(!el) return;
+  const txt={ whatsapp:'WhatsApp real — mesma conta do fechamento',
+              rotator:'Rotator (plano B) — este dia não tem contagem do WhatsApp',
+              manual:'correção sua — vale no fechamento',
+              imagem:'lido da imagem — vale no fechamento' }[f];
+  el.textContent = txt || 'divide o anúncio proporcional';
+  el.style.color = (f==='rotator') ? '#d29922' : 'var(--text-dim)';
+}
+// Padrão do dia: a MESMA fonte que o fechamento automático usa (WhatsApp real).
+// O Rotator conta CLIQUES, não conversas — só entra quando o dia não tem contagem do WhatsApp.
+async function carregarPctPadrao(){
+  await carregarWppPct(false);
+  const lista=Object.entries(wppPct).map(([email,w])=>({nome:w.nome,email,percent:w.percent}));
+  if(lista.length){
+    pctState=lista.sort((a,b)=>b.percent-a.percent);
+    renderPct(pctState.reduce((a,p)=>a+(Number(p.percent)||0),0));
+    const hint=document.getElementById('rotatorHint');
+    if(hint) hint.innerHTML='✓ <b>'+lista.length+'</b> atendentes · <b>'+((wppMeta&&wppMeta.total)||0)+'</b> leads reais no WhatsApp';
+    marcarFontePct('whatsapp');
+    return;
+  }
+  await puxarAtendimentoRotator(true);      // dia sem contagem do WhatsApp → plano B
+  marcarFontePct('rotator');
+}
 function usarWppPct(){
   const lista=Object.entries(wppPct).map(([email,w])=>({nome:w.nome,email,percent:w.percent}));
   if(!lista.length){ toast('Ainda não há dados do WhatsApp hoje.','error'); return; }
   pctState=lista.sort((a,b)=>b.percent-a.percent);
   renderPct(pctState.reduce((a,p)=>a+(Number(p.percent)||0),0));
   salvarRascunho({percentuais:pctState});
+  marcarFontePct('manual');
   toast('⚡ Percentuais trocados pela contagem real do WhatsApp — valem no fechamento de hoje.','success');
 }
 // ── % de atendimento AUTOMÁTICO (WhatsApp Rotator) ──
@@ -972,7 +1002,8 @@ async function puxarAtendimentoRotator(silent){
     pctState=d.percentuais||[];
     renderPct(d.soma);
     const hint=document.getElementById('rotatorHint');
-    if(hint) hint.innerHTML=`✓ <b>${pctState.length}</b> atendentes · <b>${d.totalLeads||0}</b> leads em ${fmtDBR(d.date||dia)}`;
+    if(hint) hint.innerHTML=`✓ <b>${pctState.length}</b> atendentes · <b>${d.totalLeads||0}</b> cliques em ${fmtDBR(d.date||dia)}`;
+    marcarFontePct('rotator');
     if(!silent){ salvarRascunho({percentuais:null}); toast('% puxado do Rotator ✓ — dia voltou pro automático','success'); }
   }catch(e){ if(!silent) toast('Rotator: '+e.message,'error'); }
   finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Rotator'; } }
@@ -1618,8 +1649,8 @@ async function setFechamentoDia(arg){
   try{ const r=await window.__luxFetch(WORKER_URL+'/financeiro/rascunho?date='+encodeURIComponent(d)); st=await r.json(); }catch(_){}
   const rc=aplicarRascunho(st);
   if(rc.anuncioUSD==null) puxarAnuncioMeta(true);            // sem correção → puxa do Meta
-  if(!(Array.isArray(rc.percentuais)&&rc.percentuais.length)) puxarAtendimentoRotator(true);   // sem correção → puxa do Rotator
-  carregarWppPct(true);
+  if(!(Array.isArray(rc.percentuais)&&rc.percentuais.length)) await carregarPctPadrao();   // sem correção → WhatsApp real
+  else { marcarFontePct('manual'); carregarWppPct(true); }
 }
 function aovivoStart(){ aovivoLoad(); nfCarregar(true); if(aovivoTimer) clearInterval(aovivoTimer); aovivoTimer=setInterval(()=>{ aovivoLoad(); nfCarregar(true); },15000); }
 function aovivoStop(){ if(aovivoTimer){ clearInterval(aovivoTimer); aovivoTimer=null; } }

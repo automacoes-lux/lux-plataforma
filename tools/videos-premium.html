@@ -199,15 +199,22 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .btn-trans.off{background:transparent;color:var(--text-dim);border-color:var(--border-bright)}
 .btn-trans.off:hover{border-color:var(--gold);color:var(--gold)}
 
-/* 🕺 PERSONAGEM AGITADO (Passo 1) — DESLIGADO por padrão (apagado); LIGADO fica VERDE */
-.btn-agit{
-  display:block;width:100%;margin:12px 0 4px;padding:13px 16px;border-radius:var(--radius);
-  font-size:14px;font-weight:700;letter-spacing:.2px;cursor:pointer;
-  background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);
-  transition:background .15s,color .15s,box-shadow .15s,border-color .15s;
+/* 🕺 PERSONAGEM AGITADO — interruptor no canto da "Linha do clipe" (modelo que o Thiago mandou:
+   pílula escura, borda que acende, texto e bolinha verdes quando ligado). DESLIGADO por padrão. */
+.sw{
+  position:relative;display:inline-flex;align-items:center;justify-content:space-between;
+  width:68px;height:30px;padding:0 7px;border-radius:999px;cursor:pointer;flex-shrink:0;
+  background:#0b0b0d;border:2px solid #3a3f4a;
+  transition:border-color .18s,box-shadow .18s;
 }
-.btn-agit:hover{border-color:#2ecc71;color:#2ecc71}
-.btn-agit.on{background:#2ecc71;border-color:#2ecc71;color:#0d0d0f;box-shadow:0 0 14px rgba(46,204,113,.45)}
+.sw .sw-txt{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--text-dim);order:2;transition:color .18s}
+.sw .sw-knob{width:17px;height:17px;border-radius:50%;background:#5a606b;order:1;transition:background .18s,box-shadow .18s}
+.sw:hover{border-color:#5a626f}
+.sw.on{border-color:#2f7bff;box-shadow:0 0 10px rgba(47,123,255,.55),inset 0 0 7px rgba(47,123,255,.22)}
+.sw.on .sw-txt{color:#22e06a;order:1}
+.sw.on .sw-knob{background:#22e06a;box-shadow:0 0 10px rgba(34,224,106,.85);order:2}
+.sw-label{font-size:11.5px;line-height:1.25;text-align:right;color:var(--text-dim);transition:color .18s}
+.sw-label.on{color:#22e06a;font-weight:700}
 
 /* EDITOR DE CORTE (1:00) */
 .cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:4px}
@@ -468,9 +475,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- Avatar aprovado -->
       <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="abrirCalib()" style="margin-left:8px;font-weight:400">📐 posição</button> <button class="btn-mini" onclick="baixarAvatar()" style="font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
 
-      <!-- 🕺 COMO O PERSONAGEM SE MEXE — interruptor (desligado = jeito atual, contido) -->
-      <button type="button" class="btn-agit" id="btnAgitado" onclick="toggleAgitado()">🕺 Personagem agitado — <span id="agitadoState">desligado</span></button>
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:2px">Desligado (padrão), o personagem canta <b style="color:var(--text-mid)">contido</b>: gestos suaves e pés parados. <b style="color:#2ecc71">Ligado</b>, ele usa o jeito antigo — <b style="color:var(--text-mid)">bem mais animado</b>, com a mão livre gesticulando e apontando pra frente. Em troca, <b>as perninhas costumam tremer</b>.</div>
     </div>
 
     <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
@@ -545,7 +549,17 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <!-- LINHA DO CLIPE -->
     <div class="card storyboard-card">
-      <div class="step-eyebrow"><span class="dot"></span>Linha do clipe</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div class="step-eyebrow" style="margin:0"><span class="dot"></span>Linha do clipe</div>
+        <!-- 🕺 PERSONAGEM AGITADO — desligado = jeito atual (contido); ligado = jeito antigo, mais solto -->
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="sw-label" id="agitadoLbl">Personagem<br/>agitado</span>
+          <button type="button" class="sw" id="btnAgitado" role="switch" aria-checked="false" onclick="toggleAgitado()"
+                  title="Ligado: o personagem canta bem mais animado (jeito antigo). Em troca, as perninhas costumam tremer.">
+            <span class="sw-knob"></span><span class="sw-txt" id="agitadoState">Off</span>
+          </button>
+        </div>
+      </div>
       <div class="card-hint" style="margin-bottom:.4rem">É assim que as mídias vão passar atrás do avatar, na ordem:</div>
       <div class="storyboard" id="storyboard"></div>
       <div id="cutNote" style="font-size:11.5px;color:var(--text-dim);margin:8px 0 2px;min-height:16px"></div>
@@ -2236,8 +2250,11 @@ function toggleAgitado() {
 function setAgitBtn() {
   const b = document.getElementById('btnAgitado');
   const e = document.getElementById('agitadoState');
-  if (b) b.classList.toggle('on', agitado);
-  if (e) e.textContent = agitado ? 'LIGADO' : 'desligado';
+  const l = document.getElementById('agitadoLbl');
+  if (b) { b.classList.toggle('on', agitado); b.setAttribute('aria-checked', agitado ? 'true' : 'false'); }
+  if (e) e.textContent = agitado ? 'On' : 'Off';
+  // o rótulo do lado diz o estado por extenso — é o que a atendente lê de relance
+  if (l) { l.classList.toggle('on', agitado); l.innerHTML = agitado ? 'Personagem agitado<br/>LIGADO' : 'Personagem<br/>agitado'; }
 }
 function setTransBtn() {
   const b = document.getElementById('btnTrans');
