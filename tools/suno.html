@@ -296,7 +296,11 @@ const WORKER = 'https://lux-suno.plataformalux.workers.dev';
 // De quanto em quanto tempo a tela procura música nova enquanto
 // está aberta. O cron do Worker faz o mesmo de minuto em minuto por
 // trás, mas com a aba aberta a gente quer que apareça quase na hora.
-const INTERVALO_RADAR = 12000;
+// 30s (era 12s ate 10/09/2026). O Suno nao publica contrato de API:
+// quanto menos a gente bate na porta dele, menor a chance de levar
+// bloqueio. Com a aba aberta a musica aparece em ate meio minuto — e,
+// se o atendente estiver olhando outra coisa, o cron do Worker traz.
+const INTERVALO_RADAR = 30000;
 
 let musicas     = [];
 let handleAtual = '';
@@ -457,11 +461,25 @@ async function puxarLink(){
 // ── radar: procura música nova sozinho ─────────────────────────
 function ligarRadar(){
   if(radarTimer) return;
-  radarTimer = setInterval(()=>verificarAgora(false), INTERVALO_RADAR);
+  radarTimer = setInterval(()=>{
+    // Aba em segundo plano (outra aba, janela minimizada, computador
+    // ocioso): ninguem esta olhando, entao nao ha por que perguntar ao
+    // Suno. Era o maior desperdicio — atendente deixa a plataforma
+    // aberta o dia inteiro. Quando ele volta, a checagem sai na hora,
+    // no ouvinte abaixo.
+    if(document.hidden) return;
+    verificarAgora(false);
+  }, INTERVALO_RADAR);
 }
 function desligarRadar(){
   if(radarTimer){ clearInterval(radarTimer); radarTimer=null; }
 }
+
+// Voltou pra aba: confere JA, em vez de esperar os 30s. Assim pausar
+// enquanto ninguem olha nao custa nada em rapidez.
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && radarTimer && handleAtual) verificarAgora(false);
+});
 
 async function verificarAgora(manual){
   if(!handleAtual) return;
@@ -492,13 +510,16 @@ async function verificarAgora(manual){
     // primeiro a música só aparecia recarregando a página.
     const mudou = (d.ultimaMudanca || 0) !== ultimaMudancaVista;
 
-    // Rede de segurança: de 5 em 5 voltas (~1 min) recarrega a lista de
+    // Rede de segurança: de 2 em 2 voltas (~1 min) recarrega a lista de
     // qualquer jeito. O banco do Cloudflare leva alguns segundos pra
     // espalhar uma gravação entre os servidores, então o carimbo pode
     // chegar atrasado aqui — e o atendente não pode depender de apertar
     // F5 pra ver a música dele.
+    //
+    // São 2 voltas porque cada uma agora leva 30s. Quando o radar era de
+    // 12 em 12s eram 5 — o alvo é o mesmo minuto, não o mesmo número.
     voltasDoRadar++;
-    const revisaoPeriodica = (voltasDoRadar % 5 === 0);
+    const revisaoPeriodica = (voltasDoRadar % 2 === 0);
 
     if(d.novas > 0 || mudou || revisaoPeriodica){
       const quantasAntes = musicas.length;
