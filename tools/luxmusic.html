@@ -311,10 +311,10 @@
   .versao audio{width:100%;margin-bottom:10px;height:38px}
   .versao-acoes{display:grid;grid-template-columns:auto 1fr 1fr;gap:7px}
   .versao-acoes .btn{padding:11px 6px;font-size:12.5px}
-  /* Baixar ocupa 2 colunas da 2a linha e o WAV fica ao lado dele.
+  /* MP3 ocupa 2 colunas da 2a linha e o WAV fica ao lado dele.
      E o nth-last-child(2) porque o WAV e sempre o ultimo. */
   .versao-acoes .btn:nth-last-child(2){grid-column:1 / span 2}
-  /* WAV e acao secundaria: cinza, ao lado do Baixar branco */
+  /* WAV e acao secundaria: cinza, ao lado do MP3 branco */
   .btn-wav{font-size:12px;letter-spacing:.02em}
 
   .vazio{
@@ -1330,7 +1330,7 @@ async function baixarWav(botao){
     // solta a memória depois que o navegador pegou o arquivo
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }catch(e){
-    erro('Não consegui montar o WAV: ' + e.message + '. O MP3 continua disponível no Baixar.');
+    erro('Não consegui montar o WAV: ' + e.message + '. O MP3 continua disponível no botão ao lado.');
   }finally{
     if(ctx) try{ ctx.close(); }catch(e){}
     botao.disabled = false;
@@ -1653,7 +1653,7 @@ function conteudoDaGeracao(g){
           '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">' + IC.tesoura + ' Cortar</button>' +
           '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">' + IC.mic + ' Cover</button>' +
           '<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
-             esc(link + '&dl=1') + '">Baixar</a>' +
+             esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, titulo) +
         '</div>';
     }else{
@@ -2060,7 +2060,7 @@ function pintarFavoritos(itens, busca){
           htmlJoinha(p.taskId, p.indice) +
           htmlPlayer(link, p.duracao) +
           '<button class="btn btn-ghost faixa-baixar" onclick="cortar(\'' + esc(p.taskId + '|' + p.indice) + '\')">' + IC.tesoura + ' Cortar</button>' +
-          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
+          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, p.titulo) +
         '</div>' +
       '</div>' +
@@ -2276,7 +2276,7 @@ function pintarPedidos(itens, busca){
   }
 
   // ESTEIRA: cada pedido mostra as DUAS versões de cara, cada uma com
-  // o seu player e o seu Baixar. São músicas diferentes da mesma letra
+  // o seu player e o seu MP3. São músicas diferentes da mesma letra
   // — o atendente precisa ouvir as duas pra escolher.
   // o servidor já diz quais versões têm joinha — alimenta o conjunto
   itens.forEach(p => (p.versoes || []).forEach(v => {
@@ -2294,7 +2294,7 @@ function pintarPedidos(itens, busca){
           '<span class="faixa-nome">Versão ' + String.fromCharCode(65 + v.indice) + '</span>' +
           htmlJoinha(p.taskId, v.indice) +
           htmlPlayer(link, v.duracao) +
-          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">Baixar</a>' +
+          '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, p.titulo) +
         '</div>';
       }).join('');
