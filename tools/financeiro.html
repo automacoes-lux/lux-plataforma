@@ -104,6 +104,7 @@ input[type="file"]{display:none}
   border-right:.5px solid var(--border);padding-right:18px}
 .list-row.atend .anun small{display:block;color:var(--text-dim);font-size:12px}
 .list-row.atend .r{min-width:104px;text-align:right}
+.list-row.atend .who small.nid{color:var(--gold-dim);white-space:normal;line-height:1.45;margin-top:1px}
 /* celular: nome na 1ª linha inteira; anúncio e total dividem a 2ª */
 @media(max-width:520px){
   .list-row.atend{flex-wrap:wrap;gap:4px 12px}
@@ -656,7 +657,7 @@ input[type="file"]{display:none}
 <script>
 const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 const IMPOSTO_PCT = 0.06;
-let parsed=null, preview=null, pctState=null, cambio=null, atendentesList=[];
+let parsed=null, preview=null, pctState=null, cambio=null, cambioFonte='', atendentesList=[];
 
 window.addEventListener('DOMContentLoaded', init);
 async function init(){
@@ -804,13 +805,20 @@ function toast(msg,type='info'){ const el=document.getElementById('toast'); el.c
 
 async function loadCambio(){
   try{ const r=await window.__luxFetch(WORKER_URL+'/financeiro/cotacao'); const d=await r.json();
-    if(d.ok){ cambio=d.rate; updateAnuncioBRL(); }
+    if(d.ok){ cambio=d.rate; cambioFonte=d.source||''; updateAnuncioBRL(); }
   }catch(e){ document.getElementById('cambioHint').textContent='Câmbio: não foi possível carregar (será buscado ao organizar).'; }
 }
 function updateAnuncioBRL(){
   const usd=parseNum(document.getElementById('inAnuncioUSD').value);
   const hint=document.getElementById('cambioHint');
-  if(cambio){ hint.innerHTML=`Câmbio do dia: <b>R$ ${cambio.toFixed(2).replace('.',',')}</b> · ≈ <b>${fmtBRL(usd*cambio)}</b> em reais`; }
+  // De onde veio o câmbio TEM que aparecer: em 10/09/2026 as fontes ficaram fora, o sistema
+  // usou o valor fixo de emergência (5,18 com o dólar a 5,11) e ninguém viu — R$ 69 a mais
+  // de anúncio num dia só, metade saindo do bolso das atendentes.
+  const selo = cambioFonte==='fallback'
+      ? ' · <b style="color:var(--danger)">⚠ valor de EMERGÊNCIA — as fontes de câmbio não responderam, confira antes de fechar</b>'
+    : cambioFonte==='bcb' ? ' · <span style="color:var(--text-dim)">fonte: Banco Central</span>'
+    : '';
+  if(cambio){ hint.innerHTML=`Câmbio do dia: <b>R$ ${cambio.toFixed(2).replace('.',',')}</b> · ≈ <b>${fmtBRL(usd*cambio)}</b> em reais`+selo; }
   else hint.textContent='Câmbio será buscado ao organizar.';
   repintarPorAtendente();
 }
@@ -1825,7 +1833,12 @@ function aovivoRender(d){
     ? (()=>{ const an=anuncioPorAtendente();
         return ats.map((a,i)=>{
           const v = a.email ? (an.mapa[String(a.email).toLowerCase()]||0) : 0;
-          return `<div class="list-row atend"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small></div>`
+          // sem e-mail = Pix que o sistema não conseguiu atribuir. Sem o nome do pagador
+          // não dá pra descobrir de quem é, então a linha lista os três dados que resolvem.
+          const semDono = !a.email ? (a.recebimentos||[]).slice()
+            .sort((x,y)=>String(x.hora||'').localeCompare(String(y.hora||'')))
+            .map(x=>`<small class="nid">${escapeHtml(x.pagador||'(sem nome no comprovante)')} · ${fmtBRL(x.valorBRL)} · ${escapeHtml(x.hora||'—')}</small>`).join('') : '';
+          return `<div class="list-row atend"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small>${semDono}</div>`
             + `<div class="anun" title="${an.ok?'fatia do anúncio do dia, proporcional ao % de atendimento':'informe o gasto de anúncio (etapa 2) e o % de atendimento (etapa 4)'}">${an.ok?fmtBRL(v):'—'}<small>anúncio</small></div>`
             + `<div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`;
         }).join(''); })()
