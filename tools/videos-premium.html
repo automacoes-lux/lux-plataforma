@@ -458,7 +458,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
-        <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b>.</div>
+        <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b> — cada geração entra no custo do pedido.</div>
         <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
@@ -783,6 +783,11 @@ const PENDING_KEY = 'lux_avatar_pending';
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
 let clientPhoto2 = null;           // Dupla: 2ª foto (opcional — quando o atendente manda 1 de cada pessoa)
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
+// (11/09) Cada desenho gerado é uma imagem paga, e o motor reserva custa menos que o principal.
+// Antes o pedido cobrava 1 desenho fixo, então clicar "Gerar de novo" saía de graça pro atendente
+// e no bolso da Lux. Os dois contadores vão no pedido e zeram quando ele é criado.
+let cartoonGens = 0, cartoonGensRes = 0;
+let lyricSegs = 0;                 // segundos de música transcritos no "casar com a letra" (whisper)
 let avatarTipo = 'universal';   // UI universal 19/08: sem tipos — o prompt universal detecta pela imagem
 let scenes = [];                   // [{ id, base64, name, mimeType, thumbUrl }]
 let music = null;                  // { base64, name, mimeType, duration } — SEMPRE ~60s quando pronto
@@ -1157,6 +1162,7 @@ async function gerarAvatar() {
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     // (10/09) o Worker manda j.aviso quando o desenho saiu do MOTOR RESERVA. Antes ninguem mostrava,
     // e o atendente aprovava sem saber. Ficou obrigatorio depois que o botao de subir arte pronta saiu.
+    if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++;   // (11/09) cada geração é cobrada
     const avEl = document.getElementById('avatarMotorAviso');
     if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
     refreshAvatarUI();
@@ -1330,6 +1336,7 @@ async function abrirCasarLetra() {
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || 'falha na transcrição');
       if (!j.blocks || !j.blocks.length) { toast('Não achei letra cantada nessa música.'); return; }
+      lyricSegs += Math.max(0, parseFloat(j.duration) || 0);   // (11/09) whisper passou a ser cobrado
       lyricBlocks = j.blocks.map(b => ({ start: b.start, text: b.text, mediaId: null }));
       lyricSelIdx = 0;
     } catch (err) { toast('⚠️ ' + err.message); return; }
@@ -2848,9 +2855,11 @@ async function gerarClipe() {
         payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 };
         payloadE.tipo = avatarTipo;
       }
+      payloadE.cartoonGens = cartoonGens; payloadE.cartoonGensRes = cartoonGensRes; payloadE.lyricSeconds = lyricSegs;
       const re = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadE) });
       const de = await re.json();
       if (!de.ok) throw new Error(de.error || 'Falha ao salvar a edição.');
+      cartoonGens = 0; cartoonGensRes = 0; lyricSegs = 0;   // já foram cobrados nesta edição
       addPending(de.orderId, nome + ' (edição)');
       toast('💾 ' + (de.musicaNova ? 'Edição em produção — trocou a música, então o canto é refeito (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).'));
       sairEdicao();
@@ -2870,7 +2879,8 @@ async function gerarClipe() {
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       agitado: agitado,                      // interruptor do Passo 1: canto mais solto (prompt antigo)
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
-      musicDuration: music.duration
+      musicDuration: music.duration,
+      cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
     };
 
     const r1 = await api('/createAvatarOrder', {
@@ -2878,6 +2888,7 @@ async function gerarClipe() {
     });
     const d1 = await r1.json();
     if (!d1.ok) throw new Error(d1.error || 'Falha ao criar o pedido.');
+    cartoonGens = 0; cartoonGensRes = 0; lyricSegs = 0;   // já foram cobrados neste pedido
 
     btn.textContent = 'Iniciando a produção…';
     // a largada da produção re-tenta 3x (rede/500 passageiro não pode abandonar um pedido já criado)
@@ -3010,7 +3021,7 @@ async function loadOrders() {
         side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
           '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>';
       } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
-        chip = '<span class="st-chip st-err" title="' + (o.genError || '') + '">Falhou</span>';
+        chip = '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>';
       } else {
         chip = '<span class="st-chip st-run">Em produção</span>';
       }

@@ -1072,6 +1072,7 @@ function limparCenas(){
   cenas.forEach(function(s){
     s.video_url=''; s.video_status=''; s.video_error=''; s._personagemUsado='';
     s._marcacoes=null; s._fimFala=null; s._inicioFala=null; s._palavra='';
+    s._porEnergia=false; s._tentCorte=0;   // (10/09) clipe novo começa com a ficha limpa
     s._vozId=null; s._vozUrl=''; s._vozErro=''; s._audio=null; s._pron=null;
     s.cortaIni=0; s.cortaFim=0; s._cortouManual=false;
   });
@@ -1346,7 +1347,7 @@ function renderVideos(){ pintarProgresso(); if(passoAtual===3) renderCortes(); }
 // pra desenhar a onda). Isso não serve pro Worker nem pro projeto salvo — tira antes de enviar.
 function cenaLimpa(s){
   const c = {};
-  for(const k in s){ if(k !== '_audio') c[k] = s[k]; }
+  for(const k in s){ if(k !== '_audio' && k !== '_promVoz') c[k] = s[k]; }   // (10/09) promessa não se salva
   return c;
 }
 
@@ -1933,6 +1934,11 @@ async function religarVoz(i){
 
 async function esperarVoz(i, tentativa){
   const s = cenas[i]; if(!s || !s._vozId || s._vozUrl) return;
+  // ⚠️ (10/09) UM vigia por cena. A primeira espera nasce sem await quando o clipe fica pronto;
+  // o garantirVozes() abria OUTRA na hora de montar, as duas viam o mesmo 'done' e cada uma
+  // somava US$ 0,008 — cobrança dobrada. Quem chega depois agora espera o MESMO vigia.
+  if(s._promVoz) return s._promVoz;
+  s._promVoz = (async function(){
   for(let k=0;k<60;k++){                      // 60 x 5s = até 5 min (costuma levar ~10s)
     await new Promise(r=>setTimeout(r,5000));
     if(!cenas[i] || cenas[i]!==s) return;      // a cena foi refeita no meio do caminho
@@ -1946,7 +1952,8 @@ async function esperarVoz(i, tentativa){
       }
       if(d.ok && d.status==='failed'){
         // falhou DE VERDADE: tenta outra separação, até 2 vezes
-        if((tentativa||0) < 2 && await religarVoz(i)) return await esperarVoz(i, (tentativa||0)+1);
+        // solta a vez antes de recomeçar, senão a chamada de baixo esbarra no próprio vigia
+        if((tentativa||0) < 2 && await religarVoz(i)){ s._promVoz = null; return await esperarVoz(i, (tentativa||0)+1); }
         s._vozErro = d.error||'falhou'; return;
       }
     }catch(e){ /* rede: tenta no próximo ciclo */ }
@@ -1954,6 +1961,8 @@ async function esperarVoz(i, tentativa){
   // ⚠️ Estourou a NOSSA espera — isso NÃO é erro. O trabalho continua vivo na WaveSpeed e o
   // vozId fica salvo: quem pergunta de novo é o garantirVozes(), na hora de montar.
   s._vozErro = '';
+  })();
+  try { return await s._promVoz; } finally { s._promVoz = null; }
 }
 
 // Última chance antes de montar: qualquer cena que ainda não tenha a voz limpa é perguntada de
@@ -2267,10 +2276,14 @@ async function calcularCortes(){
 async function umCorte(s,i){
   {
     if(!s.video_url) return;
-    // pula só se já tem o corte E as marcações (ou se a transcrição já falhou e caiu na energia).
-    // Antes bastava ter _fimFala — cena vinda de projeto antigo ficava sem marcações pra sempre,
-    // e a legenda saía vazia sem ninguém saber por quê.
-    if(s._fimFala !== undefined && ((s._marcacoes||[]).length || s._porEnergia)) return;
+    // ⚠️ (10/09) Só pula quando REALMENTE tem o que a legenda precisa: as marcações.
+    // A condição antiga aceitava `_porEnergia` como se fosse resultado bom — mas essa marca só
+    // existe porque a transcrição falhou. Uma queda de rede de um segundo condenava a cena a
+    // sair SEM LEGENDA no vídeo final, e nem a tentativa da montagem recuperava, porque caía
+    // nesta mesma linha. Como `_porEnergia` vai salvo no projeto, o defeito voltava ao reabrir.
+    if((s._marcacoes||[]).length && s._fimFala !== undefined && s._fimFala !== null) return;
+    if((s._tentCorte||0) >= 3) return;   // não insiste pra sempre (cada tentativa custa US$ 0,0008)
+    s._tentCorte = (s._tentCorte||0) + 1;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
     if(nota) nota.innerHTML='🎧 Ouvindo a fala pra sincronizar a legenda…';
     try{
@@ -2468,6 +2481,10 @@ async function iniciarCenasSeNecessario(){
 // (cenas[i].video_url) e os cortes que estiverem na tela naquele instante.
 const TXT_BTN_MONTAR = '🎬 MONTAR O VÍDEO';
 async function finalizar(){
+  // ⚠️ (10/09) A trava existia como variável (`montando`) mas nunca era LIDA: só o botão
+  // desabilitado segurava o segundo clique. Qualquer caminho que reabilite o botão no meio
+  // deixava passar uma segunda montagem — dois renders pagos no Shotstack pelo mesmo vídeo.
+  if(montando){ toast('⏳ Já estou montando este vídeo.'); return; }
   if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
   // ⚠️ (08/09) O botão é capturado AQUI, ANTES de qualquer passo mexer no texto dele.
