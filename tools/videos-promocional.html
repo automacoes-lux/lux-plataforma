@@ -84,6 +84,14 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .busca-cont{font-size:11.5px;color:var(--text-dim);margin:-.5rem 0 .8rem}
 /* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
 .alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
+/* (11/09) palco da posição da legenda: uma prévia 9:16 com a legenda de exemplo arrastável */
+#palcoLeg{position:relative;width:min(232px,62vw);aspect-ratio:9/16;margin:.6rem auto;border-radius:12px;
+  overflow:hidden;background:#0d0d0f;border:1px solid rgba(255,255,255,.12);touch-action:none;user-select:none}
+#palcoLegImg{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
+#legFantasma{position:absolute;left:4%;width:92%;transform:translateY(-50%);text-align:center;cursor:grab;
+  font-weight:800;font-size:12px;line-height:1.30;letter-spacing:.5px;color:#fff;
+  text-shadow:0 0 3px #000,0 0 3px #000,0 2px 5px #000}
+#legFantasma.arrastando{cursor:grabbing}
 /* frase já corrigida pela IA: avisar sem resolver joga o trabalho pro atendente, que é
    justamente quem não sabe qual palavra escapa da armadilha */
 /* seletor de atendente (só admin) — usado pra devolver o projeto pra quem pediu ajuda */
@@ -493,6 +501,23 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
             <input type="color" id="corLivre" value="#ffffff"/>
           </label>
         </div>
+
+        <!-- (11/09) POSIÇÃO DA LEGENDA. Por padrão fica onde sempre esteve; quem quiser sobe ou
+             desce arrastando sobre uma prévia do próprio vídeo. Só vertical. -->
+        <div class="mini" style="margin-top:.9rem">Posição da legenda</div>
+        <div class="step-hint" id="notaPosLeg">Segue a posição padrão, no terço inferior.</div>
+        <button type="button" class="btn-ghost" id="btnPosLeg" onclick="abrirPosLegenda()">↕️ Mudar posição da legenda</button>
+        <div id="boxPosLeg" class="hide" style="margin-top:.7rem">
+          <div class="step-hint">Arraste a legenda para cima ou para baixo e clique em <b>Fixar</b>. Ela não vai para os lados.</div>
+          <div id="palcoLeg">
+            <img id="palcoLegImg" alt=""/>
+            <div id="legFantasma">EXEMPLO DE<br>LEGENDA AQUI</div>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn-ghost" onclick="posLegPadrao()">Voltar ao padrão</button>
+            <button type="button" class="btn-ghost" onclick="fixarPosLegenda()">📌 Fixar posição</button>
+          </div>
+        </div>
       </div>
 
       <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO</button>
@@ -681,6 +706,98 @@ let projetoJaSalvo = false;
 let souAdmin = false;
 let _ultProjetos = [], _ultResultados = [];   // usados pelo seletor de atribuição
 
+// ══════════════════ POSIÇÃO DA LEGENDA (11/09) ══════════════════
+// O motor de montagem põe a legenda numa caixa centralizada e a desloca na vertical: 0 é o
+// centro do quadro e o POSITIVO SOBE. -0,26 é onde ela sempre ficou — terço inferior, acima da
+// faixa que o Reels e o TikTok cobrem com os botões deles.
+// Aqui a tela trabalha em FRAÇÃO DA ALTURA (0 = topo, 1 = base), que é como o arrasto pensa, e
+// converte na hora de mandar. As duas contas são uma o espelho da outra.
+const LEG_Y_PADRAO = -0.26;
+const LEG_Y_LIMITE = 0.38;    // além disso a caixa começa a sair pela borda do vídeo
+let legendaY = LEG_Y_PADRAO;
+const yParaFracao = function(y){ return 0.5 - y; };
+const fracaoParaY = function(p){ return 0.5 - p; };
+const limitaY = function(y){ return Math.max(-LEG_Y_LIMITE, Math.min(LEG_Y_LIMITE, Number(y) || 0)); };
+
+// desenha a legenda de exemplo na altura atual e atualiza o texto embaixo do botão
+function pintarPosLegenda(){
+  const g = document.getElementById('legFantasma');
+  if(g) g.style.top = (yParaFracao(legendaY) * 100).toFixed(2) + '%';
+  const nota = document.getElementById('notaPosLeg');
+  if(nota){
+    const pad = Math.abs(legendaY - LEG_Y_PADRAO) < 0.005;
+    // fala em 'altura da tela' porque é assim que o atendente enxerga, não em número de motor
+    const alt = Math.round(yParaFracao(legendaY) * 100);
+    nota.innerHTML = pad ? 'Segue a posição padrão, no terço inferior.'
+                         : ('Fixada a <b>' + alt + '% da altura</b> do vídeo (o padrão é 76%).');
+  }
+}
+
+function abrirPosLegenda(){
+  const box = document.getElementById('boxPosLeg'); if(!box) return;
+  const abrindo = box.classList.contains('hide');
+  box.classList.toggle('hide');
+  const bt = document.getElementById('btnPosLeg');
+  if(bt) bt.innerHTML = abrindo ? '✖️ Fechar sem mudar' : '↕️ Mudar posição da legenda';
+  if(!abrindo) return;
+  // fundo da prévia: a imagem do personagem, que é de onde as 4 cenas nascem. Sem ela (projeto
+  // no comecinho), fica o fundo escuro do palco mesmo.
+  const img = document.getElementById('palcoLegImg');
+  if(img){
+    if(personagemImg){ img.src = imgSrc(personagemImg); img.style.display=''; }
+    else { img.removeAttribute('src'); img.style.display='none'; }
+  }
+  pintarPosLegenda();
+  rolarPara('boxPosLeg');
+}
+
+function posLegPadrao(){
+  legendaY = LEG_Y_PADRAO;
+  pintarPosLegenda();
+  toast('↩️ Posição da legenda de volta ao padrão.');
+}
+
+function fixarPosLegenda(){
+  const box = document.getElementById('boxPosLeg'); if(box) box.classList.add('hide');
+  const bt = document.getElementById('btnPosLeg'); if(bt) bt.innerHTML = '↕️ Mudar posição da legenda';
+  pintarPosLegenda();
+  salvarProjeto(true);
+  toast('📌 Posição fixada. O próximo vídeo montado sai com a legenda aí.');
+}
+
+// arrasto SÓ na vertical (mouse, dedo ou caneta — pointer events cobrem os três)
+function ligarArrastoLegenda(){
+  const palco = document.getElementById('palcoLeg');
+  const alvo  = document.getElementById('legFantasma');
+  if(!palco || !alvo) return;
+  let arrastando = false;
+  const mover = function(ev){
+    if(!arrastando) return;
+    const r = palco.getBoundingClientRect();
+    if(!r.height) return;
+    const p = (ev.clientY - r.top) / r.height;      // 0 no topo, 1 na base — o X é ignorado
+    legendaY = limitaY(fracaoParaY(p));
+    pintarPosLegenda();
+    if(ev.cancelable) ev.preventDefault();
+  };
+  const soltar = function(){ arrastando = false; alvo.classList.remove('arrastando'); };
+  alvo.addEventListener('pointerdown', function(ev){
+    arrastando = true; alvo.classList.add('arrastando');
+    if(alvo.setPointerCapture && ev.pointerId != null) alvo.setPointerCapture(ev.pointerId);
+    mover(ev);
+  });
+  alvo.addEventListener('pointermove', mover);
+  alvo.addEventListener('pointerup', soltar);
+  alvo.addEventListener('pointercancel', soltar);
+  // clicar em qualquer ponto do palco também leva a legenda pra lá — mais rápido que arrastar
+  palco.addEventListener('pointerdown', function(ev){
+    if(ev.target === alvo) return;
+    const r = palco.getBoundingClientRect(); if(!r.height) return;
+    legendaY = limitaY(fracaoParaY((ev.clientY - r.top) / r.height));
+    pintarPosLegenda();
+  });
+}
+
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
   ['criar','projetos','resultados'].forEach(function(a){
@@ -707,7 +824,9 @@ function estadoAtual(){
     categoria: categoriaNome(),
     personagem: personagemImg, personagemMontado: personagemMontado,
     campanha: campanha, cenas: cenas.map(cenaLimpa),
-    trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha, custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD,
+    trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha,
+    legendaY: legendaY,   // (11/09) a altura escolhida pro texto no vídeo
+    custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD,
     custoPor: custoPor, custoPorLancado: custoPorLancado, videoUrl: videoFinalUrl||''
   };
 }
@@ -909,6 +1028,8 @@ async function abrirProjeto(id){
     legendas = (p.legendas === undefined) ? true : !!p.legendas;   // projeto antigo assume ligada
     marcarCor(/^#[0-9a-fA-F]{6}$/.test(String(p.corDestaque||'')) ? p.corDestaque : '#ffffff');
     marcarVolume((Number(p.volumeTrilha) > 0 && Number(p.volumeTrilha) <= 1) ? Number(p.volumeTrilha) : 0.12);
+    legendaY = isFinite(Number(p.legendaY)) ? limitaY(p.legendaY) : LEG_Y_PADRAO;   // (11/09)
+    pintarPosLegenda();
     document.querySelectorAll('#chipsLegenda .chip').forEach(function(c){
       c.classList.toggle('on', (c.dataset.v==='sim') === legendas);
     });
@@ -1506,6 +1627,7 @@ let corDestaque = '#ffffff';
 // volume da música de fundo. 0,12 = "Volume padrão" (escolhido pelo Thiago comparando em vídeo).
 let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; });
+ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 
 // volume da música
@@ -2529,7 +2651,8 @@ async function finalizar(){
       inicioFala: (s._inicioFala===undefined||s._inicioFala===null) ? undefined : Number(s._inicioFala),
       vozUrl: s._vozUrl || '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
-      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha }) });
+      musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque,
+      volumeTrilha: volumeTrilha, legendaY: legendaY }) });   // (11/09) altura da legenda no vídeo
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     // o Worker conta o que houve com a legenda (ok / sem-marcacoes / erro). Se ela estava ligada
