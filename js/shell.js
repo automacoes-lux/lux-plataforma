@@ -19,6 +19,7 @@ const TOOLS = {
   corte:             'tools/corte.html',
   videos:            'tools/videos.html',
   'videos-premium':  'tools/videos-premium.html',
+  avatar97:          'tools/avatar97.html',
   'videos-promocional':'tools/videos-promocional.html',
   atendimento:       'tools/atendimento.html',
   'financeiro-atendente': 'tools/financeiro-atendente.html',
