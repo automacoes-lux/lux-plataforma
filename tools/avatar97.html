@@ -245,6 +245,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 }
 .btn-cut:disabled{opacity:.5;cursor:not-allowed}
 .cut-progress{display:none;font-size:12px;color:var(--text-dim);margin-top:10px}
+#cutEnd:disabled{opacity:.4;cursor:not-allowed}   /* (12/09) fim travado = janela de 1 minuto */
 .cut-progress.show{display:block}
 
 /* LINHA DO CLIPE */
@@ -544,11 +545,23 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
       <!-- editor de corte (música > 1:00) -->
       <div class="cut-editor" id="cutEditor">
-        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro vídeo:</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro vídeo:</div>
+          <!-- (12/09) botão "Trecho livre", no formato do "Personagem agitado": desligado = janela de 1 minuto -->
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <span class="sw-label" id="trechoLivreLbl">Trecho<br/>livre</span>
+            <button type="button" class="sw" id="btnTrechoLivre" role="switch" aria-checked="false" onclick="toggleTrechoLivre()"
+                    title="Desligado: janela de 1 minuto, como no Vídeo Avatar. Ligado: você escolhe onde o trecho começa e onde termina.">
+              <span class="sw-knob"></span><span class="sw-txt" id="trechoLivreState">Off</span>
+            </button>
+          </div>
+        </div>
         <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
         <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
         <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">—</b></div>
         <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
+        <div class="cut-row"><span>O trecho termina em</span><b id="cutEndLabel">—</b></div>
+        <input type="range" id="cutEnd" min="0" max="0" step="0.5" value="0" disabled/>
         <div class="fades-row">
           <div class="fade-box">
             <div class="cut-row"><span>Fade in (entrada)</span><b id="fadeInVal">1,0s</b></div>
@@ -2517,9 +2530,9 @@ function abrirEditorCorte() {
   const ed = document.getElementById('cutEditor');
   ed.classList.add('show');
   document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
-  const slider = document.getElementById('cutStart');
-  slider.max = Math.max(0, Math.floor((rawAudioBuffer.duration - MIN_TRECHO_S) * 2) / 2);   // (12/09) sem trecho fixo de 1 min
-  slider.value = 0;
+  document.getElementById('cutStart').value = 0;
+  aplicaFaixaDosSeletores(true);   // (12/09) limites do início e do fim conforme o botão "Trecho livre"
+  setTrechoBtn();
   computePeaks();
   updateCutUI();
 }
@@ -2549,29 +2562,96 @@ function reabrirCorte() {
 // (12/09) Avatar 97: o trecho vai do início escolhido até o FIM da música, parando no teto (VIDEO_SECONDS = 5 min).
 // No Vídeo Avatar ele tinha tamanho FIXO de 1 minuto. MIN_TRECHO_S impede escolher um início colado no fim.
 const MIN_TRECHO_S = 5;
-function trechoLen(startSec) {
-  const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
-  return Math.max(0, Math.min(VIDEO_SECONDS, dur - (startSec || 0)));
+// Botão "Trecho livre" (mesmo formato do "Personagem agitado").
+//   DESLIGADO (padrão): janela de 1 minuto, igual ao Vídeo Avatar. Só o início anda; o fim acompanha.
+//   LIGADO: o atendente escolhe onde começa E onde termina (um pedaço do meio ou a música inteira),
+//           respeitando o mínimo MIN_TRECHO_S e o teto VIDEO_SECONDS (5 min, o mesmo do worker).
+const JANELA_PADRAO_S = 60;
+var trechoLivre = false;   // var, e não let: nada quebra se algum código ler antes desta linha rodar
+// Tamanho do trecho escolhido, lido dos seletores. O argumento das chamadas antigas é ignorado.
+function trechoLen() {
+  const v = getCutValues();
+  return Math.max(0, Math.min(VIDEO_SECONDS, v.endSec - v.startSec));
+}
+// Trecho livre: mantém o fim depois do início (mínimo MIN_TRECHO_S) e o tamanho dentro do teto.
+// quem = o seletor que o atendente mexeu ('inicio' ou 'fim'); é o OUTRO que se ajusta.
+function normalizaTrecho(quem) {
+  if (!trechoLivre || !rawAudioBuffer) return;
+  const dur = rawAudioBuffer.duration;
+  const s = document.getElementById('cutStart'), e = document.getElementById('cutEnd');
+  let a = parseFloat(s.value) || 0, b = parseFloat(e.value) || 0;
+  if (quem === 'fim') {
+    if (b < a + MIN_TRECHO_S) a = Math.max(0, b - MIN_TRECHO_S);
+    if (b - a > VIDEO_SECONDS) a = b - VIDEO_SECONDS;
+  } else {
+    if (b < a + MIN_TRECHO_S) b = Math.min(dur, a + MIN_TRECHO_S);
+    if (b - a > VIDEO_SECONDS) b = a + VIDEO_SECONDS;
+  }
+  s.value = a; e.value = b;
+}
+// Limites dos dois seletores conforme o botão. novaMusica = o editor acabou de abrir com uma música.
+function aplicaFaixaDosSeletores(novaMusica) {
+  if (!rawAudioBuffer) return;
+  const dur = rawAudioBuffer.duration;
+  const s = document.getElementById('cutStart'), e = document.getElementById('cutEnd');
+  e.max = Math.floor(dur * 2) / 2;
+  s.max = Math.max(0, Math.floor((dur - (trechoLivre ? MIN_TRECHO_S : JANELA_PADRAO_S)) * 2) / 2);
+  if (parseFloat(s.value) > parseFloat(s.max)) s.value = s.max;
+  if (trechoLivre && novaMusica) e.value = Math.min(parseFloat(e.max), (parseFloat(s.value) || 0) + JANELA_PADRAO_S);
+}
+function toggleTrechoLivre() {
+  const antes = rawAudioBuffer ? getCutValues() : null;   // o trecho que já estava marcado
+  trechoLivre = !trechoLivre;
+  setTrechoBtn();
+  if (rawAudioBuffer) {
+    aplicaFaixaDosSeletores(false);
+    if (trechoLivre && antes) document.getElementById('cutEnd').value = antes.endSec;   // parte da janela que já estava
+    stopPreviewCorte();
+    updateCutUI();
+  }
+  toast(trechoLivre ? '✂ Trecho livre LIGADO: escolha onde começa e onde termina.' : '⏱ Janela de 1 minuto (padrão).');
+}
+function setTrechoBtn() {
+  const b = document.getElementById('btnTrechoLivre');
+  const e = document.getElementById('trechoLivreState');
+  const l = document.getElementById('trechoLivreLbl');
+  if (b) { b.classList.toggle('on', trechoLivre); b.setAttribute('aria-checked', trechoLivre ? 'true' : 'false'); }
+  if (e) e.textContent = trechoLivre ? 'On' : 'Off';
+  if (l) { l.classList.toggle('on', trechoLivre); l.innerHTML = trechoLivre ? 'Trecho livre<br/>LIGADO' : 'Trecho<br/>livre'; }
 }
 
 function getCutValues() {
+  const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
+  const startSec = parseFloat(document.getElementById('cutStart').value) || 0;
+  // (12/09) DESLIGADO: o fim é sempre início + 1 minuto (ou o fim da música). LIGADO: o fim vem do seletor.
+  const endSec = trechoLivre
+    ? Math.min(dur, Math.max(startSec, parseFloat(document.getElementById('cutEnd').value) || 0))
+    : Math.min(dur, startSec + JANELA_PADRAO_S);
   return {
-    startSec: parseFloat(document.getElementById('cutStart').value) || 0,
+    startSec,
+    endSec,
     fadeIn:   parseFloat(document.getElementById('fadeIn').value) || 0,
     fadeOut:  parseFloat(document.getElementById('fadeOut').value) || 0
   };
 }
 
 function updateCutUI() {
-  const { startSec, fadeIn, fadeOut } = getCutValues();
-  document.getElementById('cutStartLabel').textContent = fmtTime(startSec) + ' → ' + fmtTime(startSec + trechoLen(startSec));
-  { const b = document.getElementById('btnCutApply'); if (b && !b.disabled) b.textContent = '✂ Cortar e usar ' + fmtTime(trechoLen(startSec)); }
-  if (typeof renderStoryboard === 'function') renderStoryboard();   // (12/09) duração e preço do Passo 3 acompanham o trecho
+  const { startSec, endSec, fadeIn, fadeOut } = getCutValues();
+  const fim = document.getElementById('cutEnd');
+  if (fim) {
+    if (!trechoLivre) fim.value = endSec;   // (12/09) desligado: o seletor do fim só mostra onde o minuto termina
+    fim.disabled = !trechoLivre;
+  }
+  document.getElementById('cutStartLabel').textContent = fmtTime(startSec);
+  { const el = document.getElementById('cutEndLabel'); if (el) el.textContent = fmtTime(endSec); }
+  { const b = document.getElementById('btnCutApply'); if (b && !b.disabled) b.textContent = '✂ Cortar e usar ' + fmtTime(endSec - startSec); }
   document.getElementById('fadeInVal').textContent = fadeIn.toFixed(1).replace('.', ',') + 's';
   document.getElementById('fadeOutVal').textContent = fadeOut.toFixed(1).replace('.', ',') + 's';
   drawWave();
+  if (typeof renderStoryboard === 'function') renderStoryboard();   // (12/09) duração e preço do Passo 3 acompanham o trecho
 }
-document.getElementById('cutStart').addEventListener('input', () => { stopPreviewCorte(); updateCutUI(); });
+document.getElementById('cutStart').addEventListener('input', () => { stopPreviewCorte(); normalizaTrecho('inicio'); updateCutUI(); });
+document.getElementById('cutEnd').addEventListener('input', () => { stopPreviewCorte(); normalizaTrecho('fim'); updateCutUI(); });
 document.getElementById('fadeIn').addEventListener('input', updateCutUI);
 document.getElementById('fadeOut').addEventListener('input', updateCutUI);
 
@@ -3288,6 +3368,7 @@ function resetCreateForm() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   agitado = false; setAgitBtn();      // volta ao padrão (personagem contido)
+  trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
@@ -3310,6 +3391,7 @@ function sairEdicao() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   agitado = false; setAgitBtn();      // volta ao padrão (personagem contido)
+  trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
