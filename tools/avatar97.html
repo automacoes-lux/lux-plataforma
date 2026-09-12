@@ -141,6 +141,11 @@ body{
 .upload-tile .big{font-size:22px}
 
 .thumb-row{display:flex;gap:10px;flex-wrap:wrap}
+/* (12/09) Passo 1: os 3 espaços de papel (Personagem 1, Personagem 2, Ambiente) sempre do MESMO tamanho,
+   lado a lado, inclusive no celular. Vazio ou com foto, cada um ocupa um terço da linha. */
+#clientPhotoRow{flex-wrap:nowrap}
+#clientPhotoRow > .upload-tile,#clientPhotoRow > .thumb{flex:1 1 0;min-width:0;width:auto;height:132px;min-height:0}
+#clientPhotoRow > .upload-tile{padding:10px 6px;font-size:12px;line-height:1.25}
 .thumb{
   position:relative;width:92px;height:122px;border-radius:8px;overflow:hidden;
   border:.5px solid var(--border-bright);background:#000;flex-shrink:0;cursor:grab;
@@ -464,15 +469,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
 
       <div class="field" style="margin-bottom:.55rem"><label>Foto do personagem / pessoa / ambiente</label></div>
-      <!-- UM botão só: até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
-           as miniaturas + o tile de adicionar enquanto houver vaga. -->
+      <!-- (12/09) TRÊS espaços com PAPEL fixo. Com um botão só o modelo não sabia qual foto era o quê e
+           ignorava o 2º personagem. O papel de cada foto vai junto para o worker e abre o prompt. -->
       <div class="thumb-row" id="clientPhotoRow">
-        <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
-          <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
-          <span id="clientPhotoLabel">Enviar imagens (máximo 3)</span>
-        </div>
+        <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()"><span class="big">🧑‍🎤</span><span>Personagem 1</span></div>
+        <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhoto2Input').click()"><span class="big">👥</span><span>Personagem 2 (opcional)</span></div>
+        <div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById('clientPhoto3Input').click()"><span class="big">🏪</span><span>Ambiente</span></div>
       </div>
-      <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" multiple hidden/>
+      <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" hidden/>
+      <input type="file" id="clientPhoto2Input" accept="image/*,.heic,.heif" hidden/>
+      <input type="file" id="clientPhoto3Input" accept="image/*,.heic,.heif" hidden/>
 
       <!-- Atalho: o cliente já mandou a arte do personagem. Entra como avatar, sem a IA redesenhar. -->
       <div class="cx-montado">
@@ -994,15 +1000,23 @@ async function fileToOptimizedImage(file, keepPng) {
 // PASSO 1 — foto do cliente
 // ───────────────────────────────────────────────
 document.getElementById('clientPhotoInput').addEventListener('change', async (e) => {
-  const files = Array.from(e.target.files || []).slice(0, 3); e.target.value = '';
-  for (const f of files) await addAvatarImage(f);
+  const f = (e.target.files || [])[0]; e.target.value = '';   // (12/09) este espaço é só do Personagem 1
+  if (f) await setClientPhotoFromFile(f);
 });
-// preenche a PRÓXIMA vaga (1ª, depois 2ª) — um botão só pra até 2 imagens (UI 19/08)
+// (12/09) um input por papel: Personagem 2 e Ambiente
+document.getElementById('clientPhoto2Input').addEventListener('change', async (e) => {
+  const f = (e.target.files || [])[0]; e.target.value = ''; if (f) await setClientPhoto2FromFile(f);
+});
+document.getElementById('clientPhoto3Input').addEventListener('change', async (e) => {
+  const f = (e.target.files || [])[0]; e.target.value = ''; if (f) await setClientPhoto3FromFile(f);
+});
+// Colar (Ctrl+V) usa a função abaixo: preenche a próxima vaga na ordem Personagem 1, Personagem 2, Ambiente.
+// (histórico) preenche a PRÓXIMA vaga (1ª, depois 2ª) — um botão só pra até 2 imagens (UI 19/08)
 async function addAvatarImage(file) {
   if (!clientPhoto) { await setClientPhotoFromFile(file); return; }
   if (!clientPhoto2) { await setClientPhoto2FromFile(file); return; }
   if (!clientPhoto3) { await setClientPhoto3FromFile(file); return; }
-  toast('Máximo de 3 imagens — remova uma (✕) pra trocar.');
+  toast('Os 3 espaços já estão ocupados — remova uma foto (✕) pra trocar.');
 }
 
 // Colar a foto (Ctrl+V) — pega a 1ª imagem da área de transferência
@@ -1051,15 +1065,17 @@ async function setClientPhotoFromFile(file) {
 
 function renderClientPhoto() {
   const row = document.getElementById('clientPhotoRow'); if (!row) return;
-  let html = '';
-  if (clientPhoto) html += '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Imagem 1"/><div class="tag">Imagem 1</div><button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
-  if (clientPhoto2) html += '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="Imagem 2"/><div class="tag">Imagem 2</div><button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
-  if (clientPhoto3) html += '<div class="thumb"><img src="' + clientPhoto3.thumbUrl + '" alt="Imagem 3"/><div class="tag">Imagem 3</div><button class="rm" title="Remover" onclick="removeClientPhoto3()">✕</button></div>';
-  if (!clientPhoto || !clientPhoto2 || !clientPhoto3) {
-    const lbl = !clientPhoto ? 'Enviar imagens (máximo 3)' : ('Adicionar imagem (' + [clientPhoto, clientPhoto2, clientPhoto3].filter(Boolean).length + ' de 3)');
-    html += '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>' + lbl + '</span></div>';
-  }
-  row.innerHTML = html;
+  // (12/09) três espaços FIXOS, cada um com o seu papel. O papel viaja para o worker (personagem1,
+  // personagem2, ambiente) e abre o prompt — com um botão só o modelo ignorava o 2º personagem.
+  const slots = [
+    { foto: clientPhoto,  rotulo: 'Personagem 1',            tag: 'Personagem 1', icone: '🧑‍🎤', input: 'clientPhotoInput',  rm: 'removeClientPhoto()' },
+    { foto: clientPhoto2, rotulo: 'Personagem 2 (opcional)', tag: 'Personagem 2', icone: '👥',   input: 'clientPhoto2Input', rm: 'removeClientPhoto2()' },
+    { foto: clientPhoto3, rotulo: 'Ambiente',                tag: 'Ambiente',     icone: '🏪',   input: 'clientPhoto3Input', rm: 'removeClientPhoto3()' }
+  ];
+  row.innerHTML = slots.map(s => s.foto
+    ? '<div class="thumb"><img src="' + s.foto.thumbUrl + '" alt="' + s.tag + '"/><div class="tag">' + s.tag + '</div><button class="rm" title="Remover" onclick="' + s.rm + '">✕</button></div>'
+    : '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'' + s.input + '\').click()"><span class="big">' + s.icone + '</span><span>' + s.rotulo + '</span></div>'
+  ).join('');
 }
 function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
 
@@ -1216,14 +1232,14 @@ function setAvatarTipo(t) {
 }
 
 async function gerarAvatar() {
-  if (!clientPhoto) { toast('Envie a Imagem 1 primeiro.'); return; }
+  if (!clientPhoto) { toast('Envie a foto do Personagem 1 primeiro.'); return; }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
-    if (clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.clientPhoto3 = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
+    const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };   // (12/09) cada foto vai com o seu papel
+    if (clientPhoto2) payload.personagem2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.ambiente = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
@@ -2875,7 +2891,7 @@ function validar() {
     }
     return '';
   }
-  if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
+  if (!clientPhoto) return 'Envie a foto do Personagem 1 (Passo 1).';
   if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
   if (!music) return 'Envie a música (Passo 2).';
   // (12/09) Avatar 97: não há fotos de fundo para exigir
