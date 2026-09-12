@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20260911d';</script>
+<script>window.__LUX_VERSION = '20260912a';</script>
 <script type="module" src="js/auth.js?v=20260904a"></script>
 </head>
 <body>
@@ -150,6 +150,10 @@
       <a class="nav-item" data-tool="videos-premium" href="#">
         <div class="nav-icon">🤖</div> Vídeo Avatar
         <span class="nav-badge badge-live">LIVE</span>
+      </a>
+      <a class="nav-item" data-tool="avatar97" href="#" data-role-required="admin" style="display:none">
+        <div class="nav-icon">🎤</div> Avatar 97
+        <span class="nav-badge badge-new">NOVO</span>
       </a>
       <a class="nav-item" data-tool="videos-promocional" href="#">
         <div class="nav-icon">🐱</div> Personagem Animado
@@ -414,6 +418,17 @@
       <!-- iframe injetado lazy pelo shell.js -->
     </div>
 
+    <!-- AVATAR 97 — visível só pro admin; o gate está no item da barra lateral,
+         que é o único caminho pra cá (o shell confere o item antes de abrir).
+         NÃO colocar style="display:none" aqui: venceria a classe .show do CSS. -->
+    <div id="view-avatar97" class="tool-panel">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">🎤 AVATAR 97</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
     <!-- PERSONAGEM ANIMADO (pasta e rota seguem videos-promocional) -->
     <div id="view-videos-promocional" class="tool-panel">
       <div class="tool-panel-header">
@@ -625,6 +640,6 @@ window.addEventListener('message', (event) => {
 })();
 </script>
 
-<script src="js/shell.js?v=20260904a"></script>
+<script src="js/shell.js?v=20260912a"></script>
 </body>
 </html>
