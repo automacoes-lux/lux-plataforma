@@ -547,7 +547,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro vídeo:</div>
         <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
         <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
-        <div class="cut-row"><span>O minuto começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
+        <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">—</b></div>
         <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
         <div class="fades-row">
           <div class="fade-box">
@@ -561,7 +561,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
         <div class="cut-actions">
           <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-          <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 1:00</button>
+          <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
           <button class="btn-mini" id="btnTrocarMusicaCorte" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
@@ -1251,7 +1251,7 @@ async function gerarAvatar() {
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
     // (10/09) o Worker manda j.aviso quando o desenho saiu do MOTOR RESERVA. Antes ninguem mostrava,
     // e o atendente aprovava sem saber. Ficou obrigatorio depois que o botao de subir arte pronta saiu.
-    if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++;   // (11/09) cada geração é cobrada
+    if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++; renderStoryboard();   // (11/09) cada geração é cobrada
     const avEl = document.getElementById('avatarMotorAviso');
     if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
     refreshAvatarUI();
@@ -2396,32 +2396,9 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     try { ctx.close(); } catch (e2) {}
     const dur = audioBuf.duration;
 
-    // SEM mínimo: aceita qualquer duração até ~1:00; só acima disso abre o editor de corte.
-    if (dur <= VIDEO_SECONDS + DUR_TOLERANCE) {
-      // ≤ ~1:00 → usa a música INTEIRA (a duração dela = a duração do clipe)
-      if (isMp3) {
-        // já é MP3 → manda o arquivo ORIGINAL, sem re-comprimir (não perde qualidade à toa)
-        const dataUrl = await readFileAsDataURL(file);
-        setMusicReady({ base64: dataUrl.split(',')[1], name: file.name, duration: Math.round(dur), playerSrc: dataUrl, wasCut: false });
-        return;
-      }
-      // outro formato → converte pra MP3 aqui no navegador (o servidor só aceita MP3)
-      if (typeof lamejs === 'undefined') { toast('⚠️ O conversor de áudio não carregou. Recarregue a página (F5) e envie de novo.'); return; }
-      toast('🎧 Convertendo o áudio pra MP3…');
-      const mp3Blob = await encodeMP3(audioBuf, null);
-      const base64 = await blobToBase64(mp3Blob);
-      setMusicReady({
-        base64,
-        name: file.name.replace(/\.[^.]+$/, '') + '.mp3',
-        duration: Math.round(dur),
-        playerSrc: URL.createObjectURL(mp3Blob),
-        wasCut: false
-      });
-      toast('✅ Áudio convertido pra MP3 e pronto.');
-      return;
-    }
-
-    // > 1:00 → abre o editor de corte
+    // (12/09) Avatar 97: o editor de corte abre SEMPRE, igual ao do Vídeo Avatar, só que sem a trava de
+    // 1 minuto — o trecho vai do início escolhido até o fim da música (teto de 5 min). O atendente confere,
+    // ajusta os fades e clica em "Cortar e usar".
     rawAudioBuffer = audioBuf;
     rawAudioName = file.name;
     abrirEditorCorte();
@@ -2541,7 +2518,7 @@ function abrirEditorCorte() {
   ed.classList.add('show');
   document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
   const slider = document.getElementById('cutStart');
-  slider.max = Math.max(0, Math.floor((rawAudioBuffer.duration - VIDEO_SECONDS) * 2) / 2);
+  slider.max = Math.max(0, Math.floor((rawAudioBuffer.duration - MIN_TRECHO_S) * 2) / 2);   // (12/09) sem trecho fixo de 1 min
   slider.value = 0;
   computePeaks();
   updateCutUI();
@@ -2569,6 +2546,14 @@ function reabrirCorte() {
   renderStoryboard();
 }
 
+// (12/09) Avatar 97: o trecho vai do início escolhido até o FIM da música, parando no teto (VIDEO_SECONDS = 5 min).
+// No Vídeo Avatar ele tinha tamanho FIXO de 1 minuto. MIN_TRECHO_S impede escolher um início colado no fim.
+const MIN_TRECHO_S = 5;
+function trechoLen(startSec) {
+  const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
+  return Math.max(0, Math.min(VIDEO_SECONDS, dur - (startSec || 0)));
+}
+
 function getCutValues() {
   return {
     startSec: parseFloat(document.getElementById('cutStart').value) || 0,
@@ -2579,7 +2564,9 @@ function getCutValues() {
 
 function updateCutUI() {
   const { startSec, fadeIn, fadeOut } = getCutValues();
-  document.getElementById('cutStartLabel').textContent = fmtTime(startSec) + ' → ' + fmtTime(startSec + VIDEO_SECONDS);
+  document.getElementById('cutStartLabel').textContent = fmtTime(startSec) + ' → ' + fmtTime(startSec + trechoLen(startSec));
+  { const b = document.getElementById('btnCutApply'); if (b && !b.disabled) b.textContent = '✂ Cortar e usar ' + fmtTime(trechoLen(startSec)); }
+  if (typeof renderStoryboard === 'function') renderStoryboard();   // (12/09) duração e preço do Passo 3 acompanham o trecho
   document.getElementById('fadeInVal').textContent = fadeIn.toFixed(1).replace('.', ',') + 's';
   document.getElementById('fadeOutVal').textContent = fadeOut.toFixed(1).replace('.', ',') + 's';
   drawWave();
@@ -2616,7 +2603,7 @@ function drawWave() {
   const dur = rawAudioBuffer.duration;
   const { startSec } = getCutValues();
   const selA = (startSec / dur) * W;
-  const selB = ((startSec + VIDEO_SECONDS) / dur) * W;
+  const selB = ((startSec + trechoLen(startSec)) / dur) * W;
 
   // faixa selecionada (o minuto)
   ctx.fillStyle = 'rgba(201,168,76,0.13)';
@@ -2723,7 +2710,7 @@ function previewCorte() {
   if (previewPlaying) { stopPreviewCorte(); return; }
   const { startSec, fadeIn, fadeOut } = getCutValues();
   try {
-    const buf = processAudio(rawAudioBuffer, startSec, startSec + VIDEO_SECONDS, fadeIn, fadeOut);
+    const buf = processAudio(rawAudioBuffer, startSec, startSec + trechoLen(startSec), fadeIn, fadeOut);
     previewCtxAudio = new (window.AudioContext || window.webkitAudioContext)();
     previewSrc = previewCtxAudio.createBufferSource();
     previewSrc.buffer = buf;
@@ -2736,7 +2723,7 @@ function previewCorte() {
     const t0 = previewCtxAudio.currentTime;
     const tick = () => {
       if (!previewPlaying || !previewCtxAudio) return;
-      playheadFrac = Math.min(1, (previewCtxAudio.currentTime - t0) / VIDEO_SECONDS);
+      playheadFrac = Math.min(1, (previewCtxAudio.currentTime - t0) / Math.max(0.1, trechoLen(startSec)));
       drawWave();
       if (playheadFrac < 1) playheadRAF = requestAnimationFrame(tick);
     };
@@ -2801,7 +2788,7 @@ async function aplicarCorte() {
   prog.textContent = 'Cortando…';
   try {
     const { startSec, fadeIn, fadeOut } = getCutValues();
-    const processed = processAudio(rawAudioBuffer, startSec, startSec + VIDEO_SECONDS, fadeIn, fadeOut);
+    const processed = processAudio(rawAudioBuffer, startSec, startSec + trechoLen(startSec), fadeIn, fadeOut);
     const mp3Blob = await encodeMP3(processed, (p) => {
       prog.textContent = 'Convertendo pra MP3… ' + Math.round(p * 100) + '%';
     });
@@ -2809,12 +2796,12 @@ async function aplicarCorte() {
     const baseName = rawAudioName.replace(/\.[^.]+$/, '');
     setMusicReady({
       base64,
-      name: baseName + '_1min.mp3',
-      duration: VIDEO_SECONDS,
+      name: baseName + '_trecho.mp3',
+      duration: Math.round(trechoLen(startSec)),
       playerSrc: URL.createObjectURL(mp3Blob),
       wasCut: true
     });
-    toast('✂ Corte feito: 1:00 com fades.');
+    toast('✂ Corte feito: ' + fmtTime(trechoLen(startSec)) + ' com fades.');
   } catch (err) {
     toast('⚠️ Erro no corte: ' + err.message);
   } finally {
@@ -2848,12 +2835,14 @@ function renderStoryboard() {
   }
   sb.innerHTML = html;
 
-  const D = videoDur() || VIDEO_SECONDS;
+  // (12/09) editor de corte aberto: a duração é a do trecho escolhido, e o preço acompanha ao vivo
+  const _cutAberto = !music && !!rawAudioBuffer && document.getElementById('cutEditor').classList.contains('show');
+  const D = videoDur() || (_cutAberto ? Math.round(trechoLen(getCutValues().startSec)) : 0) || VIDEO_SECONDS;
   const note = document.getElementById('cutNote');
   if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar ' + fmtTime(D) + ').' : '';
   // (12/09) Com o teto em 5 min, cair no VIDEO_SECONDS quando ainda não há música fazia a tela abrir
   // anunciando ~R$87 — assustava sem motivo. Enquanto não há música, não há duração nem preço.
-  const semMusica = !editState && !videoDur();
+  const semMusica = !editState && !videoDur() && !_cutAberto;
   const durEl = document.getElementById('sbDur');
   if (durEl) durEl.textContent = semMusica ? '—' : fmtTime(D);
 
@@ -2861,7 +2850,7 @@ function renderStoryboard() {
   // Na EDIÇÃO o preço depende do que a atendente destravou: só remontar (~R$1) × regravar o canto (caro).
   const brl = editState
     ? custoEdicaoBRL()
-    : (EST_USD_CENA + D * (_lipsec + EST_USD_J2VSEC)) * EST_CAMBIO;   // (12/09) a97: imagem + canto por segundo + ampliação final
+    : (EST_USD_CENA * (cartoonGens + cartoonGensRes) + D * (_lipsec + EST_USD_J2VSEC)) * EST_CAMBIO;   // (12/09) a97: cada imagem gerada + canto por segundo + ampliação final (personagem pronto = sem imagem)
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = semMusica
     ? '<small>o preço sai com a música</small>'
@@ -2946,7 +2935,7 @@ async function gerarClipe() {
       }
       // AVATAR NOVO (07/09): manda o cartoon recém-aprovado — o Worker regrava o canto e o recorte com ele.
       if (editTrocaAvatar && avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64) {
-        payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 };
+        payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 }; payloadE.montado = !!avatarPreview.montado;
         payloadE.tipo = avatarTipo;
       }
       payloadE.cartoonGens = cartoonGens; payloadE.cartoonGensRes = cartoonGensRes; payloadE.lyricSeconds = lyricSegs;
@@ -2965,7 +2954,7 @@ async function gerarClipe() {
       clientName: document.getElementById('clientName').value.trim(),
       categoria: (document.getElementById('fCategoria').value || '').trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
-      cartoonApproved: { base64: avatarPreview.cartoonBase64 },
+      cartoonApproved: { base64: avatarPreview.cartoonBase64 }, montado: !!avatarPreview.montado,
       tipo: avatarTipo,   // dupla/personagemDupla → o canto roda no InfiniteTalk (membros estáveis)
       avatarCalib: avatarCalib,
       avScale: avScale,
