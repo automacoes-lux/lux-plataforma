@@ -403,7 +403,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="container">
 
   <div class="page-head">
-    <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Avatar 97</span></div>
+    <div class="page-title">🎤 Avatar 97</div>
     <div class="page-sub">O cliente vira o cantor do próprio vídeo.</div>
   </div>
 
@@ -463,13 +463,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Degusta Açaí"/>
       </div>
 
-      <div class="field" style="margin-bottom:.55rem"><label>Foto do personagem</label></div>
+      <div class="field" style="margin-bottom:.55rem"><label>Foto do personagem / pessoa / ambiente</label></div>
       <!-- UM botão só: até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
            as miniaturas + o tile de adicionar enquanto houver vaga. -->
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
           <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
-          <span id="clientPhotoLabel">Enviar ou colar as imagens (1 ou 2)</span>
+          <span id="clientPhotoLabel">Enviar imagens (máximo 3)</span>
         </div>
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" multiple hidden/>
@@ -477,7 +477,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <!-- Atalho: o cliente já mandou a arte do personagem. Entra como avatar, sem a IA redesenhar. -->
       <div class="cx-montado">
         <div class="cx-tit">🎨 Já tem o personagem pronto?</div>
-        <div class="cx-sub">Precisa estar em <b>fundo liso</b>, sem cenário: o personagem é recortado pra cantar por cima das fotos do Passo 3.</div>
+        
         <div class="thumb-row" id="montadoRow">
           <div class="upload-tile" id="montadoTile" role="button" tabindex="0" onclick="document.getElementById('montadoInput').click()">
             <span class="big">🖼️</span>
@@ -506,7 +506,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
       </div>
       <!-- Avatar aprovado -->
-      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="abrirCalib()" style="margin-left:8px;font-weight:400">📐 posição</button> <button class="btn-mini" onclick="baixarAvatar()" style="font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
+      <div id="avatarApproved" style="display:none;margin-top:10px;color:var(--gold);font-size:13px;font-weight:600">✓ Avatar aprovado <button class="btn-mini" onclick="baixarAvatar()" style="margin-left:8px;font-weight:400">⬇ baixar</button> <button class="btn-mini" onclick="reabrirAvatar()" style="font-weight:400">trocar</button></div>
 
     </div>
 
@@ -565,14 +565,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <!-- ══════════ PASSO 3 — A LINHA DO VÍDEO ══════════
+    <!-- ══════════ PASSO 3 — RESUMO E GERAR ══════════
          (12/09) Antes eram DOIS cartões: "Fotos e vídeos do comércio" (Passo 3) e a "Linha do clipe"
          solta embaixo. Viraram um só, pra tela fechar em 3 passos. -->
     <div class="card storyboard-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div>
           <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
-          <div class="card-title">A linha do vídeo <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
+          <span id="sceneCount" hidden></span>
         </div>
         <!-- 🕺 PERSONAGEM AGITADO — desligado = jeito atual (contido); ligado = jeito antigo, mais solto -->
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -584,6 +584,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
       </div>
 
+      <!-- (12/09) Avatar 97: controles da linha de fotos ESCONDIDOS, não apagados — há código que roda no
+           carregamento e procura estes ids sem testar; apagar derrubaria a tela inteira. -->
+      <div hidden>
       <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
       <div class="thumb-row" id="scenesRow"></div>
       <input type="file" id="scenesInput" accept="image/*,video/*,.heic,.heif,.mov,.m4v" multiple hidden/>
@@ -593,8 +596,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
       <div class="storyboard" id="storyboard"></div>
       <div id="cutNote" style="font-size:11.5px;color:var(--text-dim);margin:8px 0 2px;min-height:16px"></div>
+      </div>
       <div class="sb-meta">
-        <span class="sb-total">Duração: <b id="sbDur">—</b> · cena 1 = entrada do cantor 🎤</span>
+        <span class="sb-total">Duração: <b id="sbDur">—</b></span>
         <span class="sb-cost" id="sbCost"></span>
       </div>
     </div>
@@ -799,7 +803,7 @@ const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto
 const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes de 44-91MB somaram 364MB e o render estourou memória)
 
 // Estimativa de custo (números reais no cost.js do Worker)
-const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
+const EST_USD_CENA    = 0.038;     // (12/09) imagem no gpt-image-2.5-sunburst medium (medido: 0,035 a 0,038)
 const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (solo)
 const EST_USD_LIPSEC_DUO = 0.03;   // dupla voltou ao MultiTalk 18/08 — mesmo preço do solo
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
@@ -813,6 +817,7 @@ const PENDING_KEY = 'lux_avatar_pending';
 // Estado
 let clientPhoto = null;            // { base64, name, mimeType, thumbUrl }
 let clientPhoto2 = null;           // Dupla: 2ª foto (opcional — quando o atendente manda 1 de cada pessoa)
+let clientPhoto3 = null;           // (12/09) Avatar 97: 3ª imagem (ex.: o ambiente)
 let avatarPreview = null;          // { cartoonBase64, approved } — Passo 1 (preview do avatar)
 // (11/09) Cada desenho gerado é uma imagem paga, e o motor reserva custa menos que o principal.
 // Antes o pedido cobrava 1 desenho fixo, então clicar "Gerar de novo" saía de graça pro atendente
@@ -989,14 +994,15 @@ async function fileToOptimizedImage(file, keepPng) {
 // PASSO 1 — foto do cliente
 // ───────────────────────────────────────────────
 document.getElementById('clientPhotoInput').addEventListener('change', async (e) => {
-  const files = Array.from(e.target.files || []).slice(0, 2); e.target.value = '';
+  const files = Array.from(e.target.files || []).slice(0, 3); e.target.value = '';
   for (const f of files) await addAvatarImage(f);
 });
 // preenche a PRÓXIMA vaga (1ª, depois 2ª) — um botão só pra até 2 imagens (UI 19/08)
 async function addAvatarImage(file) {
   if (!clientPhoto) { await setClientPhotoFromFile(file); return; }
   if (!clientPhoto2) { await setClientPhoto2FromFile(file); return; }
-  toast('Máximo de 2 imagens — remova uma (✕) pra trocar.');
+  if (!clientPhoto3) { await setClientPhoto3FromFile(file); return; }
+  toast('Máximo de 3 imagens — remova uma (✕) pra trocar.');
 }
 
 // Colar a foto (Ctrl+V) — pega a 1ª imagem da área de transferência
@@ -1021,12 +1027,12 @@ document.getElementById('montadoInput').addEventListener('change', async (e) => 
   try {
     const opt = await fileToOptimizedImage(f, true);          // keepPng: o preview e o envio usam PNG
     clientPhoto  = { ...opt, name: f.name || 'personagem.png' };
-    clientPhoto2 = null;                                       // arte pronta é sempre uma imagem só
-    avatarPreview = { cartoonBase64: opt.base64, approved: false, montado: true };
+    clientPhoto2 = null; clientPhoto3 = null;                  // arte pronta é sempre uma imagem só
+    avatarPreview = { cartoonBase64: opt.base64, approved: true, montado: true };   // (12/09) vai direto pra geração do vídeo, sem gerar imagem
     renderClientPhoto();
     refreshAvatarUI();
     renderStoryboard();
-    toast('🎨 Personagem carregado — confira e aprove.');
+    toast('🎨 Personagem pronto — já vai direto para o vídeo.');
   } catch (err) {
     toast('⚠️ ' + (err && err.message ? err.message : 'não consegui ler a imagem'));
   }
@@ -1048,8 +1054,9 @@ function renderClientPhoto() {
   let html = '';
   if (clientPhoto) html += '<div class="thumb"><img src="' + clientPhoto.thumbUrl + '" alt="Imagem 1"/><div class="tag">Imagem 1</div><button class="rm" title="Remover" onclick="removeClientPhoto()">✕</button></div>';
   if (clientPhoto2) html += '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="Imagem 2"/><div class="tag">Imagem 2</div><button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
-  if (!clientPhoto || !clientPhoto2) {
-    const lbl = !clientPhoto ? 'Enviar ou colar as imagens (1 ou 2)' : 'Adicionar a 2ª imagem (opcional — vira dupla)';
+  if (clientPhoto3) html += '<div class="thumb"><img src="' + clientPhoto3.thumbUrl + '" alt="Imagem 3"/><div class="tag">Imagem 3</div><button class="rm" title="Remover" onclick="removeClientPhoto3()">✕</button></div>';
+  if (!clientPhoto || !clientPhoto2 || !clientPhoto3) {
+    const lbl = !clientPhoto ? 'Enviar imagens (máximo 3)' : ('Adicionar imagem (' + [clientPhoto, clientPhoto2, clientPhoto3].filter(Boolean).length + ' de 3)');
     html += '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>' + lbl + '</span></div>';
   }
   row.innerHTML = html;
@@ -1067,6 +1074,16 @@ async function setClientPhoto2FromFile(file) {
 }
 function renderClientPhoto2() { renderClientPhoto(); }   // UI de 1 botão (19/08): tudo no render combinado
 function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
+// (12/09) Avatar 97: 3ª imagem — mesmo caminho da 2ª (a foto nova invalida a imagem gerada)
+async function setClientPhoto3FromFile(file) {
+  try {
+    const opt = await fileToOptimizedImage(file, false);
+    clientPhoto3 = { ...opt, name: file.name || 'imagem3.png' };
+    avatarPreview = null;
+    renderClientPhoto(); refreshAvatarUI();
+  } catch (err) { toast('⚠️ ' + err.message); }
+}
+function removeClientPhoto3() { clientPhoto3 = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); }
 
 // ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
@@ -1206,11 +1223,11 @@ async function gerarAvatar() {
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
     const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
-    if (clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };   // Imagem 2 vai sempre que existir (UI universal)
+    if (clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.clientPhoto3 = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
-    const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
+    const normB64 = j.cartoonBase64;   /* (12/09) Avatar 97: a imagem JÁ é a cena final — recentralizar os pés estragaria o ambiente */   // centraliza os pés + padroniza p/ cair sempre no centro do palco
     avatarPreview = { cartoonBase64: normB64, approved: false };
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
@@ -1233,7 +1250,7 @@ async function gerarAvatar() {
 
 function aprovarAvatar() {
   if (!avatarPreview) return;
-  abrirCalib();   // abre a calibração de posição no palco; o "Confirmar" lá dentro é que aprova
+  avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard();   // (12/09) Avatar 97: sem palco → aprova direto, sem calibração
 }
 function reabrirAvatar() {
   if (!avatarPreview) return;
@@ -2827,7 +2844,7 @@ function renderStoryboard() {
   // Na EDIÇÃO o preço depende do que a atendente destravou: só remontar (~R$1) × regravar o canto (caro).
   const brl = editState
     ? custoEdicaoBRL()
-    : (EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC)) * EST_CAMBIO;   // cartoon + melhoria das fotos + lipsync + recorte + montagem
+    : (EST_USD_CENA + D * (_lipsec + EST_USD_J2VSEC)) * EST_CAMBIO;   // (12/09) a97: imagem + canto por segundo + ampliação final
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = semMusica
     ? '<small>o preço sai com a música</small>'
@@ -2846,7 +2863,7 @@ function validar() {
       return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 1) — ou recarregue a página pra manter o avatar antigo.';
     if (editTrocaMusica && !(music && music.base64))
       return 'Você liberou a troca da música: envie o novo MP3 (Passo 2) — ou recarregue a página pra manter a música antiga.';
-    if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 3).';
+    // (12/09) Avatar 97: não há fotos de fundo para exigir
     if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
     if (scenes.some(s => s.at != null)) {
       // vídeo casado com a letra: valida a densidade (mín. ~2,5s por mídia)
@@ -2854,16 +2871,16 @@ function validar() {
       const maxM = Math.max(1, Math.floor(D / 2.5));
       if (scenes.length > maxM) return 'Este vídeo foi casado com a letra: cabem no máximo ' + maxM + ' mídias em ' + D + 's. Remova ' + (scenes.length - maxM) + ' mídia(s) (Passo 3).';
     } else {
-      const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).';   // antes a edição pulava esta checagem e enviava timeline inválida
+      /* (12/09) Avatar 97: sem linha de fotos — o tempo é o da música */
     }
     return '';
   }
   if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
   if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
   if (!music) return 'Envie a música (Passo 2).';
-  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 3).';
+  // (12/09) Avatar 97: não há fotos de fundo para exigir
   if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
-  if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).'; }   // modo letra define o tempo pela música
+  if (!lyricOn) { /* (12/09) Avatar 97: sem linha de fotos */ }
   else {
     // modo letra: garante espaço mínimo de ~2,5s por mídia (senão o clipe pisca — cada fundo teria <2,5s na tela)
     const D = videoDur();
@@ -2899,7 +2916,7 @@ async function gerarClipe() {
     // se o modo letra se desligou SOZINHO no buildBackgrounds (encaixes órfãos), valida o timing automático agora
     if (!editState && !lyricOn && !scenes.some(s => s.at != null)) {
       const tv = computeTiming();
-      if (!tv.ok) { toast('⚠️ ' + tv.msg + ' (Passo 3).'); return; }
+      /* (12/09) Avatar 97: sem linha de fotos — o tempo é o da música */
     }
     if (editState) {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
@@ -3153,7 +3170,7 @@ async function editarClipe(orderId) {
     if (typeof renderStoryboard === 'function') renderStoryboard();
     showTab('criar');
     window.scrollTo(0, 0);
-    toast('✏️ Editando "' + (d.clientName || '') + '". Troque as imagens e salve. Se precisar, dá pra trocar também o avatar ou a música — os botões estão nos Passos 1 e 2.');
+    toast('✏️ Editando "' + (d.clientName || '') + '". Dá pra trocar o personagem ou a música — os botões estão nos Passos 1 e 2.');
   } catch (e) { toast('⚠️ Erro ao abrir a edição: ' + e.message); }
 }
 
@@ -3170,8 +3187,8 @@ function aplicarModoEdicao(d) {
       const trocou = [editTrocaAvatar ? 'avatar' : '', editTrocaMusica ? 'música' : ''].filter(Boolean).join(' e ');
       document.getElementById('editBannerText').textContent =
         '"' + ((d && d.clientName) || '') + '" — ' + (trocou
-          ? ('trocando o ' + trocou + ': o canto vai ser regravado. As fotos já melhoradas são preservadas.')
-          : 'troque as imagens/vídeos de fundo. O avatar e a música são mantidos; só a edição é cobrada.');
+          ? ('trocando o ' + trocou + ': o canto vai ser regravado.')
+          : 'o personagem e a música são mantidos; só a edição é cobrada.');
       const img = document.getElementById('editBannerImg'); if (img && d) img.src = d.cartoonUrl || '';
     }
   }
@@ -3213,8 +3230,8 @@ function custoEdicaoBRL() {
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
   let usd = D * EST_USD_J2VSEC;                                        // a montagem sempre acontece
   if (editTrocaAvatar) usd += EST_USD_CENA;                            // desenhar o avatar de novo
-  if (editRegravaCanto()) usd += D * (_lipsec + EST_USD_MATTESEC);     // regravar o canto + recortar
-  usd += fotosNovasNaEdicao() * EST_USD_EXPAND;                        // só as fotos NOVAS
+  if (editRegravaCanto()) usd += D * _lipsec;                          // (12/09) a97: regravar o canto (sem recorte)
+  // (12/09) a97: não há fotos de fundo para melhorar
   return usd * EST_CAMBIO;
 }
 function _avisoRegravar(oQue, extraCartoon) {
@@ -3232,7 +3249,7 @@ function destravarAvatar() {
   if (!editState || editTrocaAvatar) return;
   if (!confirm(_avisoRegravar('o avatar', true))) return;
   editTrocaAvatar = true;
-  avatarPreview = null; clientPhoto = null; clientPhoto2 = null;   // Passo 1 volta a zero
+  avatarPreview = null; clientPhoto = null; clientPhoto2 = null; clientPhoto3 = null;   // Passo 1 volta a zero
   try { renderClientPhoto2(); } catch (e) {}
   aplicarModoEdicao(null);
   renderStoryboard();
@@ -3257,7 +3274,7 @@ function avisarCustoMidia() {
 
 // limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
 function resetCreateForm() {
-  clientPhoto = null; clientPhoto2 = null; avatarPreview = null;
+  clientPhoto = null; clientPhoto2 = null; clientPhoto3 = null; avatarPreview = null;
   try { renderClientPhoto2(); } catch (e) {}
   avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
@@ -3280,7 +3297,7 @@ function resetCreateForm() {
 function sairEdicao() {
   editState = null;
   editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false; editDados = null;
-  avatarPreview = null; clientPhoto = null; clientPhoto2 = null; music = null;
+  avatarPreview = null; clientPhoto = null; clientPhoto2 = null; clientPhoto3 = null; music = null;
   try { renderClientPhoto2(); } catch (e) {}
   scenes.forEach(s => { if (s.localUrl) { try { URL.revokeObjectURL(s.localUrl); } catch (e) {} } });   // libera memória dos vídeos
   scenes = [];
