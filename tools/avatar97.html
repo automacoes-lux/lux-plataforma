@@ -247,6 +247,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   background:linear-gradient(180deg,rgba(201,168,76,.05),rgba(201,168,76,.015));
   border:.5px solid var(--border-bright);
 }
+/* Atalho "já tem o personagem pronto" (Passo 1) — caixa discreta, separada do fluxo normal */
+.cx-montado{
+  margin-top:1rem;padding:.85rem .9rem;border-radius:12px;
+  border:.5px dashed var(--border-bright);background:rgba(255,255,255,.018);
+}
+.cx-montado .cx-tit{font-size:13.5px;font-weight:600;color:var(--gold);margin-bottom:.3rem}
+.cx-montado .cx-sub{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:.6rem}
 .storyboard{display:flex;gap:6px;overflow-x:auto;padding:10px 2px 12px;scrollbar-width:thin}
 .sb-cell{flex-shrink:0;width:66px;text-align:center}
 .sb-frame{
@@ -397,21 +404,21 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="page-head">
     <div class="page-title">🎤 Avatar Cantante <span class="premium-badge">✨ Avatar 97</span></div>
-    <div class="page-sub">O cliente vira o cantor do próprio clipe (até 1 minuto): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
+    <div class="page-sub">O cliente vira o cantor do próprio vídeo.</div>
   </div>
 
   <!-- banner de pedido em andamento -->
   <div class="pending-banner" id="pendingBanner">
     <div class="pending-icon">⏳</div>
     <div class="pending-text">
-      <strong>Tem um clipe em produção</strong>
+      <strong>Tem um vídeo em produção</strong>
       <span id="pendingText"></span>
     </div>
     <button class="btn-pending-check" onclick="resumePending()">Acompanhar</button>
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tabCriar" onclick="showTab('criar')">🎬 Criar clipe</button>
+    <button class="tab active" id="tabCriar" onclick="showTab('criar')">🎬 Criar vídeo</button>
     <button class="tab" id="tabResultados" onclick="showTab('resultados')">📋 Resultados</button>
   </div>
 
@@ -428,20 +435,36 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <!-- PASSO 1 -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
-      <div class="card-title">Quem vai cantar</div>
+      <div class="card-title">Briefing</div>
       <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original — o canto já está gravado com ele. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
         <button type="button" class="btn-destrava" onclick="destravarAvatar()">🎤 Quero trocar o avatar</button>
       </div>
 
-      <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
-           pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
-
-      <div class="card-hint" id="avatarHint">Um botão só: envie <b style="color:var(--text-mid)">até 2 imagens</b> — <b style="color:var(--text-mid)">1 imagem</b> = um avatar; <b style="color:var(--text-mid)">2 imagens</b> = dupla (um cantor de cada imagem; ou mande 1 foto com os dois juntos). Vale pessoa, personagem, produto ou animal — se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra. A IA preserva rosto, roupa, logo e cores. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
+      <!-- (12/09) Briefing no formato do Personagem Animado: categoria + cliente + foto do personagem.
+           Foto/descrição do AMBIENTE não vieram de propósito: no Avatar 97 quem faz esse papel é o
+           Passo 3, que já recebe as fotos e vídeos do comércio, na ordem e com tempo por cena. -->
       <div class="field">
-        <label for="clientName">Nome do cliente</label>
-        <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
+        <label for="fCategoria">Categoria</label>
+        <input type="text" id="fCategoria" maxlength="60" list="catSugestoes" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica"/>
+        <datalist id="catSugestoes">
+          <option value="Alimentação"></option><option value="Padaria e confeitaria"></option>
+          <option value="Açaí e sorveteria"></option><option value="Lanchonete"></option>
+          <option value="Restaurante"></option><option value="Móveis e marcenaria"></option>
+          <option value="Construção e reforma"></option><option value="Clínica e consultório"></option>
+          <option value="Odontologia"></option><option value="Moda e vestuário"></option>
+          <option value="Oficina e automotivo"></option><option value="Pet shop"></option>
+          <option value="Salão e barbearia"></option><option value="Academia"></option>
+          <option value="Mercado"></option><option value="Eventos e festa"></option>
+        </datalist>
       </div>
-      <!-- UM botão só (19/08): até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
+
+      <div class="field">
+        <label for="clientName">Cliente / empresa</label>
+        <input type="text" id="clientName" maxlength="60" placeholder="Ex: Degusta Açaí"/>
+      </div>
+
+      <div class="field" style="margin-bottom:.55rem"><label>Foto do personagem</label></div>
+      <!-- UM botão só: até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
            as miniaturas + o tile de adicionar enquanto houver vaga. -->
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
@@ -451,14 +474,25 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
       <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" multiple hidden/>
 
+      <!-- Atalho: o cliente já mandou a arte do personagem. Entra como avatar, sem a IA redesenhar. -->
+      <div class="cx-montado">
+        <div class="cx-tit">🎨 Já tem o personagem pronto?</div>
+        <div class="cx-sub">Precisa estar em <b>fundo liso</b>, sem cenário: o personagem é recortado pra cantar por cima das fotos do Passo 3.</div>
+        <div class="thumb-row" id="montadoRow">
+          <div class="upload-tile" id="montadoTile" role="button" tabindex="0" onclick="document.getElementById('montadoInput').click()">
+            <span class="big">🖼️</span>
+            <span>Enviar o personagem pronto</span>
+          </div>
+        </div>
+        <input type="file" id="montadoInput" accept="image/*,.heic,.heif" hidden/>
+      </div>
+
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
         <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
-        <div class="gerar-note" id="avatarGenNote" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
-        <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b> — cada geração entra no custo do pedido.</div>
         <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
@@ -479,8 +513,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
-      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 1 minuto)</span></div>
-      <div class="card-hint">Pode enviar <b style="color:var(--text-mid)">qualquer formato de áudio</b> (MP3, M4A do iPhone, WAV, OGG, áudio de WhatsApp…) — a plataforma converte sozinha. A <b style="color:var(--text-mid)">duração da música é a duração do clipe</b> (no máximo 1 minuto): se for maior, o editor de corte abre pra você escolher o trecho; se for menor, usa a música inteira.</div>
+      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 5 minutos)</span></div>
       <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original — é ela que o avatar está cantando. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
         <button type="button" class="btn-destrava" onclick="destravarMusica()">🎵 Quero trocar a música</button>
       </div>
@@ -505,7 +538,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
       <!-- editor de corte (música > 1:00) -->
       <div class="cut-editor" id="cutEditor">
-        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o <b>1 minuto</b> que vai pro clipe:</div>
+        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro vídeo:</div>
         <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
         <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
         <div class="cut-row"><span>O minuto começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
@@ -532,24 +565,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <!-- PASSO 3 — FOTOS E VÍDEOS (calculados pela duração da música) -->
-    <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
-      <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
-      <div class="card-hint">As <b style="color:var(--text-mid)">fotos não são editadas</b>: elas são <b style="color:#2ecc71">melhoradas e estendidas automaticamente</b> pro formato do vídeo. Você só edita <b style="color:var(--text-mid)">vídeos</b> (✏️ escolhe o trecho e o enquadramento).</div>
-      <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:8px">Ligadas (padrão), as cenas entram com fade/wipe. <b>Desligadas</b>, todas as imagens entram em <b style="color:var(--text-mid)">corte seco</b>, uma atrás da outra. A <b>1ª imagem é sempre corte seco</b> (pra capa do WhatsApp não sair preta).</div>
-      <div class="thumb-row" id="scenesRow"></div>
-      <input type="file" id="scenesInput" accept="image/*,video/*,.heic,.heif,.mov,.m4v" multiple hidden/>
-      <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
-      <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
-      <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
-    </div>
-
-    <!-- LINHA DO CLIPE -->
+    <!-- ══════════ PASSO 3 — A LINHA DO VÍDEO ══════════
+         (12/09) Antes eram DOIS cartões: "Fotos e vídeos do comércio" (Passo 3) e a "Linha do clipe"
+         solta embaixo. Viraram um só, pra tela fechar em 3 passos. -->
     <div class="card storyboard-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-        <div class="step-eyebrow" style="margin:0"><span class="dot"></span>Linha do clipe</div>
+        <div>
+          <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
+          <div class="card-title">A linha do vídeo <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
+        </div>
         <!-- 🕺 PERSONAGEM AGITADO — desligado = jeito atual (contido); ligado = jeito antigo, mais solto -->
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span class="sw-label" id="agitadoLbl">Personagem<br/>agitado</span>
@@ -559,17 +583,24 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
           </button>
         </div>
       </div>
-      <div class="card-hint" style="margin-bottom:.4rem">É assim que as mídias vão passar atrás do avatar, na ordem:</div>
+
+      <button type="button" class="btn-trans" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
+      <div class="thumb-row" id="scenesRow"></div>
+      <input type="file" id="scenesInput" accept="image/*,video/*,.heic,.heif,.mov,.m4v" multiple hidden/>
+      <div id="timingNote" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+      <button class="btn-letra" id="btnCasarLetra" onclick="abrirCasarLetra()">🎵 Casar imagens com a letra da música</button>
+      <div id="lyricStatus" style="display:none;margin-top:8px;font-size:12.5px"></div>
+
       <div class="storyboard" id="storyboard"></div>
       <div id="cutNote" style="font-size:11.5px;color:var(--text-dim);margin:8px 0 2px;min-height:16px"></div>
       <div class="sb-meta">
-        <span class="sb-total">Duração: <b id="sbDur">1:00</b> · cena 1 = entrada do cantor 🎤</span>
+        <span class="sb-total">Duração: <b id="sbDur">—</b> · cena 1 = entrada do cantor 🎤</span>
         <span class="sb-cost" id="sbCost"></span>
       </div>
     </div>
 
-    <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">🎬 Gerar o clipe</button>
-    <div class="gerar-note">A produção leva ~15 a 20 minutos e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
+    <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">🎬 Gerar o vídeo</button>
+    <div class="gerar-note">A produção continua sozinha — pode fechar a aba.</div>
 
   </div>
 
@@ -582,13 +613,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <div class="spinner"></div>
         <div>
           <div class="status-step" id="statusStep">Preparando…</div>
-          <div class="status-sub" id="statusSub">Pode fechar a aba — o clipe termina sozinho e aparece aqui.</div>
+          <div class="status-sub" id="statusSub">Pode fechar a aba — o vídeo termina sozinho e aparece aqui.</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Clipes</div>
+      <div class="step-eyebrow"><span class="dot"></span>Vídeos</div>
       <div id="ordersList"><div class="empty-state">Carregando…</div></div>
     </div>
 
@@ -696,7 +727,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="editor-overlay" id="videoEditorOverlay">
   <div class="editor-box">
     <h3>🎬 Editar o vídeo</h3>
-    <div class="hint">Arraste as <b style="color:var(--gold)">alças douradas</b> na linha do tempo pra escolher o <b style="color:var(--text-mid)">início e o fim</b> do trecho que vai entrar no clipe. A onda mostra onde tem som. Use o <b style="color:var(--text-mid)">zoom</b> pra enquadrar no 9:16 e <b>▶ Ver o trecho</b> pra conferir antes de cortar.</div>
+    <div class="hint">Arraste as <b style="color:var(--gold)">alças douradas</b> na linha do tempo pra escolher o <b style="color:var(--text-mid)">início e o fim</b> do trecho que vai entrar no vídeo. A onda mostra onde tem som. Use o <b style="color:var(--text-mid)">zoom</b> pra enquadrar no 9:16 e <b>▶ Ver o trecho</b> pra conferir antes de cortar.</div>
     <div id="veFrame" style="position:relative;width:200px;height:356px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;touch-action:none">
       <video id="veVideo" muted playsinline preload="metadata" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"></video>
     </div>
@@ -755,9 +786,9 @@ const MAX_IMAGE_DIMENSION = 1536;   // redimensiona no navegador (custo/upload)
 const IMAGE_QUALITY = 0.85;
 
 const NUM_SCENES    = 6;            // FIXO: 6 fotos = 6 cenas
-const VIDEO_SECONDS = 60;           // FIXO: clipe de 1 minuto
+const VIDEO_SECONDS = 300;          // TETO do vídeo = 5 min (12/09). Era 60. O custo é POR SEGUNDO — 60s ≈ R$19, 300s ≈ R$92.
 const OUT_W = 1080, OUT_H = 1920;   // editor de enquadramento 9:16
-const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
+const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // (só o código morto do casamento por vocal usa isto)
 const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
 const MAX_MEDIA      = 20;          // até 20 fundos (fotos + vídeos) atrás do avatar
 const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
@@ -975,6 +1006,30 @@ window.addEventListener('paste', async (e) => {
   if (!item) return;
   const file = item.getAsFile();
   if (file) { e.preventDefault(); await addAvatarImage(file); }
+});
+
+// ───────────────────────────────────────────────
+// PASSO 1 — atalho "já tem o personagem pronto" (12/09)
+// A arte do cliente entra DIRETO como avatar aprovável, sem chamar a IA (não gera custo de desenho).
+// O back exige clientPhoto mesmo quando recebe cartoonApproved, então a mesma imagem vai nos dois
+// campos — o clientPhoto vira só o registro da origem.
+// ⚠️ Precisa ser fundo liso: o recorte (matte) tira o fundo do vídeo cantado; com cenário, ele gruda.
+// ───────────────────────────────────────────────
+document.getElementById('montadoInput').addEventListener('change', async (e) => {
+  const f = (e.target.files || [])[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const opt = await fileToOptimizedImage(f, true);          // keepPng: o preview e o envio usam PNG
+    clientPhoto  = { ...opt, name: f.name || 'personagem.png' };
+    clientPhoto2 = null;                                       // arte pronta é sempre uma imagem só
+    avatarPreview = { cartoonBase64: opt.base64, approved: false, montado: true };
+    renderClientPhoto();
+    refreshAvatarUI();
+    renderStoryboard();
+    toast('🎨 Personagem carregado — confira e aprove.');
+  } catch (err) {
+    toast('⚠️ ' + (err && err.message ? err.message : 'não consegui ler a imagem'));
+  }
 });
 
 async function setClientPhotoFromFile(file) {
@@ -1500,7 +1555,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
         try { meta = await getVideoMeta(file); } catch (e) { /* segue pelo cabeçalho */ }
         const abriu = !!(meta && meta.duration > 0);
         let up = file, realDur = abriu ? meta.duration : await lerDuracaoContainer(file);
-        if (!abriu) toast('ℹ️ ' + file.name + ': seu computador não abre esse formato de vídeo (H.265), mas ele funciona no clipe — enviando o original.');
+        if (!abriu) toast('ℹ️ ' + file.name + ': seu computador não abre esse formato de vídeo (H.265), mas ele funciona no vídeo — enviando o original.');
         // vídeo grande → compacta no navegador (máx 1080p, sem áudio) pra caber no teto do Cloudflare (100MB).
         // Só dá pra compactar o que o navegador consegue abrir.
         if (abriu && file.size > COMPACT_ABOVE_MB * 1024 * 1024) {
@@ -1869,7 +1924,7 @@ function setClipDur(id, val) {
 function videoDur() { return (music && music.duration) ? Math.round(music.duration) : 0; }   // duração do clipe = duração da música
 function computeTiming() {
   const D = videoDur();
-  if (!D) return { ok: false, photoDur: 0, msg: 'Envie a música no Passo 2 primeiro — ela define a duração do clipe.' };
+  if (!D) return { ok: false, photoDur: 0, msg: 'Envie a música no Passo 2 primeiro — ela define a duração do vídeo.' };
   const vids = scenes.filter(s => s.kind === 'video');
   const photos = scenes.filter(s => s.kind !== 'video');
   const vidSum = vids.reduce((a, s) => a + (parseFloat(s.dur) || 0), 0);
@@ -2762,8 +2817,11 @@ function renderStoryboard() {
   const D = videoDur() || VIDEO_SECONDS;
   const note = document.getElementById('cutNote');
   if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar ' + fmtTime(D) + ').' : '';
+  // (12/09) Com o teto em 5 min, cair no VIDEO_SECONDS quando ainda não há música fazia a tela abrir
+  // anunciando ~R$87 — assustava sem motivo. Enquanto não há música, não há duração nem preço.
+  const semMusica = !editState && !videoDur();
   const durEl = document.getElementById('sbDur');
-  if (durEl) durEl.textContent = fmtTime(D);
+  if (durEl) durEl.textContent = semMusica ? '—' : fmtTime(D);
 
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;   // dupla = InfiniteTalk (2×)
   // Na EDIÇÃO o preço depende do que a atendente destravou: só remontar (~R$1) × regravar o canto (caro).
@@ -2771,7 +2829,9 @@ function renderStoryboard() {
     ? custoEdicaoBRL()
     : (EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC)) * EST_CAMBIO;   // cartoon + melhoria das fotos + lipsync + recorte + montagem
   const costEl = document.getElementById('sbCost');
-  if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por clipe') + '</small>';
+  if (costEl) costEl.innerHTML = semMusica
+    ? '<small>o preço sai com a música</small>'
+    : ('≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por vídeo') + '</small>');
 }
 
 // ───────────────────────────────────────────────
@@ -2845,7 +2905,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, agitado: agitado, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, agitado: agitado, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2869,6 +2929,7 @@ async function gerarClipe() {
     }
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
+      categoria: (document.getElementById('fCategoria').value || '').trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       tipo: avatarTipo,   // dupla/personagemDupla → o canto roda no InfiniteTalk (membros estáveis)
@@ -2910,14 +2971,14 @@ async function gerarClipe() {
     addPending(d1.orderId, payload.clientName);
     resetCreateForm();   // form limpo: evita 2º clique gerar pedido DUPLICADO (~R$20) sem querer
 
-    toast('🎬 Produção iniciada! Pode gerar outro clipe enquanto este fica pronto.');
+    toast('🎬 Produção iniciada! Pode gerar outro vídeo enquanto este fica pronto.');
     showTab('resultados');
     startPolling();
   } catch (err) {
     toast('⚠️ ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = editState ? '💾 Salvar edição' : '🎬 Gerar o clipe';
+    btn.textContent = editState ? '💾 Salvar edição' : '🎬 Gerar o vídeo';
   }
 }
 
@@ -2944,7 +3005,7 @@ function updateLiveBanner() {
   if (n > 0) {
     live.classList.add('show');
     document.getElementById('statusStep').textContent =
-      (n === 1) ? 'Produzindo 1 clipe…' : ('Produzindo ' + n + ' clipes ao mesmo tempo…');
+      (n === 1) ? 'Produzindo 1 vídeo…' : ('Produzindo ' + n + ' vídeos ao mesmo tempo…');
   } else { live.classList.remove('show'); }
 }
 
@@ -2966,7 +3027,7 @@ function startPolling() {
         try {
           const resp = await api('/checkStatus?orderId=' + encodeURIComponent(p.orderId));
           const d = await resp.json();
-          if (d.status === 'completed' && d.videoUrl) { removePending(p.orderId); toast('✅ Clipe de "' + p.clientName + '" pronto!'); mudou = true; }
+          if (d.status === 'completed' && d.videoUrl) { removePending(p.orderId); toast('✅ Vídeo de "' + p.clientName + '" pronto!'); mudou = true; }
           else if (d.status === 'error') { removePending(p.orderId); toast('⚠️ "' + p.clientName + '" falhou: ' + (d.error || 'erro')); mudou = true; }
         } catch (e) { /* rede oscilou — próximo tick tenta de novo */ }
       }
@@ -2994,7 +3055,7 @@ async function loadOrders() {
     const resp = await api('/listOrders');
     const d = await resp.json();
     // (03/09) ERRO do servidor NÃO é "lista vazia": antes, um 401/403 (sessão expirada) caía no mesmo
-    // "Nenhum clipe ainda" e escondia a causa — o admin achava que os pedidos tinham sumido.
+    // "Nenhum vídeo ainda" e escondia a causa — o admin achava que os pedidos tinham sumido.
     if (!d.ok) {
       const expirou = (resp.status === 401 || resp.status === 403);
       el.innerHTML = '<div class="empty-state">⚠️ ' +
@@ -3007,7 +3068,7 @@ async function loadOrders() {
     const ehAdmin = (d.viewMode === 'admin');   // admin vê o atendente de cada pedido; atendente vê só os seus
     const orders = (d.orders || []).filter(o => o.kind === 'avatar');
     if (!orders.length) {
-      el.innerHTML = '<div class="empty-state">Nenhum clipe ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤' +
+      el.innerHTML = '<div class="empty-state">Nenhum vídeo ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar vídeo</b>. 🎤' +
         '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
       return;
     }
@@ -3058,6 +3119,7 @@ async function editarClipe(orderId) {
     editState = { sourceOrderId: orderId, musicChanged: false };
     editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false;   // toda edição começa com avatar e música TRAVADOS
     document.getElementById('clientName').value = d.clientName || '';
+    document.getElementById('fCategoria').value = d.categoria || '';
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
     avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
@@ -3137,7 +3199,7 @@ function aplicarModoEdicao(d) {
     const pl = document.getElementById('player'); if (pl) pl.src = d.musicUrl || '';
   }
   const btn = document.getElementById('btnGerar');
-  if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : '🎬 Gerar o clipe';
+  if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : '🎬 Gerar o vídeo';
 }
 
 // ── EDIÇÃO: destravar avatar / música (sempre avisando o custo e o tempo ANTES) ──────────────
@@ -3305,7 +3367,7 @@ function checkPending() {
   if (!list.length) return;
   document.getElementById('pendingText').textContent = (list.length === 1)
     ? ('Clipe de "' + list[0].clientName + '" — toque em Acompanhar pra ver o andamento.')
-    : (list.length + ' clipes em produção — toque em Acompanhar pra ver o andamento.');
+    : (list.length + ' vídeos em produção — toque em Acompanhar pra ver o andamento.');
   document.getElementById('pendingBanner').classList.add('show');
 }
 
