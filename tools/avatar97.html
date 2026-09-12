@@ -508,7 +508,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn-mini" id="btnRegenAvatar" onclick="gerarAvatar()" style="flex:1">🔄 Gerar de novo</button>
-          <button class="btn-gold" onclick="aprovarAvatar()" style="flex:2">✓ Aprovar avatar</button>
+
         </div>
       </div>
       <!-- Avatar aprovado -->
@@ -1043,6 +1043,7 @@ document.getElementById('montadoInput').addEventListener('change', async (e) => 
     clientPhoto  = { ...opt, name: f.name || 'personagem.png' };
     clientPhoto2 = null; clientPhoto3 = null;                  // arte pronta é sempre uma imagem só
     avatarPreview = { cartoonBase64: opt.base64, approved: true, montado: true };   // (12/09) vai direto pra geração do vídeo, sem gerar imagem
+    { const im = document.getElementById('avatarPreviewImg'); if (im) im.src = opt.thumbUrl; }   // o editor mostra a arte enviada
     renderClientPhoto();
     refreshAvatarUI();
     renderStoryboard();
@@ -1123,8 +1124,8 @@ function refreshAvatarUI() {
   const hasPhoto = !!clientPhoto, hasPrev = !!avatarPreview;
   const approved = hasPrev && avatarPreview.approved;
   genRow.style.display  = (hasPhoto && !hasPrev) ? 'block' : 'none';
-  preview.style.display = (hasPrev && !approved) ? 'block' : 'none';
-  okBadge.style.display = approved ? 'block' : 'none';
+  preview.style.display = hasPrev ? 'block' : 'none';   // (12/09) o editor fica aberto com a imagem: ajustar, gerar de novo, baixar
+  okBadge.style.display = 'none';   // (12/09) sem etapa de aprovação
 }
 
 // Normaliza a posição do avatar: mede onde estão os PÉS (ignorando braços esticados) e
@@ -1244,7 +1245,7 @@ async function gerarAvatar() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
     const normB64 = j.cartoonBase64;   /* (12/09) Avatar 97: a imagem JÁ é a cena final — recentralizar os pés estragaria o ambiente */   // centraliza os pés + padroniza p/ cair sempre no centro do palco
-    avatarPreview = { cartoonBase64: normB64, approved: false };
+    avatarPreview = { cartoonBase64: normB64, approved: true };   // (12/09) Avatar 97: sem aprovação, a imagem gerada já vale para o vídeo
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
@@ -2876,7 +2877,7 @@ function validar() {
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
-      return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 1) — ou recarregue a página pra manter o avatar antigo.';
+      return 'Você liberou a troca do avatar: envie a imagem e gere o novo personagem (Passo 1), ou recarregue a página pra manter o antigo.';
     if (editTrocaMusica && !(music && music.base64))
       return 'Você liberou a troca da música: envie o novo MP3 (Passo 2) — ou recarregue a página pra manter a música antiga.';
     // (12/09) Avatar 97: não há fotos de fundo para exigir
@@ -2892,7 +2893,7 @@ function validar() {
     return '';
   }
   if (!clientPhoto) return 'Envie a foto do Personagem 1 (Passo 1).';
-  if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
+  if (!avatarPreview || !avatarPreview.approved) return 'Gere a imagem do personagem (Passo 1).';
   if (!music) return 'Envie a música (Passo 2).';
   // (12/09) Avatar 97: não há fotos de fundo para exigir
   if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
@@ -3269,7 +3270,7 @@ function destravarAvatar() {
   try { renderClientPhoto2(); } catch (e) {}
   aplicarModoEdicao(null);
   renderStoryboard();
-  toast('🎤 Avatar liberado — envie a imagem no Passo 1, gere e APROVE o novo avatar.');
+  toast('🎤 Avatar liberado — envie a imagem no Passo 1 e gere o novo personagem.');
 }
 function destravarMusica() {
   if (!editState || editTrocaMusica) return;
