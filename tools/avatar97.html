@@ -253,13 +253,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   background:linear-gradient(180deg,rgba(201,168,76,.05),rgba(201,168,76,.015));
   border:.5px solid var(--border-bright);
 }
-/* Atalho "já tem o personagem pronto" (Passo 1) — caixa discreta, separada do fluxo normal */
-.cx-montado{
-  margin-top:1rem;padding:.85rem .9rem;border-radius:12px;
-  border:.5px dashed var(--border-bright);background:rgba(255,255,255,.018);
-}
-.cx-montado .cx-tit{font-size:13.5px;font-weight:600;color:var(--gold);margin-bottom:.3rem}
-.cx-montado .cx-sub{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:.6rem}
 .storyboard{display:flex;gap:6px;overflow-x:auto;padding:10px 2px 12px;scrollbar-width:thin}
 .sb-cell{flex-shrink:0;width:66px;text-align:center}
 .sb-frame{
@@ -480,19 +473,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" hidden/>
       <input type="file" id="clientPhoto2Input" accept="image/*,.heic,.heif" hidden/>
       <input type="file" id="clientPhoto3Input" accept="image/*,.heic,.heif" hidden/>
-
-      <!-- Atalho: o cliente já mandou a arte do personagem. Entra como avatar, sem a IA redesenhar. -->
-      <div class="cx-montado">
-        <div class="cx-tit">🎨 Já tem o personagem pronto?</div>
-        
-        <div class="thumb-row" id="montadoRow">
-          <div class="upload-tile" id="montadoTile" role="button" tabindex="0" onclick="document.getElementById('montadoInput').click()">
-            <span class="big">🖼️</span>
-            <span>Enviar o personagem pronto</span>
-          </div>
-        </div>
-        <input type="file" id="montadoInput" accept="image/*,.heic,.heif" hidden/>
-      </div>
 
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
@@ -1039,31 +1019,6 @@ window.addEventListener('paste', async (e) => {
   if (!item) return;
   const file = item.getAsFile();
   if (file) { e.preventDefault(); await addAvatarImage(file); }
-});
-
-// ───────────────────────────────────────────────
-// PASSO 1 — atalho "já tem o personagem pronto" (12/09)
-// A arte do cliente entra DIRETO como avatar aprovável, sem chamar a IA (não gera custo de desenho).
-// O back exige clientPhoto mesmo quando recebe cartoonApproved, então a mesma imagem vai nos dois
-// campos — o clientPhoto vira só o registro da origem.
-// ⚠️ Precisa ser fundo liso: o recorte (matte) tira o fundo do vídeo cantado; com cenário, ele gruda.
-// ───────────────────────────────────────────────
-document.getElementById('montadoInput').addEventListener('change', async (e) => {
-  const f = (e.target.files || [])[0]; e.target.value = '';
-  if (!f) return;
-  try {
-    const opt = await fileToOptimizedImage(f, true);          // keepPng: o preview e o envio usam PNG
-    clientPhoto  = { ...opt, name: f.name || 'personagem.png' };
-    clientPhoto2 = null; clientPhoto3 = null;                  // arte pronta é sempre uma imagem só
-    avatarPreview = { cartoonBase64: opt.base64, approved: true, montado: true };   // (12/09) vai direto pra geração do vídeo, sem gerar imagem
-    { const im = document.getElementById('avatarPreviewImg'); if (im) im.src = opt.thumbUrl; }   // o editor mostra a arte enviada
-    renderClientPhoto();
-    refreshAvatarUI();
-    renderStoryboard();
-    toast('🎨 Personagem pronto — já vai direto para o vídeo.');
-  } catch (err) {
-    toast('⚠️ ' + (err && err.message ? err.message : 'não consegui ler a imagem'));
-  }
 });
 
 async function setClientPhotoFromFile(file) {
@@ -3015,7 +2970,7 @@ async function gerarClipe() {
       }
       // AVATAR NOVO (07/09): manda o cartoon recém-aprovado — o Worker regrava o canto e o recorte com ele.
       if (editTrocaAvatar && avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64) {
-        payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 }; payloadE.montado = !!avatarPreview.montado;
+        payloadE.cartoonApproved = { base64: avatarPreview.cartoonBase64 };
         payloadE.tipo = avatarTipo;
       }
       payloadE.cartoonGens = cartoonGens; payloadE.cartoonGensRes = cartoonGensRes; payloadE.lyricSeconds = lyricSegs;
@@ -3034,7 +2989,7 @@ async function gerarClipe() {
       clientName: document.getElementById('clientName').value.trim(),
       categoria: (document.getElementById('fCategoria').value || '').trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
-      cartoonApproved: { base64: avatarPreview.cartoonBase64 }, montado: !!avatarPreview.montado,
+      cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       tipo: avatarTipo,   // dupla/personagemDupla → o canto roda no InfiniteTalk (membros estáveis)
       avatarCalib: avatarCalib,
       avScale: avScale,
