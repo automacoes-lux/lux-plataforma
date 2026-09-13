@@ -383,7 +383,7 @@ body{
       </div>
 
       <div class="field">
-        <label for="rmkDias">3 · Dias de espera</label>
+        <label for="rmkDias">3 · Dias úteis de espera</label>
         <div class="rmk-dias">
           <button type="button" aria-label="Menos um dia" onclick="rmkDias(-1)">−</button>
           <input id="rmkDias" type="number" min="1" max="7" value="2" inputmode="numeric" oninput="rmkExplicar()"/>
@@ -1200,22 +1200,25 @@ function rmkDias(delta) {
   document.getElementById('rmkOk').hidden = true;
 }
 
-// A MESMA regra do lux-agente: chegou no dia D → recebe em D + N; se cair no
-// sábado ou domingo, vai na segunda. A grade mostra de onde vem cada envio.
+// A MESMA regra do lux-agente (Thiago, 13/09/2026): conta só DIAS ÚTEIS. Quem chegou num
+// dia útil recebe N dias úteis depois; quem chama no sábado ou domingo não entra (fica só na
+// lista de retomada de segunda). Cada dia útil recebe os clientes de um dia só.
 function rmkExplicar() {
   let n = parseInt(document.getElementById('rmkDias').value, 10);
   if (!(n >= 1 && n <= 7)) n = 2;
   const CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-  const envioDe = function (d) { const e = (d + n) % 7; return (e === 6 || e === 0) ? 1 : e; };
+  // dia útil do contato (1 = seg … 5 = sex) → dia útil do envio
+  const envioDe = function (d) { return ((d - 1 + n) % 5) + 1; };
   const grade = { 1: [], 2: [], 3: [], 4: [], 5: [] };
-  [1, 2, 3, 4, 5, 6, 0].forEach(function (d) { grade[envioDe(d)].push(d); });
+  [1, 2, 3, 4, 5].forEach(function (d) { grade[envioDe(d)].push(d); });
   document.getElementById('rmkCal').innerHTML = [1, 2, 3, 4, 5].map(function (e) {
     return '<div><b>' + CURTO[e] + '</b>' +
       (grade[e].length ? 'clientes de ' + grade[e].map(function (d) { return CURTO[d]; }).join(', ') : '—') + '</div>';
   }).join('');
   document.getElementById('rmkExplica').textContent =
-    'Quem chamou há ' + n + (n === 1 ? ' dia' : ' dias') + ' e não fechou recebe no mesmo horário em que chamou. ' +
-    'Sábado e domingo não sai nada — o que cairia no fim de semana vai na segunda. No máximo 25 envios por atendente por dia; o que passar vai no próximo dia útil, no mesmo horário:';
+    'Quem chamou há ' + n + (n === 1 ? ' dia útil' : ' dias úteis') + ' e não fechou recebe no mesmo horário em que chamou. ' +
+    'Sábado e domingo não contam: nada sai no fim de semana, e quem chama no sábado ou domingo não entra no remarketing (vai só na lista de segunda, se ficar pendência). ' +
+    'No máximo 25 envios por atendente por dia; o que passar vai no próximo dia útil, no mesmo horário:';
 }
 
 function rmkStatus(st, cfg) {
@@ -1278,7 +1281,7 @@ async function rmkSalvar() {
     ok.hidden = false;
     ok.innerHTML = '✓ <b>Salvo e configurado</b> às ' +
       new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
-      '. Imagem primeiro, mensagem em seguida, ' + dias + (dias === 1 ? ' dia' : ' dias') + ' depois do contato.' +
+      '. Imagem primeiro, mensagem em seguida, ' + dias + (dias === 1 ? ' dia útil' : ' dias úteis') + ' depois do contato.' +
       (d.refazLista ? '<br>Os dias mudaram: a lista de hoje é refeita com a regra nova em até 5 minutos.' : '');
     toast('Remarketing salvo', 'success');
     rmkRecarregarStatus();

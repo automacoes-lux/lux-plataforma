@@ -204,8 +204,8 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .btn-trans.off{background:transparent;color:var(--text-dim);border-color:var(--border-bright)}
 .btn-trans.off:hover{border-color:var(--gold);color:var(--gold)}
 
-/* 🕺 PERSONAGEM AGITADO — interruptor no canto da "Linha do clipe" (modelo que o Thiago mandou:
-   pílula escura, borda que acende, texto e bolinha verdes quando ligado). DESLIGADO por padrão. */
+/* INTERRUPTOR (Mascote ativado / Trecho livre) — modelo que o Thiago mandou: pílula escura, borda que
+   acende, texto e bolinha verdes quando ligado. DESLIGADO por padrão. */
 .sw{
   position:relative;display:inline-flex;align-items:center;justify-content:space-between;
   width:68px;height:30px;padding:0 7px;border-radius:999px;cursor:pointer;flex-shrink:0;
@@ -220,6 +220,14 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .sw.on .sw-knob{background:#22e06a;box-shadow:0 0 10px rgba(34,224,106,.85);order:2}
 .sw-label{font-size:11.5px;line-height:1.25;text-align:right;color:var(--text-dim);transition:color .18s}
 .sw-label.on{color:#22e06a;font-weight:700}
+
+/* (13/09) CHECKLIST do Passo 3 — lista vertical: ✅ pronto / ❌ falta; a última linha diz pessoa ou mascote */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0 6px}
+.checklist li{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.35;color:var(--text)}
+.checklist li.falta{color:var(--text-dim)}
+.checklist li.modo{margin-top:3px;padding-top:11px;border-top:.5px solid var(--border-bright);color:var(--text-mid);font-weight:600}
+.checklist .ck-ico{flex-shrink:0;width:20px;text-align:center}
+.checklist small{font-size:12px;color:var(--text-dim);font-weight:400}
 
 /* EDITOR DE CORTE (1:00) */
 .cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:4px}
@@ -462,7 +470,17 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Degusta Açaí"/>
       </div>
 
-      <div class="field" style="margin-bottom:.55rem"><label>Foto do personagem / pessoa / ambiente</label></div>
+      <div class="field" style="margin-bottom:.55rem;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <label style="margin:0">Foto do personagem / pessoa / ambiente</label>
+        <!-- (13/09) MASCOTE ATIVADO — desligado = pessoa; ligado = mascote, produto ou personagem (o canto usa outro motor) -->
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="sw-label" id="mascoteLbl">Mascote<br/>ativado</span>
+          <button type="button" class="sw" id="btnMascote" role="switch" aria-checked="false" onclick="toggleMascote()"
+                  title="Ligue quando quem canta é um mascote, produto ou personagem. Desligado: pessoa.">
+            <span class="sw-knob"></span><span class="sw-txt" id="mascoteState">Off</span>
+          </button>
+        </div>
+      </div>
       <!-- (12/09) TRÊS espaços com PAPEL fixo. Com um botão só o modelo não sabia qual foto era o quê e
            ignorava o 2º personagem. O papel de cada foto vai junto para o worker e abre o prompt. -->
       <div class="thumb-row" id="clientPhotoRow">
@@ -573,15 +591,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
           <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
           <span id="sceneCount" hidden></span>
         </div>
-        <!-- 🕺 PERSONAGEM AGITADO — desligado = jeito atual (contido); ligado = jeito antigo, mais solto -->
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <span class="sw-label" id="agitadoLbl">Personagem<br/>agitado</span>
-          <button type="button" class="sw" id="btnAgitado" role="switch" aria-checked="false" onclick="toggleAgitado()"
-                  title="Ligado: o personagem canta bem mais animado (jeito antigo). Em troca, as perninhas costumam tremer.">
-            <span class="sw-knob"></span><span class="sw-txt" id="agitadoState">Off</span>
-          </button>
-        </div>
       </div>
+      <!-- (13/09) o botão "Personagem agitado" saiu; no lugar, o checklist do que falta antes de gerar -->
+      <ul class="checklist" id="checklist"></ul>
 
       <!-- (12/09) Avatar 97: controles da linha de fotos ESCONDIDOS, não apagados — há código que roda no
            carregamento e procura estes ids sem testar; apagar derrubaria a tela inteira. -->
@@ -834,7 +846,8 @@ let editTrocaAvatar = false;       // atendente liberou trocar o avatar
 let editTrocaMusica = false;       // atendente liberou trocar a música
 let _avisouMidia = false;          // aviso de custo ao mexer nas mídias — 1x por edição
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
-let agitado = false;               // Passo 1: 'Personagem agitado' — DESLIGADO por padrão (canto contido, o de hoje)
+let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
+let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
 let pollTimer = null;
@@ -2291,22 +2304,47 @@ function toggleTransicoes() {
   setTransBtn();
   toast(transicoes ? '🎞️ Transições ligadas.' : '✂️ Corte seco: as cenas vão trocar sem transição.');
 }
-// 🕺 PERSONAGEM AGITADO (09/09) — troca o prompt do canto no servidor. Desligado = o de hoje (contido).
-// Ligado = o PRIMEIRO prompt da ferramenta (25/07): bem mais expressivo, mas costuma tremer as pernas.
-function toggleAgitado() {
-  agitado = !agitado;
-  setAgitBtn();
-  toast(agitado ? '🕺 Personagem agitado LIGADO — mais movimento; a perna pode tremer.' : '🙂 Personagem contido (padrão).');
+// (13/09) MASCOTE ATIVADO — o canto de mascote/produto/personagem usa outro motor, com o mesmo prompt e o
+// mesmo preço. Desligado = pessoa. Na EDIÇÃO, mudar a chave obriga a regravar o canto: avisa o custo antes.
+function toggleMascote() {
+  if (editState && !editRegravaCanto() && mascote === mascoteOriginal) {
+    if (!confirm(_avisoRegravar('para ' + (mascote ? 'pessoa' : 'mascote'), false))) return;
+  }
+  mascote = !mascote;
+  setMascoteBtn();
+  if (editState) { aplicarModoEdicao(null); renderStoryboard(); }   // banner, texto do botão e preço da edição
+  toast(mascote ? '🐶 Configurado para mascote.' : '🧑 Configurado para pessoa.');
 }
-function setAgitBtn() {
-  const b = document.getElementById('btnAgitado');
-  const e = document.getElementById('agitadoState');
-  const l = document.getElementById('agitadoLbl');
-  if (b) { b.classList.toggle('on', agitado); b.setAttribute('aria-checked', agitado ? 'true' : 'false'); }
-  if (e) e.textContent = agitado ? 'On' : 'Off';
-  // o rótulo do lado diz o estado por extenso — é o que a atendente lê de relance
-  if (l) { l.classList.toggle('on', agitado); l.innerHTML = agitado ? 'Personagem agitado<br/>LIGADO' : 'Personagem<br/>agitado'; }
+function setMascoteBtn() {
+  const b = document.getElementById('btnMascote');
+  const e = document.getElementById('mascoteState');
+  const l = document.getElementById('mascoteLbl');
+  if (b) { b.classList.toggle('on', mascote); b.setAttribute('aria-checked', mascote ? 'true' : 'false'); }
+  if (e) e.textContent = mascote ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', mascote);
+  renderChecklist();
 }
+// (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
+function renderChecklist() {
+  const ul = document.getElementById('checklist');
+  if (!ul) return;
+  const campo = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const imagemPronta = !!(avatarPreview && avatarPreview.approved && (avatarPreview.cartoonBase64 || avatarPreview.cartoonUrl));
+  const ed = document.getElementById('cutEditor');
+  const corteAberto = !music && !!rawAudioBuffer && !!ed && ed.classList.contains('show');
+  const itens = [
+    [!!campo('fCategoria'), 'Categoria', ''],
+    [!!campo('clientName'), 'Nome do cliente', ''],
+    [imagemPronta, 'Foto do personagem', (clientPhoto && !imagemPronta) ? 'falta gerar a imagem' : ''],
+    [!!music, 'Música', corteAberto ? 'falta clicar em Cortar e usar' : '']
+  ];
+  ul.innerHTML = itens.map(([ok, nome, dica]) =>
+      '<li class="' + (ok ? 'ok' : 'falta') + '"><span class="ck-ico">' + (ok ? '✅' : '❌') + '</span><span>' + nome +
+      (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
+    '<li class="modo"><span class="ck-ico">' + (mascote ? '🐶' : '🧑') + '</span><span>Configurado para ' +
+      (mascote ? 'mascote' : 'pessoa') + '</span></li>';
+}
+['fCategoria', 'clientName'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', renderChecklist); });
 function setTransBtn() {
   const b = document.getElementById('btnTrans');
   const s = document.getElementById('transState');
@@ -2890,6 +2928,7 @@ function renderStoryboard() {
   if (costEl) costEl.innerHTML = semMusica
     ? '<small>o preço sai com a música</small>'
     : ('≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por vídeo') + '</small>');
+  renderChecklist();   // (13/09) o checklist do Passo 3 acompanha tudo que redesenha duração e preço
 }
 
 // ───────────────────────────────────────────────
@@ -2963,7 +3002,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, agitado: agitado, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, mascote: mascote, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -2979,7 +3018,7 @@ async function gerarClipe() {
       if (!de.ok) throw new Error(de.error || 'Falha ao salvar a edição.');
       cartoonGens = 0; cartoonGensRes = 0; lyricSegs = 0;   // já foram cobrados nesta edição
       addPending(de.orderId, nome + ' (edição)');
-      toast('💾 ' + (de.musicaNova ? 'Edição em produção — trocou a música, então o canto é refeito (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).'));
+      toast('💾 ' + (de.refazCanto ? 'Edição em produção — o canto é regravado (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).'));   // (13/09) refazCanto cobre avatar, música e chave Mascote
       sairEdicao();
       showTab('resultados');
       startPolling();
@@ -2996,7 +3035,7 @@ async function gerarClipe() {
       backgrounds: bgs,
       bgExpected: scenes.length,
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
-      agitado: agitado,                      // interruptor do Passo 1: canto mais solto (prompt antigo)
+      mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
@@ -3186,8 +3225,9 @@ async function editarClipe(orderId) {
     // desfazendo a escolha da atendente. _cfgCarregada confirma isso ao salvar (trava no Worker).
     avScale      = (typeof d.avScale === 'number') ? d.avScale : AVSCALE_MAX;
     transicoes   = !d.semTransicao;
-    agitado      = !!d.agitado;   // reacende o botão do jeito que o vídeo original foi feito
-    setAgitBtn();
+    mascote      = !!d.mascote;   // (13/09) reacende a chave "Mascote ativado" do jeito que o vídeo original foi feito
+    mascoteOriginal = mascote;
+    setMascoteBtn();
     _cfgCarregada = (typeof d.avScale === 'number');
     setTransBtn();
     music = { fromEdit: true, url: d.musicUrl || '', duration: d.videoSec || 60, name: 'Música atual (mantida)' };
@@ -3225,10 +3265,10 @@ function aplicarModoEdicao(d) {
   if (banner) {
     banner.style.display = on ? 'flex' : 'none';
     if (on) {
-      const trocou = [editTrocaAvatar ? 'avatar' : '', editTrocaMusica ? 'música' : ''].filter(Boolean).join(' e ');
+      const trocou = [editTrocaAvatar ? 'o avatar' : '', editTrocaMusica ? 'a música' : '', (mascote !== mascoteOriginal) ? ('para ' + (mascote ? 'mascote' : 'pessoa')) : ''].filter(Boolean).join(' e ');   // (13/09) + chave Mascote
       document.getElementById('editBannerText').textContent =
         '"' + ((d && d.clientName) || '') + '" — ' + (trocou
-          ? ('trocando o ' + trocou + ': o canto vai ser regravado.')
+          ? ('trocando ' + trocou + ': o canto vai ser regravado.')
           : 'o personagem e a música são mantidos; só a edição é cobrada.');
       const img = document.getElementById('editBannerImg'); if (img && d) img.src = d.cartoonUrl || '';
     }
@@ -3263,7 +3303,7 @@ function aplicarModoEdicao(d) {
 // ── EDIÇÃO: destravar avatar / música (sempre avisando o custo e o tempo ANTES) ──────────────
 // Trocar qualquer um dos dois obriga a REGRAVAR o canto e o recorte — é o pedaço caro do vídeo.
 // O que a edição preserva de verdade é o melhoramento das FOTOS, que não é refeito nem recobrado.
-function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTrocaMusica); }
+function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTrocaMusica || mascote !== mascoteOriginal); }   // (13/09) mudar a chave Mascote também regrava
 function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && !s.srcKey).length; }
 // Quanto esta edição vai custar, do jeito que a tela está agora.
 function custoEdicaoBRL() {
@@ -3322,7 +3362,7 @@ function resetCreateForm() {
   scenes = [];
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
-  agitado = false; setAgitBtn();      // volta ao padrão (personagem contido)
+  mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -3345,7 +3385,7 @@ function sairEdicao() {
   scenes = [];
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
-  agitado = false; setAgitBtn();      // volta ao padrão (personagem contido)
+  mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
