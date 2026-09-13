@@ -215,6 +215,37 @@ body{
 .tab-btn:hover{border-color:var(--border-bright);color:var(--gold-dim)}
 .tab-btn.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
 
+/* ─── Remarketing Automático ────────────────────────────── */
+.rmk-status{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-radius:var(--radius);border:.5px solid var(--border);background:rgba(255,255,255,.02);margin-bottom:1.4rem;font-size:13px;line-height:1.5;color:var(--text-mid)}
+.rmk-status b{color:var(--text)}
+.rmk-modo{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;padding:2px 9px;border-radius:20px;margin-right:8px;vertical-align:1px}
+.rmk-modo.ensaio{background:rgba(201,168,76,.12);color:var(--gold);border:.5px solid rgba(201,168,76,.35)}
+.rmk-modo.ligado{background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
+.rmk-aviso{color:#E8B86B}
+.rmk-ultimos{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.rmk-img{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.rmk-thumb{width:112px;height:112px;border-radius:var(--radius);border:.5px dashed var(--border-bright);background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-mid);font-size:12px;text-align:center;padding:6px}
+.rmk-thumb.cheio{border-style:solid;padding:0}
+.rmk-thumb img{width:100%;height:100%;object-fit:cover}
+.rmk-hint{font-size:12px;color:var(--text-mid);margin-top:6px;line-height:1.45}
+.field textarea{width:100%;min-height:160px;padding:11px 14px;font-size:14px;line-height:1.55;font-family:'DM Sans',sans-serif;background:var(--bg-input);color:var(--text);border:.5px solid var(--border);border-radius:var(--radius);outline:none;resize:vertical;transition:border-color .15s}
+.field textarea:focus{border-color:var(--border-bright);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
+.rmk-dias{display:inline-flex;align-items:stretch;border:.5px solid var(--border-bright);border-radius:var(--radius);overflow:hidden}
+.rmk-dias button{width:48px;min-height:46px;background:var(--bg-input);color:var(--gold);border:none;font-size:22px;line-height:1;cursor:pointer}
+.rmk-dias button:hover{background:var(--bg-hover)}
+.field .rmk-dias input{width:66px;text-align:center;border:none;border-left:.5px solid var(--border);border-right:.5px solid var(--border);border-radius:0;background:var(--bg-card);color:var(--text);font-size:19px;font-weight:600;padding:0;box-shadow:none;-moz-appearance:textfield}
+.field .rmk-dias input::-webkit-outer-spin-button,.field .rmk-dias input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.rmk-cal{margin-top:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.rmk-cal div{background:var(--bg-input);border:.5px solid var(--border);border-radius:8px;padding:7px 6px;text-align:center;font-size:12px;color:var(--text-mid);line-height:1.35}
+.rmk-cal div b{display:block;color:var(--gold);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.rmk-ok{margin-top:12px;padding:11px 14px;border-radius:var(--radius);border:.5px solid #5EAD7E;background:rgba(94,173,126,.08);color:#A9D9BD;font-size:13px;line-height:1.55}
+.rmk-ok b{color:#CFEBDA}
+@media(max-width:560px){
+  .rmk-cal{grid-template-columns:repeat(2,1fr)}
+  .rmk-thumb{width:96px;height:96px}
+  #rmkSalvar{width:100%}
+}
+
 /* ─── Monitoramento de Equipes ──────────────────────────── */
 /* grade em vez de flex-wrap: com a fonte maior, o wrap partia um indicador ao meio */
 .bal-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1rem 1.3rem;
@@ -303,6 +334,7 @@ body{
   <div class="tabs">
     <button class="tab-btn active" id="tabUsuarios" onclick="abrirAba('usuarios')">Usuários</button>
     <button class="tab-btn" id="tabEquipes" onclick="abrirAba('equipes')">Monitoramento de Equipes</button>
+    <button class="tab-btn" id="tabRemarketing" onclick="abrirAba('remarketing')">Remarketing Automático</button>
   </div>
 
   <div id="secUsuarios">
@@ -326,6 +358,43 @@ body{
           <div>Carregando…</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="secRemarketing" style="display:none">
+    <div class="card">
+      <div class="card-title">Remarketing Automático</div>
+      <div id="rmkStatus" class="rmk-status">Carregando…</div>
+
+      <div class="field">
+        <label for="rmkArquivo">1 · Imagem — é o primeiro envio</label>
+        <div class="rmk-img">
+          <label class="btn-secondary" for="rmkArquivo" style="cursor:pointer">Enviar imagem</label>
+          <input type="file" id="rmkArquivo" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="rmkEscolheu(this)"/>
+          <div class="rmk-thumb" id="rmkThumb">sem imagem</div>
+        </div>
+        <div class="rmk-hint">Chega como imagem aberta no WhatsApp, não como arquivo. JPG, PNG ou WEBP.</div>
+      </div>
+
+      <div class="field">
+        <label for="rmkTexto">2 · Mensagem — vai logo depois da imagem</label>
+        <textarea id="rmkTexto" maxlength="4096" placeholder="Escreva a oferta que o cliente vai receber…" oninput="rmkContar()"></textarea>
+        <div class="rmk-hint"><span id="rmkConta">0</span> de 4.096 caracteres</div>
+      </div>
+
+      <div class="field">
+        <label for="rmkDias">3 · Dias de espera</label>
+        <div class="rmk-dias">
+          <button type="button" aria-label="Menos um dia" onclick="rmkDias(-1)">−</button>
+          <input id="rmkDias" type="number" min="1" max="7" value="2" inputmode="numeric" oninput="rmkExplicar()"/>
+          <button type="button" aria-label="Mais um dia" onclick="rmkDias(1)">+</button>
+        </div>
+        <div class="rmk-hint" id="rmkExplica"></div>
+        <div class="rmk-cal" id="rmkCal"></div>
+      </div>
+
+      <button class="btn-primary" id="rmkSalvar" onclick="rmkSalvar()">Salvar</button>
+      <div class="rmk-ok" id="rmkOk" hidden></div>
     </div>
   </div>
 
@@ -874,14 +943,25 @@ function escapeAttr(s) {
 // ════════════════════════════════════════════════════════════
 let balTimer = null;
 
+let rmkTimer = null, rmkCarregado = false;
 function abrirAba(qual) {
-  const ehEquipes = qual === 'equipes';
-  document.getElementById('secUsuarios').style.display = ehEquipes ? 'none' : '';
-  document.getElementById('secEquipes').style.display  = ehEquipes ? '' : 'none';
-  document.getElementById('tabUsuarios').classList.toggle('active', !ehEquipes);
-  document.getElementById('tabEquipes').classList.toggle('active', ehEquipes);
+  const abas = {
+    usuarios:    ['secUsuarios', 'tabUsuarios'],
+    equipes:     ['secEquipes', 'tabEquipes'],
+    remarketing: ['secRemarketing', 'tabRemarketing']
+  };
+  Object.keys(abas).forEach(function (k) {
+    document.getElementById(abas[k][0]).style.display = k === qual ? '' : 'none';
+    document.getElementById(abas[k][1]).classList.toggle('active', k === qual);
+  });
   clearInterval(balTimer);
-  if (ehEquipes) { carregarBalanceador(); balTimer = setInterval(carregarBalanceador, 30000); }
+  clearInterval(rmkTimer);
+  if (qual === 'equipes') { carregarBalanceador(); balTimer = setInterval(carregarBalanceador, 30000); }
+  if (qual === 'remarketing') {
+    // o formulário carrega UMA vez: voltar pra aba não pode apagar o que ainda não foi salvo
+    if (!rmkCarregado) { rmkCarregado = true; carregarRemarketing(); } else rmkRecarregarStatus();
+    rmkTimer = setInterval(rmkRecarregarStatus, 60000);
+  }
 }
 
 async function carregarBalanceador() {
@@ -1014,6 +1094,199 @@ async function salvarAjuste(body, msgOk) {
   } catch (err) {
     toast(err.message, 'error');
     document.querySelectorAll('.bal-peso button, .bal-toggle').forEach(b => b.disabled = false);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// REMARKETING AUTOMÁTICO (12/09/2026)
+// A tela só guarda imagem, texto e dias. Quem monta a lista, julga cada cliente
+// e envia pelo WhatsApp de cada atendente é o lux-agente.
+// ═══════════════════════════════════════════════════════════════
+let rmkNovaImagem = null, rmkThumbUrl = null, rmkCfg = null;
+
+async function carregarRemarketing() {
+  rmkExplicar();
+  try {
+    const resp = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
+    const d = await resp.json();
+    if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
+    rmkCfg = d.config;
+    if (d.config) {
+      document.getElementById('rmkTexto').value = d.config.texto || '';
+      document.getElementById('rmkDias').value = d.config.dias || 2;
+      if (d.config.imagem && !rmkNovaImagem) rmkMostrarImagemServidor();
+    }
+    rmkContar();
+    rmkExplicar();
+    rmkStatus(d.status, d.config);
+  } catch (err) {
+    document.getElementById('rmkStatus').innerHTML = '⚠️ ' + escapeHtml(err.message);
+  }
+}
+
+async function rmkRecarregarStatus() {
+  try {
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
+    const d = await r.json();
+    if (d.ok) { rmkCfg = d.config; rmkStatus(d.status, d.config); }
+  } catch (e) {}
+}
+
+// <img> não manda o token de login: a miniatura vem por __luxFetch e vira URL local
+async function rmkMostrarImagemServidor() {
+  try {
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/imagem');
+    if (!r.ok) return;
+    rmkPorMiniatura(URL.createObjectURL(await r.blob()));
+  } catch (e) {}
+}
+
+function rmkPorMiniatura(url) {
+  if (rmkThumbUrl) URL.revokeObjectURL(rmkThumbUrl);
+  rmkThumbUrl = url;
+  const t = document.getElementById('rmkThumb');
+  t.classList.add('cheio');
+  t.innerHTML = '<img alt="Miniatura da imagem do remarketing" src="' + url + '">';
+}
+
+async function rmkEscolheu(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) < 0) { toast('Use uma imagem JPG, PNG ou WEBP.', 'error'); return; }
+  try {
+    const blob = await rmkPreparar(f);
+    if (!blob || blob.size > 5 * 1024 * 1024) { toast('A imagem continua acima de 5 MB.', 'error'); return; }
+    rmkNovaImagem = blob;
+    rmkPorMiniatura(URL.createObjectURL(blob));
+    document.getElementById('rmkOk').hidden = true;
+    toast('Imagem pronta — clique em Salvar para aplicar', 'info');
+  } catch (e) {
+    toast('Não consegui ler essa imagem.', 'error');
+  }
+}
+
+// Imagem leve sobe como veio (sem perder qualidade). Pesada é reduzida aqui no
+// navegador — o WhatsApp comprime de qualquer jeito, e o upload fica rápido.
+async function rmkPreparar(f) {
+  if (f.size <= 1.5 * 1024 * 1024) return f;
+  const url = URL.createObjectURL(f);
+  try {
+    const img = await new Promise(function (ok, erro) { const i = new Image(); i.onload = function () { ok(i); }; i.onerror = erro; i.src = url; });
+    const escala = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * escala);
+    c.height = Math.round(img.naturalHeight * escala);
+    const g = c.getContext('2d');
+    g.fillStyle = '#FFFFFF';                       // PNG transparente não vira fundo preto no JPG
+    g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', 0.86); });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function rmkContar() {
+  document.getElementById('rmkConta').textContent =
+    document.getElementById('rmkTexto').value.length.toLocaleString('pt-BR');
+}
+
+function rmkDias(delta) {
+  const el = document.getElementById('rmkDias');
+  el.value = Math.min(7, Math.max(1, (parseInt(el.value, 10) || 2) + delta));
+  rmkExplicar();
+  document.getElementById('rmkOk').hidden = true;
+}
+
+// A MESMA regra do lux-agente: chegou no dia D → recebe em D + N; se cair no
+// sábado ou domingo, vai na segunda. A grade mostra de onde vem cada envio.
+function rmkExplicar() {
+  let n = parseInt(document.getElementById('rmkDias').value, 10);
+  if (!(n >= 1 && n <= 7)) n = 2;
+  const CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const envioDe = function (d) { const e = (d + n) % 7; return (e === 6 || e === 0) ? 1 : e; };
+  const grade = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+  [1, 2, 3, 4, 5, 6, 0].forEach(function (d) { grade[envioDe(d)].push(d); });
+  document.getElementById('rmkCal').innerHTML = [1, 2, 3, 4, 5].map(function (e) {
+    return '<div><b>' + CURTO[e] + '</b>' +
+      (grade[e].length ? 'clientes de ' + grade[e].map(function (d) { return CURTO[d]; }).join(', ') : '—') + '</div>';
+  }).join('');
+  document.getElementById('rmkExplica').textContent =
+    'Quem chamou há ' + n + (n === 1 ? ' dia' : ' dias') + ' e não fechou recebe no mesmo horário em que chamou. ' +
+    'Sábado e domingo não sai nada — o que cairia no fim de semana vai na segunda. No máximo 25 envios por atendente por dia; o que passar vai no próximo dia útil, no mesmo horário:';
+}
+
+function rmkStatus(st, cfg) {
+  const box = document.getElementById('rmkStatus');
+  if (!cfg || !cfg.imagem || !cfg.texto) {
+    box.innerHTML = '<div><span class="rmk-modo ensaio">NÃO CONFIGURADO</span>Envie a imagem, escreva a mensagem e salve.</div>';
+    return;
+  }
+  if (!st) {
+    box.innerHTML = '<div><span class="rmk-modo ensaio">AGUARDANDO</span>Configurado. O robô confere a cada 5 minutos, de segunda a sexta, das 8h às 21h.</div>';
+    return;
+  }
+  const ligado = st.modo === 'ligado';
+  let h = '<div><span class="rmk-modo ' + (ligado ? 'ligado' : 'ensaio') + '">' + (ligado ? 'LIGADO' : 'ENSAIO') + '</span>' +
+    (ligado ? 'Enviando de verdade, pelo WhatsApp de cada atendente.'
+            : 'Segue o calendário e julga cada cliente, mas <b>não envia nada</b>.') + '</div>';
+  if (st.imagemApi === false && st.aviso) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.aviso) + '</div>';
+  if (st.erro) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.erro) + '</div>';
+  if (st.hoje) {
+    const e = st.hoje.estados || {};
+    h += '<div>Hoje: <b>' + st.hoje.total + '</b> na lista (clientes de ' + escapeHtml((st.hoje.diasDeContato || []).join(', ')) + ')' +
+      ' · <b>' + (e.enviado || 0) + '</b> enviados · <b>' + (e.simulado || 0) + '</b> receberiam · <b>' + (e.fora || 0) + '</b> barrados no filtro' +
+      ' · <b>' + (e.agendado || 0) + '</b> aguardando o horário' + (e.adiado ? ' · <b>' + e.adiado + '</b> adiados pelo teto de 25' : '') + '</div>';
+    if ((st.hoje.ultimos || []).length) {
+      h += '<div class="rmk-ultimos">' + st.hoje.ultimos.slice(0, 6).map(function (u) {
+        return '<span>' + escapeHtml(u.hora) + ' · ' + escapeHtml(u.equipe) + ' · <b>' + escapeHtml(u.estado) + '</b>' +
+          (u.motivo ? ' — ' + escapeHtml(u.motivo) : '') + '</span>';
+      }).join('') + '</div>';
+    }
+  }
+  if (st.atualizadoEm) h += '<div style="font-size:11px;opacity:.7">Verificado ' + new Date(st.atualizadoEm).toLocaleString('pt-BR') + '</div>';
+  box.innerHTML = h;
+}
+
+async function rmkSalvar() {
+  const btn = document.getElementById('rmkSalvar');
+  const texto = document.getElementById('rmkTexto').value.trim();
+  const dias = parseInt(document.getElementById('rmkDias').value, 10);
+  if (!rmkNovaImagem && !(rmkCfg && rmkCfg.imagem)) { toast('Envie a imagem primeiro — ela é o primeiro envio.', 'error'); return; }
+  if (!texto) { toast('Escreva a mensagem.', 'error'); return; }
+  if (!(dias >= 1 && dias <= 7)) { toast('Os dias de espera vão de 1 a 7.', 'error'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
+  try {
+    if (rmkNovaImagem) {
+      const ri = await window.__luxFetch(WORKER_URL + '/admin/remarketing/imagem', {
+        method: 'POST', headers: { 'Content-Type': rmkNovaImagem.type || 'image/jpeg' }, body: rmkNovaImagem
+      });
+      const di = await ri.json();
+      if (!di.ok) throw new Error(di.error || 'A imagem não subiu');
+      rmkNovaImagem = null;
+    }
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: texto, dias: dias })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Não salvou');
+    rmkCfg = d.config;
+    const ok = document.getElementById('rmkOk');
+    ok.hidden = false;
+    ok.innerHTML = '✓ <b>Salvo e configurado</b> às ' +
+      new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
+      '. Imagem primeiro, mensagem em seguida, ' + dias + (dias === 1 ? ' dia' : ' dias') + ' depois do contato.' +
+      (d.refazLista ? '<br>Os dias mudaram: a lista de hoje é refeita com a regra nova em até 5 minutos.' : '');
+    toast('Remarketing salvo', 'success');
+    rmkRecarregarStatus();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
   }
 }
 
