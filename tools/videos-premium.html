@@ -67,6 +67,17 @@ body{
 @media(max-width:600px){
   .pending-banner{flex-direction:column;align-items:stretch;gap:12px}
   .btn-pending-check{width:100%}
+  /* (14/09) Calibracao no celular: o modal era centralizado e NAO rolava — quando ficava mais alto
+     que a tela, o botao "Confirmar posicao" caia fora e nao dava pra clicar (reclamacao Roberta).
+     Agora o modal ROLA (garante o botao alcancavel) e o canvas encolhe pra caber. O arraste continua
+     certo: o handler mapeia por getBoundingClientRect (cv.width/r.width), independe do tamanho na tela. */
+  .editor-overlay{align-items:flex-start;overflow-y:auto;padding:12px 12px 24px;-webkit-overflow-scrolling:touch}
+  .editor-box{margin:auto}
+  #calibCanvas{height:35vh;width:auto;aspect-ratio:9/16;max-width:100%}
+  /* a linha "Posicao no video" tem 5 botoes e transbordava pra direita (Dir./▶ cortados no celular).
+     No mobile o rotulo vai pra cima e os controles ocupam a largura toda, podendo quebrar linha. */
+  .avsize-row{flex-direction:column;align-items:stretch;gap:8px;margin:14px 2px 2px}
+  .avsize-ctrl{flex-wrap:wrap;justify-content:center}
 }
 
 /* TABS */
