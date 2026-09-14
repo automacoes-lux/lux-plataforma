@@ -285,6 +285,10 @@ body{
 .bal-num b{font-size:17px;color:#EDE6D6;font-weight:600}
 .bal-num span{display:block;font-size:13px;color:var(--text-mid)}
 .bal-num .bal-anun{color:var(--gold-dim);font-size:12px;margin-top:1px}
+.bal-num .bal-rmk{color:#4ADE80;font-size:12px;font-weight:600;margin-top:1px}
+.bal-num .bal-rmk.zero{opacity:.5;font-weight:500}
+.bal-kpi.rmk b{color:#4ADE80}
+.bal-grupo em .bal-rmk-grupo{color:#4ADE80}
 
 .bal-peso{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
 .bal-peso button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
@@ -1006,7 +1010,8 @@ function renderBalanceador(d) {
       media: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0,
       maior: Math.max(1, ...lista.map(e => e.porPessoa)),
       dif: vals.length ? (Math.max(...vals) - Math.min(...vals)) : 0,
-      leads: lista.reduce((s, e) => s + (e.cargaTurno || 0), 0)
+      leads: lista.reduce((s, e) => s + (e.cargaTurno || 0), 0),
+      rmk: lista.reduce((s, e) => s + (e.remarketing || 0), 0)
     };
   };
   const turnoTxt = d.turno === 'manha' ? 'Manhã (até 14h)' : d.turno === 'tarde' ? 'Tarde (a partir das 14h)' : 'Dia inteiro';
@@ -1034,6 +1039,7 @@ function renderBalanceador(d) {
     '<div class="bal-kpi txt"><b>' + turnoTxt + '</b><span>turno agora</span></div>' +
     '<div class="bal-kpi"><b>' + cotasTotais + '</b><span>cotas ativas</span></div>' +
     '<div class="bal-kpi"><b>' + d.totalLeadsDia + '</b><span>leads hoje</span></div>' +
+    '<div class="bal-kpi rmk" title="remarketing enviado hoje, somando todas as equipes"><b>' + (d.remarketingHoje || 0) + '</b><span>remarketing hoje</span></div>' +
     '<div class="bal-kpi' + (dif > 2 ? ' alerta' : '') + '"><b>' + dif.toFixed(1) + '</b><span>diferença no turno</span></div>' +
     (d.anuncioTotalBRL != null ? '<div class="bal-kpi txt"><b>' + reais(d.anuncioTotalBRL) + '</b><span>anúncio do dia</span></div>' : '') +
     '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
@@ -1045,6 +1051,7 @@ function renderBalanceador(d) {
     html += '<div class="bal-grupo' + (g.ativo ? ' agora' : '') + '">' + g.titulo +
       '<em>' + c + (c === 1 ? ' cota ativa' : ' cotas ativas') +
         ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
+        ' · <span class="bal-rmk-grupo">' + s.rmk + ' remarketing</span>' +
         (s.dif > 0 ? ' · diferença ' + s.dif.toFixed(1) : '') + '</em>' +
       (g.ativo ? '<span>atendendo agora</span>'
                : s.leads > 0 ? '<span class="fim">registro de hoje</span>' : '') + '</div>';
@@ -1074,6 +1081,7 @@ function renderBalanceador(d) {
       '</div>' +
       '<div class="bal-num"><b>' + e.porPessoa.toFixed(1) + '</b>' +
         '<span>' + e.cargaTurno + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span>' +
+        '<span class="bal-rmk' + (e.remarketing ? '' : ' zero') + '" title="remarketing enviado hoje pelo WhatsApp desta equipe">' + (e.remarketing || 0) + ' remarketing</span>' +
         (e.anuncioBRL != null ? '<span class="bal-anun" title="fatia do anúncio do dia, proporcional aos leads">' + reais(e.anuncioBRL) + '</span>' : '') +
       '</div>' +
       '<div class="bal-peso">' +
