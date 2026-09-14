@@ -549,7 +549,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <span class="sw-label" id="trechoLivreLbl">Trecho<br/>livre</span>
             <button type="button" class="sw" id="btnTrechoLivre" role="switch" aria-checked="false" onclick="toggleTrechoLivre()"
-                    title="Desligado: janela de 1 minuto, como no Vídeo Avatar. Ligado: você escolhe onde o trecho começa e onde termina.">
+                    title="Desligado: janela de 1 minuto, como no Avatar 150. Ligado: você escolhe onde o trecho começa e onde termina.">
               <span class="sw-knob"></span><span class="sw-txt" id="trechoLivreState">Off</span>
             </button>
           </div>
@@ -648,7 +648,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   <div style="max-width:430px">
     <div style="font-size:54px;margin-bottom:14px">🚧</div>
     <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:22px;margin-bottom:12px">Avatar 97 — Em breve</h2>
-    <p style="font-size:14.5px;color:var(--text-dim);line-height:1.65">Estamos deixando o Vídeo Avatar ainda melhor. Ele volta pra você já já! 💛<br><br>Enquanto isso, as outras ferramentas seguem funcionando normalmente.</p>
+    <p style="font-size:14.5px;color:var(--text-dim);line-height:1.65">Estamos deixando o Avatar 97 ainda melhor. Ele volta pra você já já! 💛<br><br>Enquanto isso, as outras ferramentas seguem funcionando normalmente.</p>
   </div>
 </div>
 
@@ -864,6 +864,10 @@ let vocalToken  = 0;               // invalida análises antigas quando troca a 
 // Editor de corte
 let rawAudioBuffer = null;         // AudioBuffer da música original (> 1:00)
 let rawAudioName = '';
+let rawAudioFile = null;           // (13/09) o arquivo ORIGINAL da música: vai pro servidor com o pedido (o Editar traz de volta)
+let corteUsado = null;             // (13/09) { inicio, fim, fadeIn, fadeOut, livre } do último "Cortar e usar"
+let restaurando = false;           // (13/09) trava de clique duplo no Editar
+const MUSICA_ORIGINAL_MAX = 60 * 1024 * 1024;   // (13/09) acima disso a original não é guardada (o Editar usa o trecho)
 let wavePeaks = null;
 let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
 let playheadFrac = -1, playheadRAF = 0;   // marcador branco tocando na waveform (dentro da SELEÇÃO)
@@ -2391,6 +2395,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
   stopPreviewCorte();
   music = null;
   rawAudioBuffer = null;
+  rawAudioFile = null; corteUsado = null;   // (13/09) música nova: esquece a original e o trecho anteriores
   document.getElementById('musicLoaded').classList.remove('show');
   document.getElementById('cutEditor').classList.remove('show');
   document.getElementById('musicTile').style.display = '';
@@ -2407,6 +2412,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     // ajusta os fades e clica em "Cortar e usar".
     rawAudioBuffer = audioBuf;
     rawAudioName = file.name;
+    rawAudioFile = file;   // (13/09) guardada no servidor quando o vídeo for gerado
     abrirEditorCorte();
   } catch (err) {
     toast('⚠️ Não consegui ler esse áudio (arquivo corrompido ou formato que o navegador não abre): ' + err.message);
@@ -2517,14 +2523,21 @@ async function startVocalAnalysis() {
   renderStoryboard();
 }
 
-function abrirEditorCorte() {
+function abrirEditorCorte(sel) {
   document.getElementById('musicTile').style.display = 'none';
   document.getElementById('musicLoaded').classList.remove('show');
   const ed = document.getElementById('cutEditor');
   ed.classList.add('show');
   document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
   document.getElementById('cutStart').value = 0;
-  aplicaFaixaDosSeletores(true);   // (12/09) limites do início e do fim conforme o botão "Trecho livre"
+  if (sel) trechoLivre = !!sel.livre;   // (13/09) sel = trecho já escolhido antes (Refazer o corte / Editar)
+  aplicaFaixaDosSeletores(!sel);   // (12/09) limites do início e do fim conforme o botão "Trecho livre"
+  if (sel) {   // (13/09) volta no trecho de antes, e não no zero — os limites acima já valem para esta música
+    document.getElementById('cutStart').value = Number(sel.inicio) || 0;
+    if (trechoLivre) document.getElementById('cutEnd').value = Number(sel.fim) || 0;
+    document.getElementById('fadeIn').value = Number(sel.fadeIn) || 0;
+    document.getElementById('fadeOut').value = Number(sel.fadeOut) || 0;
+  }
   setTrechoBtn();
   computePeaks();
   updateCutUI();
@@ -2534,7 +2547,7 @@ function abrirEditorCorte() {
 // sem precisar recarregar a página. Na EDIÇÃO não existe (música travada).
 function removerMusica() {
   if (editState) return;
-  music = null; rawAudioBuffer = null; rawAudioName = '';
+  music = null; rawAudioBuffer = null; rawAudioName = ''; rawAudioFile = null; corteUsado = null;   // (13/09) + original e trecho
   try { stopPreviewCorte(); } catch (e) {}
   lyricBlocks = null; lyricOn = false; updateLyricStatus();   // a letra casada era da música removida
   document.getElementById('musicLoaded').classList.remove('show');
@@ -2548,7 +2561,7 @@ function removerMusica() {
 function reabrirCorte() {
   if (!rawAudioBuffer) { toast('Envie a música de novo pra refazer o corte.'); return; }
   music = null;
-  abrirEditorCorte();
+  abrirEditorCorte(corteUsado);   // (13/09) reabre no trecho que estava escolhido
   renderStoryboard();
 }
 
@@ -2867,6 +2880,7 @@ async function aplicarCorte() {
     });
     const base64 = await blobToBase64(mp3Blob);
     const baseName = rawAudioName.replace(/\.[^.]+$/, '');
+    corteUsado = { inicio: startSec, fim: startSec + trechoLen(startSec), fadeIn, fadeOut, livre: trechoLivre };   // (13/09) vai no pedido: o Editar reabre este trecho
     setMusicReady({
       base64,
       name: baseName + '_trecho.mp3',
@@ -3036,6 +3050,12 @@ async function gerarClipe() {
       bgExpected: scenes.length,
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
+      // (13/09) o resto do que a atendente preencheu, guardado para o botão Editar trazer de volta
+      clientPhoto2: clientPhoto2 ? { base64: clientPhoto2.base64, name: clientPhoto2.name, mimeType: clientPhoto2.mimeType } : null,
+      clientPhoto3: clientPhoto3 ? { base64: clientPhoto3.base64, name: clientPhoto3.name, mimeType: clientPhoto3.mimeType } : null,
+      corte: corteUsado,
+      avatarNote: ((document.getElementById('avatarNote') || {}).value || '').trim(),
+      imagemReaproveitada: !!(avatarPreview && avatarPreview.reaproveitada),   // imagem trazida pelo Editar e não gerada de novo: não cobra
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
@@ -3047,6 +3067,19 @@ async function gerarClipe() {
     const d1 = await r1.json();
     if (!d1.ok) throw new Error(d1.error || 'Falha ao criar o pedido.');
     cartoonGens = 0; cartoonGensRes = 0; lyricSegs = 0;   // já foram cobrados neste pedido
+
+    // (13/09) guarda a música ORIGINAL (inteira) ANTES de largar a produção: é o que o Editar usa pra reabrir o
+    // corte. Se falhar, o vídeo sai do mesmo jeito — o Editar só cai no trecho já cortado.
+    if (rawAudioFile && rawAudioFile.size <= MUSICA_ORIGINAL_MAX) {
+      btn.textContent = 'Guardando a música original…';
+      try {
+        const ru = await api('/uploadMusicaOriginal?orderId=' + encodeURIComponent(d1.orderId) + '&nome=' + encodeURIComponent(rawAudioFile.name || 'musica'), {
+          method: 'POST', headers: { 'Content-Type': rawAudioFile.type || 'application/octet-stream' }, body: await readFileAsArrayBuffer(rawAudioFile)
+        });
+        const ju = await ru.json();
+        if (!ju.ok) console.warn('Música original não guardada:', ju.error);
+      } catch (e) { console.warn('Música original não guardada:', e.message); }
+    }
 
     btn.textContent = 'Iniciando a produção…';
     // a largada da produção re-tenta 3x (rede/500 passageiro não pode abandonar um pedido já criado)
@@ -3177,7 +3210,7 @@ async function loadOrders() {
       if (o.status === 'COMPLETED' && o.videoUrl) {
         chip = '<span class="st-chip st-ok">Pronto</span>';
         side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
-          '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>';
+          '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>';
       } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
         chip = '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>';
       } else {
@@ -3205,9 +3238,89 @@ async function loadOrders() {
 }
 
 // ───────────────────────────────────────────────
-// EDITAR um vídeo pronto — reaproveita o avatar, troca só música/fotos
+// EDITAR (13/09, pedido do Thiago) = trazer TUDO de volta pro Criar vídeo, como antes de clicar em "Gerar o
+// vídeo": as 3 fotos, a imagem já gerada, a música inteira com o trecho escolhido, a chave Mascote, categoria,
+// cliente e o "O que ajustar?". Gerar de novo cria um vídeo NOVO; a imagem só é cobrada se for gerada de novo.
+// Os arquivos vêm pelo /proxyFile (o R2 público não libera leitura pela tela).
 // ───────────────────────────────────────────────
+async function arquivoDoPedido(orderId, kind) {
+  const r = await api('/proxyFile?orderId=' + encodeURIComponent(orderId) + '&kind=' + kind);
+  if (!r.ok) throw new Error('o arquivo "' + kind + '" não voltou (HTTP ' + r.status + ')');
+  return await r.blob();
+}
+async function fotoDoPedido(orderId, kind, nome) {
+  const blob = await arquivoDoPedido(orderId, kind);
+  const base64 = await blobToBase64(blob);
+  const mimeType = blob.type || 'image/jpeg';
+  return { base64, mimeType, thumbUrl: 'data:' + mimeType + ';base64,' + base64, name: nome + (/png/.test(mimeType) ? '.png' : '.jpg') };
+}
 async function editarClipe(orderId) {
+  if (restaurando) return;
+  const preenchido = clientPhoto || clientPhoto2 || clientPhoto3 || avatarPreview || music || rawAudioBuffer ||
+    (document.getElementById('clientName').value || '').trim();
+  if (preenchido && !confirm('O que está preenchido agora no Criar vídeo vai ser trocado por este vídeo. Continuar?')) return;
+  restaurando = true;
+  toast('⏳ Trazendo o vídeo de volta pro Criar vídeo…');
+  try {
+    const resp = await api('/getAvatarForEdit?orderId=' + encodeURIComponent(orderId));
+    if (resp.status === 410) { toast('⚠️ Os arquivos desse vídeo já foram apagados (passou de 7 dias). Crie um novo.'); return; }
+    const d = await resp.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui trazer o vídeo de volta.')); return; }
+    // Baixa e confere TUDO antes de mexer na tela: se algo falhar, o que estava preenchido fica intacto.
+    const [f1, f2, f3, imagem, trecho, original] = await Promise.all([
+      fotoDoPedido(orderId, 'cliente', 'personagem1'),
+      d.clientPhoto2 ? fotoDoPedido(orderId, 'foto2', 'personagem2') : null,
+      d.clientPhoto3 ? fotoDoPedido(orderId, 'foto3', 'ambiente') : null,
+      arquivoDoPedido(orderId, 'cartoon'),
+      arquivoDoPedido(orderId, 'music'),
+      d.musicaOriginal ? arquivoDoPedido(orderId, 'musicaOriginal').catch(() => null) : null   // sem a original, usa o trecho
+    ]);
+    const imagemB64 = await blobToBase64(imagem);
+    const trechoB64 = await blobToBase64(trecho);
+    const fonte = original || trecho;
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    let audioBuf;
+    try { audioBuf = await ac.decodeAudioData(await fonte.arrayBuffer()); } finally { try { ac.close(); } catch (e) {} }
+
+    resetCreateForm();
+    document.getElementById('clientName').value = d.clientName || '';
+    document.getElementById('fCategoria').value = d.categoria || '';
+    clientPhoto = f1; clientPhoto2 = f2; clientPhoto3 = f3;
+    avatarPreview = { cartoonBase64: imagemB64, approved: true, reaproveitada: true };   // não cobra de novo se não gerar outra
+    cartoonGens = 0; cartoonGensRes = 0;
+    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + imagemB64;
+    { const av = document.getElementById('avatarMotorAviso'); if (av) { av.textContent = ''; av.style.display = 'none'; } }
+    { const nt = document.getElementById('avatarNote'); if (nt) nt.value = d.avatarNote || ''; }
+    mascote = !!d.mascote; setMascoteBtn();
+    renderClientPhoto(); refreshAvatarUI();
+
+    rawAudioBuffer = audioBuf;
+    rawAudioName = original ? (d.musicOrigName || 'musica.mp3') : 'musica.mp3';
+    rawAudioFile = new File([fonte], rawAudioName, { type: fonte.type || 'audio/mpeg' });
+    corteUsado = (original && d.corte) ? d.corte
+      : { inicio: 0, fim: audioBuf.duration, fadeIn: 0, fadeOut: 0, livre: true };   // só o trecho: inteiro e sem fade de novo
+    trechoLivre = !!corteUsado.livre; setTrechoBtn();
+    setMusicReady({
+      base64: trechoB64,
+      name: rawAudioName.replace(/\.[^.]+$/, '') + '_trecho.mp3',
+      duration: Math.round(d.videoSec || audioBuf.duration),
+      playerSrc: URL.createObjectURL(trecho),
+      wasCut: true
+    });
+    showTab('criar');
+    window.scrollTo(0, 0);
+    toast('✏️ "' + (d.clientName || '') + '" está de volta no Criar vídeo, do jeito que estava. Ajuste o que quiser e gere de novo.');
+  } catch (e) {
+    toast('⚠️ Não consegui trazer o vídeo de volta: ' + e.message);
+  } finally {
+    restaurando = false;
+  }
+}
+
+// ───────────────────────────────────────────────
+// (ANTIGO, sem uso desde 13/09) EDITAR um vídeo pronto — reaproveita o avatar, troca só música/fotos
+// ───────────────────────────────────────────────
+async function editarClipeAntigo(orderId) {
   try {
     const resp = await api('/getAvatarForEdit?orderId=' + encodeURIComponent(orderId));
     if (resp.status === 410) { toast('⚠️ Esse vídeo passou de 7 dias e não pode mais ser editado. Gere um novo.'); return; }
@@ -3366,6 +3479,8 @@ function resetCreateForm() {
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
+  rawAudioFile = null; corteUsado = null;   // (13/09) a original e o trecho eram do vídeo que acabou de ir
+  { const nt = document.getElementById('avatarNote'); if (nt) nt.value = ''; }
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
