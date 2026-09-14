@@ -221,6 +221,15 @@ body{
 .rmk-modo{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;padding:2px 9px;border-radius:20px;margin-right:8px;vertical-align:1px}
 .rmk-modo.ensaio{background:rgba(201,168,76,.12);color:var(--gold);border:.5px solid rgba(201,168,76,.35)}
 .rmk-modo.ligado{background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
+.rmk-modo.desligado{background:rgba(248,113,113,.12);color:#F87171;border:.5px solid rgba(248,113,113,.35)}
+.rmk-envio{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:var(--radius);border:.5px solid var(--border);background:rgba(255,255,255,.02);margin-bottom:10px}
+.rmk-envio-txt{display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.45;color:var(--text-mid);min-width:0;flex:1 1 220px}
+.rmk-envio-txt b{color:var(--text);font-size:14px}
+.rmk-sw{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;min-width:132px;padding:5px 12px 5px 5px;border-radius:999px;border:.5px solid rgba(248,113,113,.45);background:rgba(248,113,113,.10);color:#F87171;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.rmk-sw .rmk-sw-bola{width:22px;height:22px;border-radius:50%;background:#F87171;flex-shrink:0}
+.rmk-sw[aria-checked="true"]{flex-direction:row-reverse;padding:5px 5px 5px 12px;border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.10);color:#4ADE80}
+.rmk-sw[aria-checked="true"] .rmk-sw-bola{background:#4ADE80}
+.rmk-sw:disabled{opacity:.55;cursor:wait}
 .rmk-aviso{color:#E8B86B}
 .rmk-ultimos{display:flex;flex-direction:column;gap:3px;font-size:12px}
 .rmk-img{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -364,6 +373,15 @@ body{
   <div id="secRemarketing" style="display:none">
     <div class="card">
       <div class="card-title">Remarketing Automático</div>
+      <div class="rmk-envio" id="rmkEnvioLinha">
+        <div class="rmk-envio-txt">
+          <b>Envio automático</b>
+          <span id="rmkEnvioInfo">Carregando…</span>
+        </div>
+        <button type="button" class="rmk-sw" id="rmkEnvioBtn" role="switch" aria-checked="false" onclick="rmkAlternarEnvio()" disabled>
+          <span class="rmk-sw-bola"></span><span id="rmkEnvioTxt">…</span>
+        </button>
+      </div>
       <div id="rmkStatus" class="rmk-status">Carregando…</div>
 
       <div class="field">
@@ -1105,7 +1123,7 @@ async function salvarAjuste(body, msgOk) {
 // A tela só guarda imagem, texto e dias. Quem monta a lista, julga cada cliente
 // e envia pelo WhatsApp de cada atendente é o lux-agente.
 // ═══════════════════════════════════════════════════════════════
-let rmkNovaImagem = null, rmkThumbUrl = null, rmkCfg = null;
+let rmkNovaImagem = null, rmkThumbUrl = null, rmkCfg = null, rmkEnvio = null;
 
 async function carregarRemarketing() {
   rmkExplicar();
@@ -1114,6 +1132,7 @@ async function carregarRemarketing() {
     const d = await resp.json();
     if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
     rmkCfg = d.config;
+    rmkPintarEnvio(d.envio);
     if (d.config) {
       document.getElementById('rmkTexto').value = d.config.texto || '';
       document.getElementById('rmkDias').value = d.config.dias || 2;
@@ -1131,8 +1150,48 @@ async function rmkRecarregarStatus() {
   try {
     const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
     const d = await r.json();
-    if (d.ok) { rmkCfg = d.config; rmkStatus(d.status, d.config); }
+    if (d.ok) { rmkCfg = d.config; rmkPintarEnvio(d.envio); rmkStatus(d.status, d.config); }
   } catch (e) {}
+}
+
+// Botão LIGA/DESLIGA do envio automático (Thiago, 14/09/2026). Grava no KV remarketing:envio e o
+// lux-agente lê a cada passada de 5 min. Religar = só recebem os clientes com horário daqui pra frente.
+function rmkPintarEnvio(envio) {
+  rmkEnvio = envio || { ligado: true, padrao: true };
+  const on = rmkEnvio.ligado !== false;
+  const btn = document.getElementById('rmkEnvioBtn');
+  btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  btn.disabled = false;
+  document.getElementById('rmkEnvioTxt').textContent = on ? 'LIGADO' : 'DESLIGADO';
+  const quando = rmkEnvio.em ? new Date(rmkEnvio.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const quem = rmkEnvio.por ? ' por ' + rmkEnvio.por : '';
+  document.getElementById('rmkEnvioInfo').textContent = on
+    ? (rmkEnvio.padrao ? 'Envia sozinho, no horário de cada cliente. Desligue para parar na hora.'
+                       : 'Ligado em ' + quando + quem + '. Envia sozinho, no horário de cada cliente.')
+    : 'Desligado em ' + quando + quem + '. Nenhuma mensagem sai até ligar de novo.';
+}
+
+async function rmkAlternarEnvio() {
+  const on = !rmkEnvio || rmkEnvio.ligado !== false;
+  const pergunta = on
+    ? 'Desligar o envio automático?\n\nNenhuma mensagem de remarketing sai até você ligar de novo (vale em até 5 minutos).'
+    : 'Ligar o envio automático?\n\nSó recebem os clientes com horário daqui pra frente. Quem teve o horário enquanto estava desligado NÃO recebe atrasado.';
+  if (!confirm(pergunta)) return;
+  const btn = document.getElementById('rmkEnvioBtn');
+  btn.disabled = true;
+  try {
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/envio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ligado: !on })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Não consegui mudar o envio');
+    rmkPintarEnvio(d.envio);
+    toast(on ? 'Envio automático desligado' : 'Envio automático ligado', 'success');
+    rmkRecarregarStatus();
+  } catch (err) {
+    btn.disabled = false;
+    toast(err.message, 'error');
+  }
 }
 
 // <img> não manda o token de login: a miniatura vem por __luxFetch e vira URL local
@@ -1172,7 +1231,8 @@ async function rmkEscolheu(input) {
 // Imagem leve sobe como veio (sem perder qualidade). Pesada é reduzida aqui no
 // navegador — o WhatsApp comprime de qualquer jeito, e o upload fica rápido.
 async function rmkPreparar(f) {
-  if (f.size <= 1.5 * 1024 * 1024) return f;
+  // o WhatsApp só aceita JPG ou PNG (rota de imagem de 14/09/2026): WebP ou outro formato vira JPG sempre
+  if (f.size <= 1.5 * 1024 * 1024 && (f.type === 'image/jpeg' || f.type === 'image/png')) return f;
   const url = URL.createObjectURL(f);
   try {
     const img = await new Promise(function (ok, erro) { const i = new Image(); i.onload = function () { ok(i); }; i.onerror = erro; i.src = url; });
@@ -1233,9 +1293,10 @@ function rmkStatus(st, cfg) {
     box.innerHTML = '<div><span class="rmk-modo ensaio">AGUARDANDO</span>Configurado. O robô confere a cada 5 minutos, de segunda a sexta, das 8h às 21h.</div>';
     return;
   }
-  const ligado = st.modo === 'ligado';
-  let h = '<div><span class="rmk-modo ' + (ligado ? 'ligado' : 'ensaio') + '">' + (ligado ? 'LIGADO' : 'ENSAIO') + '</span>' +
-    (ligado ? 'Enviando de verdade, pelo WhatsApp de cada atendente.'
+  const ligado = st.modo === 'ligado', desligado = st.modo === 'desligado';
+  let h = '<div><span class="rmk-modo ' + (ligado ? 'ligado' : desligado ? 'desligado' : 'ensaio') + '">' + (ligado ? 'LIGADO' : desligado ? 'DESLIGADO' : 'ENSAIO') + '</span>' +
+    (ligado ? 'Enviando de verdade, pelo WhatsApp de cada atendente, no horário de cada cliente.'
+            : desligado ? 'O envio automático está desligado no botão: <b>nada é enviado</b>.'
             : 'Segue o calendário e julga cada cliente, mas <b>não envia nada</b>.') + '</div>';
   if (st.imagemApi === false && st.aviso) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.aviso) + '</div>';
   if (st.erro) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.erro) + '</div>';
@@ -1243,7 +1304,7 @@ function rmkStatus(st, cfg) {
     const e = st.hoje.estados || {};
     h += '<div>Hoje: <b>' + st.hoje.total + '</b> na lista (clientes de ' + escapeHtml((st.hoje.diasDeContato || []).join(', ')) + ')' +
       ' · <b>' + (e.enviado || 0) + '</b> enviados · <b>' + (e.simulado || 0) + '</b> receberiam · <b>' + (e.fora || 0) + '</b> barrados no filtro' +
-      ' · <b>' + (e.agendado || 0) + '</b> aguardando o horário' + (e.adiado ? ' · <b>' + e.adiado + '</b> adiados pelo teto de 25' : '') + '</div>';
+      ' · <b>' + (e.agendado || 0) + '</b> aguardando o horário' + (e.perdido ? ' · <b>' + e.perdido + '</b> com o horário já passado (não recebem)' : '') + (e.adiado ? ' · <b>' + e.adiado + '</b> adiados pelo teto de 25' : '') + '</div>';
     if ((st.hoje.ultimos || []).length) {
       h += '<div class="rmk-ultimos">' + st.hoje.ultimos.slice(0, 6).map(function (u) {
         return '<span>' + escapeHtml(u.hora) + ' · ' + escapeHtml(u.equipe) + ' · <b>' + escapeHtml(u.estado) + '</b>' +
