@@ -328,10 +328,6 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .st-ok{background:rgba(80,200,120,.12);color:#7ED9A0;border:.5px solid rgba(80,200,120,.35)}
 .st-run{background:rgba(232,168,76,.12);color:#E8A84C;border:.5px solid rgba(232,168,76,.35)}
 .st-err{background:rgba(255,110,110,.1);color:#FF9B9B;border:.5px solid rgba(255,110,110,.3)}
-/* (14/09) Resultados do ADMIN: filtro por atendente */
-.filtro-atendente{display:flex;align-items:center;gap:10px;margin:2px 0 10px;flex-wrap:wrap}
-.filtro-atendente label{font-size:12px;color:var(--text-dim)}
-.filtro-atendente select{flex:1;min-width:180px;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:9px 12px;font:inherit;font-size:14px}
 .btn-baixar{
   padding:9px 16px;border-radius:var(--radius);text-decoration:none;
   background:rgba(201,168,76,.14);border:.5px solid var(--gold);color:var(--gold);
@@ -3201,19 +3197,17 @@ async function loadOrders() {
     }
     const ehAdmin = (d.viewMode === 'admin');   // admin vê o atendente de cada pedido; atendente vê só os seus
     const orders = (d.orders || []).filter(o => o.kind === 'avatar');
-    desenhaResultados(orders, ehAdmin);   // (14/09) o desenho virou função: o filtro do admin redesenha sem buscar de novo
+    desenhaResultados(orders, ehAdmin);   // (14/09) a lista é desenhada numa função à parte
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
 }
 
-// (14/09) Resultados. O ADMIN vê os vídeos de TODOS os atendentes, com filtro por atendente, e abre qualquer
-// um no Editar — inclusive os que falharam, pra refazer com tudo preenchido.
-var _ultimaLista = null;   // var, e não let: nada quebra se o polling chamar antes desta linha rodar
-var filtroAtendente = '';  // e-mail escolhido no filtro ('' = todos)
+// (14/09) Resultados no MESMO formato do Avatar 150: o ADMIN vê numa lista só os vídeos de TODOS os atendentes
+// (o mais novo em cima, com o nome de quem fez) e abre qualquer um no Editar — inclusive os que falharam, pra
+// refazer com tudo preenchido. O filtro por atendente saiu no mesmo dia, a pedido do Thiago.
 function desenhaResultados(orders, ehAdmin) {
   const el = document.getElementById('ordersList');
-  _ultimaLista = { orders, ehAdmin };
   try {
     if (!orders.length) {
       el.innerHTML = '<div class="empty-state">Nenhum vídeo ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar vídeo</b>. 🎤' +
@@ -3222,24 +3216,7 @@ function desenhaResultados(orders, ehAdmin) {
     }
     orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
     let html = '';
-    let lista = orders;
-    if (ehAdmin) {   // (14/09) filtro por atendente — só o admin vê
-      const porEmail = {};
-      orders.forEach(o => {
-        const k = String(o.attendantEmail || '').toLowerCase().trim();
-        if (!porEmail[k]) porEmail[k] = { nome: o.attendantName || k || '—', n: 0 };
-        porEmail[k].n++;
-      });
-      if (filtroAtendente && !porEmail[filtroAtendente]) filtroAtendente = '';
-      const emails = Object.keys(porEmail).sort((a, b) => String(porEmail[a].nome).localeCompare(String(porEmail[b].nome), 'pt-BR'));
-      html += '<div class="filtro-atendente"><label for="fAtendente">👤 Atendente</label>' +
-        '<select id="fAtendente" onchange="filtroAtendente = this.value; desenhaResultados(_ultimaLista.orders, _ultimaLista.ehAdmin)">' +
-        '<option value="">Todos os atendentes (' + orders.length + ')</option>' +
-        emails.map(k => '<option value="' + escapeHtml(k) + '"' + (k === filtroAtendente ? ' selected' : '') + '>' + escapeHtml(porEmail[k].nome) + ' (' + porEmail[k].n + ')</option>').join('') +
-        '</select></div>';
-      if (filtroAtendente) lista = orders.filter(o => String(o.attendantEmail || '').toLowerCase().trim() === filtroAtendente);
-    }
-    for (const o of lista) {
+    for (const o of orders) {
       const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
       let chip, side = '';
       if (o.status === 'COMPLETED' && o.videoUrl) {
