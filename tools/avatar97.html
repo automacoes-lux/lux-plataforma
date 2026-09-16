@@ -220,6 +220,11 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .sw.on .sw-knob{background:#22e06a;box-shadow:0 0 10px rgba(34,224,106,.85);order:2}
 .sw-label{font-size:11.5px;line-height:1.25;text-align:right;color:var(--text-dim);transition:color .18s}
 .sw-label.on{color:#22e06a;font-weight:700}
+/* (16/09) as 2 chaves do Passo 1 em destaque: nome em BRANCO e borda dourada, ligadas ou desligadas */
+#btnMascote,#btnReal{border-color:var(--gold)}
+#btnMascote:hover,#btnReal:hover{border-color:#F0D080}
+#btnMascote.on,#btnReal.on{border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,.55),inset 0 0 7px rgba(201,168,76,.22)}
+#mascoteLbl,#realLbl{color:#fff;font-weight:600}
 
 /* (13/09) CHECKLIST do Passo 3 — lista vertical: ✅ pronto / ❌ falta; a última linha diz pessoa ou mascote */
 .checklist{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0 6px}
@@ -470,15 +475,25 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Degusta Açaí"/>
       </div>
 
-      <div class="field" style="margin-bottom:.55rem;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div class="field" style="margin-bottom:.55rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <label style="margin:0">Foto do personagem / pessoa / ambiente</label>
         <!-- (13/09) MASCOTE ATIVADO — desligado = pessoa; ligado = mascote, produto ou personagem (o canto usa outro motor) -->
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <span class="sw-label" id="mascoteLbl">Mascote<br/>ativado</span>
-          <button type="button" class="sw" id="btnMascote" role="switch" aria-checked="false" onclick="toggleMascote()"
-                  title="Ligue quando quem canta é um mascote, produto ou personagem. Desligado: pessoa.">
-            <span class="sw-knob"></span><span class="sw-txt" id="mascoteState">Off</span>
-          </button>
+        <!-- (16/09) IMAGEM REAL — desligado = desenho; ligado = a pessoa sai como FOTO, igual à foto enviada -->
+        <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="mascoteLbl">Mascote<br/>ativado</span>
+            <button type="button" class="sw" id="btnMascote" role="switch" aria-checked="false" onclick="toggleMascote()"
+                    title="Ligue quando quem canta é um mascote, produto ou personagem. Desligado: pessoa.">
+              <span class="sw-knob"></span><span class="sw-txt" id="mascoteState">Off</span>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="realLbl">Imagem<br/>real</span>
+            <button type="button" class="sw" id="btnReal" role="switch" aria-checked="false" onclick="toggleReal()"
+                    title="Ligue para a imagem sair como FOTO real, preservando a pessoa como ela é. Desligado: desenho.">
+              <span class="sw-knob"></span><span class="sw-txt" id="realState">Off</span>
+            </button>
+          </div>
         </div>
       </div>
       <!-- (12/09) TRÊS espaços com PAPEL fixo. Com um botão só o modelo não sabia qual foto era o quê e
@@ -848,6 +863,7 @@ let _avisouMidia = false;          // aviso de custo ao mexer nas mídias — 1x
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
+let imagemReal = false;            // (16/09) Passo 1: 'Imagem real' — DESLIGADO por padrão (desenho)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
 let pollTimer = null;
@@ -1224,7 +1240,7 @@ async function gerarAvatar() {
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };   // (12/09) cada foto vai com o seu papel
+    const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
     if (clientPhoto2) payload.personagem2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.ambiente = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
@@ -2328,6 +2344,23 @@ function setMascoteBtn() {
   if (l) l.classList.toggle('on', mascote);
   renderChecklist();
 }
+// (16/09) IMAGEM REAL — troca o PROMPT da imagem: ligada, a pessoa sai como FOTO de verdade (mesmo rosto,
+// mesma roupa, dentro do ambiente); desligada, sai o desenho. Não mexe no motor do canto nem no preço.
+function toggleReal() {
+  imagemReal = !imagemReal;
+  setRealBtn();
+  if (avatarPreview) toast(imagemReal ? '📸 Imagem real ligada — gere a imagem de novo pra ver.' : '🎨 Voltou pro desenho — gere a imagem de novo pra ver.');
+  else toast(imagemReal ? '📸 Imagem real: a pessoa sai como foto.' : '🎨 Imagem em desenho (padrão).');
+}
+function setRealBtn() {
+  const b = document.getElementById('btnReal');
+  const e = document.getElementById('realState');
+  const l = document.getElementById('realLbl');
+  if (b) { b.classList.toggle('on', imagemReal); b.setAttribute('aria-checked', imagemReal ? 'true' : 'false'); }
+  if (e) e.textContent = imagemReal ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', imagemReal);
+  renderChecklist();
+}
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
 function renderChecklist() {
   const ul = document.getElementById('checklist');
@@ -2345,8 +2378,8 @@ function renderChecklist() {
   ul.innerHTML = itens.map(([ok, nome, dica]) =>
       '<li class="' + (ok ? 'ok' : 'falta') + '"><span class="ck-ico">' + (ok ? '✅' : '❌') + '</span><span>' + nome +
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
-    '<li class="modo"><span class="ck-ico">' + (mascote ? '🐶' : '🧑') + '</span><span>Configurado para ' +
-      (mascote ? 'mascote' : 'pessoa') + '</span></li>';
+    '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : (mascote ? '🐶' : '🧑')) + '</span><span>Configurado para ' +
+      (mascote ? 'mascote' : 'pessoa') + (imagemReal ? ', em imagem real' : '') + '</span></li>';
 }
 ['fCategoria', 'clientName'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', renderChecklist); });
 function setTransBtn() {
@@ -3050,6 +3083,7 @@ async function gerarClipe() {
       bgExpected: scenes.length,
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
+      real: imagemReal,                      // (16/09) chave "Imagem real" do Passo 1: fica guardada para o Editar
       // (13/09) o resto do que a atendente preencheu, guardado para o botão Editar trazer de volta
       clientPhoto2: clientPhoto2 ? { base64: clientPhoto2.base64, name: clientPhoto2.name, mimeType: clientPhoto2.mimeType } : null,
       clientPhoto3: clientPhoto3 ? { base64: clientPhoto3.base64, name: clientPhoto3.name, mimeType: clientPhoto3.mimeType } : null,
@@ -3306,6 +3340,7 @@ async function editarClipe(orderId) {
     { const av = document.getElementById('avatarMotorAviso'); if (av) { av.textContent = ''; av.style.display = 'none'; } }
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = d.avatarNote || ''; }
     mascote = !!d.mascote; setMascoteBtn();
+    imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
     renderClientPhoto(); refreshAvatarUI();
 
     rawAudioBuffer = audioBuf;
@@ -3490,6 +3525,7 @@ function resetCreateForm() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
+  imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -3515,6 +3551,7 @@ function sairEdicao() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
+  imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
