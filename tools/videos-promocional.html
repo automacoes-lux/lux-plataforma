@@ -2102,8 +2102,8 @@ async function garantirVozes(){
 
 // ══ SINCRONIZAÇÃO DOS DOIS TEXTOS (07/09) ═══════════════════════════════════════════
 // A fala é a fonte. O servidor devolve a fala FORMATADA (espaço depois de vírgula, maiúsculas,
-// concordância, acento, número por extenso, telefone no formato do motor) e a legenda como a
-// MESMA frase escrita pra tela (numeral, @, telefone entre parênteses).
+// concordância, acento, número em dígito, telefone por extenso no formato do motor) e a legenda
+// como a MESMA frase escrita pra tela (R$, ml, h, @, telefone entre parênteses).
 // RECIBO: `_textosDe` = contra qual fala os textos valem; `_legendaFeita` = qual legenda saiu.
 // Vale tanto pro que o servidor produziu quanto pro que o atendente ajustou à mão na legenda.
 // Se a fala mudar, o recibo cai. Sem recibo válido, sincroniza — inclusive AO ABRIR o projeto.
@@ -2291,7 +2291,7 @@ function renderCortes(){
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (segue a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-             '<textarea data-faed="'+i+'" maxlength="250" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (por extenso)">'+esc(s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" maxlength="250" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              '<div class="btn-row" style="margin-top:.4rem">'+
                '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
