@@ -30,6 +30,15 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .chips{display:flex;flex-wrap:wrap;gap:.5rem}
 .chip{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:999px;padding:.55rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;user-select:none}
 .chip.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* (21/09) chave liga/desliga. O checkbox de verdade fica por baixo: funciona no teclado e no leitor de tela */
+.chave{position:relative;display:flex;align-items:center;gap:.7rem;min-height:44px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.chave input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.chave-trilho{position:relative;flex:0 0 auto;width:48px;height:28px;border-radius:999px;background:var(--bg-input);border:.5px solid var(--border);transition:background .18s,border-color .18s}
+.chave-trilho::after{content:'';position:absolute;top:2.5px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--text-mid);transition:transform .18s,background .18s}
+.chave input:checked + .chave-trilho{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));border-color:transparent}
+.chave input:checked + .chave-trilho::after{transform:translateX(20px);background:#141414}
+.chave input:focus-visible + .chave-trilho{outline:2px solid rgba(201,168,76,.75);outline-offset:2px}
+.chave-texto{font-size:14px;color:var(--text-mid);line-height:1.35}
 .btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
 .btn-gold:hover{filter:brightness(1.07)}
 .btn-gold:disabled{opacity:.55;cursor:not-allowed}
@@ -474,6 +483,18 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         </div>
       </div>
 
+      <!-- (21/09) TRANSIÇÃO ENTRE AS CENAS: ligada de praxe (o fade rápido de sempre). Desligada,
+           o editor emenda uma cena direto na outra — corte seco. -->
+      <div class="step" style="margin-top:.8rem">
+        <div class="step-head"><div class="step-title">Transição entre as cenas</div></div>
+        <div class="step-hint">Ligada, cada cena entra com um fade rápido. Desligada, é corte seco: uma cena emenda direto na outra.</div>
+        <label class="chave" for="chkTransicao">
+          <input type="checkbox" id="chkTransicao" checked/>
+          <span class="chave-trilho" aria-hidden="true"></span>
+          <span class="chave-texto" id="txtTransicao">Ligada — fade entre as cenas</span>
+        </label>
+      </div>
+
       <!-- legenda automática: ligada por padrão, o atendente desliga aqui. Fica depois da música
            porque é a última decisão antes de montar. -->
       <div class="step" style="margin-top:.8rem">
@@ -827,6 +848,7 @@ function estadoAtual(){
     campanha: campanha, cenas: cenas.map(cenaLimpa),
     trilha: trilhaSel, legendas: legendas, corDestaque: corDestaque, volumeTrilha: volumeTrilha,
     legendaY: legendaY,   // (11/09) a altura escolhida pro texto no vídeo
+    transicoes: transicoes,   // (21/09) chave de transição entre as cenas
     custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD,
     custoPor: custoPor, custoPorLancado: custoPorLancado, videoUrl: videoFinalUrl||''
   };
@@ -1030,6 +1052,8 @@ async function abrirProjeto(id){
     marcarCor(/^#[0-9a-fA-F]{6}$/.test(String(p.corDestaque||'')) ? p.corDestaque : '#ffffff');
     marcarVolume((Number(p.volumeTrilha) > 0 && Number(p.volumeTrilha) <= 1) ? Number(p.volumeTrilha) : 0.12);
     legendaY = isFinite(Number(p.legendaY)) ? limitaY(p.legendaY) : LEG_Y_PADRAO;   // (11/09)
+    transicoes = (p.transicoes === undefined) ? true : !!p.transicoes;   // (21/09) projeto antigo = ligada
+    pintarTransicao();
     pintarPosLegenda();
     document.querySelectorAll('#chipsLegenda .chip').forEach(function(c){
       c.classList.toggle('on', (c.dataset.v==='sim') === legendas);
@@ -1630,6 +1654,17 @@ let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; });
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
+// (21/09) transição entre as cenas: true = fade rápido (padrão, como sempre foi); false = corte seco
+let transicoes = true;
+function pintarTransicao(){
+  const c = document.getElementById('chkTransicao'); if(c) c.checked = transicoes;
+  const t = document.getElementById('txtTransicao');
+  if(t) t.textContent = transicoes ? 'Ligada — fade entre as cenas' : 'Desligada — corte seco';
+}
+(function(){
+  const c = document.getElementById('chkTransicao');
+  if(c) c.addEventListener('change', function(){ transicoes = c.checked; pintarTransicao(); });
+})();
 
 // volume da música
 function marcarVolume(v){
@@ -2653,7 +2688,8 @@ async function finalizar(){
       vozUrl: s._vozUrl || '' }));
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque,
-      volumeTrilha: volumeTrilha, legendaY: legendaY }) });   // (11/09) altura da legenda no vídeo
+      volumeTrilha: volumeTrilha, legendaY: legendaY,   // (11/09) altura da legenda no vídeo
+      transicoes: transicoes }) });                      // (21/09) false = corte seco entre as cenas
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha na montagem');
     // o Worker conta o que houve com a legenda (ok / sem-marcacoes / erro). Se ela estava ligada
