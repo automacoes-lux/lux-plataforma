@@ -190,7 +190,10 @@ html,body{
   .topbar{display:flex}
   .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
-  .main-content{width:100%;height:calc(100vh - 57px)}
+  /* 100vh no celular conta a faixa da barra de endereço, que some e volta ao rolar:
+     o pé da ferramenta ficava escondido e o botão de baixo não dava pra tocar.
+     O 100dvh acompanha a altura real; navegador antigo ignora e usa o vh de cima. */
+  .main-content{width:100%;height:calc(100vh - 57px);height:calc(100dvh - 57px)}
   .dashboard{padding:20px 16px}
   .dash-title{font-size:22px}
   .dash-grid{grid-template-columns:1fr 1fr;gap:12px}
