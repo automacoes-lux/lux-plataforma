@@ -50,6 +50,7 @@ function showDashboard() {
   document.getElementById('view-dashboard').style.display = 'block';
   setNav('dashboard');
   lembrarTela('');
+  pausarFerramentas(null);   // voltou pro início: nenhuma ferramenta precisa ficar trabalhando
   document.getElementById('mainContent').scrollTo(0, 0);
 }
 
@@ -115,6 +116,7 @@ function loadTool(name) {
   view.classList.add('show');
   setNav(name);
   lembrarTela(name);
+  pausarFerramentas(name);   // só a ferramenta aberta continua trabalhando
 
   // Preenche o nome do atendente na topbar (Lux Music e Figurinhas)
   const atendenteSlots = { musica: 'musicAtendente', figurinhas: 'figurinhasAtendente' };
@@ -140,6 +142,61 @@ function setNav(tool) {
     i.classList.toggle('active', i.dataset.tool === tool)
   );
 }
+
+// ── ECONOMIA NO CELULAR: pausar (e soltar) o que está escondido ─────────
+// Cada ferramenta vive num iframe que NUNCA era desmontado: depois que o
+// atendente trocava de aba, ela seguia consultando o servidor a cada poucos
+// segundos e as fotos dela seguiam ocupando memória. Com 3 ou 4 ferramentas
+// abertas, o navegador do celular estoura e RECARREGA a página sozinho — é aí
+// que o atendente perde o que estava fazendo.
+//
+// Agora, ao sair de uma ferramenta:
+//   1. avisamos ela (postMessage 'lux:pausar') pra parar os timers;
+//   2. ela responde se está OCUPADA (dados na tela ou trabalho em andamento);
+//   3. se responder que está VAZIA e ficar 2 minutos escondida, o iframe é
+//      descarregado e a memória volta. Ao reabrir, ela monta de novo, limpa.
+// Ferramenta que não entende essas mensagens NUNCA é descarregada — continua
+// funcionando exatamente como antes.
+const LIBERAR_MS = 120000;   // 2 min escondida e vazia → devolve a memória
+const _toolEstado = {};      // nome → 'livre' | 'ocupado' (só quem responde)
+const _toolTimer  = {};      // nome → timer de liberação
+
+function _toolIframe(name) {
+  const view = document.getElementById('view-' + name);
+  return view ? view.querySelector('iframe.tool-iframe') : null;
+}
+function _avisarTool(name, aviso) {
+  const f = _toolIframe(name);
+  try { if (f && f.contentWindow) f.contentWindow.postMessage({ lux: aviso }, '*'); } catch (e) {}
+}
+function pausarFerramentas(ativa) {
+  Object.keys(TOOLS).forEach((name) => {
+    if (name === ativa || !_toolIframe(name)) return;
+    _avisarTool(name, 'pausar');
+    if (_toolTimer[name]) clearTimeout(_toolTimer[name]);
+    _toolTimer[name] = setTimeout(() => {
+      _toolTimer[name] = null;
+      const el = _toolIframe(name);
+      const view = document.getElementById('view-' + name);
+      if (!el || !view || view.classList.contains('show')) return;
+      if (_toolEstado[name] !== 'livre') return;   // só descarrega quem AVISOU que está vazia
+      el.remove();
+      delete _toolEstado[name];
+    }, LIBERAR_MS);
+  });
+  if (ativa) {
+    if (_toolTimer[ativa]) { clearTimeout(_toolTimer[ativa]); _toolTimer[ativa] = null; }
+    _avisarTool(ativa, 'retomar');
+  }
+}
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || d.lux !== 'estado') return;
+  Object.keys(TOOLS).forEach((name) => {
+    const f = _toolIframe(name);
+    if (f && f.contentWindow === e.source) _toolEstado[name] = d.ocupado ? 'ocupado' : 'livre';
+  });
+});
 
 // ── SIDEBAR MOBILE ─────────────────────────────────────────
 function toggleSidebar() {
@@ -324,6 +381,9 @@ function alertasShowModal(alerta) {
 async function alertasFetchPending() {
   // Aguarda __luxFetch estar disponível (auth carregou)
   if (!window.__luxFetch) return;
+  // Celular com a tela apagada / app em segundo plano: não gasta rede nem bateria.
+  // Quando o atendente volta, o visibilitychange abaixo consulta na hora.
+  if (document.hidden) return;
 
   try {
     const resp = await window.__luxFetch(ALERTAS_WORKER_URL + '/alertas/pending');
@@ -365,6 +425,8 @@ if (document.readyState === 'loading') {
 } else {
   alertasStartPolling();
 }
+// Voltou pra tela: confere os alertas na hora (o ciclo pula enquanto está escondido)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) alertasFetchPending(); });
 
 // Expõe pro atendimento.html avisar o shell que dispararam um alerta
 window.luxAlertasRefresh = alertasFetchPending;
