@@ -340,6 +340,30 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 }
 .empty-state{color:var(--text-dim);font-size:13.5px;text-align:center;padding:1.6rem 0;line-height:1.6}
 
+/* BUSCA DA VITRINE (23/09) — achar o vídeo de qualquer colega pelo ramo do cliente */
+.busca{
+  display:flex;align-items:center;gap:8px;background:var(--bg-input);
+  border:.5px solid var(--border);border-radius:var(--radius);padding:2px 12px;margin:2px 0 10px;
+}
+.busca input{border:none;background:transparent;padding:11px 0;flex:1;min-width:0;color:var(--text);font-size:14px;outline:none}
+.busca .lupa{font-size:14px;opacity:.7}
+.busca button{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
+.busca button:hover{color:var(--gold)}
+.busca-cont{font-size:11.5px;color:var(--text-dim);margin:-4px 0 12px}
+.order-cat{
+  display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);
+  border-radius:999px;padding:2px 9px;margin-bottom:4px;
+}
+
+/* ABA PROJETOS (23/09) — rascunho salvo sozinho */
+button.btn-baixar{cursor:pointer}
+.proj-th{
+  width:54px;height:54px;flex-shrink:0;border-radius:10px;object-fit:cover;
+  background:var(--bg-input);border:.5px solid var(--border);
+}
+#rascAviso{font-size:11.5px;color:var(--text-dim);text-align:right;min-height:16px;margin:-2px 0 8px}
+
 /* TOAST */
 #toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -431,6 +455,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="tabs">
     <button class="tab active" id="tabCriar" onclick="showTab('criar')">🎬 Criar vídeo</button>
+    <button class="tab" id="tabProjetos" onclick="showTab('projetos')">📁 Projetos</button>
     <button class="tab" id="tabResultados" onclick="showTab('resultados')">📋 Resultados</button>
   </div>
 
@@ -444,6 +469,9 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <button class="btn-mini" onclick="sairEdicao()" style="flex:none">✖ Cancelar</button>
     </div>
 
+    <!-- (23/09) aviso do salvamento automático: some quando não há nada guardado -->
+    <div id="rascAviso"></div>
+
     <!-- PASSO 1 -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
@@ -456,7 +484,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
            Foto/descrição do AMBIENTE não vieram de propósito: no Avatar 97 quem faz esse papel é o
            Passo 3, que já recebe as fotos e vídeos do comércio, na ordem e com tempo por cena. -->
       <div class="field">
-        <label for="fCategoria">Categoria</label>
+        <label for="fCategoria">Categoria <span style="color:var(--gold)">*</span></label>
+        <div class="hint" style="margin:-2px 0 6px">O ramo do cliente. É por aqui que toda a equipe acha o vídeo depois, na aba <b style="color:var(--text-mid)">Resultados</b>.</div>
         <input type="text" id="fCategoria" maxlength="60" list="catSugestoes" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica"/>
         <datalist id="catSugestoes">
           <option value="Alimentação"></option><option value="Padaria e confeitaria"></option>
@@ -471,7 +500,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
 
       <div class="field">
-        <label for="clientName">Cliente / empresa</label>
+        <label for="clientName">Cliente / empresa <span style="color:var(--gold)">*</span></label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Degusta Açaí"/>
       </div>
 
@@ -634,6 +663,17 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   </div>
 
+  <!-- ════════════ ABA PROJETOS (23/09) ════════════ -->
+  <!-- O que está sendo preenchido no Criar vídeo é guardado sozinho a cada etapa.
+       Aqui o atendente continua de onde parou — ou joga o projeto fora. -->
+  <div class="panel" id="panel-projetos">
+    <div class="card">
+      <div class="step-eyebrow"><span class="dot"></span>Projetos salvos</div>
+      <div class="hint" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
+      <div id="listaProjetos"><div class="empty-state">Carregando…</div></div>
+    </div>
+  </div>
+
   <!-- ════════════ ABA RESULTADOS ════════════ -->
   <div class="panel" id="panel-resultados">
 
@@ -650,6 +690,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Vídeos</div>
+      <!-- (23/09) VITRINE DA EQUIPE: todo atendente acha o vídeo de qualquer colega pelo ramo
+           do cliente, pelo nome do cliente ou pelo atendente — pra mandar exemplo pro lead. -->
+      <div class="busca">
+        <span class="lupa">🔎</span>
+        <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+        <button type="button" id="buscaLimpa" title="Limpar" style="display:none">✕</button>
+      </div>
+      <div class="busca-cont" id="buscaCont"></div>
       <div id="ordersList"><div class="empty-state">Carregando…</div></div>
     </div>
 
@@ -906,10 +954,13 @@ function toast(msg) {
 
 function showTab(name) {
   document.getElementById('tabCriar').classList.toggle('active', name === 'criar');
+  document.getElementById('tabProjetos').classList.toggle('active', name === 'projetos');
   document.getElementById('tabResultados').classList.toggle('active', name === 'resultados');
   document.getElementById('panel-criar').classList.toggle('active', name === 'criar');
+  document.getElementById('panel-projetos').classList.toggle('active', name === 'projetos');
   document.getElementById('panel-resultados').classList.toggle('active', name === 'resultados');
   if (name === 'resultados') loadOrders();
+  if (name === 'projetos') carregaProjetos();   // (23/09) projetos em andamento, salvos sozinhos
 }
 
 function fmtTime(s) {
@@ -1084,6 +1135,7 @@ async function setClientPhotoFromFile(file) {
     renderClientPhoto();
     refreshAvatarUI();
     renderStoryboard();
+    rascSalvar();   // (23/09) foto escolhida → guarda o projeto
   } catch (err) { toast('⚠️ ' + err.message); }
 }
 
@@ -1101,7 +1153,7 @@ function renderClientPhoto() {
     : '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'' + s.input + '\').click()"><span class="big">' + s.icone + '</span><span>' + s.rotulo + '</span></div>'
   ).join('');
 }
-function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
+function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); rascSalvar(); }
 
 // ── Dupla: 2ª foto (opcional) ──
 async function setClientPhoto2FromFile(file) {
@@ -1109,21 +1161,21 @@ async function setClientPhoto2FromFile(file) {
     const opt = await fileToOptimizedImage(file, false);
     clientPhoto2 = { ...opt, name: file.name || 'pessoa2.png' };
     avatarPreview = null;            // foto nova → o avatar antigo não vale mais
-    renderClientPhoto2(); refreshAvatarUI();
+    renderClientPhoto2(); refreshAvatarUI(); rascSalvar();
   } catch (err) { toast('⚠️ ' + err.message); }
 }
 function renderClientPhoto2() { renderClientPhoto(); }   // UI de 1 botão (19/08): tudo no render combinado
-function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
+function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); rascSalvar(); }
 // (12/09) Avatar 97: 3ª imagem — mesmo caminho da 2ª (a foto nova invalida a imagem gerada)
 async function setClientPhoto3FromFile(file) {
   try {
     const opt = await fileToOptimizedImage(file, false);
     clientPhoto3 = { ...opt, name: file.name || 'imagem3.png' };
     avatarPreview = null;
-    renderClientPhoto(); refreshAvatarUI();
+    renderClientPhoto(); refreshAvatarUI(); rascSalvar();
   } catch (err) { toast('⚠️ ' + err.message); }
 }
-function removeClientPhoto3() { clientPhoto3 = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); }
+function removeClientPhoto3() { clientPhoto3 = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); rascSalvar(); }
 
 // ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
@@ -1275,6 +1327,7 @@ async function gerarAvatar() {
     // (10/09) o Worker manda j.aviso quando o desenho saiu do MOTOR RESERVA. Antes ninguem mostrava,
     // e o atendente aprovava sem saber. Ficou obrigatorio depois que o botao de subir arte pronta saiu.
     if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++; renderStoryboard();   // (11/09) cada geração é cobrada
+    rascSalvar();   // (23/09) imagem pronta → guarda o projeto
     const avEl = document.getElementById('avatarMotorAviso');
     if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
     refreshAvatarUI();
@@ -2414,7 +2467,11 @@ function renderChecklist() {
     '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : (mascote ? '🐶' : '🧑')) + '</span><span>Configurado para ' +
       (mascote ? 'mascote' : 'pessoa') + (imagemReal ? ', em imagem real' : '') + '</span></li>';
 }
-['fCategoria', 'clientName'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', renderChecklist); });
+// (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
+['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', function () { renderChecklist(); rascSalvar(); });
+});
 function setTransBtn() {
   const b = document.getElementById('btnTrans');
   const s = document.getElementById('transState');
@@ -2479,6 +2536,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     rawAudioBuffer = audioBuf;
     rawAudioName = file.name;
     rawAudioFile = file;   // (13/09) guardada no servidor quando o vídeo for gerado
+    rascSalvar();          // (23/09) música enviada → guarda o projeto (a original sobe agora)
     abrirEditorCorte();
   } catch (err) {
     toast('⚠️ Não consegui ler esse áudio (arquivo corrompido ou formato que o navegador não abre): ' + err.message);
@@ -2498,6 +2556,7 @@ function setMusicReady(m) {
   document.getElementById('player').src = m.playerSrc;
   document.getElementById('btnReabrirCorte').style.display = m.wasCut ? '' : 'none';
   renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
+  rascSalvar();   // (23/09) trecho cortado → guarda o projeto
 }
 
 // ───────────────────────────────────────────────
@@ -3025,6 +3084,10 @@ function renderStoryboard() {
 function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
+  // (23/09) categoria virou obrigatória: é o ramo do cliente, e é por ela que a equipe
+  // acha este vídeo depois, na vitrine da aba Resultados.
+  if (!((document.getElementById('fCategoria') || {}).value || '').trim())
+    return 'Preencha a categoria — o ramo do cliente (Passo 1). É por ela que a equipe acha o vídeo depois.';
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
@@ -3174,6 +3237,11 @@ async function gerarClipe() {
     }
 
     addPending(d1.orderId, payload.clientName);
+    // (23/09) o rascunho virou pedido de verdade: sai da aba Projetos e libera os arquivos dele
+    if (rascunhoId) {
+      const pidFeito = rascunhoId;
+      try { await api('/a97RascunhoApagar?projectId=' + encodeURIComponent(pidFeito), { method: 'POST' }); } catch (e) {}
+    }
     resetCreateForm();   // form limpo: evita 2º clique gerar pedido DUPLICADO (~R$20) sem querer
 
     toast('🎬 Produção iniciada! Pode gerar outro vídeo enquanto este fica pronto.');
@@ -3272,59 +3340,167 @@ async function loadOrders() {
     }
     const ehAdmin = (d.viewMode === 'admin');   // admin vê o atendente de cada pedido; atendente vê só os seus
     const orders = (d.orders || []).filter(o => o.kind === 'avatar');
+    await carregaVitrine(termoBusca());   // (23/09) vídeos prontos de TODA a equipe (busca no servidor)
     desenhaResultados(orders, ehAdmin);   // (14/09) a lista é desenhada numa função à parte
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
 }
 
-// (14/09) Resultados no MESMO formato do Avatar 150: o ADMIN vê numa lista só os vídeos de TODOS os atendentes
-// (o mais novo em cima, com o nome de quem fez) e abre qualquer um no Editar — inclusive os que falharam, pra
-// refazer com tudo preenchido. O filtro por atendente saiu no mesmo dia, a pedido do Thiago.
-function desenhaResultados(orders, ehAdmin) {
-  const el = document.getElementById('ordersList');
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESULTADOS = VITRINE DA EQUIPE (23/09, pedido do Thiago)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Vídeo PRONTO é de todo mundo: o atendente acha pelo RAMO do cliente (categoria),
+// pelo nome do cliente ou pelo atendente, e manda o exemplo pro lead ANTES de ele
+// pagar. Quem não é dono só ganha o Baixar e NUNCA vê o custo do colega — o servidor
+// nem envia esse número. O que está EM PRODUÇÃO ou FALHOU continua privado (só do
+// dono; o admin vê todos) e fica no topo, fora da busca.
+// A busca roda no SERVIDOR: a janela é de 1 ano, e mandar milhares de vídeos pro
+// navegador travaria o celular.
+// (14/09) A parte de status segue no formato do Avatar 150: o admin vê os pedidos de
+// todos e abre qualquer um no Editar, inclusive os que falharam.
+let _meusOrders = [], _ehAdmin = false;
+let _vitrine = [], _vitTotal = 0, _vitAchados = 0, _buscaTimer = null;
+
+function termoBusca() {
+  const cx = document.getElementById('buscaRes');
+  return ((cx && cx.value) || '').trim();
+}
+
+async function carregaVitrine(termo) {
   try {
-    if (!orders.length) {
-      el.innerHTML = '<div class="empty-state">Nenhum vídeo ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar vídeo</b>. 🎤' +
-        '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
-      return;
-    }
-    orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
+    const resp = await api('/vitrine97?q=' + encodeURIComponent(termo || ''));
+    const d = await resp.json();
+    if (!d.ok) { _vitrine = []; return; }
+    _vitrine    = d.videos  || [];
+    _vitTotal   = d.total   || 0;
+    _vitAchados = d.achados || 0;
+  } catch (e) { _vitrine = []; }
+}
+
+function desenhaResultados(orders, ehAdmin) {
+  _meusOrders = orders || [];
+  _ehAdmin    = !!ehAdmin;
+  pintarResultados();
+}
+
+function pintarResultados() {
+  const el = document.getElementById('ordersList');
+  if (!el) return;
+  try {
+    const termo = termoBusca();
+    const btL = document.getElementById('buscaLimpa');
+    if (btL) btL.style.display = termo ? '' : 'none';
+
     let html = '';
-    for (const o of orders) {
-      const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
-      let chip, side = '';
-      if (o.status === 'COMPLETED' && o.videoUrl) {
-        chip = '<span class="st-chip st-ok">Pronto</span>';
-        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
-          '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>';
-      } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
-        chip = '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>';
-        // (14/09) o admin também abre no Editar um vídeo que falhou, pra refazer com tudo preenchido
-        if (ehAdmin) side = '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo e gerar de novo">✏️ Editar</button>';
-      } else {
-        chip = '<span class="st-chip st-run">Em produção</span>';
+    // 1) MEUS pedidos em produção ou que falharam — no topo, só quando não há busca
+    if (!termo) {
+      const pendentes = _meusOrders
+        .filter(o => !(o.status === 'COMPLETED' && o.videoUrl))
+        .sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
+      for (const o of pendentes) html += cardPedido(o);
+    }
+    // 2) VITRINE — prontos de toda a equipe (o servidor já filtrou e ordenou)
+    const custoDe = {};
+    for (const o of _meusOrders) { if (o.costBRL != null) custoDe[o.orderId] = o.costBRL; }
+    let prontos = _vitrine.slice();
+    // Rede de segurança: vídeo MEU que ainda não entrou na vitrine (índice sendo preenchido,
+    // ou uma falha de gravação) NUNCA pode sumir da minha tela — entra aqui pelo próprio pedido.
+    if (!termo) {
+      const naVitrine = {};
+      for (const v of _vitrine) naVitrine[v.orderId] = true;
+      for (const o of _meusOrders) {
+        if (o.status === 'COMPLETED' && o.videoUrl && !naVitrine[o.orderId]) {
+          prontos.push({
+            orderId: o.orderId, cliente: o.clientName || '', categoria: o.categoria || '',
+            atendente: o.attendantName || '', quando: o.finishedAt || o.createdAt || '',
+            segundos: 0, videoUrl: o.videoUrl, meu: true
+          });
+        }
       }
-      // (05/09) EM QUE PÉ está o pedido, do lado do nome (vem do servidor em order.statusMsg).
-      // Texto curto e objetivo — nunca cita o nome da ferramenta usada.
-      const etapa = (o.status !== 'COMPLETED' && o.status !== 'ERROR' && o.status !== 'CANCELLED' && o.statusMsg)
-        ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
-      const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
-      const linhaAtend = (ehAdmin && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
-      const fim = o.finishedAt ? ' · Fim ' + o.finishedAt : '';
-      html += '<div class="order-item">' +
-        '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' +
-        linhaAtend +
-        '<div class="order-meta">Início ' + (o.createdAt || '—') + fim + ' · ' + numCenas + ' cena(s)' + custo +
-        (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') +
-        '</div></div>' +
-        '<div class="order-side">' + chip + side + '</div></div>';
+      const tsDe = (id) => Number(String(id).split('_').pop()) || 0;
+      prontos.sort((a, b) => tsDe(b.orderId) - tsDe(a.orderId));
+    }
+    for (const v of prontos) html += cardVitrine(v, custoDe[v.orderId]);
+
+    const cont = document.getElementById('buscaCont');
+    if (cont) cont.textContent = !_vitTotal ? ''
+      : (termo ? (_vitAchados + ' de ' + _vitTotal + ' vídeos')
+               : (_vitTotal + ' vídeos de toda a equipe'));
+
+    if (!html) {
+      html = termo
+        ? '<div class="empty-state">Nada encontrado para <b>' + escapeHtml(termo) + '</b>.<br/>Tente o ramo do cliente (ex.: <b>açaí</b>, <b>oficina</b>) ou o nome do atendente.</div>'
+        : '<div class="empty-state">Nenhum vídeo ainda.<br/>Crie o primeiro na aba <b>Criar vídeo</b>. 🎤' +
+          '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
     }
     el.innerHTML = html;
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
 }
+
+// Pedido EM PRODUÇÃO ou que FALHOU (privado: só do dono; o admin vê os de todos)
+function cardPedido(o) {
+  const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
+  let chip, side = '';
+  if (o.status === 'ERROR' || o.status === 'CANCELLED') {
+    chip = '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>';
+    // (14/09) o admin também abre no Editar um vídeo que falhou, pra refazer com tudo preenchido
+    if (_ehAdmin) side = '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo e gerar de novo">✏️ Editar</button>';
+  } else {
+    chip = '<span class="st-chip st-run">Em produção</span>';
+  }
+  // (05/09) EM QUE PÉ está o pedido (vem do servidor em order.statusMsg) — nunca cita a ferramenta usada
+  const etapa = (o.statusMsg && o.status !== 'ERROR' && o.status !== 'CANCELLED')
+    ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
+  const cat = o.categoria ? '<div class="order-cat">' + escapeHtml(o.categoria) + '</div>' : '';
+  const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
+  const linhaAtend = (_ehAdmin && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
+  return '<div class="order-item">' +
+    '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' +
+    linhaAtend +
+    '<div class="order-meta">Início ' + (o.createdAt || '—') + ' · ' + numCenas + ' cena(s)' + custo +
+    (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') +
+    '</div></div>' +
+    '<div class="order-side">' + chip + side + '</div></div>';
+}
+
+// Vídeo PRONTO na vitrine. O custo só aparece nos MEUS (o servidor não manda o dos outros).
+function cardVitrine(v, custoBRL) {
+  const podeEditar = !!v.meu || _ehAdmin;
+  const cat   = v.categoria ? '<div class="order-cat">' + escapeHtml(v.categoria) + '</div>' : '';
+  const dur   = v.segundos ? ' · ' + Math.round(v.segundos) + 's' : '';
+  const custo = (custoBRL != null) ? ' · R$ ' + Number(custoBRL).toFixed(2).replace('.', ',') : '';
+  const quem  = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
+  const editar = podeEditar
+    ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>'
+    : '';
+  return '<div class="order-item">' +
+    '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' +
+    quem +
+    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
+    '<div class="order-side"><span class="st-chip st-ok">Pronto</span>' +
+    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar +
+    '</div></div>';
+}
+
+// Busca: espera 300ms depois da última tecla, porque a consulta vai ao servidor
+(function ligaBuscaVitrine() {
+  const liga = function () {
+    const cx = document.getElementById('buscaRes'), btL = document.getElementById('buscaLimpa');
+    if (cx) cx.addEventListener('input', function () {
+      if (_buscaTimer) clearTimeout(_buscaTimer);
+      _buscaTimer = setTimeout(async function () { await carregaVitrine(termoBusca()); pintarResultados(); }, 300);
+    });
+    if (btL) btL.addEventListener('click', async function () {
+      if (cx) cx.value = '';
+      await carregaVitrine(''); pintarResultados();
+      if (cx) cx.focus();
+    });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();
 
 // ───────────────────────────────────────────────
 // EDITAR (13/09, pedido do Thiago) = trazer TUDO de volta pro Criar vídeo, como antes de clicar em "Gerar o
@@ -3404,7 +3580,245 @@ async function editarClipe(orderId) {
     toast('⚠️ Não consegui trazer o vídeo de volta: ' + e.message);
   } finally {
     restaurando = false;
+    rascSalvar();   // (23/09) o que voltou pro Criar vídeo já nasce como projeto salvo
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROJETOS: SALVAMENTO AUTOMÁTICO (23/09, pedido do Thiago)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Cada etapa concluída — foto, imagem do avatar, música, corte, textos — guarda o
+// trabalho no servidor. O atendente pode fechar o navegador, trocar de máquina e
+// continuar depois pela aba Projetos, igual ao Personagem Animado.
+// Os ARQUIVOS sobem UMA vez cada: a "marca" compara o conteúdo e só reenvia o que
+// mudou. O salvamento em si manda um JSON pequeno, só com os endereços — senão a
+// música inteira subiria a cada tecla digitada.
+let rascunhoId = null;      // projeto aberto agora (null = ainda não há nada salvo)
+let _rascArquivos = {};     // { campo: { key, nome, mime, marca } }
+let _rascTimer = null, _rascSalvando = false, _rascPendente = false;
+const RASC_ORIGINAL_MAX = 25 * 1024 * 1024;   // música original no rascunho: até 25MB (o MP3 comum tem 2-3MB)
+
+const rascMarca = (b64) => (b64 ? (String(b64).length + ':' + String(b64).slice(0, 24)) : '');
+
+function rascAviso(texto) {
+  const el = document.getElementById('rascAviso');
+  if (el) el.textContent = texto || '';
+}
+
+// Agenda o salvamento. Espera 900ms para quem está digitando não disparar um envio por tecla.
+function rascSalvar() {
+  if (restaurando) return;
+  if (_rascTimer) clearTimeout(_rascTimer);
+  _rascTimer = setTimeout(rascSalvarAgora, 900);
+}
+
+async function rascSobeArquivo(campo, corpo, nome, mime, marca) {
+  const r = await api('/a97RascunhoArquivo?projectId=' + encodeURIComponent(rascunhoId) +
+    '&campo=' + encodeURIComponent(campo) + '&nome=' + encodeURIComponent(nome || campo), {
+      method: 'POST', headers: { 'Content-Type': mime || 'application/octet-stream' }, body: corpo
+    });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || ('não consegui guardar "' + campo + '"'));
+  _rascArquivos[campo] = { key: j.key, nome: nome || campo, mime: mime || '', marca: marca || '' };
+}
+
+// Sobe o que mudou desde o último salvamento e esquece o que o atendente removeu.
+async function rascSincroniza() {
+  const alvos = [
+    { campo: 'cliente',  b64: clientPhoto  && clientPhoto.base64,  mime: (clientPhoto  || {}).mimeType, nome: (clientPhoto  || {}).name || 'personagem1.jpg' },
+    { campo: 'foto2',    b64: clientPhoto2 && clientPhoto2.base64, mime: (clientPhoto2 || {}).mimeType, nome: (clientPhoto2 || {}).name || 'personagem2.jpg' },
+    { campo: 'ambiente', b64: clientPhoto3 && clientPhoto3.base64, mime: (clientPhoto3 || {}).mimeType, nome: (clientPhoto3 || {}).name || 'ambiente.jpg' },
+    { campo: 'cartoon',  b64: avatarPreview && avatarPreview.cartoonBase64, mime: 'image/png',  nome: 'avatar.png' },
+    { campo: 'trecho',   b64: music && music.base64,                        mime: 'audio/mpeg', nome: (music || {}).name || 'trecho.mp3' }
+  ];
+  for (const a of alvos) {
+    if (!a.b64) { delete _rascArquivos[a.campo]; continue; }
+    const m = rascMarca(a.b64);
+    if (_rascArquivos[a.campo] && _rascArquivos[a.campo].marca === m) continue;   // não mudou: não sobe de novo
+    await rascSobeArquivo(a.campo, b64ToU8(a.b64), a.nome, a.mime, m);
+  }
+  // Música ORIGINAL (arquivo inteiro) — é ela que permite reabrir o corte depois de continuar o projeto.
+  // Teto menor que o do pedido (60MB): um WAV gigante travaria o celular do atendente no meio do trabalho.
+  // Acima disso o projeto guarda só o trecho — ao continuar, a música volta inteira, sem os fades.
+  if (rawAudioFile && rawAudioFile.size <= RASC_ORIGINAL_MAX) {
+    const m = rawAudioFile.size + ':' + (rawAudioFile.name || '');
+    if (!(_rascArquivos.original && _rascArquivos.original.marca === m)) {
+      await rascSobeArquivo('original', await readFileAsArrayBuffer(rawAudioFile),
+        rawAudioFile.name || 'musica.mp3', rawAudioFile.type || 'audio/mpeg', m);
+    }
+  } else { delete _rascArquivos.original; }
+}
+
+// Em que passo o trabalho parou (é o que o cartão do projeto mostra)
+function rascPasso() {
+  if (music) return 3;
+  if (avatarPreview && avatarPreview.approved) return 2;
+  return 1;
+}
+
+async function rascSalvarAgora() {
+  if (restaurando) return;
+  if (_rascSalvando) { _rascPendente = true; return; }
+  const campo = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const temAlgo = !!(clientPhoto || clientPhoto2 || clientPhoto3 || avatarPreview || music || rawAudioFile ||
+    campo('clientName') || campo('fCategoria'));
+  if (!temAlgo) return;
+  _rascSalvando = true;
+  rascAviso('💾 Salvando…');
+  try {
+    if (!rascunhoId) rascunhoId = 'R97_' + Date.now();
+    await rascSincroniza();
+    const estado = {
+      clientName: campo('clientName'), categoria: campo('fCategoria'), avatarNote: campo('avatarNote'),
+      mascote: !!mascote, real: !!imagemReal, trechoLivre: !!trechoLivre,
+      corte: corteUsado || null,
+      musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
+      origName: rawAudioName || '',
+      arquivos: _rascArquivos,
+      cartoonKey: (_rascArquivos.cartoon || {}).key || '',
+      passo: rascPasso(), passoMax: 3
+    };
+    const r = await api('/a97RascunhoSalvar', { method: 'POST', body: JSON.stringify({ projectId: rascunhoId, estado }) });
+    const j = await r.json();
+    rascAviso(j.ok ? ('💾 Salvo automaticamente · ' + String(j.salvoEm || '').slice(-5)) : '');
+  } catch (e) {
+    rascAviso('');   // rascunho é conforto, não pode atrapalhar o trabalho: tenta de novo no próximo passo
+  } finally {
+    _rascSalvando = false;
+    if (_rascPendente) { _rascPendente = false; rascSalvar(); }
+  }
+}
+
+// ── ABA PROJETOS ───────────────────────────────────────────────────────────────
+async function carregaProjetos() {
+  const el = document.getElementById('listaProjetos');
+  if (!el) return;
+  try {
+    const r = await api('/a97Rascunhos');
+    const d = await r.json();
+    if (!d.ok) {
+      el.innerHTML = '<div class="empty-state">⚠️ ' + escapeHtml(d.error || 'Não consegui carregar os projetos.') +
+        '<br/><button class="btn-mini" style="margin-top:10px" onclick="carregaProjetos()">🔄 Tentar de novo</button></div>';
+      return;
+    }
+    const lista = d.projetos || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state">Nenhum projeto em andamento.<br/>O que você preencher na aba <b>Criar vídeo</b> fica guardado aqui sozinho. 💾</div>';
+      return;
+    }
+    el.innerHTML = lista.map(function (p) {
+      const cat  = p.categoria ? '<div class="order-cat">' + escapeHtml(p.categoria) + '</div>' : '';
+      const th   = p.thumb ? '<img class="proj-th" src="' + escapeHtml(p.thumb) + '" alt=""/>' : '<div class="proj-th"></div>';
+      const quem = p.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(p.atendente) + '</div>' : '';
+      return '<div class="order-item">' + th +
+        '<div class="order-info">' + cat +
+        '<div class="order-client">' + escapeHtml(p.cliente || '(sem nome ainda)') + '</div>' + quem +
+        '<div class="order-meta">parou no passo ' + (p.passo || 1) + ' de ' + (p.passoMax || 3) + ' · ' + escapeHtml(p.atualizadoEm || '') + '</div>' +
+        '</div>' +
+        '<div class="order-side">' +
+        '<button class="btn-baixar" onclick="continuarProjeto(\'' + p.projectId + '\')">▶ Continuar</button>' +
+        '<button class="btn-mini" title="Excluir este projeto" onclick="apagarProjeto(\'' + p.projectId + '\')">🗑️</button>' +
+        '</div></div>';
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+  }
+}
+
+// Continuar de onde parou: baixa tudo ANTES de mexer na tela (se falhar, nada se perde).
+async function continuarProjeto(pid) {
+  if (restaurando) return;
+  const preenchido = clientPhoto || clientPhoto2 || clientPhoto3 || avatarPreview || music || rawAudioBuffer ||
+    (document.getElementById('clientName').value || '').trim();
+  if (preenchido && rascunhoId !== pid &&
+      !confirm('O que está preenchido agora no Criar vídeo vai ser trocado por este projeto. Continuar?')) return;
+  restaurando = true;
+  toast('⏳ Abrindo o projeto…');
+  try {
+    const resp = await api('/a97RascunhoAbrir?projectId=' + encodeURIComponent(pid));
+    const d = await resp.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui abrir o projeto.')); return; }
+    const e = d.estado || {}, arq = e.arquivos || {};
+    const baixa = (campo) => arq[campo]
+      ? api('/a97RascunhoBaixar?projectId=' + encodeURIComponent(pid) + '&campo=' + encodeURIComponent(campo))
+          .then(x => x.ok ? x.blob() : null).catch(() => null)
+      : Promise.resolve(null);
+    const [b1, b2, b3, bCartoon, bTrecho, bOriginal] = await Promise.all([
+      baixa('cliente'), baixa('foto2'), baixa('ambiente'), baixa('cartoon'), baixa('trecho'), baixa('original')
+    ]);
+    const comoFoto = async (blob, nome) => {
+      if (!blob) return null;
+      const base64 = await blobToBase64(blob);
+      const mimeType = blob.type || 'image/jpeg';
+      return { base64, mimeType, thumbUrl: 'data:' + mimeType + ';base64,' + base64, name: nome };
+    };
+    const f1 = await comoFoto(b1, 'personagem1.jpg');
+    const f2 = await comoFoto(b2, 'personagem2.jpg');
+    const f3 = await comoFoto(b3, 'ambiente.jpg');
+    const cartoonB64 = bCartoon ? await blobToBase64(bCartoon) : null;
+
+    resetCreateForm();
+    rascunhoId = pid; _rascArquivos = arq;   // continua salvando NESTE projeto, sem subir tudo de novo
+    document.getElementById('clientName').value = e.clientName || '';
+    document.getElementById('fCategoria').value = e.categoria || '';
+    { const nt = document.getElementById('avatarNote'); if (nt) nt.value = e.avatarNote || ''; }
+    clientPhoto = f1; clientPhoto2 = f2; clientPhoto3 = f3;
+    if (cartoonB64) {
+      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi paga
+      cartoonGens = 0; cartoonGensRes = 0;
+      const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
+    }
+    mascote = !!e.mascote; setMascoteBtn();
+    imagemReal = !!e.real; setRealBtn();
+    renderClientPhoto(); refreshAvatarUI();
+
+    if (bTrecho) {
+      const trechoB64 = await blobToBase64(bTrecho);
+      const fonte = bOriginal || bTrecho;
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      try { rawAudioBuffer = await ac.decodeAudioData(await fonte.arrayBuffer()); } finally { try { ac.close(); } catch (x) {} }
+      rawAudioName = e.origName || 'musica.mp3';
+      rawAudioFile = new File([fonte], rawAudioName, { type: fonte.type || 'audio/mpeg' });
+      corteUsado = (bOriginal && e.corte) ? e.corte
+        : { inicio: 0, fim: rawAudioBuffer.duration, fadeIn: 0, fadeOut: 0, livre: true };
+      trechoLivre = !!corteUsado.livre; setTrechoBtn();
+      setMusicReady({
+        base64: trechoB64,
+        name: e.musicName || (rawAudioName.replace(/\.[^.]+$/, '') + '_trecho.mp3'),
+        duration: Math.round(e.musicDuration || rawAudioBuffer.duration),
+        playerSrc: URL.createObjectURL(bTrecho),
+        wasCut: true
+      });
+    } else if (bOriginal) {
+      // música enviada, corte ainda não aplicado: reabre o editor no mesmo ponto
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      try { rawAudioBuffer = await ac.decodeAudioData(await bOriginal.arrayBuffer()); } finally { try { ac.close(); } catch (x) {} }
+      rawAudioName = e.origName || 'musica.mp3';
+      rawAudioFile = new File([bOriginal], rawAudioName, { type: bOriginal.type || 'audio/mpeg' });
+      abrirEditorCorte();
+    }
+    renderChecklist();
+    showTab('criar');
+    window.scrollTo(0, 0);
+    rascAviso('💾 Projeto aberto · continue de onde parou');
+    toast('▶ "' + (e.clientName || 'Projeto') + '" está de volta no Criar vídeo.');
+  } catch (err) {
+    toast('⚠️ Não consegui abrir o projeto: ' + err.message);
+  } finally {
+    restaurando = false;
+  }
+}
+
+async function apagarProjeto(pid) {
+  if (!confirm('Excluir este projeto? O que estiver guardado nele será apagado.')) return;
+  try {
+    const r = await api('/a97RascunhoApagar?projectId=' + encodeURIComponent(pid), { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui excluir.')); return; }
+    if (rascunhoId === pid) { rascunhoId = null; _rascArquivos = {}; rascAviso(''); }
+    toast('🗑️ Projeto excluído.');
+    carregaProjetos();
+  } catch (e) { toast('⚠️ Não consegui excluir: ' + e.message); }
 }
 
 // ───────────────────────────────────────────────
@@ -3558,6 +3972,8 @@ function avisarCustoMidia() {
 
 // limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
 function resetCreateForm() {
+  // (23/09) form vazio = nenhum projeto em edição. Quem for continuar um projeto reassume o id logo depois.
+  rascunhoId = null; _rascArquivos = {}; if (typeof rascAviso === 'function') rascAviso('');
   clientPhoto = null; clientPhoto2 = null; clientPhoto3 = null; avatarPreview = null;
   try { renderClientPhoto2(); } catch (e) {}
   avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
