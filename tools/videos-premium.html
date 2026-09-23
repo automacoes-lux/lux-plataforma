@@ -955,7 +955,29 @@ async function fileToOptimizedImage(file, keepPng) {
   canvas.getContext('2d').drawImage(img, 0, 0, width, height);
   const mime = keepPng ? 'image/png' : 'image/jpeg';
   const out = canvas.toDataURL(mime, IMAGE_QUALITY);
-  return { base64: out.split(',')[1], mimeType: mime, thumbUrl: out };
+  const thumbUrl = miniatura(canvas);
+  canvas.width = canvas.height = 1;   // devolve a memória do canvas grande
+  return { base64: out.split(',')[1], mimeType: mime, thumbUrl };
+}
+
+// (22/09) MINIATURA PRA TELA — conserto do travamento no celular.
+// As listas do Passo 1 e do Passo 3 mostram cada foto num quadradinho de ~90px, mas o src
+// delas era a foto INTEIRA (1536px). A cada redesenho da lista (adicionar, remover, arrastar,
+// mudar a duração de um clipe) o navegador tinha que decodificar de novo TODAS as fotos em
+// tamanho cheio — com 10-20 mídias isso congela o celular por segundos e come memória até o
+// navegador recarregar a página sozinho. Agora a tela mostra esta cópia pequena; o que sobe
+// pro servidor continua sendo a imagem grande (base64), sem perder nada de qualidade.
+const THUMB_MAX = 360;
+function miniatura(canvas) {
+  try {
+    const f = Math.min(1, THUMB_MAX / Math.max(canvas.width, canvas.height));
+    if (f >= 1) return canvas.toDataURL('image/jpeg', 0.72);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(canvas.width * f));
+    c.height = Math.max(1, Math.round(canvas.height * f));
+    c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.72);
+  } catch (e) { return canvas.toDataURL('image/jpeg', 0.72); }
 }
 
 // ───────────────────────────────────────────────
@@ -1318,7 +1340,10 @@ function updateAvSizeLabel() {
 function closeCalib(confirmar) {
   document.getElementById('calibOverlay').classList.remove('show');
   if (!confirmar && _calibSnap) {   // Cancelar = volta posição e tamanho de antes de abrir
-    avatarCalib = { dx: _calibSnap.dx, dy: _calibSnap.dy };
+    // (22/09) o px (avatar+palco na esquerda/centro/direita) estava ficando de fora: quem tinha
+    // encostado o avatar no canto e depois abria e CANCELAVA a calibração via o avatar pular
+    // pro meio sem ninguém pedir.
+    avatarCalib = { dx: _calibSnap.dx, dy: _calibSnap.dy, px: _calibSnap.px || 0 };
     avScale = _calibSnap.sc;
   }
   _calibSnap = null;
@@ -2049,10 +2074,18 @@ function closeVideoEditor() {
   document.getElementById('veHb').addEventListener('mousedown', e => { if (vee) { vee.dragH = 'b'; e.preventDefault(); } });
   window.addEventListener('mousemove', e => moveH(e.clientX));
   window.addEventListener('mouseup', endH);
-  document.getElementById('veHa').addEventListener('touchstart', e => { if (vee) vee.dragH = 'a'; }, { passive: true });
-  document.getElementById('veHb').addEventListener('touchstart', e => { if (vee) vee.dragH = 'b'; }, { passive: true });
-  window.addEventListener('touchmove', e => { if (vee && vee.dragH) { moveH(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
-  window.addEventListener('touchend', endH);
+  // (22/09) ROLAGEM TRAVADA NO CELULAR. Este touchmove ficava ligado na PÁGINA INTEIRA e como
+  // não é "passive" (precisa do preventDefault ao arrastar a alça), o navegador era obrigado a
+  // perguntar pro JavaScript antes de rolar QUALQUER toque — a tela inteira ficava pastosa o
+  // tempo todo, mesmo sem o editor de vídeo aberto. Agora ele só existe enquanto a alça está
+  // sendo arrastada de verdade.
+  const veMove = (e) => { if (vee && vee.dragH) { moveH(e.touches[0].clientX); e.preventDefault(); } };
+  const veLigarToque = () => { window.addEventListener('touchmove', veMove, { passive: false }); };
+  const veDesligarToque = () => { window.removeEventListener('touchmove', veMove, { passive: false }); };
+  document.getElementById('veHa').addEventListener('touchstart', e => { if (vee) { vee.dragH = 'a'; veLigarToque(); } }, { passive: true });
+  document.getElementById('veHb').addEventListener('touchstart', e => { if (vee) { vee.dragH = 'b'; veLigarToque(); } }, { passive: true });
+  window.addEventListener('touchend', () => { veDesligarToque(); endH(); });
+  window.addEventListener('touchcancel', () => { veDesligarToque(); endH(); });
   const zoom = document.getElementById('veZoom');
   if (zoom) zoom.addEventListener('input', () => { if (vee) { vee.scale = (parseFloat(zoom.value) || 100) / 100; veTransform(); } });
 })();
@@ -2273,7 +2306,7 @@ async function saveEditor() {
   const dataUrl = cv.toDataURL('image/jpeg', 0.85);
   const s = scenes[ed.i];
   if (s) {
-    s.base64 = dataUrl.split(',')[1]; s.mimeType = 'image/jpeg'; s.thumbUrl = dataUrl;
+    s.base64 = dataUrl.split(',')[1]; s.mimeType = 'image/jpeg'; s.thumbUrl = miniatura(cv);   // tela usa a cópia pequena; o envio usa a grande
     s.userEdited = true;                                    // ✏️ manda: sai da Expansão com IA
     s.expanded = false; s.preExpand = null; s.expandBase64 = null;
   }
@@ -2690,14 +2723,22 @@ async function encodeMP3(buffer, onProgress) {
   const right = channels > 1 ? floatTo16BitPCM(buffer.getChannelData(1)) : left;
   const enc = new lamejs.Mp3Encoder(channels, sampleRate, 192);
   const block = 1152, parts = [];
+  // (22/09) A conversão pra MP3 roda aqui no aparelho e é PESADA. Antes ela só devolvia o
+  // controle pra tela a cada 400 blocos (uns 10 SEGUNDOS de música) — e, quando o chamador não
+  // passava onProgress, NUNCA devolvia: o celular ficava travado do começo ao fim, sem responder
+  // a toque nenhum. Agora paramos a cada ~40ms de trabalho, sempre. Demora o mesmo, mas a tela
+  // continua viva e o atendente vê o progresso.
+  let marco = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  const agora = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now());
   for (let i = 0; i < left.length; i += block) {
     const l = left.subarray(i, i + block);
     const r = right.subarray(i, i + block);
     const out = channels > 1 ? enc.encodeBuffer(l, r) : enc.encodeBuffer(l);
     if (out.length) parts.push(new Uint8Array(out));
-    if (onProgress && i % (block * 400) === 0) {
-      onProgress(i / left.length);
+    if (agora() - marco >= 40) {
+      if (onProgress) onProgress(i / left.length);
       await new Promise(r2 => setTimeout(r2, 0));   // deixa a UI respirar
+      marco = agora();
     }
   }
   const tail = enc.flush();
@@ -3338,6 +3379,31 @@ window.addEventListener('DOMContentLoaded', () => {
   checkManutencao();
 });
 window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
+
+// ── (22/09) A plataforma avisa quando esta tela sai e volta de vista ────────
+// Antes, sair daqui pra outra ferramenta não parava nada: esta tela continuava
+// perguntando o status dos clipes a cada 8s pra sempre, junto com as outras
+// abertas. No celular isso gasta bateria e memória até o navegador recarregar
+// tudo sozinho. Agora paramos os timers enquanto está escondida e avisamos a
+// plataforma se tem trabalho aqui dentro (se NÃO tiver, ela pode fechar esta
+// tela pra devolver memória — e nada se perde, porque não há nada na tela).
+function telaOcupada() {
+  try {
+    const nome = ((document.getElementById('clientName') || {}).value || '').trim();
+    return !!(nome || clientPhoto || clientPhoto2 || avatarPreview || music ||
+              rawAudioBuffer || (scenes && scenes.length) || editState ||
+              getPending().length);
+  } catch (e) { return true; }   // na dúvida, diz que está ocupada (nunca descarrega)
+}
+window.addEventListener('message', (e) => {
+  const d = e && e.data;
+  if (!d || (d.lux !== 'pausar' && d.lux !== 'retomar')) return;
+  try {
+    if (d.lux === 'pausar') stopPolling();
+    else if (getPending().length) startPolling();
+  } catch (_) {}
+  try { parent.postMessage({ lux: 'estado', ocupado: telaOcupada() }, '*'); } catch (_) {}
+});
 </script>
 </body>
 </html>

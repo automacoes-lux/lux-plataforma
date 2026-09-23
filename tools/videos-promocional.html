@@ -648,6 +648,18 @@ function contarPalavras(t){ return String(t||'').trim().split(/\s+/).filter(Bool
 function mostrar(id){ const el=document.getElementById(id); if(el) el.classList.remove('hide'); }
 function rolarPara(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
 function imgSrc(v){ const t=String(v||''); return /^https?:\/\//.test(t) ? t : ('data:image/jpeg;base64,'+t); }
+// (22/09) CARIMBO do personagem — conserto de lentidão no celular.
+// Cada cena guardava a IMAGEM INTEIRA do personagem (a mesma, em base64, ~1 a 2MB) só pra saber
+// depois se o clipe era do personagem atual. Com 4 cenas, todo "salvar projeto" subia a mesma
+// imagem 5 vezes: um POST de vários MB, repetido a cada cena que ficava pronta — no 4G isso
+// demora e come memória. Agora guardamos só uma assinatura curta. Projeto antigo (que gravou a
+// imagem toda) continua funcionando: os dois lados passam por aqui antes de comparar.
+function marcaPersonagem(v){
+  const t = String(v||'');
+  if (!t) return '';
+  if (t.length <= 120) return t;                       // já é URL ou carimbo
+  return t.length + ':' + t.slice(0, 40) + t.slice(-40);
+}
 
 // ── Wizard: 3 passos ──
 const PASSOS = [
@@ -1559,7 +1571,7 @@ async function acompanharVideo(i, predictionId){
 
       if(d.status==='done' && d.url){
         s.video_url=d.url; s.video_status='pronto'; s.video_error='';
-        s._personagemUsado = personagemImg;   // de qual imagem esta cena nasceu (vai salvo no projeto)
+        s._personagemUsado = marcaPersonagem(personagemImg);   // CARIMBO curto de qual imagem esta cena nasceu
         // ⚠️ o corte já vem junto com o clipe (28/08). Antes a tela pedia a transcrição num
         // segundo pedido, que baixava o clipe DE NOVO — eram ~15s com a linha de corte vazia.
         // ⚠️ VOZ LIMPA (28/08): o Veo cria uma trilha própria em cada cena, que brigava com a
@@ -1603,7 +1615,24 @@ async function fileToOptimizedImage(file){
   const cv=document.createElement('canvas'); cv.width=width; cv.height=height;
   cv.getContext('2d').drawImage(img,0,0,width,height);
   const out=cv.toDataURL('image/jpeg', IMAGE_QUALITY);
-  return { base64: out.split(',')[1], mimeType:'image/jpeg', thumbUrl: out };
+  const thumbUrl = miniatura(cv);
+  cv.width = cv.height = 1;             // devolve a memória do canvas grande
+  return { base64: out.split(',')[1], mimeType:'image/jpeg', thumbUrl };
+}
+// (22/09) MINIATURA PRA TELA: a foto aparece num quadradinho, mas o src era a imagem INTEIRA
+// (1536px). No celular cada redesenho da lista obrigava o navegador a decodificar tudo de novo.
+// O que sobe pro servidor continua sendo a imagem grande (base64).
+const THUMB_MAX = 360;
+function miniatura(canvas){
+  try{
+    const f = Math.min(1, THUMB_MAX / Math.max(canvas.width, canvas.height));
+    if (f >= 1) return canvas.toDataURL('image/jpeg', 0.72);
+    const c = document.createElement('canvas');
+    c.width  = Math.max(1, Math.round(canvas.width  * f));
+    c.height = Math.max(1, Math.round(canvas.height * f));
+    c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.72);
+  }catch(e){ return canvas.toDataURL('image/jpeg', 0.72); }
 }
 async function onPick(ev, cat){
   const files = Array.from(ev.target.files||[]); ev.target.value='';
@@ -2019,11 +2048,17 @@ async function encodeMP3(buffer, onProgress){
   const R=ch>1?floatTo16BitPCM(buffer.getChannelData(1)):L;
   const enc=new lamejs.Mp3Encoder(ch,sr,192);
   const block=1152, parts=[];
+  // (22/09) A conversão pra MP3 roda no próprio aparelho e é pesada. Antes só devolvia o controle
+  // pra tela a cada 400 blocos — uns 10 SEGUNDOS de música — e o celular ficava travado nesses
+  // intervalos, sem responder a toque. Agora paramos a cada ~40ms. Leva o mesmo tempo, mas a tela
+  // continua viva e o "Convertendo pra MP3… %" anda de verdade.
+  const agora = function(){ return (typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now(); };
+  let marco = agora();
   for(let i=0;i<L.length;i+=block){
     const out = ch>1 ? enc.encodeBuffer(L.subarray(i,i+block), R.subarray(i,i+block))
                      : enc.encodeBuffer(L.subarray(i,i+block));
     if(out.length) parts.push(new Uint8Array(out));
-    if(onProgress && i%(block*400)===0){ onProgress(i/L.length); await new Promise(r=>setTimeout(r,0)); }
+    if(agora()-marco >= 40){ if(onProgress) onProgress(i/L.length); await new Promise(r=>setTimeout(r,0)); marco = agora(); }
   }
   const tail=enc.flush(); if(tail.length) parts.push(new Uint8Array(tail));
   return new Blob(parts,{type:'audio/mpeg'});
@@ -2345,7 +2380,11 @@ function renderCortes(){
     const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
     d.innerHTML =
       '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
-      '<video src="'+s.video_url+'#t=0.1" playsinline preload="auto" controls></video>'+
+      // (22/09) preload "auto" → "metadata": com "auto" o celular BAIXAVA as 4 cenas inteiras
+      // (uns 10MB cada) toda vez que esta lista era redesenhada — e ela é redesenhada a cada cena
+      // que fica pronta. Com "metadata" ele pega só o comecinho pra mostrar o 1º quadro; ao tocar
+      // no play, o vídeo baixa normalmente.
+      '<video src="'+s.video_url+'#t=0.1" playsinline preload="metadata" controls></video>'+
       '<div class="trim">'+
         '<div class="trim-bar" data-bar="'+i+'">'+
           '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
@@ -2612,8 +2651,16 @@ let gerandoCenas = false;
 // existe — projeto antigo (gerado antes de 05/09) não tem, e aí ficamos quietos: o atendente
 // tem o botão "Refazer as 4 cenas" pra resolver na mão.
 function cenasDesatualizadas(){
+  const atual = marcaPersonagem(personagemImg);
+  const ehUrl = function(v){ return /^https?:\/\//.test(String(v||'')); };
   return cenas.some(function(s){
-    return s.video_url && s._personagemUsado && s._personagemUsado !== personagemImg;
+    if(!s.video_url || !s._personagemUsado) return false;
+    // (22/09) FALSO ALARME em projeto reaberto: ao reabrir, a imagem do personagem volta como
+    // URL (o servidor guarda no R2), mas o carimbo das cenas é da imagem em base64. Comparar os
+    // dois acusava "cenas do personagem anterior" em TODO projeto reaberto, sem nada de errado.
+    // Coisas de tipos diferentes não se comparam: aqui a gente fica quieto.
+    if(ehUrl(personagemImg) !== ehUrl(s._personagemUsado)) return false;
+    return marcaPersonagem(s._personagemUsado) !== atual;
   });
 }
 
@@ -2747,6 +2794,28 @@ pintarContadorBriefing();
   const c=document.getElementById('fCliente');
   if(c){ c.addEventListener('input', checarSalvar); checarSalvar(); }
 })();
+
+// ── (22/09) A plataforma avisa quando esta tela sai e volta de vista ────────
+// Cada ferramenta aberta continuava viva dentro da plataforma, ocupando memória
+// pra sempre. No celular isso soma até o navegador recarregar a página sozinho —
+// e aí o atendente perde o que estava na tela. Aqui a gente responde se tem
+// trabalho em andamento: se NÃO tiver, a plataforma pode fechar esta tela e
+// devolver a memória (nada se perde, porque não há nada aqui dentro).
+// O que está gerando NUNCA é interrompido: cena em produção conta como ocupada.
+function telaOcupada(){
+  try{
+    return !!(clienteNome() || personagemImg || (cenas && cenas.length) ||
+              (refs && ((refs.product||[]).length || (refs.environment||[]).length || (refs.montado||[]).length)) ||
+              gerandoCenas || montando || projetoJaSalvo ||
+              (document.getElementById('fBriefing')||{}).value);
+  }catch(e){ return true; }   // na dúvida, diz que está ocupada (nunca descarrega)
+}
+window.addEventListener('message', function(e){
+  const d = e && e.data;
+  if(!d || (d.lux !== 'pausar' && d.lux !== 'retomar')) return;
+  if(d.lux === 'pausar'){ try{ if(audioPreview){ audioPreview.pause(); audioPreview=null; tocandoId=null; pintarTrilhas(); } }catch(_){ } }
+  try{ parent.postMessage({ lux:'estado', ocupado: telaOcupada() }, '*'); }catch(_){ }
+});
 </script>
 </body>
 </html>
