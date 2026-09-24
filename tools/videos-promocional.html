@@ -1515,16 +1515,7 @@ async function gerarVideo(i){
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
   s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
   try{
-    // a voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre
-    const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
-      // ⚠️ (09/09) o BOTÃO do atendente manda no sexo da voz. Antes a campanha vencia, e trocar o
-      // seletor não mudava nada em Refazer — só regerando o roteiro. O Worker acerta a descrição.
-      projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
-      sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
-    somaCusto(d.custoUSD);
-    await acompanharVideo(i, d.predictionId);
+    await acompanharVideo(i, await dispararCena(i));
   } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
 }
 function falharCena(i, msg){
@@ -1543,17 +1534,64 @@ function relogioCena(i){
   el.textContent = Math.floor(seg/60)+':'+String(seg%60).padStart(2,'0');
 }
 
+// Dispara UMA cena no motor e devolve o número do pedido. Sai daqui o custo de US$ 0,40.
+// A voz segue SOLTA no pedido (é da campanha, uma só pras 4 cenas) — sem ela o Veo troca o timbre.
+// ⚠️ (09/09) o BOTÃO do atendente manda no sexo da voz. Antes a campanha vencia, e trocar o
+// seletor não mudava nada em Refazer — só regerando o roteiro. O Worker acerta a descrição.
+async function dispararCena(i){
+  const s=cenas[i];
+  const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
+    projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
+    sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });
+  const d = await r.json();
+  if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
+  somaCusto(d.custoUSD);
+  return d.predictionId;
+}
+// (24/09) o aviso de "está demorando". Chamado a cada volta do laço de propósito: quando outra
+// cena fica pronta, o renderVideos redesenha os cartões e o aviso voltaria a ficar escondido.
+function avisarLento(i, mostrar){
+  const av = document.querySelector('#boxCortes [data-lento="'+i+'"]');
+  if(av) av.classList.toggle('hide', !mostrar);
+}
+// O atendente pede outra tentativa. Não dispara nada aqui: só levanta a mão, e quem dispara é o
+// acompanhamento da própria cena, na volta seguinte do laço (evita duas tentativas correndo juntas).
+function tentarDeNovoCena(i){
+  const s=cenas[i]; if(!s || s.video_status!=='gerando' || s._pedeDeNovo) return;
+  if(!confirm('A cena '+(i+1)+' está demorando mais que o normal.\n\nPedir esta cena de novo ao motor?\n\n'+
+     'Custa US$ 0,40. O pedido travado também pode ser cobrado, se ele voltar depois.')) return;
+  s._pedeDeNovo = true;
+  const av = document.querySelector('#boxCortes [data-lento="'+i+'"]');
+  if(av) av.innerHTML = '<span class="spin"></span> Pedindo esta cena de novo ao motor…';
+}
+
 async function acompanharVideo(i, predictionId){
   const s=cenas[i];
   s._predictionId = predictionId;     // guardado: permite reconsultar esta mesma geração depois
   s._desde = Date.now();
-  let semContato = 0, erroServidor = 0;
+  let semContato = 0, erroServidor = 0, idAtual = predictionId;
   const CICLOS = 120;                 // 120 x 6s = 12 minutos (a fila do motor às vezes engasga)
+  const AVISO_LENTO = 40;             // 40 x 6s = 4 minutos: passou disso, não é demora normal
   for(let t=0;t<CICLOS;t++){
     await new Promise(r=>setTimeout(r, 6000));
     relogioCena(i);
+    // outra geração assumiu esta cena (o Refazer do cartão): esta aqui some sem mexer em nada,
+    // senão o clipe velho voltaria por cima do novo quando o motor respondesse.
+    if(s._predictionId !== idAtual) return;
+    avisarLento(i, t+1 >= AVISO_LENTO);
+    if(s._pedeDeNovo){
+      s._pedeDeNovo = false;
+      try{
+        idAtual = await dispararCena(i);
+        s._predictionId = idAtual; s._desde = Date.now();
+        t = -1; semContato = 0; erroServidor = 0;   // a tentativa nova ganha os 12 minutos dela
+        avisarLento(i, false); renderVideos();
+        toast('🔄 Cena '+(i+1)+': pedi de novo ao motor.');
+        continue;
+      }catch(e){ toast('⚠️ Não consegui pedir de novo: '+traduzErroRede(e)+' — sigo esperando a anterior.'); }
+    }
     try{
-      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId, projectId, cena:i+1, fala: s.fala||'', cliente: clienteNome() }) });
+      const r = await api('/histVideoStatus', { method:'POST', body: JSON.stringify({ predictionId: idAtual, projectId, cena:i+1, fala: s.fala||'', cliente: clienteNome() }) });
       const d = await r.json();
       semContato = 0;
 
@@ -2357,6 +2395,11 @@ function renderCortes(){
           // US$ 0,40 por uma cena que já está sendo gerada.
           : ('<div class="soon-note" style="text-align:center;padding:1.4rem 0">'+
                '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">(leva de 1 a 2 minutos)</span>'+
+             '</div>'+
+             // (24/09) só aparece depois de 4 minutos — antes disso o botão ficaria convidando a
+             // pagar US$ 0,40 por uma cena que está a caminho.
+             '<div class="alerta aviso hide" data-lento="'+i+'">⏳ <b>Está demorando mais que o normal.</b> A fila do motor de vídeo às vezes engasga e a cena não volta sozinha. Espere mais um pouco ou peça de novo.'+
+               '<div class="btn-row" style="margin-top:.5rem"><button class="btn-refaz" onclick="tentarDeNovoCena('+i+')">🔄 Pedir esta cena de novo (US$ 0,40)</button></div>'+
              '</div>'))+
         '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
         (falhou

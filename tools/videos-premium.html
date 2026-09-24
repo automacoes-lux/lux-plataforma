@@ -423,11 +423,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="tabs">
     <button class="tab active" id="tabCriar" onclick="showTab('criar')">🎬 Criar clipe</button>
+    <button class="tab" id="tabProjetos" onclick="showTab('projetos')">📁 Projetos</button>
     <button class="tab" id="tabResultados" onclick="showTab('resultados')">📋 Resultados</button>
   </div>
 
   <!-- ════════════ ABA CRIAR ════════════ -->
   <div class="panel active" id="panel-criar">
+
+    <!-- salvamento automático (aba Projetos) -->
+    <div id="rascAviso" style="text-align:right;font-size:12px;color:var(--text-dim);min-height:16px;margin:-4px 2px 8px"></div>
 
     <!-- Banner de EDIÇÃO (aparece ao editar um vídeo pronto) -->
     <div id="editBanner" style="display:none;align-items:center;gap:12px;background:rgba(212,175,55,.12);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;margin-bottom:14px">
@@ -600,6 +604,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       <div id="ordersList"><div class="empty-state">Carregando…</div></div>
     </div>
 
+  </div>
+
+  <!-- ════════════ ABA PROJETOS (salvamento automático + continuar) ════════════ -->
+  <div class="panel" id="panel-projetos">
+    <div class="card">
+      <div class="step-eyebrow"><span class="dot"></span>Projetos salvos</div>
+      <div class="card-hint" style="margin-bottom:12px">Tudo que você preenche em <b>Criar clipe</b> fica guardado aqui sozinho. Continue de onde parou — guardado por <b>7 dias</b>. 💾</div>
+      <div id="listaProjetos"><div class="empty-state">Carregando…</div></div>
+    </div>
   </div>
 
 </div>
@@ -843,10 +856,263 @@ function toast(msg) {
 function showTab(name) {
   document.getElementById('tabCriar').classList.toggle('active', name === 'criar');
   document.getElementById('tabResultados').classList.toggle('active', name === 'resultados');
+  const _tp = document.getElementById('tabProjetos'); if (_tp) _tp.classList.toggle('active', name === 'projetos');
   document.getElementById('panel-criar').classList.toggle('active', name === 'criar');
   document.getElementById('panel-resultados').classList.toggle('active', name === 'resultados');
+  const _pp = document.getElementById('panel-projetos'); if (_pp) _pp.classList.toggle('active', name === 'projetos');
   if (name === 'resultados') loadOrders();
+  if (name === 'projetos') carregaProjetos();   // (24/09) lista os rascunhos em andamento
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PROJETOS: SALVAMENTO AUTOMÁTICO (24/09 — espelho do Avatar 97)
+// Cada etapa concluída (foto, avatar, música, cenas, textos) guarda o trabalho no
+// servidor. O atendente fecha o navegador, troca de máquina e continua pela aba
+// Projetos. Os ARQUIVOS sobem UMA vez cada (a "marca" compara o conteúdo e só reenvia
+// o que mudou); o SALVAR manda um JSON pequeno, só com os endereços. Vídeo de fundo já
+// está no R2 (clipKey do /uploadClip) — o rascunho só guarda a referência.
+// ═══════════════════════════════════════════════════════════════
+let rascId = null;            // projeto aberto agora (null = ainda não há nada salvo)
+let _rascArq = {};            // { campo: { key, marca } } — arquivos já no R2 (delta)
+let _rascTimer = null, _rascSalvando = false, _rascPendente = false;
+let restaurando = false;      // trava o auto-salvar enquanto um projeto está sendo reaberto
+
+const rascMarca = (b64) => (b64 ? (String(b64).length + ':' + String(b64).slice(0, 24)) : '');
+function rascAviso(t) { const el = document.getElementById('rascAviso'); if (el) el.textContent = t || ''; }
+
+// Agenda o salvamento. Espera 900ms pra quem está digitando não disparar um envio por tecla.
+function rascSalvar() {
+  if (restaurando) return;
+  if (_rascTimer) clearTimeout(_rascTimer);
+  _rascTimer = setTimeout(rascSalvarAgora, 900);
+}
+
+async function rascSobeArquivo(campo, corpo, nome, mime, marca) {
+  const r = await api('/avpArquivo?projectId=' + encodeURIComponent(rascId) +
+    '&campo=' + encodeURIComponent(campo) + '&nome=' + encodeURIComponent(nome || campo), {
+      method: 'POST', headers: { 'Content-Type': mime || 'application/octet-stream' }, body: corpo
+    });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || ('não guardei "' + campo + '"'));
+  _rascArq[campo] = { key: j.key, marca: marca || '' };
+  return j.key;
+}
+
+// Sobe o que mudou desde o último salvamento; esquece o que o atendente removeu.
+async function rascSincroniza() {
+  const fixos = [
+    { campo: 'cliente', b64: clientPhoto && clientPhoto.base64,  mime: (clientPhoto  || {}).mimeType, nome: (clientPhoto  || {}).name || 'cliente.jpg' },
+    { campo: 'foto2',   b64: clientPhoto2 && clientPhoto2.base64, mime: (clientPhoto2 || {}).mimeType, nome: (clientPhoto2 || {}).name || 'foto2.jpg' },
+    { campo: 'cartoon', b64: avatarPreview && avatarPreview.cartoonBase64, mime: 'image/png',  nome: 'avatar.png' },
+    { campo: 'musica',  b64: music && music.base64,                        mime: 'audio/mpeg', nome: (music || {}).name || 'musica.mp3' }
+  ];
+  for (const a of fixos) {
+    if (!a.b64) { delete _rascArq[a.campo]; continue; }
+    const m = rascMarca(a.b64);
+    if (_rascArq[a.campo] && _rascArq[a.campo].marca === m) continue;   // não mudou: não sobe de novo
+    await rascSobeArquivo(a.campo, b64ToU8(a.b64), a.nome, a.mime, m);
+  }
+  // FOTOS de fundo: cada uma sobe como cena_<id>. VÍDEOS já estão no R2 (clipKey) — não sobem.
+  const usados = {};
+  for (const s of scenes) {
+    if (s.kind === 'video') continue;
+    if (!s.base64) continue;                                   // foto sem bytes nesta sessão (raro) — pula
+    const campo = ('cena_' + String(s.id)).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40);
+    usados[campo] = 1;
+    const m = rascMarca(s.base64);
+    if (_rascArq[campo] && _rascArq[campo].marca === m) { s._rascKey = _rascArq[campo].key; continue; }
+    s._rascKey = await rascSobeArquivo(campo, b64ToU8(s.base64), s.name || 'cena.jpg', s.mimeType || 'image/jpeg', m);
+  }
+  Object.keys(_rascArq).forEach((c) => { if (c.indexOf('cena_') === 0 && !usados[c]) delete _rascArq[c]; });
+}
+
+// Em que passo o trabalho parou (é o que o cartão do projeto mostra).
+function rascPasso() { if (scenes.length) return 3; if (music) return 2; return 1; }
+
+async function rascSalvarAgora() {
+  if (restaurando) return;
+  if (editState) return;   // editando um vídeo PRONTO não é rascunho (usa o fluxo de edição)
+  if (_rascSalvando) { _rascPendente = true; return; }
+  const nome = (document.getElementById('clientName').value || '').trim();
+  const temAlgo = !!(clientPhoto || clientPhoto2 || avatarPreview || music || scenes.length || nome);
+  if (!temAlgo) return;
+  _rascSalvando = true;
+  rascAviso('💾 Salvando…');
+  try {
+    if (!rascId) rascId = 'R150_' + Date.now();
+    await rascSincroniza();
+    const cenas = scenes.map(function (s) {
+      if (s.kind === 'video') {
+        return {
+          id: s.id, kind: 'video', name: s.name || '', at: (s.at != null ? s.at : null),
+          clipKey: s.clipKey || s.srcKey || '', dur: s.dur, origDur: s.origDur || null,
+          trimStart: s.trimStart || 0, scale: s.scale || 1, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0,
+          thumbUrl: (typeof s.thumbUrl === 'string' && s.thumbUrl.indexOf('data:image') === 0) ? s.thumbUrl : ''
+        };
+      }
+      return { id: s.id, kind: 'photo', name: s.name || '', at: (s.at != null ? s.at : null),
+        rascKey: s._rascKey || '', mimeType: s.mimeType || 'image/jpeg' };
+    });
+    const estado = {
+      clientName: nome, avatarTipo: avatarTipo, agitado: !!agitado, transicoes: !!transicoes,
+      avatarCalib: avatarCalib, avScale: avScale,
+      musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
+      arquivos: _rascArq, cartoonKey: (_rascArq.cartoon || {}).key || '',
+      scenes: cenas, passo: rascPasso(), passoMax: 3
+    };
+    const r = await api('/avpSalvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: rascId, estado: estado }) });
+    const j = await r.json();
+    rascAviso(j.ok ? ('💾 Salvo automaticamente · ' + String(j.salvoEm || '').slice(-5)) : '');
+  } catch (e) {
+    rascAviso('');   // rascunho é conforto, não pode atrapalhar o trabalho: tenta de novo no próximo passo
+  } finally {
+    _rascSalvando = false;
+    if (_rascPendente) { _rascPendente = false; rascSalvar(); }
+  }
+}
+
+// ── ABA PROJETOS ───────────────────────────────────────────────
+async function carregaProjetos() {
+  const el = document.getElementById('listaProjetos'); if (!el) return;
+  try {
+    const r = await api('/avpProjetos');
+    const d = await r.json();
+    if (!d.ok) {
+      el.innerHTML = '<div class="empty-state">⚠️ ' + escapeHtml(d.error || 'Não consegui carregar os projetos.') +
+        '<br/><button class="btn-mini" style="margin-top:10px" onclick="carregaProjetos()">🔄 Tentar de novo</button></div>';
+      return;
+    }
+    const lista = d.projetos || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state">Nenhum projeto em andamento.<br/>O que você preencher em <b>Criar clipe</b> fica guardado aqui sozinho. 💾</div>';
+      return;
+    }
+    el.innerHTML = lista.map(function (p) {
+      const th = p.thumb
+        ? '<img src="' + escapeHtml(p.thumb) + '" alt="" style="width:46px;height:60px;border-radius:8px;object-fit:cover;background:#222;flex:none"/>'
+        : '<div style="width:46px;height:60px;border-radius:8px;background:#222;flex:none"></div>';
+      const quem = p.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(p.atendente) + '</div>' : '';
+      return '<div class="order-item">' + th +
+        '<div class="order-info"><div class="order-client">' + escapeHtml(p.cliente || '(sem nome ainda)') + '</div>' + quem +
+        '<div class="order-meta">parou no passo ' + (p.passo || 1) + ' de ' + (p.passoMax || 3) + ' · ' + escapeHtml(p.atualizadoEm || '') + '</div></div>' +
+        '<div class="order-side">' +
+        '<button class="btn-baixar" onclick="continuarProjeto(\'' + p.projectId + '\')">▶ Continuar</button>' +
+        '<button class="btn-mini" title="Excluir este projeto" onclick="apagarProjeto(\'' + p.projectId + '\')">🗑️</button>' +
+        '</div></div>';
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+  }
+}
+
+// Continuar de onde parou: baixa tudo ANTES de mexer na tela (se falhar, nada se perde).
+async function continuarProjeto(pid) {
+  if (restaurando) return;
+  const nomeAtual = (document.getElementById('clientName').value || '').trim();
+  const preenchido = clientPhoto || clientPhoto2 || avatarPreview || music || scenes.length || nomeAtual;
+  if (preenchido && rascId !== pid && !confirm('O que está no Criar clipe agora vai ser trocado por este projeto. Continuar?')) return;
+  restaurando = true;
+  toast('⏳ Abrindo o projeto…');
+  try {
+    const resp = await api('/avpAbrir?projectId=' + encodeURIComponent(pid));
+    const d = await resp.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui abrir o projeto.')); return; }
+    const e = d.estado || {}, arq = e.arquivos || {};
+    const baixaKey = (key) => key
+      ? api('/avpBaixar?projectId=' + encodeURIComponent(pid) + '&key=' + encodeURIComponent(key))
+          .then((x) => x.ok ? x.blob() : null).catch(() => null)
+      : Promise.resolve(null);
+    const comoFoto = async (blob, nome) => {
+      if (!blob) return null;
+      const base64 = await blobToBase64(blob);
+      const mimeType = blob.type || 'image/jpeg';
+      return { base64: base64, mimeType: mimeType, thumbUrl: 'data:' + mimeType + ';base64,' + base64, name: nome };
+    };
+    // baixa foto(s), cartoon e música
+    const [bCliente, bFoto2, bCartoon, bMusica] = await Promise.all([
+      baixaKey((arq.cliente || {}).key), baixaKey((arq.foto2 || {}).key),
+      baixaKey((arq.cartoon || {}).key), baixaKey((arq.musica || {}).key)
+    ]);
+    const f1 = await comoFoto(bCliente, 'cliente.jpg');
+    const f2 = await comoFoto(bFoto2, 'foto2.jpg');
+    const cartoonB64 = bCartoon ? await blobToBase64(bCartoon) : null;
+    const bMusicaB64 = bMusica ? await blobToBase64(bMusica) : null;
+    // baixa as FOTOS de fundo (vídeos só referenciam o clipKey)
+    const cenasEstado = Array.isArray(e.scenes) ? e.scenes : [];
+    const novasCenas = [];
+    for (let i = 0; i < cenasEstado.length; i++) {
+      const cs = cenasEstado[i];
+      const cid = cs.id || ('sc' + Date.now() + i);
+      if (cs.kind === 'video') {
+        novasCenas.push({
+          id: cid, kind: 'video', clipKey: cs.clipKey || '', dur: cs.dur, origDur: cs.origDur || cs.dur,
+          trimStart: cs.trimStart || 0, scale: cs.scale || 1, offsetX: cs.offsetX || 0, offsetY: cs.offsetY || 0,
+          thumbUrl: cs.thumbUrl || '', semPreview: !cs.thumbUrl, name: cs.name || ('vídeo ' + (i + 1)),
+          at: (cs.at != null ? cs.at : undefined)
+        });
+      } else {
+        const blobFoto = await baixaKey(cs.rascKey);
+        const b64Foto = blobFoto ? await blobToBase64(blobFoto) : null;
+        if (!b64Foto) continue;   // foto perdida (raro): pula
+        const mimeFoto = (blobFoto && blobFoto.type) || cs.mimeType || 'image/jpeg';
+        novasCenas.push({
+          id: cid, kind: 'photo', base64: b64Foto, origBase64: b64Foto, mimeType: mimeFoto,
+          thumbUrl: 'data:' + mimeFoto + ';base64,' + b64Foto, name: cs.name || ('foto ' + (i + 1)),
+          at: (cs.at != null ? cs.at : undefined)
+        });
+      }
+    }
+
+    resetCreateForm();
+    rascId = pid; _rascArq = arq;   // continua salvando NESTE projeto, sem re-subir o que não mudou
+    editState = null;               // continuar = criar do zero (não é edição de vídeo pronto)
+    document.getElementById('clientName').value = e.clientName || '';
+    clientPhoto = f1; clientPhoto2 = f2;
+    if (cartoonB64) {
+      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi gerado no rascunho
+      cartoonGens = 0; cartoonGensRes = 0;
+      const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
+    }
+    avatarTipo = e.avatarTipo || 'universal';
+    avatarCalib = (e.avatarCalib && typeof e.avatarCalib.dx === 'number')
+      ? { dx: e.avatarCalib.dx, dy: e.avatarCalib.dy, px: e.avatarCalib.px || 0 } : { dx: 0, dy: 0, px: 0 };
+    avScale = (typeof e.avScale === 'number') ? e.avScale : AVSCALE_MAX;
+    transicoes = (e.transicoes === undefined) ? true : !!e.transicoes; setTransBtn();
+    agitado = !!e.agitado; setAgitBtn();
+    scenes = novasCenas;
+    if (typeof renderClientPhoto === 'function') renderClientPhoto();
+    if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
+    if (bMusicaB64) {
+      setMusicReady({ base64: bMusicaB64, name: e.musicName || 'musica.mp3',
+        duration: Math.round(e.musicDuration || 60), playerSrc: URL.createObjectURL(bMusica), wasCut: false });
+    }
+    if (typeof renderScenes === 'function') renderScenes();
+    if (typeof renderStoryboard === 'function') renderStoryboard();
+    showTab('criar');
+    window.scrollTo(0, 0);
+    rascAviso('💾 Projeto aberto · continue de onde parou');
+    toast('▶ "' + (e.clientName || 'Projeto') + '" está de volta no Criar clipe.');
+  } catch (err) {
+    toast('⚠️ Não consegui abrir o projeto: ' + err.message);
+  } finally {
+    restaurando = false;
+  }
+}
+
+async function apagarProjeto(pid) {
+  if (!confirm('Excluir este projeto? O que estiver guardado nele será apagado.')) return;
+  try {
+    const r = await api('/avpApagar?projectId=' + encodeURIComponent(pid), { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui excluir.')); return; }
+    if (rascId === pid) { rascId = null; _rascArq = {}; rascAviso(''); }
+    toast('🗑️ Projeto excluído.');
+    carregaProjetos();
+  } catch (e) { toast('⚠️ Não consegui excluir: ' + e.message); }
+}
+
+// digitar o nome do cliente também salva (debounced)
+(function () { const cn = document.getElementById('clientName'); if (cn) cn.addEventListener('input', rascSalvar); })();
 
 function fmtTime(s) {
   s = Math.max(0, Math.round(s));
@@ -1011,6 +1277,7 @@ async function setClientPhotoFromFile(file) {
     renderClientPhoto();
     refreshAvatarUI();
     renderStoryboard();
+    rascSalvar();   // (24/09) foto do cliente salva no rascunho
   } catch (err) { toast('⚠️ ' + err.message); }
 }
 
@@ -1025,7 +1292,7 @@ function renderClientPhoto() {
   }
   row.innerHTML = html;
 }
-function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); }
+function removeClientPhoto() { clientPhoto = null; avatarPreview = null; renderClientPhoto(); refreshAvatarUI(); renderStoryboard(); rascSalvar(); }
 
 // ── Dupla: 2ª foto (opcional) ──
 async function setClientPhoto2FromFile(file) {
@@ -1034,10 +1301,11 @@ async function setClientPhoto2FromFile(file) {
     clientPhoto2 = { ...opt, name: file.name || 'pessoa2.png' };
     avatarPreview = null;            // foto nova → o avatar antigo não vale mais
     renderClientPhoto2(); refreshAvatarUI();
+    rascSalvar();   // (24/09) 2ª imagem salva no rascunho
   } catch (err) { toast('⚠️ ' + err.message); }
 }
 function renderClientPhoto2() { renderClientPhoto(); }   // UI de 1 botão (19/08): tudo no render combinado
-function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); }
+function removeClientPhoto2() { clientPhoto2 = null; avatarPreview = null; renderClientPhoto2(); refreshAvatarUI(); rascSalvar(); }
 
 // ── Passo 1: gerar / aprovar / regerar o AVATAR (preview antes de gastar com o vídeo) ──
 // Mostra o bloco certo: sem foto → nada; com foto e sem avatar → botão "Gerar";
@@ -1347,7 +1615,7 @@ function closeCalib(confirmar) {
     avScale = _calibSnap.sc;
   }
   _calibSnap = null;
-  if (confirmar && avatarPreview) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); }
+  if (confirmar && avatarPreview) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); rascSalvar(); }   // (24/09) avatar+calibração+tamanho no rascunho
 }
 
 // ── Casar imagens com a letra (beta): transcreve a música e mapeia mídia → frase ──
@@ -1567,6 +1835,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
       renderScenes(); renderStoryboard();
     } catch (err) { toast('⚠️ ' + file.name + ': ' + err.message); }
   }
+  rascSalvar();   // (24/09) cenas novas salvas no rascunho
 });
 
 // vídeo: extrai duração + thumbnail do 1º frame (tudo no navegador)
@@ -2048,6 +2317,7 @@ function saveVideoEditor() {
   s.offsetX = 0; s.offsetY = 0;   // sem mover (mãozinha removida) → vídeo centralizado, só zoom
   closeVideoEditor();
   renderScenes(); renderStoryboard();
+  rascSalvar();   // (24/09) corte/zoom do vídeo salvos no rascunho
 }
 function closeVideoEditor() {
   const v = document.getElementById('veVideo');
@@ -2096,6 +2366,7 @@ function removeScene(id) {
   avisarCustoMidia();   // mexeu nas mídias da edição → avisa o custo (1x)
   renderScenes();
   renderStoryboard();
+  rascSalvar();   // (24/09) remoção de cena salva no rascunho
 }
 // arrastar-e-soltar pra reordenar as cenas (SortableJS — funciona no toque e no mouse)
 let sceneSortable = null;
@@ -2114,6 +2385,7 @@ function initSceneDrag() {
       scenes.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));   // reordena conforme a nova ordem na tela
       renderScenes();
       renderStoryboard();
+      rascSalvar();   // (24/09) nova ordem das cenas salva no rascunho
     }
   });
 }
@@ -2270,6 +2542,7 @@ function toggleTransicoes() {
   transicoes = !transicoes;
   setTransBtn();
   toast(transicoes ? '🎞️ Transições ligadas.' : '✂️ Corte seco: as cenas vão trocar sem transição.');
+  rascSalvar();
 }
 // 🕺 PERSONAGEM AGITADO (09/09) — troca o prompt do canto no servidor. Desligado = o de hoje (contido).
 // Ligado = o PRIMEIRO prompt da ferramenta (25/07): bem mais expressivo, mas costuma tremer as pernas.
@@ -2277,6 +2550,7 @@ function toggleAgitado() {
   agitado = !agitado;
   setAgitBtn();
   toast(agitado ? '🕺 Personagem agitado LIGADO — mais movimento; a perna pode tremer.' : '🙂 Personagem contido (padrão).');
+  rascSalvar();
 }
 function setAgitBtn() {
   const b = document.getElementById('btnAgitado');
@@ -2312,6 +2586,7 @@ async function saveEditor() {
   }
   closeEditor();
   renderScenes();
+  rascSalvar();   // (24/09) foto re-enquadrada salva no rascunho
   toast('✅ Enquadramento aplicado.');
 }
 
@@ -2391,6 +2666,7 @@ function setMusicReady(m) {
   document.getElementById('player').src = m.playerSrc;
   document.getElementById('btnReabrirCorte').style.display = m.wasCut ? '' : 'none';
   renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
+  rascSalvar();   // (24/09) música salva no rascunho
 }
 
 // ───────────────────────────────────────────────
@@ -2953,6 +3229,8 @@ async function gerarClipe() {
     }
 
     addPending(d1.orderId, payload.clientName);
+    // (24/09) o rascunho virou pedido de verdade: sai da aba Projetos e libera os arquivos dele
+    if (rascId) { try { await api('/avpApagar?projectId=' + encodeURIComponent(rascId), { method: 'POST' }); } catch (e) {} }
     resetCreateForm();   // form limpo: evita 2º clique gerar pedido DUPLICADO (~R$20) sem querer
 
     toast('🎬 Produção iniciada! Pode gerar outro clipe enquanto este fica pronto.');
@@ -3240,6 +3518,7 @@ function avisarCustoMidia() {
 
 // limpa o formulário de CRIAÇÃO após enviar com sucesso (um 2º clique não pode duplicar o pedido)
 function resetCreateForm() {
+  rascId = null; _rascArq = {}; rascAviso('');   // (24/09) form novo = rascunho novo (o "Continuar" re-adota o id depois)
   clientPhoto = null; clientPhoto2 = null; avatarPreview = null;
   try { renderClientPhoto2(); } catch (e) {}
   avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
