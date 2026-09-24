@@ -39,6 +39,20 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .chave input:checked + .chave-trilho::after{transform:translateX(20px);background:#141414}
 .chave input:focus-visible + .chave-trilho{outline:2px solid rgba(201,168,76,.75);outline-offset:2px}
 .chave-texto{font-size:14px;color:var(--text-mid);line-height:1.35}
+/* (24/09) Corretor de pronúncia. AZUL de propósito: as cenas são douradas e escuras, e o
+   atendente não pode confundir este bloco com uma cena. */
+.bloco-pron{background:rgba(56,189,248,.06);border:.5px solid rgba(56,189,248,.35)}
+.bloco-pron .step-title{color:#7FD3F7}
+.pron-linha{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.pron-linha input[type=text]{flex:1 1 200px;width:auto;min-width:0}
+.pron-linha input[type=text]:focus{border-color:rgba(56,189,248,.7)}
+.btn-pron{flex:0 0 auto;background:rgba(56,189,248,.18);border:.5px solid rgba(56,189,248,.5);color:#BEE9FB;
+  border-radius:999px;padding:.7rem 1.1rem;font-size:13.5px;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-pron:hover{background:rgba(56,189,248,.3)}
+.btn-pron:disabled{opacity:.6;cursor:wait}
+.pron-res{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:.8rem;
+  background:rgba(0,0,0,.28);border-radius:var(--radius);padding:.7rem .8rem}
+.pron-saida{flex:1 1 160px;font-size:17px;letter-spacing:.4px;color:#EAF7FE;word-break:break-word}
 .btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
 .btn-gold:hover{filter:brightness(1.07)}
 .btn-gold:disabled{opacity:.55;cursor:not-allowed}
@@ -426,6 +440,22 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
         <button class="btn-ghost" onclick="refazerTodasAsCenas()">🔄 Refazer as 4 cenas com o personagem atual</button>
       </div>
       <div id="boxCortes"></div>
+
+      <!-- (24/09) CORRETOR DE PRONÚNCIA: fica FORA das cenas, logo abaixo da última, e com cor
+           própria pra ninguém confundir com uma cena. Não mexe na fala: devolve a grafia e quem
+           troca a palavra é o atendente. -->
+      <div class="step bloco-pron">
+        <div class="step-head"><div class="step-title">Corrigir pronúncia</div></div>
+        <div class="step-hint">O personagem falou uma palavra errada? Cole a palavra aqui (nome, marca, cidade, sobrenome). Você recebe a grafia que o motor lê certo — troque na fala da cena e refaça só aquela cena.</div>
+        <div class="pron-linha">
+          <input type="text" id="inpPron" maxlength="60" placeholder="ex.: Maximiniano" onkeydown="if(event.key==='Enter'){event.preventDefault();corrigirPronuncia();}"/>
+          <button type="button" class="btn-pron" id="btnPron" onclick="corrigirPronuncia()">Corrigir pronúncia</button>
+        </div>
+        <div class="pron-res hide" id="boxPronRes">
+          <div class="pron-saida" id="pronSaida"></div>
+          <button type="button" class="btn-ghost" onclick="copiarPronuncia()">📋 Copiar</button>
+        </div>
+      </div>
 
       <!-- a trilha vem DEPOIS das cenas: o atendente escolhe a música já tendo ouvido as falas -->
       <div class="step" style="margin-top:1rem">
@@ -1774,6 +1804,30 @@ function refsPayload(){
   };
 }
 
+
+// (24/09) CORRETOR DE PRONÚNCIA. Pede a grafia fonética de UMA palavra e mostra pro atendente
+// copiar. Não encosta na fala das cenas de propósito: quem troca é ele, antes de refazer a cena.
+let pronAtual = '';
+async function corrigirPronuncia(){
+  const inp=document.getElementById('inpPron'), bt=document.getElementById('btnPron');
+  const palavra=(inp.value||'').trim();
+  if(!palavra){ toast('✍️ Escreva a palavra que saiu errada.'); inp.focus(); return; }
+  const old=bt.innerHTML; bt.disabled=true; bt.innerHTML='<span class="spin"></span>Corrigindo…';
+  try{
+    const r = await apiRetry('/rotPronuncia', { method:'POST', body: JSON.stringify({ palavra: palavra }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'não consegui corrigir esta palavra');
+    somaCusto(d.custoUSD); pintarCusto();
+    pronAtual = d.fonetica;
+    document.getElementById('pronSaida').textContent = d.fonetica;
+    document.getElementById('boxPronRes').classList.remove('hide');
+  }catch(e){ toast('⚠️ '+traduzErroRede(e)); }
+  finally{ bt.disabled=false; bt.innerHTML=old; }
+}
+function copiarPronuncia(){
+  if(!pronAtual) return;
+  copiar(pronAtual, '📋 Copiado: '+pronAtual);
+}
 
 function copiar(txt, msg){
   const done=()=>toast(msg);
