@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 
 <link rel="stylesheet" href="../css/theme.css"/>
 
@@ -331,86 +331,168 @@ body{
   .bal-acao{order:5}
 }
 
-/* ─── Anúncios (gerenciador — fase 0) ───────────────────── */
-.anu-topo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
-.anu-chips{display:inline-flex;border:.5px solid var(--border-bright);border-radius:999px;overflow:hidden}
-.anu-chips button{background:transparent;border:none;color:var(--text-mid);padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
-.anu-chips button.on{background:rgba(201,168,76,.15);color:var(--gold)}
-.anu-sel{background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:999px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:14px;max-width:100%}
-.anu-topo .btn-secondary{margin-left:auto}
-.anu-etiquetas{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.anu-etq{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius);background:rgba(255,255,255,.02);border:.5px solid var(--border)}
-.anu-etq code{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;color:var(--gold);background:var(--bg-input);padding:5px 10px;border-radius:6px;letter-spacing:.04em}
-.anu-etq .btn-secondary{padding:6px 14px;font-size:13px}
-.anu-etq span{flex:1 1 260px;font-size:13px;color:var(--text-mid);line-height:1.45}
-.anu-etq span b{color:var(--text)}
-.anu-selo.teste{border-color:rgba(232,184,107,.45);color:#E8B86B}
-.anu-selo.escala{border-color:rgba(74,222,128,.35);color:#4ADE80}
-.anu-info{font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px}
-.anu-info b{color:var(--text);font-weight:600}
-.anu-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1.2rem;padding-bottom:1.1rem;border-bottom:.5px solid var(--border)}
-.anu-kpi span{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mid)}
-.anu-kpi b{font-family:'Cinzel',serif;font-size:20px;color:var(--gold);font-weight:600}
-.anu-kpi small{display:block;font-size:12px;color:var(--text-dim)}
-.anu-grupo{display:flex;align-items:center;gap:10px;margin:1.4rem 0 .6rem;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mid)}
-.anu-grupo em{font-family:'DM Sans',sans-serif;font-style:normal;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text-dim)}
-.anu-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
-.anu-row{display:grid;grid-template-columns:62px minmax(0,1.5fr) 96px minmax(0,1.4fr) minmax(0,1.3fr);gap:14px;align-items:center;padding:12px;border-radius:var(--radius);background:rgba(255,255,255,.02);border:.5px solid var(--border);margin-bottom:8px;cursor:pointer;transition:.15s}
-.anu-row:hover{border-color:var(--border-bright)}
-.anu-row.aberto{border-color:var(--gold-dim)}
-.anu-row.cinza{opacity:.55}
-.anu-thumb{width:62px;height:110px;border-radius:8px;background:var(--bg-input);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:11px}
-.anu-thumb img{width:100%;height:100%;object-fit:cover}
+/* ─── Anúncios (gerenciador) — padrão design-lux, ESCOPADO nesta aba ───────────
+   Só vale dentro de #secAnuncios: as outras abas do admin continuam no tema antigo.
+   Assinatura: a régua de custo por compra (zona verde até a meta, âmbar até o
+   empate, vermelha depois; ponto = CPA; faixa clara = intervalo de confiança). */
+body.anu-larga .container{max-width:1180px}
+#secAnuncios{
+  --a-card:#191A1D;--a-card2:#16171A;--a-hover:#1E1F23;--a-campo:#212226;--a-sup:#2A2B30;--a-sup-h:#35363C;--a-line:#2E2F35;
+  --a-txt:#F2F2F3;--a-txt2:#9B9BA3;--a-txt3:#6B6C74;
+  --a-ok:#4ADE80;--a-at:#E8B86B;--a-ruim:#F26D6D;
+  --a-cols:44px minmax(170px,1.4fr) 62px minmax(210px,1.5fr) 78px 64px 64px 72px;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--a-txt);font-variant-numeric:tabular-nums;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+#secAnuncios button,#secAnuncios select{font-family:inherit}
+#secAnuncios h2,#secAnuncios h4,#secAnuncios h5{font-family:inherit;text-transform:none;letter-spacing:normal}
+#secAnuncios :focus-visible{outline:2px solid var(--a-txt2);outline-offset:2px}
+
+/* cabeçalho + ferramentas */
+.anu-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 18px;flex-wrap:wrap;margin:6px 0 18px}
+.anu-cab h2{font-size:21px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+.anu-cab .anu-sub{font-size:13px;color:var(--a-txt2);margin-top:3px}
+.anu-ferr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.anu-seg{display:inline-flex;gap:2px;padding:4px;border-radius:999px;background:var(--a-card)}
+.anu-seg button{border:none;background:transparent;color:var(--a-txt2);font-size:13px;font-weight:500;padding:7px 13px;border-radius:999px;cursor:pointer}
+.anu-seg button:hover{color:var(--a-txt)}
+.anu-seg button.on{background:var(--a-sup);color:var(--a-txt)}
+.anu-sel{appearance:none;-webkit-appearance:none;border:none;border-radius:999px;background:var(--a-card);color:var(--a-txt);font-size:13px;font-weight:500;
+  padding:10px 34px 10px 15px;max-width:250px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%239B9BA3' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:18px}
+.anu-sel option{background:#191A1D;color:#F2F2F3}
+.anu-bt{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--a-sup);color:var(--a-txt);font-size:13px;font-weight:500;padding:9px 15px;cursor:pointer;white-space:nowrap}
+.anu-bt:hover{background:var(--a-sup-h)}
+.anu-bt:disabled{opacity:.5;cursor:wait}
+.anu-bt svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
+.anu-bt.fino{padding:6px 11px;font-size:12.5px}
+.anu-bt.cortar{background:var(--a-ruim);color:#1A0707;font-weight:600}
+.anu-bt.cortar:hover{background:#F58585}
+
+/* etiquetas para copiar */
+.anu-etqs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-6px 0 18px;font-size:12.5px;color:var(--a-txt3)}
+.anu-etq{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:999px;background:var(--a-card);color:var(--a-txt2);padding:6px 12px 6px 11px;font-size:12.5px;cursor:pointer}
+.anu-etq:hover{background:var(--a-hover);color:var(--a-txt)}
+.anu-etq code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;font-weight:600;color:var(--a-txt)}
+.anu-etq svg{width:13px;height:13px;fill:currentColor}
+
+/* decisões pendentes */
+.anu-recs{border-radius:16px;background:rgba(242,109,109,.09);padding:14px 16px 6px;margin-bottom:18px}
+.anu-recs h4{font-size:14px;font-weight:600;color:#FFB9B9;margin-bottom:4px}
+.anu-rec{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid rgba(242,109,109,.14)}
+.anu-rec:first-of-type{border-top:none}
+.anu-rec .txt{flex:1 1 280px;font-size:13px;color:var(--a-txt2);line-height:1.45}
+.anu-rec .txt b{color:var(--a-txt);font-size:14px;font-weight:600}
+.anu-rec .feito{font-size:12px;padding:4px 11px;border-radius:999px;background:var(--a-sup);color:var(--a-txt2)}
+
+/* números da conta */
+.anu-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-radius:16px;background:var(--a-card);margin-bottom:26px}
+.anu-kpi{padding:15px 18px;border-left:1px solid var(--a-line);min-width:0}
+.anu-kpi:first-child{border-left:none}
+.anu-kpi span{display:block;font-size:12px;font-weight:500;color:var(--a-txt2)}
+.anu-kpi b{display:block;font-size:22px;font-weight:600;letter-spacing:-.015em;margin-top:3px;white-space:nowrap}
+.anu-kpi small{display:block;font-size:12px;color:var(--a-txt3);margin-top:1px}
+
+/* lista */
+.anu-colcab{display:grid;grid-template-columns:var(--a-cols);gap:16px;padding:0 16px 8px;font-size:11.5px;font-weight:500;color:var(--a-txt3)}
+.anu-colcab .dir{text-align:right}
+.anu-grupo{display:flex;align-items:baseline;gap:8px;margin:20px 4px 9px;font-size:13px;font-weight:600;color:var(--a-txt)}
+.anu-grupo em{font-style:normal;font-weight:400;color:var(--a-txt3)}
+.anu-grupo .n{margin-left:auto;font-weight:500;color:var(--a-txt3)}
+.anu-row{display:grid;grid-template-columns:var(--a-cols);gap:16px;align-items:center;padding:11px 16px;border-radius:14px;background:var(--a-card);margin-bottom:6px;cursor:pointer;transition:background .12s}
+.anu-row:hover{background:var(--a-hover)}
+.anu-row.aberto{border-radius:14px 14px 0 0;margin-bottom:0;background:var(--a-hover)}
+.anu-row.cinza{opacity:.52}
+.anu-thumb{width:44px;height:78px;border-radius:8px;background:var(--a-campo);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--a-txt3);font-size:10px;text-align:center}
+.anu-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .anu-nome{min-width:0}
-.anu-nome b{display:block;font-size:15px;color:#EDE6D6;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.anu-nome .sub{font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.anu-selos{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-.anu-selo{font-size:11px;padding:2px 8px;border-radius:999px;border:.5px solid var(--border);color:var(--text-mid);white-space:nowrap}
-.anu-selo.alerta{border-color:var(--danger-border);color:var(--danger);background:var(--danger-bg)}
-.anu-selo.ok{border-color:rgba(74,222,128,.35);color:#4ADE80;background:rgba(74,222,128,.08)}
-.anu-selo.aviso{border-color:rgba(232,184,107,.4);color:#E8B86B;background:rgba(232,184,107,.08)}
-.anu-nota{text-align:center}
-.anu-nota b{display:block;font-family:'Cinzel',serif;font-size:30px;color:var(--gold);font-weight:700;line-height:1}
-.anu-nota span{display:block;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.35}
-.anu-nota.sem b{font-size:16px;color:var(--text-dim)}
-.anu-pilares{display:flex;flex-direction:column;gap:5px}
-.anu-pil{display:grid;grid-template-columns:62px 1fr 26px;gap:8px;align-items:center;font-size:12px;color:var(--text-mid)}
-.anu-pil i{display:block;height:7px;border-radius:4px;background:var(--bg-input);position:relative;overflow:hidden}
-.anu-pil i::before{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.35)}
-.anu-pil i s{display:block;height:100%;background:linear-gradient(90deg,rgba(201,168,76,.45),rgba(201,168,76,.85));text-decoration:none}
-.anu-pil em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
-.anu-met{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;color:var(--text-mid);font-variant-numeric:tabular-nums}
-.anu-met b{color:var(--text);font-weight:600}
-.anu-met .full{grid-column:1/-1}
-.anu-det{grid-column:1/-1;cursor:default;margin:-2px 0 10px;padding:12px;border-radius:var(--radius);background:var(--bg-input);border:.5px solid var(--border)}
-.anu-det h4{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--gold-dim);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:4px 0 8px}
-.anu-tab{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-.anu-tab th{color:var(--text-dim);font-weight:500;text-align:right;padding:5px 6px;border-bottom:.5px solid var(--border);white-space:nowrap}
-.anu-tab td{color:var(--text);text-align:right;padding:5px 6px;border-bottom:.5px solid rgba(255,255,255,.04);white-space:nowrap}
-.anu-tab th:first-child,.anu-tab td:first-child{text-align:left}
-.anu-tab tr.fds td{color:var(--text-dim)}
+.anu-nome b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-nome .c{font-size:12.5px;color:var(--a-txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.anu-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--a-sup);color:var(--a-txt2);white-space:nowrap}
+.anu-tag.teste{background:rgba(232,184,107,.13);color:var(--a-at)}
+.anu-tag.escala{background:rgba(74,222,128,.11);color:var(--a-ok)}
+.anu-tag.alerta{background:rgba(242,109,109,.14);color:var(--a-ruim)}
+.anu-tag.aviso{background:rgba(232,184,107,.10);color:var(--a-at)}
+.anu-nota b{display:block;font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.anu-nota span{display:block;font-size:11px;color:var(--a-txt3);margin-top:4px;white-space:nowrap}
+.anu-nota.sem b{font-size:15px;font-weight:500;color:var(--a-txt3)}
+.anu-nota.sem span{white-space:normal;line-height:1.3}
+
+/* a régua */
+.anu-regua{min-width:0}
+.anu-trilha{position:relative;height:8px;border-radius:999px}
+.anu-trilha .ic{position:absolute;top:-2px;bottom:-2px;border-radius:999px;background:rgba(242,242,243,.26)}
+.anu-trilha .pt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--a-card)}
+.anu-row:hover .anu-trilha .pt,.anu-row.aberto .anu-trilha .pt{box-shadow:0 0 0 3px var(--a-hover)}
+.pt.ok{background:var(--a-ok)} .pt.at{background:var(--a-at)} .pt.ruim{background:var(--a-ruim)}
+.anu-rleg{margin-top:7px;font-size:12px;color:var(--a-txt3);line-height:1.4}
+.anu-rleg span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-rleg b{font-size:13px;font-weight:600}
+.anu-rleg b.ok{color:var(--a-ok)} .anu-rleg b.at{color:var(--a-at)} .anu-rleg b.ruim{color:var(--a-ruim)}
+.anu-rleg .vazio{color:var(--a-txt3)}
+
+/* métricas da linha */
+.anu-ms{display:contents}
+.anu-m{text-align:right;min-width:0}
+.anu-m i{display:none}
+.anu-m b{display:block;font-size:14px;font-weight:600;white-space:nowrap}
+.anu-m b.baixo{color:var(--a-at)}
+.anu-m small{display:block;font-size:11.5px;color:var(--a-txt3);white-space:nowrap}
+
+/* detalhe */
+.anu-det{border-radius:0 0 14px 14px;background:var(--a-card2);padding:16px;margin-bottom:10px;cursor:default}
+.anu-dados{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 18px;padding-bottom:14px;border-bottom:1px solid var(--a-line)}
+.anu-dado span{display:block;font-size:11.5px;color:var(--a-txt3)}
+.anu-dado b{display:block;font-size:13px;font-weight:500;margin-top:2px}
+.anu-pils{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 18px;padding:14px 0;border-bottom:1px solid var(--a-line)}
+.anu-pil{font-size:12px;color:var(--a-txt2)}
+.anu-pil div{display:flex;justify-content:space-between;margin-bottom:5px}
+.anu-pil div b{color:var(--a-txt);font-weight:600}
+.anu-pil i{display:block;position:relative;height:6px;border-radius:999px;background:var(--a-sup)}
+.anu-pil i s{display:block;height:100%;border-radius:999px;background:var(--a-txt2);text-decoration:none}
+.anu-pil i::after{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--a-txt3)}
+.anu-det h5{font-size:12.5px;font-weight:600;color:var(--a-txt2);margin:16px 0 8px}
 .anu-rolar{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.anu-ev{font-size:12px;color:var(--text-mid);line-height:1.6;padding:3px 0;border-bottom:.5px solid rgba(255,255,255,.04)}
-.anu-ev b{color:var(--text);font-weight:500}
-.anu-legenda{font-size:13px;color:var(--text-mid);line-height:1.7;margin-top:1.4rem}
-.anu-legenda summary{cursor:pointer;color:var(--gold-dim);font-weight:600}
-.anu-legenda p{margin-top:6px}
-/* abaixo de ~1000px as 5 colunas espremem as métricas: pilares e métricas descem para a linha de baixo */
-@media(max-width:1000px){
-  .anu-row{grid-template-columns:62px minmax(0,1fr) 96px;gap:12px 14px}
-  .anu-pilares{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
-  .anu-met{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}
+.anu-tab{width:100%;border-collapse:collapse;font-size:12.5px}
+.anu-tab th{color:var(--a-txt3);font-weight:500;text-align:right;padding:6px 8px;white-space:nowrap}
+.anu-tab td{text-align:right;padding:6px 8px;border-top:1px solid var(--a-line);white-space:nowrap}
+.anu-tab th:first-child,.anu-tab td:first-child{text-align:left}
+.anu-tab tr.fds td{color:var(--a-txt3)}
+.anu-tab td.msg{text-align:left}
+.anu-ev{font-size:12.5px;color:var(--a-txt2);line-height:1.55;padding:6px 0;border-top:1px solid var(--a-line)}
+.anu-ev:first-of-type{border-top:none}
+.anu-ev b{color:var(--a-txt);font-weight:500}
+.anu-vazio{border-radius:16px;background:var(--a-card);padding:36px 20px;text-align:center;color:var(--a-txt2);font-size:14px}
+
+/* como ler */
+.anu-legenda{margin-top:24px;border-radius:16px;background:var(--a-card);padding:14px 16px;font-size:13px;color:var(--a-txt2);line-height:1.65}
+.anu-legenda summary{cursor:pointer;color:var(--a-txt);font-weight:500}
+.anu-legenda p{margin-top:8px}
+.anu-legenda b{color:var(--a-txt);font-weight:600}
+
+@media(max-width:900px){
+  .anu-cab{align-items:stretch}
+  .anu-ferr{width:100%}
+  .anu-sel{flex:1 1 180px;max-width:none}
+  .anu-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anu-kpi{border-left:none;border-top:1px solid var(--a-line)}
+  .anu-kpi:nth-child(-n+2){border-top:none}
+  .anu-kpi:nth-child(even){border-left:1px solid var(--a-line)}
+  .anu-kpi:last-child{grid-column:1/-1;border-left:none}
+  .anu-colcab{display:none}
+  .anu-row{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"th nm nt" "rg rg rg" "ms ms ms";gap:12px 12px;padding:12px}
+  .anu-thumb{grid-area:th} .anu-nome{grid-area:nm} .anu-nota{grid-area:nt;text-align:right} .anu-regua{grid-area:rg}
+  .anu-ms{display:grid;grid-area:ms;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-top:10px;border-top:1px solid var(--a-line)}
+  .anu-m{text-align:left}
+  .anu-m i{display:block;font-style:normal;font-size:11px;color:var(--a-txt3)}
+  .anu-dados,.anu-pils{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(max-width:620px){
-  .anu-row{grid-template-columns:56px minmax(0,1fr) 72px;gap:10px 12px;padding:10px}
-  .anu-thumb{width:56px;height:100px}
-  .anu-pilares{grid-template-columns:1fr}
-  .anu-met{grid-template-columns:1fr 1fr}
-  .anu-nota b{font-size:24px}
-  .anu-topo .btn-secondary{margin-left:0;width:100%}
-  .anu-sel{flex:1 1 160px}
-  .anu-kpis{grid-template-columns:1fr 1fr}
+@media(max-width:420px){
+  .anu-ms{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media(prefers-reduced-motion:reduce){.anu-row{transition:none}}
 </style>
 </head>
 <body>
@@ -503,44 +585,40 @@ body{
   </div>
 
   <div id="secAnuncios" style="display:none">
-    <div class="card">
-      <div class="card-title">Anúncios — nota por criativo</div>
-      <div class="anu-topo">
-        <div class="anu-chips" id="anuJanela">
+    <div class="anu-cab">
+      <div>
+        <h2>Anúncios</h2>
+        <div class="anu-sub" id="anuInfo">Carregando…</div>
+      </div>
+      <div class="anu-ferr">
+        <div class="anu-seg" id="anuJanela" role="group" aria-label="Período">
           <button type="button" data-j="7" class="on" onclick="anuTrocarJanela(7)">7 dias</button>
           <button type="button" data-j="14" onclick="anuTrocarJanela(14)">14 dias</button>
           <button type="button" data-j="30" onclick="anuTrocarJanela(30)">30 dias</button>
         </div>
-        <select class="anu-sel" id="anuCampanha" onchange="anuCarregar()">
+        <select class="anu-sel" id="anuCampanha" onchange="anuCarregar()" aria-label="Campanha">
           <option value="">Todas as campanhas</option>
         </select>
-        <button type="button" class="btn-secondary" id="anuAtualizar" onclick="anuAtualizarDados()">Atualizar dados</button>
+        <button type="button" class="anu-bt" id="anuAtualizar" onclick="anuAtualizarDados()"></button>
       </div>
-      <div class="anu-etiquetas">
-        <div class="anu-etq">
-          <code>[TESTE]</code>
-          <button type="button" class="btn-secondary" onclick="anuCopiar('[TESTE]', this)">Copiar</button>
-          <span>no começo do nome da campanha de teste — às 23h55 o painel <b>pausa sozinho</b> quem cair nas regras</span>
-        </div>
-        <div class="anu-etq">
-          <code>[ESCALA]</code>
-          <button type="button" class="btn-secondary" onclick="anuCopiar('[ESCALA]', this)">Copiar</button>
-          <span>na campanha de escala — só acompanha e avisa no relatório, <b>nunca pausa</b></span>
-        </div>
-      </div>
-      <div class="anu-info" id="anuInfo">Carregando…</div>
-      <div id="anuConteudo"></div>
-      <details class="anu-legenda">
-        <summary>Como ler esta tela</summary>
-        <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra (contra a meta de custo do conjunto e o ponto de empate do produto), 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Anúncio com pouca impressão fica perto de 50 até provar — por isso a faixa entre parênteses: é onde a nota verdadeira provavelmente está.</p>
-        <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Só compare notas dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
-        <p><b>Ritmo:</b> quanto do orçamento do dia o conjunto (ou a campanha) conseguiu gastar no último dia útil, e o que está segurando. "Freio: meta de custo" quer dizer que subir o orçamento não aumenta a entrega.</p>
-        <p><b>Alerta vermelho:</b> gancho abaixo de 14% (com 2.000 impressões) ou CTR abaixo de 0,38% (com 4.000). Vale desde o primeiro dia — é a regra de corte do teste.</p>
-        <p><b>Fase 0:</b> por enquanto a tela só mostra e grava um retrato diário. O semáforo de escalar/manter/cortar só liga depois de 4 semanas de retratos, com a taxa de acerto medida.</p>
-      </details>
     </div>
+    <div class="anu-etqs">
+      Etiqueta no nome da campanha:
+      <button type="button" class="anu-etq" onclick="anuCopiar('[TESTE]', this)" title="Campanha de teste: às 23h55 o painel recomenda o corte de quem cair nas regras, e você confirma aqui"><code>[TESTE]</code><span class="lbl">copiar</span></button>
+      <button type="button" class="anu-etq" onclick="anuCopiar('[ESCALA]', this)" title="Campanha de escala: acompanha e recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte"><code>[ESCALA]</code><span class="lbl">copiar</span></button>
+    </div>
+    <div class="anu-recs" id="anuRecs" hidden></div>
+    <div id="anuConteudo"></div>
+    <details class="anu-legenda">
+      <summary>Como ler esta tela</summary>
+      <p><b>Régua de custo por compra:</b> o ponto é quanto cada venda está custando. Até a meta de custo do conjunto é verde, entre a meta e o ponto de empate é amarelo, depois do empate (a venda para de dar lucro) é vermelho. A faixa clara em volta do ponto é onde o custo verdadeiro provavelmente está: com poucas compras ela é larga.</p>
+      <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra, 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Criativo com pouca impressão fica perto de 50 até provar; o intervalo embaixo da nota é onde ela provavelmente está.</p>
+      <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Compare notas só dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
+      <p><b>CTR e gancho em amarelo:</b> abaixo de 80% da referência da conta.</p>
+      <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o painel recomenda o corte de quem cair nas regras (gancho abaixo de 14%, CTR abaixo de 0,38%, lead caro) e você confirma aqui. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
+      <p id="anuRefs"></p>
+    </details>
   </div>
-
 </div>
 
 <!-- ═══ MODAL ADICIONAR ═══ -->
@@ -1100,6 +1178,7 @@ function abrirAba(qual) {
     document.getElementById(abas[k][0]).style.display = k === qual ? '' : 'none';
     document.getElementById(abas[k][1]).classList.toggle('active', k === qual);
   });
+  document.body.classList.toggle('anu-larga', qual === 'anuncios');
   clearInterval(balTimer);
   clearInterval(rmkTimer);
   if (qual === 'equipes') { carregarBalanceador(); balTimer = setInterval(carregarBalanceador, 30000); }
@@ -1507,11 +1586,12 @@ const ANU_GRUPOS = {
 function anuUS(x, c = 2) { return x == null ? '—' : 'US$' + Number(x).toFixed(c).replace('.', ','); }
 function anuPct(x, c = 1) { return x == null ? '—' : (100 * x).toFixed(c).replace('.', ',') + '%'; }
 function anuNum(x) { return x == null ? '—' : Number(x).toLocaleString('pt-BR'); }
+function anuMil(x) { return x == null ? '—' : x >= 1000 ? Math.round(x / 1000).toLocaleString('pt-BR') + ' mil' : String(x); }
 function anuDia(d) { return d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '—'; }
 
 // Copia a etiqueta. A tela roda dentro de iframe: se a área de transferência for bloqueada, usa o jeito antigo.
 function anuCopiar(txt, btn) {
-  const ok = function () { const t = btn.textContent; btn.textContent = 'Copiado!'; setTimeout(function () { btn.textContent = t; }, 1500); };
+  const ok = function () { const alvo = btn.querySelector('.lbl') || btn; const t = alvo.textContent; alvo.textContent = 'copiado!'; setTimeout(function () { alvo.textContent = t; }, 1500); };
   const antigo = function () {
     const ta = document.createElement('textarea');
     ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -1540,6 +1620,7 @@ async function anuCarregar() {
     if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
     anuDados = d;
     anuRender(d);
+    anuCarregarRecs();
   } catch (err) {
     cont.innerHTML = '<div class="state-msg"><div>' + escapeHtml(err.message) + '</div></div>';
     document.getElementById('anuInfo').textContent = '';
@@ -1548,7 +1629,7 @@ async function anuCarregar() {
 
 async function anuAtualizarDados() {
   const btn = document.getElementById('anuAtualizar');
-  btn.disabled = true; btn.textContent = 'Atualizando…';
+  btn.disabled = true; anuBotaoAtualizar('Atualizando…');
   try {
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/coletar', { method: 'POST', body: '{}' });
     const d = await r.json();
@@ -1558,9 +1639,19 @@ async function anuAtualizarDados() {
   } catch (err) {
     toast(err.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Atualizar dados';
+    btn.disabled = false; anuBotaoAtualizar('Atualizar dados');
   }
 }
+
+const ANU_IC = {
+  atualizar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
+  copiar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
+};
+function anuBotaoAtualizar(txt) { document.getElementById('anuAtualizar').innerHTML = ANU_IC.atualizar + txt; }
+document.addEventListener('DOMContentLoaded', function () {
+  anuBotaoAtualizar('Atualizar dados');
+  document.querySelectorAll('.anu-etq').forEach(function (b) { b.insertAdjacentHTML('beforeend', ANU_IC.copiar); });
+});
 
 function anuRender(d) {
   // campanhas no seletor (mantém a escolhida)
@@ -1572,98 +1663,187 @@ function anuRender(d) {
 
   const a = d.ancoras;
   document.getElementById('anuInfo').innerHTML =
-    'Dados de <b>' + anuDia(d.ini) + ' a ' + anuDia(d.fim) + '</b>' +
-    (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '') +
-    ' · referências: CTR <b>' + anuPct(a.ctr_ref, 2) + '</b>, gancho <b>' + anuPct(a.gancho_ref) + '</b>, custo por lead <b>' + anuUS(a.cpl_ref) + '</b>' +
-    ' · empate: ' + a.produtos.map(function (p) { return escapeHtml(p.nome) + ' <b>' + anuUS(p.empate, 0) + '</b>'; }).join(', ') +
-    ' <span style="color:var(--text-dim)">(medidas em ' + anuDia(a.medido_em) + ')</span>';
+    anuDia(d.ini) + ' a ' + anuDia(d.fim) + ' · ' + d.itens.length + ' criativos' +
+    (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '');
+  document.getElementById('anuRefs').innerHTML =
+    '<b>Referências da conta</b> (medidas em ' + anuDia(a.medido_em) + '): CTR ' + anuPct(a.ctr_ref, 2) + ', gancho ' + anuPct(a.gancho_ref) +
+    ', custo por lead ' + anuUS(a.cpl_ref) + '. Ponto de empate por compra: ' +
+    a.produtos.map(function (p) { return escapeHtml(p.nome) + ' ' + anuUS(p.empate, 0); }).join(' · ') + '.';
 
   const t = d.totais, m = t.metricas;
   const lucro = d.itens.reduce(function (s, i) { return s + (i.av.lucro || 0); }, 0);
   let h = '<div class="anu-kpis">' +
-    anuKpi('Gasto', anuUS(t.sp, 0), d.itens.length + ' anúncios') +
+    anuKpi('Gasto', anuUS(t.sp, 0), 'no período') +
     anuKpi('Compras', anuNum(t.puc + t.puv), t.puc + ' por clique') +
-    anuKpi('Custo por compra', anuUS(m.cpa_t), 'clique: ' + anuUS(m.cpa_c)) +
+    anuKpi('Custo por compra', anuUS(m.cpa_t), 'só clique: ' + anuUS(m.cpa_c)) +
     anuKpi('Leads', anuNum(t.ld), anuUS(m.cpl) + ' cada') +
-    anuKpi('CTR', anuPct(m.ctr, 2), 'gancho ' + anuPct(m.gancho)) +
     anuKpi('Lucro estimado', anuUS(lucro, 0), 'antes da divisão') +
     '</div>';
 
-  if (!d.itens.length) h += '<div class="state-msg"><div>Nenhum anúncio com impressão nesta janela.</div></div>';
+  if (!d.itens.length) {
+    h += '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha 14 ou 30 dias, ou outra campanha.</div>';
+  } else {
+    h += '<div class="anu-colcab"><span></span><span>Criativo</span><span>Nota</span><span>Custo por compra</span>' +
+      '<span class="dir">Lead</span><span class="dir">CTR</span><span class="dir">Gancho</span><span class="dir">Gasto</span></div>';
+  }
+  // conta por grupo para o cabeçalho de cada grupo
+  const grupoDe = function (i) { return i.agg.sp < 20 ? 'cinza' : i.av.faixaAmostra; };
+  const contagem = {};
+  d.itens.forEach(function (i) { const g = grupoDe(i); contagem[g] = (contagem[g] || 0) + 1; });
   let grupo = null;
   d.itens.forEach(function (i) {
-    const g = i.agg.sp < 20 ? 'cinza' : i.av.faixaAmostra;
+    const g = grupoDe(i);
     if (g !== grupo) {
       grupo = g;
-      h += '<div class="anu-grupo">' + ANU_GRUPOS[g][0] + ' <em>' + ANU_GRUPOS[g][1] + '</em></div>';
+      h += '<div class="anu-grupo">' + ANU_GRUPOS[g][0] + ' <em>' + ANU_GRUPOS[g][1] + '</em><span class="n">' + contagem[g] + '</span></div>';
     }
-    h += anuLinha(i, g === 'cinza');
-    if (anuAberto === i.ad) h += '<div class="anu-det" id="anuDet">Carregando…</div>';
+    h += anuLinha(i, g === 'cinza', d.ancoras);
+    if (anuAberto === i.ad) h += '<div class="anu-det" id="anuDet">' + anuDetTopo(i) + '<div id="anuDetDias"><h5>Dia a dia</h5>Carregando…</div></div>';
   });
   document.getElementById('anuConteudo').innerHTML = h;
   if (anuAberto) anuCarregarDetalhe(anuAberto);
+}
+
+// Cortes recomendados pelo relatório das 23h55. Nada é pausado sem o Thiago clicar em Cortar.
+let anuRecs = null;
+async function anuCarregarRecs() {
+  const box = document.getElementById('anuRecs');
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/recomendacoes');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Falha');
+    anuRecs = d;
+    anuDesenharRecs();
+  } catch (err) {
+    box.hidden = true;
+  }
+}
+
+function anuDesenharRecs() {
+  const box = document.getElementById('anuRecs');
+  const d = anuRecs;
+  if (!d || !d.dia || !(d.itens || []).length) { box.hidden = true; return; }
+  const pend = d.itens.filter(function (x) { return x.estado === 'pendente'; }).length;
+  let h = '<h4>' + (pend ? pend + (pend > 1 ? ' cortes recomendados aguardam' : ' corte recomendado aguarda') + ' você' : 'Cortes recomendados decididos') + ' · relatório de ' + anuDia(d.dia) + '</h4>';
+  d.itens.forEach(function (x) {
+    h += '<div class="anu-rec"><div class="txt"><b>' + escapeHtml(x.nome) + '</b> · ' + escapeHtml(x.campanha) + '<br/>' + escapeHtml(x.motivo) + '</div>';
+    if (x.estado === 'pendente') {
+      h += '<button type="button" class="anu-bt cortar" onclick="anuDecidir(\'' + x.ad + '\',\'cortar\',this)">Cortar</button>' +
+           '<button type="button" class="anu-bt" onclick="anuDecidir(\'' + x.ad + '\',\'manter\',this)">Manter</button>';
+    } else {
+      h += '<span class="feito">' + (x.estado === 'cortado' ? 'Cortado' : 'Mantido') + (x.decididoEm ? ' em ' + new Date(x.decididoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + '</span>';
+    }
+    h += '</div>';
+  });
+  box.innerHTML = h;
+  box.hidden = false;
+}
+
+async function anuDecidir(ad, acao, btn) {
+  const item = (anuRecs.itens || []).find(function (x) { return x.ad === ad; });
+  if (acao === 'cortar' && !confirm('Pausar "' + (item ? item.nome : ad) + '" na Meta agora?')) return;
+  btn.parentNode.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/decidir', { method: 'POST', body: JSON.stringify({ dia: anuRecs.dia, ad: ad, acao: acao }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Falha');
+    if (item) Object.assign(item, d.item);
+    toast(acao === 'cortar' ? 'Cortado: pausado na Meta' : 'Mantido', 'success');
+    anuDesenharRecs();
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.parentNode.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+  }
 }
 
 function anuKpi(rot, val, sub) {
   return '<div class="anu-kpi"><span>' + rot + '</span><b>' + val + '</b><small>' + sub + '</small></div>';
 }
 
-function anuLinha(i, cinza) {
+// A régua: zonas até a meta (verde), até o empate (âmbar) e além (vermelho); ponto = CPA; faixa = IC95.
+function anuRegua(i) {
+  const av = i.av, cpa = av.metricas.cpa_t, meta = av.meta, emp = av.empate;
+  const max = emp * 1.6;
+  const p = function (x) { return Math.max(0, Math.min(100, 100 * x / max)); };
+  const pm = p(meta), pe = p(emp);
+  const zonas = 'background:linear-gradient(90deg,rgba(74,222,128,.30) 0 ' + pm + '%,rgba(232,184,107,.30) ' + pm + '% ' + pe + '%,rgba(242,109,109,.30) ' + pe + '% 100%)';
+  let dentro = '', esq;
+  if (cpa != null) {
+    const zona = cpa <= meta ? 'ok' : cpa <= emp ? 'at' : 'ruim';
+    const ic = av.ic95cpa;
+    if (ic) {
+      const lo = p(ic.lo), hi = ic.hi == null ? 100 : p(ic.hi);
+      dentro += '<i class="ic" style="left:' + lo + '%;width:' + Math.max(1.5, hi - lo) + '%"></i>';
+    }
+    dentro += '<i class="pt ' + zona + '" style="left:' + p(cpa) + '%"></i>';
+    esq = '<span><b class="' + zona + '">' + anuUS(cpa) + '</b> · ' + (i.agg.puc + i.agg.puv) + ' compras</span>';
+  } else {
+    esq = '<span class="vazio">sem compras ainda</span>';
+  }
+  return '<div class="anu-regua" title="Custo por compra. Faixa clara: onde o custo verdadeiro provavelmente está.">' +
+    '<div class="anu-trilha" style="' + zonas + '">' + dentro + '</div>' +
+    '<div class="anu-rleg">' + esq + '<span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div></div>';
+}
+
+function anuLinha(i, cinza, ancoras) {
   const av = i.av, m = av.metricas;
-  const selos = [];
-  (av.alertas || []).forEach(function (x) { selos.push('<span class="anu-selo alerta">Corte: ' + escapeHtml(x.texto) + '</span>'); });
-  if (i.status && i.status !== 'ACTIVE') selos.push('<span class="anu-selo">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(i.status.toLowerCase())) + '</span>');
-  if (i.aprendizado === 'LEARNING') selos.push('<span class="anu-selo aviso">em aprendizado</span>');
-  if (i.aprendizado === 'FAIL') selos.push('<span class="anu-selo aviso">aprendizado limitado</span>');
+  const tags = [];
+  (av.alertas || []).forEach(function (x) { tags.push('<span class="anu-tag alerta">' + escapeHtml(x.texto) + '</span>'); });
   const nomeC = i.campanhaNome || '';
-  if (/\[\s*teste\s*\]/i.test(nomeC)) selos.push('<span class="anu-selo teste">teste · corte automático</span>');
-  else if (/\[\s*escala\s*\]/i.test(nomeC)) selos.push('<span class="anu-selo escala">escala</span>');
-  else selos.push('<span class="anu-selo">sem etiqueta</span>');
-  selos.push('<span class="anu-selo">' + escapeHtml(av.produto) + '</span>');
+  if (/\[\s*teste\s*\]/i.test(nomeC)) tags.push('<span class="anu-tag teste">teste</span>');
+  else if (/\[\s*escala\s*\]/i.test(nomeC)) tags.push('<span class="anu-tag escala">escala</span>');
+  else tags.push('<span class="anu-tag">sem etiqueta</span>');
+  if (i.status && i.status !== 'ACTIVE') tags.push('<span class="anu-tag">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(i.status.toLowerCase())) + '</span>');
+  if (i.aprendizado === 'LEARNING') tags.push('<span class="anu-tag aviso">em aprendizado</span>');
+  if (i.aprendizado === 'FAIL') tags.push('<span class="anu-tag aviso">aprendizado limitado</span>');
 
   let notaHtml;
   if (av.nota == null) {
     const f = av.faltam;
-    const txt = !f ? 'sem nota' : f.tipo === 'impressoes' ? 'faltam ' + anuNum(f.n) + ' impressões' : f.tipo === 'dias' ? 'falta' + (f.n > 1 ? 'm ' : ' ') + f.n + ' dia' + (f.n > 1 ? 's' : '') + ' com gasto' : 'faltam ' + f.n + ' compras';
+    const txt = !f ? 'sem nota' : f.tipo === 'impressoes' ? 'faltam ' + anuNum(f.n) + ' impressões' : f.tipo === 'dias' ? 'falta' + (f.n > 1 ? 'm ' : ' ') + f.n + ' dia' + (f.n > 1 ? 's' : '') : 'faltam ' + f.n + ' compras';
     notaHtml = '<div class="anu-nota sem"><b>—</b><span>' + txt + '</span></div>';
   } else {
-    notaHtml = '<div class="anu-nota"><b>' + Math.round(av.nota) + '</b><span>faixa ' + Math.round(av.faixa.lo) + '–' + Math.round(av.faixa.hi) + '</span>' +
-      (av.faltam && av.faltam.tipo === 'compras' ? '<span>faltam ' + av.faltam.n + ' compras p/ julgar venda</span>' : '') + '</div>';
+    notaHtml = '<div class="anu-nota" title="Nota de 0 a 100 (50 = referência). Provavelmente entre ' + Math.round(av.faixa.lo) + ' e ' + Math.round(av.faixa.hi) + '."><b>' + Math.round(av.nota) + '</b><span>' + Math.round(av.faixa.lo) + '–' + Math.round(av.faixa.hi) + '</span></div>';
   }
 
-  let pil = '';
-  if (av.pilares) {
-    [['Venda', 'venda'], ['Lead', 'conversa'], ['CTR', 'interesse'], ['Gancho', 'atencao']].forEach(function (p) {
-      const v = av.pilares[p[1]];
-      pil += '<div class="anu-pil">' + p[0] + '<i><s style="width:' + Math.max(0, Math.min(100, v)) + '%"></s></i><em>' + Math.round(v) + '</em></div>';
-    });
-  } else {
-    pil = '<div class="anu-pil" style="grid-template-columns:1fr">Pilares aparecem com 3 dias e 2.000 impressões.</div>';
-  }
+  const baixo = function (x, ref) { return x != null && ref && x < 0.8 * ref ? ' class="baixo"' : ''; };
+  const ms = '<div class="anu-ms">' +
+    '<div class="anu-m"><i>Lead</i><b>' + anuUS(m.cpl) + '</b><small>' + i.agg.ld + ' leads</small></div>' +
+    '<div class="anu-m"><i>CTR</i><b' + baixo(m.ctr, ancoras.ctr_ref) + '>' + anuPct(m.ctr, 2) + '</b><small>ref ' + anuPct(ancoras.ctr_ref, 2) + '</small></div>' +
+    '<div class="anu-m"><i>Gancho</i><b' + baixo(m.gancho, ancoras.gancho_ref) + '>' + anuPct(m.gancho) + '</b><small>ref ' + anuPct(ancoras.gancho_ref) + '</small></div>' +
+    '<div class="anu-m"><i>Gasto</i><b>' + anuUS(i.agg.sp, 0) + '</b><small>' + anuMil(i.agg.im) + ' impr.</small></div>' +
+    '</div>';
 
+  const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer"/>' : 'sem imagem';
+  return '<div class="anu-row' + (cinza ? ' cinza' : '') + (anuAberto === i.ad ? ' aberto' : '') + '" role="button" tabindex="0" aria-expanded="' + (anuAberto === i.ad) + '"' +
+    ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
+    '<div class="anu-thumb">' + thumb + '</div>' +
+    '<div class="anu-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="c">' + escapeHtml(nomeC) + '</div><div class="anu-tags">' + tags.join('') + '</div></div>' +
+    notaHtml + anuRegua(i) + ms + '</div>';
+}
+
+// Parte de cima do detalhe: sai direto do painel, sem esperar a série diária.
+function anuDetTopo(i) {
+  const av = i.av;
   const rit = i.ritmo;
   const ritTxt = !rit ? '—' : rit.parado ? 'parado' : rit.pct + '% do ' + (rit.dono === 'conjunto' ? 'orçamento do conjunto' : 'ritmo da campanha') + (rit.freio ? ' · freio: ' + rit.freio : '');
   const tend = i.tendencia;
-  const tendTxt = tend.tipo === 'piorou' ? 'piorou: ' + tend.texto : tend.tipo === 'melhorou' ? 'melhorou: ' + tend.texto : tend.texto;
-
-  const met = '<div class="anu-met">' +
-    '<div>Gasto <b>' + anuUS(i.agg.sp, 0) + '</b></div>' +
-    '<div>Compras <b>' + (i.agg.puc + i.agg.puv) + '</b> <span style="color:var(--text-dim)">(' + i.agg.puc + ' clique)</span></div>' +
-    '<div>CPA <b>' + anuUS(m.cpa_t) + '</b></div>' +
-    '<div>meta ' + anuUS(av.meta, 0) + ' · empate ' + anuUS(av.empate, 0) + '</div>' +
-    '<div>Lead <b>' + anuUS(m.cpl) + '</b> <span style="color:var(--text-dim)">(' + i.agg.ld + ')</span></div>' +
-    '<div>CTR <b>' + anuPct(m.ctr, 2) + '</b> · gancho <b>' + anuPct(m.gancho) + '</b></div>' +
-    '<div class="full">Ritmo: ' + escapeHtml(ritTxt) + '</div>' +
-    '<div class="full">Tendência: ' + escapeHtml(tendTxt) + '</div>' +
+  const tendTxt = tend.tipo === 'piorou' ? 'piorou — ' + tend.texto : tend.tipo === 'melhorou' ? 'melhorou — ' + tend.texto : tend.texto;
+  let h = '<div class="anu-dados">' +
+    '<div class="anu-dado"><span>Ritmo</span><b>' + escapeHtml(ritTxt) + '</b></div>' +
+    '<div class="anu-dado"><span>Tendência</span><b>' + escapeHtml(tendTxt) + '</b></div>' +
+    '<div class="anu-dado"><span>Produto</span><b>' + escapeHtml(av.produto) + ' · empate ' + anuUS(av.empate, 0) + '</b></div>' +
+    '<div class="anu-dado"><span>Lucro estimado</span><b>' + anuUS(av.lucro, 0) + (av.lucroVisualizacao ? ' <span style="color:var(--a-txt3)">(' + anuUS(av.lucroVisualizacao, 0) + ' por visualização)</span>' : '') + '</b></div>' +
     '</div>';
-
-  const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer"/>' : 'sem<br/>imagem';
-  return '<div class="anu-row' + (cinza ? ' cinza' : '') + (anuAberto === i.ad ? ' aberto' : '') + '" onclick="anuAbrir(\'' + i.ad + '\')">' +
-    '<div class="anu-thumb">' + thumb + '</div>' +
-    '<div class="anu-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="sub">' + escapeHtml(i.campanhaNome || '') + ' · ' + escapeHtml(i.conjuntoNome || '') + '</div><div class="anu-selos">' + selos.join('') + '</div></div>' +
-    notaHtml +
-    '<div class="anu-pilares">' + pil + '</div>' +
-    met + '</div>';
+  if (av.pilares) {
+    h += '<div class="anu-pils">';
+    [['Venda', 'venda'], ['Lead', 'conversa'], ['CTR', 'interesse'], ['Gancho', 'atencao']].forEach(function (p) {
+      const v = av.pilares[p[1]];
+      h += '<div class="anu-pil"><div><span>' + p[0] + '</span><b>' + Math.round(v) + '</b></div><i><s style="width:' + Math.max(0, Math.min(100, v)) + '%"></s></i></div>';
+    });
+    h += '</div>';
+  }
+  return h;
 }
 
 function anuAbrir(ad) {
@@ -1672,34 +1852,34 @@ function anuAbrir(ad) {
 }
 
 async function anuCarregarDetalhe(ad) {
-  const box = document.getElementById('anuDet');
+  const box = document.getElementById('anuDetDias');
   if (!box) return;
   try {
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/detalhe?ad=' + encodeURIComponent(ad) + '&dias=' + Math.max(14, anuJanela));
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Falha');
     if (anuAberto !== ad) return;
-    let h = '<h4>Dia a dia</h4><div class="anu-rolar"><table class="anu-tab"><tr><th>Dia</th><th>Gasto</th><th>Impressões</th><th>CTR</th><th>Gancho</th><th>Leads</th><th>Custo/lead</th><th>Compras</th><th>CPA</th></tr>';
+    let h = '<h5>Dia a dia</h5><div class="anu-rolar"><table class="anu-tab"><tr><th>Dia</th><th>Gasto</th><th>Impressões</th><th>CTR</th><th>Gancho</th><th>Leads</th><th>Custo/lead</th><th>Compras</th><th>Custo/compra</th></tr>';
     d.serie.slice().reverse().forEach(function (x) {
       const fds = new Date(x.d + 'T12:00:00Z').getUTCDay() % 6 === 0;
       if (!x.im && !x.pu) {
-        h += '<tr class="fds"><td>' + anuDia(x.d) + '</td><td colspan="8" style="text-align:left">' + (x.puxado ? 'sem entrega' : 'não puxado') + '</td></tr>';
+        h += '<tr class="fds"><td>' + anuDia(x.d) + '</td><td colspan="8" class="msg">' + (x.puxado ? 'sem entrega' : 'não puxado') + '</td></tr>';
         return;
       }
       const m = x.m || {};
-      h += '<tr' + (fds ? ' class="fds"' : '') + '><td>' + anuDia(x.d) + '</td><td>' + anuUS(x.sp) + '</td><td>' + anuNum(x.im) + '</td><td>' + anuPct(m.ctr, 2) + '</td><td>' + anuPct(m.gancho) + '</td><td>' + (x.ld || 0) + '</td><td>' + anuUS(m.cpl) + '</td><td>' + (x.pu || 0) + (x.puv ? ' <span style="color:var(--text-dim)">(' + x.puv + ' vis.)</span>' : '') + '</td><td>' + anuUS(m.cpa_t) + '</td></tr>';
+      h += '<tr' + (fds ? ' class="fds"' : '') + '><td>' + anuDia(x.d) + '</td><td>' + anuUS(x.sp) + '</td><td>' + anuNum(x.im) + '</td><td>' + anuPct(m.ctr, 2) + '</td><td>' + anuPct(m.gancho) + '</td><td>' + (x.ld || 0) + '</td><td>' + anuUS(m.cpl) + '</td><td>' + (x.pu || 0) + (x.puv ? ' <span style="color:var(--a-txt3)">(' + x.puv + ' vis.)</span>' : '') + '</td><td>' + anuUS(m.cpa_t) + '</td></tr>';
     });
     h += '</table></div>';
-    h += '<h4 style="margin-top:14px">Mudanças no anúncio, conjunto ou campanha</h4>';
-    if (!d.eventos.length) h += '<div class="anu-ev">Nenhuma mudança registrada neste período.</div>';
+    h += '<h5>Mudanças no criativo, conjunto ou campanha</h5>';
+    if (!d.eventos.length) h += '<div class="anu-ev">Nenhuma mudança neste período.</div>';
     d.eventos.slice().reverse().forEach(function (e) {
       const quando = new Date(e.t).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
       const mud = (e.de != null || e.para != null) ? ': ' + escapeHtml(String(e.de == null ? '—' : e.de)) + ' → ' + escapeHtml(String(e.para == null ? '—' : e.para)) : '';
-      h += '<div class="anu-ev"><b>' + quando + '</b> · ' + escapeHtml(e.objNome || '') + ' · ' + escapeHtml(e.tipoTxt || e.tipo) + mud + (e.quem ? ' <span style="color:var(--text-dim)">(' + escapeHtml(e.quem) + ')</span>' : '') + '</div>';
+      h += '<div class="anu-ev"><b>' + quando + '</b> · ' + escapeHtml(e.objNome || '') + ' · ' + escapeHtml(e.tipoTxt || e.tipo) + mud + (e.quem ? ' <span style="color:var(--a-txt3)">(' + escapeHtml(e.quem) + ')</span>' : '') + '</div>';
     });
     box.innerHTML = h;
   } catch (err) {
-    box.textContent = err.message;
+    box.innerHTML = '<h5>Dia a dia</h5>' + escapeHtml(err.message);
   }
 }
 
