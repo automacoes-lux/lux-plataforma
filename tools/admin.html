@@ -338,6 +338,14 @@ body{
 .anu-chips button.on{background:rgba(201,168,76,.15);color:var(--gold)}
 .anu-sel{background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:999px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:14px;max-width:100%}
 .anu-topo .btn-secondary{margin-left:auto}
+.anu-etiquetas{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.anu-etq{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius);background:rgba(255,255,255,.02);border:.5px solid var(--border)}
+.anu-etq code{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;color:var(--gold);background:var(--bg-input);padding:5px 10px;border-radius:6px;letter-spacing:.04em}
+.anu-etq .btn-secondary{padding:6px 14px;font-size:13px}
+.anu-etq span{flex:1 1 260px;font-size:13px;color:var(--text-mid);line-height:1.45}
+.anu-etq span b{color:var(--text)}
+.anu-selo.teste{border-color:rgba(232,184,107,.45);color:#E8B86B}
+.anu-selo.escala{border-color:rgba(74,222,128,.35);color:#4ADE80}
 .anu-info{font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px}
 .anu-info b{color:var(--text);font-weight:600}
 .anu-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1.2rem;padding-bottom:1.1rem;border-bottom:.5px solid var(--border)}
@@ -507,6 +515,18 @@ body{
           <option value="">Todas as campanhas</option>
         </select>
         <button type="button" class="btn-secondary" id="anuAtualizar" onclick="anuAtualizarDados()">Atualizar dados</button>
+      </div>
+      <div class="anu-etiquetas">
+        <div class="anu-etq">
+          <code>[TESTE]</code>
+          <button type="button" class="btn-secondary" onclick="anuCopiar('[TESTE]', this)">Copiar</button>
+          <span>no começo do nome da campanha de teste — às 23h55 o painel <b>pausa sozinho</b> quem cair nas regras</span>
+        </div>
+        <div class="anu-etq">
+          <code>[ESCALA]</code>
+          <button type="button" class="btn-secondary" onclick="anuCopiar('[ESCALA]', this)">Copiar</button>
+          <span>na campanha de escala — só acompanha e avisa no relatório, <b>nunca pausa</b></span>
+        </div>
       </div>
       <div class="anu-info" id="anuInfo">Carregando…</div>
       <div id="anuConteudo"></div>
@@ -1489,6 +1509,20 @@ function anuPct(x, c = 1) { return x == null ? '—' : (100 * x).toFixed(c).repl
 function anuNum(x) { return x == null ? '—' : Number(x).toLocaleString('pt-BR'); }
 function anuDia(d) { return d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '—'; }
 
+// Copia a etiqueta. A tela roda dentro de iframe: se a área de transferência for bloqueada, usa o jeito antigo.
+function anuCopiar(txt, btn) {
+  const ok = function () { const t = btn.textContent; btn.textContent = 'Copiado!'; setTimeout(function () { btn.textContent = t; }, 1500); };
+  const antigo = function () {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { toast('Não consegui copiar: selecione e copie ' + txt, 'error'); }
+    ta.remove();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, antigo);
+  else antigo();
+}
+
 function anuTrocarJanela(j) {
   anuJanela = j;
   document.querySelectorAll('#anuJanela button').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.j) === j); });
@@ -1581,6 +1615,10 @@ function anuLinha(i, cinza) {
   if (i.status && i.status !== 'ACTIVE') selos.push('<span class="anu-selo">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(i.status.toLowerCase())) + '</span>');
   if (i.aprendizado === 'LEARNING') selos.push('<span class="anu-selo aviso">em aprendizado</span>');
   if (i.aprendizado === 'FAIL') selos.push('<span class="anu-selo aviso">aprendizado limitado</span>');
+  const nomeC = i.campanhaNome || '';
+  if (/\[\s*teste\s*\]/i.test(nomeC)) selos.push('<span class="anu-selo teste">teste · corte automático</span>');
+  else if (/\[\s*escala\s*\]/i.test(nomeC)) selos.push('<span class="anu-selo escala">escala</span>');
+  else selos.push('<span class="anu-selo">sem etiqueta</span>');
   selos.push('<span class="anu-selo">' + escapeHtml(av.produto) + '</span>');
 
   let notaHtml;
