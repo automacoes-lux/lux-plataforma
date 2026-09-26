@@ -6,6 +6,7 @@
 <title>Lux Music — Plataforma Lux</title>
 
 <script src="../js/auth-iframe.js"></script>
+<script src="../js/previa.js?v=20260926e"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -196,6 +197,14 @@
   }
   .cover-arquivo .nome{color:var(--txt);word-break:break-all;flex:1;min-width:120px}
 
+  /* ── COVER E PRÉVIA LADO A LADO (26/09/2026) ──
+     cada cartão com a altura dele: o cover cresce com as etapas e a
+     prévia não pode esticar junto */
+  .linha-topo{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:12px}
+  .linha-topo > .card{margin-bottom:0}
+  .previa-box .card-hint{margin-top:-4px;font-size:12.5px}
+  .btn-gerar-previa{width:100%;margin-top:11px}
+
   /* ── ETAPAS DO COVER ──
      O preparo do cover leva minutos. Em vez de uma rodinha muda, a tela
      conta o que esta acontecendo, igual a ferramenta Cover faz. */
@@ -311,9 +320,13 @@
   .versao audio{width:100%;margin-bottom:10px;height:38px}
   .versao-acoes{display:grid;grid-template-columns:auto 1fr 1fr;gap:7px}
   .versao-acoes .btn{padding:11px 6px;font-size:12.5px}
-  /* MP3 ocupa 2 colunas da 2a linha e o WAV fica ao lado dele.
-     E o nth-last-child(2) porque o WAV e sempre o ultimo. */
-  .versao-acoes .btn:nth-last-child(2){grid-column:1 / span 2}
+  /* 2a linha: MP3 ocupa 2 colunas e o WAV fica ao lado dele.
+     3a linha: a Prévia, sozinha e na largura toda — é outra ação
+     (vai pro cliente), não mais um formato do mesmo arquivo.
+     Por classe, e não por posição: até 26/09/2026 era nth-last-child(2),
+     que quebrava assim que entrasse mais um botão no fim. */
+  .versao-acoes .btn-mp3{grid-column:1 / span 2}
+  .versao-acoes .btn-previa{grid-column:1 / -1}
   /* WAV e acao secundaria: cinza, ao lado do MP3 branco */
   .btn-wav{font-size:12px;letter-spacing:.02em}
 
@@ -508,6 +521,7 @@
     .faixa-nome{min-width:100%}
     .faixa .player{min-width:100%}
     .faixa-baixar{flex:1}
+    .linha-topo{grid-template-columns:1fr}
   }
 
 </style>
@@ -539,6 +553,8 @@
 
     <div>
 
+      <!-- COVER e PRÉVIA lado a lado (26/09/2026) -->
+      <div class="linha-topo">
       <!-- COVER — antes do briefing, como pedido -->
       <div class="card cover-box">
         <div class="card-head"><span class="titulo-secao">Cover de música</span></div>
@@ -578,6 +594,25 @@
             <span class="etapa-det"></span>
           </div>
           <div class="etapa-barra"><i id="coverBarra"></i></div>
+        </div>
+      </div>
+
+        <!-- PRÉVIA DE MÚSICA FEITA FORA (26/09/2026): música do Suno ou de
+             qualquer lugar -> prévia com a voz da Lux, montada aqui mesmo -->
+        <div class="card previa-box">
+          <div class="card-head"><span class="titulo-secao">Prévia de música</span></div>
+          <p class="card-hint">Para música feita fora da plataforma (ex.: direto no Suno).</p>
+          <button class="btn btn-ghost" id="btnEscolherPrevia" onclick="document.getElementById('arqPrevia').click()">
+            <span class="ic-sv-wrap"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></span> Enviar música
+          </button>
+          <input type="file" id="arqPrevia" accept="audio/*,video/mp4,.mp3,.wav,.m4a,.mp4,.ogg,.aac" style="display:none" onchange="escolherArquivoPrevia(this)"/>
+          <div class="cover-arquivo" id="previaArquivo" style="display:none">
+            <span class="nome" id="previaNome">—</span>
+            <button class="btn-campo lixo" onclick="limparArquivoPrevia()" title="Tirar esta música"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+          </div>
+          <button class="btn btn-gold btn-gerar-previa" id="btnGerarPrevia" style="display:none" onclick="gerarPreviaDoArquivo()">
+            <svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/></svg> Gerar prévia
+          </button>
         </div>
       </div>
 
@@ -1377,6 +1412,83 @@ function paraWav(buffer){
   return new Blob([ab], { type: 'audio/wav' });
 }
 
+// ══ PRÉVIA PARA O CLIENTE (26/09/2026) ═══════════════════════════════
+// O atendente baixa um trecho da música com a voz da Lux por cima e manda
+// para o cliente ANTES do pagamento. Custo zero: é montada aqui no
+// navegador. O motor (formato, tempos, vozes) fica em ../js/previa.js,
+// compartilhado com o Suno Download — aqui ficam só os botões.
+
+// Botão igual ao do WAV: link e título em ATRIBUTO (título é texto livre).
+// `extra` = classe a mais para as listas (faixa-baixar).
+function botaoPrevia(link, titulo, extra){
+  return '<button class="btn btn-ghost btn-previa' + (extra ? ' ' + extra : '') + '" type="button"' +
+         ' title="Trecho de 20 s com a voz da Lux por cima — para mandar ao cliente antes do pagamento"' +
+         ' data-link="' + esc(link) + '" data-titulo="' + esc(titulo || 'musica') + '"' +
+         ' onclick="baixarPrevia(this)">' + IC.fone + ' Prévia</button>';
+}
+
+// Roda a prévia mostrando o andamento no próprio botão.
+// `fonte` = os bytes da música ou a promessa deles.
+async function rodarPrevia(botao, fonte, titulo, dicaErro){
+  const antes = botao.innerHTML;
+  botao.disabled = true;
+  try{
+    const blob = await PreviaLux.montar(fonte, t => { botao.innerHTML = '<span class="spin"></span>' + t; });
+    const nome = PreviaLux.baixar(blob, titulo);
+    sucesso('Prévia pronta: ' + nome + ' — é esta que vai para o cliente.', 5000);
+  }catch(e){
+    erro('Não consegui montar a prévia: ' + e.message + '.' + (dicaErro || ''));
+  }finally{
+    botao.disabled = false;
+    botao.innerHTML = antes;
+  }
+}
+
+// Prévia de uma versão criada aqui (o link é público, com token)
+function baixarPrevia(botao){
+  if(botao.disabled) return;
+  const link   = botao.getAttribute('data-link') || '';
+  const titulo = botao.getAttribute('data-titulo') || 'musica';
+  const fonte  = fetch(link).then(r => {
+    if(!r.ok) throw new Error('o áudio respondeu ' + r.status);
+    return r.arrayBuffer();
+  });
+  return rodarPrevia(botao, fonte, titulo, ' O MP3 completo continua disponível.');
+}
+
+// ── PRÉVIA DE MÚSICA FEITA FORA (26/09/2026) ────────────────────────
+// Música criada direto no Suno (ou em qualquer lugar): o atendente escolhe
+// o arquivo e baixa a prévia no mesmo formato. O arquivo NÃO sai do
+// computador dele — a prévia é montada aqui mesmo.
+let arquivoPrevia = null;
+
+function escolherArquivoPrevia(input){
+  const arq = input.files && input.files[0];
+  input.value = '';                     // deixa escolher o mesmo arquivo de novo
+  if(!arq) return;
+  if(arq.size > 60 * 1024 * 1024){
+    erro('O arquivo passou de 60 MB. Use o MP3 da música.');
+    return;
+  }
+  limparAvisos();
+  arquivoPrevia = arq;
+  $('previaNome').textContent = arq.name;
+  $('previaArquivo').style.display = 'flex';
+  $('btnGerarPrevia').style.display = '';
+}
+
+function limparArquivoPrevia(){
+  arquivoPrevia = null;
+  $('previaArquivo').style.display = 'none';
+  $('btnGerarPrevia').style.display = 'none';
+}
+
+function gerarPreviaDoArquivo(){
+  const botao = $('btnGerarPrevia');
+  if(!arquivoPrevia || botao.disabled) return;
+  return rodarPrevia(botao, arquivoPrevia.arrayBuffer(), arquivoPrevia.name, '');
+}
+
 // Limpa o que pertencia ao projeto anterior. Usado quando entra um
 // áudio pra cover: o briefing, as instruções e o ritmo que estavam
 // na tela eram de outra música e só atrapalhariam.
@@ -1652,9 +1764,10 @@ function conteudoDaGeracao(g){
           htmlJoinha(g.taskId, i) +
           '<button class="btn btn-ghost" onclick="cortar(\'' + esc(chave) + '\')">' + IC.tesoura + ' Cortar</button>' +
           '<button class="btn btn-ghost" onclick="coverDesta(\'' + esc(g.taskId) + '\',' + i + ')">' + IC.mic + ' Cover</button>' +
-          '<a class="btn btn-gold" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
+          '<a class="btn btn-gold btn-mp3" style="text-align:center;text-decoration:none;padding:11px 6px" href="' +
              esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, titulo) +
+          botaoPrevia(link, titulo) +
         '</div>';
     }else{
       classe='gerando';
@@ -1940,7 +2053,9 @@ const IC = {
   lupa: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
   voltar: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>',
   play: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
-  pausa: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+  pausa: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+  // fone de ouvido — o botão Prévia (Material Icons "headphones")
+  fone: '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/></svg>'
 };
 
 const SVG_JOINHA = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
@@ -2062,6 +2177,7 @@ function pintarFavoritos(itens, busca){
           '<button class="btn btn-ghost faixa-baixar" onclick="cortar(\'' + esc(p.taskId + '|' + p.indice) + '\')">' + IC.tesoura + ' Cortar</button>' +
           '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, p.titulo) +
+          botaoPrevia(link, p.titulo, 'faixa-baixar') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -2296,6 +2412,7 @@ function pintarPedidos(itens, busca){
           htmlPlayer(link, v.duracao) +
           '<a class="btn btn-gold faixa-baixar" href="' + esc(link + '&dl=1') + '">MP3</a>' +
           botaoWav(link, p.titulo) +
+          botaoPrevia(link, p.titulo, 'faixa-baixar') +
         '</div>';
       }).join('');
     }else{

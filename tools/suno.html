@@ -9,6 +9,8 @@
 <!-- Encoder MP3 (mesmo da ferramenta Corte). O Suno entrega MP4;
      a conversão pra MP3 acontece aqui no navegador, sem custo. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<!-- a mesma prévia da Lux Music (motor compartilhado) -->
+<script src="../js/previa.js?v=20260926e"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -106,6 +108,8 @@
     font-family:var(--font);transition:all .13s;
   }
   .btn-mini:hover{border-color:var(--gold);color:var(--gold-bright)}
+  /* ícone desenhado dentro do botão (o fone da Prévia) */
+  .btn .ic-sv{width:15px;height:15px;fill:currentColor;vertical-align:-3px;margin-right:6px}
 
   /* ── CONTA CONECTADA ── */
   .conectado{
@@ -158,6 +162,8 @@
     border-radius:9px;padding:11px 13px;font-size:12.5px;
     color:var(--muted);line-height:1.55;
   }
+  .preparo-saida{margin-top:9px}
+  .preparo-saida a.btn-mini{display:inline-block;text-decoration:none}
 
   .letra{
     display:none;margin-top:12px;background:var(--bg);border:1px solid #2a2822;
@@ -294,7 +300,7 @@
 const WORKER = 'https://lux-suno.plataformalux.workers.dev';
 
 // De quanto em quanto tempo a tela procura música nova enquanto
-// está aberta. O cron do Worker faz o mesmo de minuto em minuto por
+// está aberta. O cron do Worker faz o mesmo de 3 em 3 minutos por
 // trás, mas com a aba aberta a gente quer que apareça quase na hora.
 // 30s (era 12s ate 10/09/2026). O Suno nao publica contrato de API:
 // quanto menos a gente bate na porta dele, menor a chance de levar
@@ -625,6 +631,9 @@ function pintarLista(busca){
           <button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>
           <button class="btn btn-gold" id="dl-${esc(m.id)}"
             onclick="baixarMp3('${esc(m.id)}')">${rotuloBotao(m.id)}</button>
+          <button class="btn btn-ghost" id="pv-${esc(m.id)}"
+            title="Trecho de 20 s com a voz da Lux por cima — para mandar ao cliente antes do pagamento"
+            onclick="gerarPreviaSuno('${esc(m.id)}')">${SVG_FONE}Prévia</button>
           ${m.letra ? `<button class="btn-mini" onclick="verLetra(${i})" id="lt${i}">Ver letra</button>` : ''}
         </div>
 
@@ -635,14 +644,26 @@ function pintarLista(busca){
 
 // Card da música que o Suno ainda está preparando. O texto muda com o
 // tempo: quase sempre sai em 1 ou 2 minutos, mas às vezes o Suno demora
-// bem mais (já medimos 31 min) — nesse caso avisa, em vez de deixar o
-// atendente achando que travou.
+// bem mais (já vimos horas) — nesse caso, além de avisar, dá uma saída:
+// abrir a música no Suno e baixar por lá. Esperar horas sem opção foi o
+// que gerou a reclamação de 16/09/2026 (XV JICS, "369 min").
 function cardPreparando(m){
   const min = m.salvoTs ? Math.floor((Date.now() - m.salvoTs)/60000) : 0;
-  const recado = min < 5
-    ? 'O Suno está preparando o arquivo. Costuma sair em 1 ou 2 minutos.'
-    : ('O Suno está demorando mais que o normal com esta (' + min + ' min). ' +
-       'Pode deixar a aba aberta — ela libera sozinha.');
+  let recado;
+  if(min < 5){
+    recado = 'O Suno está preparando o arquivo. Costuma sair em 1 ou 2 minutos.';
+  }else if(min < 20){
+    recado = 'O Suno está demorando mais que o normal com esta (' + fmtEspera(min) + '). ' +
+             'Ela aparece pronta aqui sozinha assim que o arquivo sair.';
+  }else{
+    recado = 'O Suno ainda não liberou o arquivo desta (' + fmtEspera(min) + '). ' +
+             'A plataforma continua conferindo e ela aparece aqui sozinha. ' +
+             'Com pressa? Baixe o MP3 direto no Suno.';
+  }
+  const saida = (min >= 20 && m.id)
+    ? `<div class="preparo-saida"><a class="btn-mini" href="https://suno.com/song/${encodeURIComponent(m.id)}"
+         target="_blank" rel="noopener">Abrir no Suno</a></div>`
+    : '';
   return `
     <div class="musica preparando">
       <div class="musica-topo">
@@ -657,9 +678,17 @@ function cardPreparando(m){
         </div>
       </div>
       <div class="preparo">
-        <span class="spin"></span>${esc(recado)}
+        <span class="spin"></span>${esc(recado)}${saida}
       </div>
     </div>`;
+}
+
+// "369 min" não se lê de relance: vira "6 h 9 min". O espaço entre número
+// e unidade é inquebrável ( ), pra linha não partir em "9 / min".
+function fmtEspera(min){
+  if(min < 60) return min + ' min';
+  const h = Math.floor(min/60), resto = min % 60;
+  return h + ' h' + (resto ? ' ' + resto + ' min' : '');
 }
 
 function verLetra(i){
@@ -863,6 +892,50 @@ function floatPara16(f32){
     out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
   }
   return out;
+}
+
+// ══ PRÉVIA PARA O CLIENTE (26/09/2026) ══════════════════════════
+// A mesma prévia da Lux Music: 20 s da música com a voz da Lux por cima
+// e "Gostou? Ou deseja alguma alteração?" no fim, para mandar ao cliente
+// antes do pagamento. Montada aqui no navegador (custo zero); o motor
+// fica em ../js/previa.js.
+const SVG_FONE = '<svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/></svg>';
+
+async function gerarPreviaSuno(id){
+  const m = musicas.find(x => x.id === id);
+  const btn = $('pv-' + id);
+  if(!m || !btn || btn.disabled) return;
+  const antes = btn.innerHTML;
+  btn.disabled = true;
+  convertendo++;          // não repinta a lista no meio (mesma trava do Baixar MP3)
+  limparAvisos();
+  try{
+    // se o MP3 desta já foi adiantado, usa ele e não baixa de novo
+    const fonte = mp3Pronto.has(id)
+      ? mp3Pronto.get(id).arrayBuffer()
+      : fetch(WORKER + m.link).then(async r => {
+          if(!r.ok){
+            const t = await r.json().catch(() => ({}));
+            throw new Error(t.error || ('o Suno respondeu ' + r.status));
+          }
+          return r.arrayBuffer();
+        });
+    const blob = await PreviaLux.montar(fonte, t => { btn.innerHTML = '<span class="spin"></span>' + t; });
+    const nome = PreviaLux.baixar(blob, m.arquivo || m.titulo);
+    sucesso('Prévia pronta: ' + nome + ' — é esta que vai para o cliente.');
+  }catch(e){
+    // o motivo às vezes já vem com parênteses e ponto (ex.: link vencido)
+    const motivo = String(e.message || 'erro desconhecido');
+    erro('Não consegui montar a prévia: ' + motivo + (/[.!]$/.test(motivo) ? '' : '.'));
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = antes;
+    convertendo--;
+    if(convertendo === 0 && listaPendente){
+      listaPendente = false;
+      carregarMusicas();
+    }
+  }
 }
 
 // ── mandar pro Corte ───────────────────────────────────────────
