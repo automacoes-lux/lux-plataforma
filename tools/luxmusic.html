@@ -38,6 +38,8 @@
     --cta-a:#C9932F;       /* Criar música: dourado fechado … */
     --cta-b:#F0CE68;       /* … → dourado claro */
     --verde-fav:#00ad5a;   /* favoritos */
+    --azul-previa:#2563EB;        /* Prévia: botão (texto branco legível em cima) */
+    --azul-previa-claro:#7FB2FF;  /* Prévia: título azul sobre o fundo escuro */
     --red:#F26D6D;
     --green:#4ADE80;
 
@@ -177,6 +179,12 @@
     font-size:13px;font-weight:500;padding:11px 15px;border-radius:var(--r);
   }
   .btn-ghost:not(:disabled):hover{background:#35363C}
+  /* PRÉVIA — identidade AZUL (pedido do Thiago, 26/09/2026): destaca do
+     fundo e separa do MP3 (branco) e do WAV (cinza). O azul é mais fechado
+     que o da varinha pra o texto branco ter contraste de leitura (5:1).
+     `.btn.btn-previa` ganha do `.btn-ghost` por ser mais específico. */
+  .btn.btn-previa{background:var(--azul-previa);color:#fff;font-weight:600}
+  .btn.btn-previa:not(:disabled):hover{background:#3B7BF0}
   .btn-lg{width:100%;padding:15px;font-size:14.5px;border-radius:var(--pill)}
   .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -202,8 +210,14 @@
      prévia não pode esticar junto */
   .linha-topo{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:12px}
   .linha-topo > .card{margin-bottom:0}
-  .previa-box .card-hint{margin-top:-4px;font-size:12.5px}
   .btn-gerar-previa{width:100%;margin-top:11px}
+  /* o cartão da Prévia com a identidade azul: fundo levemente azulado,
+     título azul e o "Enviar música" em azul suave (o sólido fica pro
+     "Gerar prévia", que é a ação) */
+  .card.previa-box{background:linear-gradient(rgba(37,99,235,.13),rgba(37,99,235,.13)),var(--card)}
+  .previa-box .titulo-secao{color:var(--azul-previa-claro)}
+  #btnEscolherPrevia{background:rgba(37,99,235,.28);color:#DCE8FF}
+  #btnEscolherPrevia:not(:disabled):hover{background:rgba(37,99,235,.40)}
 
   /* ── ETAPAS DO COVER ──
      O preparo do cover leva minutos. Em vez de uma rodinha muda, a tela
@@ -601,7 +615,6 @@
              qualquer lugar -> prévia com a voz da Lux, montada aqui mesmo -->
         <div class="card previa-box">
           <div class="card-head"><span class="titulo-secao">Prévia de música</span></div>
-          <p class="card-hint">Para música feita fora da plataforma (ex.: direto no Suno).</p>
           <button class="btn btn-ghost" id="btnEscolherPrevia" onclick="document.getElementById('arqPrevia').click()">
             <span class="ic-sv-wrap"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></span> Enviar música
           </button>
@@ -610,7 +623,7 @@
             <span class="nome" id="previaNome">—</span>
             <button class="btn-campo lixo" onclick="limparArquivoPrevia()" title="Tirar esta música"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
-          <button class="btn btn-gold btn-gerar-previa" id="btnGerarPrevia" style="display:none" onclick="gerarPreviaDoArquivo()">
+          <button class="btn btn-previa btn-gerar-previa" id="btnGerarPrevia" style="display:none" onclick="gerarPreviaDoArquivo()">
             <svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/></svg> Gerar prévia
           </button>
         </div>
@@ -1346,10 +1359,9 @@ async function baixarWav(botao){
   botao.innerHTML = '<span class="spin"></span>';
   let ctx = null;
   try{
-    // o link do áudio é público (token na URL): dá pra buscar direto
-    const r = await fetch(link);
-    if(!r.ok) throw new Error('o áudio respondeu ' + r.status);
-    const bruto = await r.arrayBuffer();
+    // o link do áudio é público (token na URL): dá pra buscar direto.
+    // Mesma busca da Prévia: se a música já expirou, avisa isso.
+    const bruto = await buscarAudioDaVersao(link);
 
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     const audio = await ctx.decodeAudioData(bruto);
@@ -1365,7 +1377,8 @@ async function baixarWav(botao){
     // solta a memória depois que o navegador pegou o arquivo
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }catch(e){
-    erro('Não consegui montar o WAV: ' + e.message + '. O MP3 continua disponível no botão ao lado.');
+    if(e.message === MUSICA_EXPIRADA) erro(MUSICA_EXPIRADA);
+    else erro('Não consegui montar o WAV: ' + e.message + '. O MP3 continua disponível no botão ao lado.');
   }finally{
     if(ctx) try{ ctx.close(); }catch(e){}
     botao.disabled = false;
@@ -1427,6 +1440,26 @@ function botaoPrevia(link, titulo, extra){
          ' onclick="baixarPrevia(this)">' + IC.fone + ' Prévia</button>';
 }
 
+// Música que já saiu do servidor. Medido em 26/09/2026: o arquivo de cada
+// versão fica guardado por uns 15 dias (14 dias ainda toca, 15 já não) —
+// só as favoritadas, que são copiadas pra cá, ficam de vez. A aba
+// Finalizado mostra 1 mês, então a partir do 15º dia isto acontece.
+const MUSICA_EXPIRADA = 'Esta música não está mais disponível: os arquivos ficam guardados ' +
+  'por cerca de 15 dias. Para guardar uma música de vez, dê o joinha nela antes disso.';
+
+// Busca o áudio de uma versão; quando ele já expirou, avisa isso (e não
+// um "respondeu 502" que o atendente não entende).
+function buscarAudioDaVersao(link){
+  return fetch(link).then(async r => {
+    if(!r.ok){
+      const t = await r.json().catch(() => ({}));
+      if(/404/.test(String(t.error || ''))) throw new Error(MUSICA_EXPIRADA);
+      throw new Error('o áudio respondeu ' + r.status);
+    }
+    return r.arrayBuffer();
+  });
+}
+
 // Roda a prévia mostrando o andamento no próprio botão.
 // `fonte` = os bytes da música ou a promessa deles.
 async function rodarPrevia(botao, fonte, titulo, dicaErro){
@@ -1437,7 +1470,8 @@ async function rodarPrevia(botao, fonte, titulo, dicaErro){
     const nome = PreviaLux.baixar(blob, titulo);
     sucesso('Prévia pronta: ' + nome + ' — é esta que vai para o cliente.', 5000);
   }catch(e){
-    erro('Não consegui montar a prévia: ' + e.message + '.' + (dicaErro || ''));
+    if(e.message === MUSICA_EXPIRADA) erro(MUSICA_EXPIRADA);
+    else erro('Não consegui montar a prévia: ' + e.message + '.' + (dicaErro || ''));
   }finally{
     botao.disabled = false;
     botao.innerHTML = antes;
@@ -1449,11 +1483,7 @@ function baixarPrevia(botao){
   if(botao.disabled) return;
   const link   = botao.getAttribute('data-link') || '';
   const titulo = botao.getAttribute('data-titulo') || 'musica';
-  const fonte  = fetch(link).then(r => {
-    if(!r.ok) throw new Error('o áudio respondeu ' + r.status);
-    return r.arrayBuffer();
-  });
-  return rodarPrevia(botao, fonte, titulo, ' O MP3 completo continua disponível.');
+  return rodarPrevia(botao, buscarAudioDaVersao(link), titulo, ' O MP3 completo continua disponível.');
 }
 
 // ── PRÉVIA DE MÚSICA FEITA FORA (26/09/2026) ────────────────────────

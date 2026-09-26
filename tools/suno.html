@@ -110,6 +110,9 @@
   .btn-mini:hover{border-color:var(--gold);color:var(--gold-bright)}
   /* ícone desenhado dentro do botão (o fone da Prévia) */
   .btn .ic-sv{width:15px;height:15px;fill:currentColor;vertical-align:-3px;margin-right:6px}
+  /* PRÉVIA — identidade azul, a mesma da Lux Music (26/09/2026) */
+  .btn.btn-previa{background:#2563EB;border-color:#2563EB;color:#fff}
+  .btn.btn-previa:not(:disabled):hover{background:#3B7BF0;border-color:#3B7BF0}
 
   /* ── CONTA CONECTADA ── */
   .conectado{
@@ -631,7 +634,7 @@ function pintarLista(busca){
           <button class="btn btn-ghost" onclick="cortar(${i})">✂️ Cortar</button>
           <button class="btn btn-gold" id="dl-${esc(m.id)}"
             onclick="baixarMp3('${esc(m.id)}')">${rotuloBotao(m.id)}</button>
-          <button class="btn btn-ghost" id="pv-${esc(m.id)}"
+          <button class="btn btn-ghost btn-previa" id="pv-${esc(m.id)}"
             title="Trecho de 20 s com a voz da Lux por cima — para mandar ao cliente antes do pagamento"
             onclick="gerarPreviaSuno('${esc(m.id)}')">${SVG_FONE}Prévia</button>
           ${m.letra ? `<button class="btn-mini" onclick="verLetra(${i})" id="lt${i}">Ver letra</button>` : ''}
