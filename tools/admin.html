@@ -397,6 +397,15 @@ body.anu-larga .container{max-width:1180px}
 /* lista */
 .anu-colcab{display:grid;grid-template-columns:var(--a-cols);gap:16px;padding:0 16px 8px;font-size:11.5px;font-weight:500;color:var(--a-txt3)}
 .anu-colcab .dir{text-align:right}
+.anu-secao{display:flex;align-items:baseline;gap:9px;margin:30px 4px 2px;padding-bottom:10px;border-bottom:1px solid var(--a-line);font-size:17px;font-weight:600;letter-spacing:-.01em}
+.anu-secao i{width:9px;height:9px;border-radius:50%;align-self:center;background:var(--a-ok);flex-shrink:0}
+.anu-secao.inativo i{background:var(--a-txt3)}
+.anu-secao em{font-style:normal;font-size:13px;font-weight:400;color:var(--a-txt3)}
+.anu-secao .n{margin-left:auto;font-size:13px;font-weight:500;color:var(--a-txt2)}
+.anu-secao.inativo{margin-top:40px;color:var(--a-txt2)}
+.anu-row.inativo{background:var(--a-card2)}
+.anu-row.inativo .anu-thumb img{filter:grayscale(.85);opacity:.75}
+.anu-row.inativo .anu-trilha{opacity:.55}
 .anu-grupo{display:flex;align-items:baseline;gap:8px;margin:20px 4px 9px;font-size:13px;font-weight:600;color:var(--a-txt)}
 .anu-grupo em{font-style:normal;font-weight:400;color:var(--a-txt3)}
 .anu-grupo .n{margin-left:auto;font-weight:500;color:var(--a-txt3)}
@@ -1663,7 +1672,7 @@ function anuRender(d) {
 
   const a = d.ancoras;
   document.getElementById('anuInfo').innerHTML =
-    anuDia(d.ini) + ' a ' + anuDia(d.fim) + ' · ' + d.itens.length + ' criativos' +
+    anuDia(d.ini) + ' a ' + anuDia(d.fim) + (d.fimParcial ? ' (hoje, ainda parcial)' : '') + ' · ' + d.itens.length + ' criativos' +
     (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '');
   document.getElementById('anuRefs').innerHTML =
     '<b>Referências da conta</b> (medidas em ' + anuDia(a.medido_em) + '): CTR ' + anuPct(a.ctr_ref, 2) + ', gancho ' + anuPct(a.gancho_ref) +
@@ -1687,18 +1696,29 @@ function anuRender(d) {
       '<span class="dir">Lead</span><span class="dir">CTR</span><span class="dir">Gancho</span><span class="dir">Gasto</span></div>';
   }
   // conta por grupo para o cabeçalho de cada grupo
+  // Duas partes: ATIVOS em cima, INATIVOS embaixo (mesmos números, para comparar).
+  // Ativo = o anúncio está veiculando agora (status ACTIVE). Pausado, conjunto ou campanha pausada = inativo.
   const grupoDe = function (i) { return i.agg.sp < 20 ? 'cinza' : i.av.faixaAmostra; };
-  const contagem = {};
-  d.itens.forEach(function (i) { const g = grupoDe(i); contagem[g] = (contagem[g] || 0) + 1; });
-  let grupo = null;
-  d.itens.forEach(function (i) {
-    const g = grupoDe(i);
-    if (g !== grupo) {
-      grupo = g;
-      h += '<div class="anu-grupo">' + ANU_GRUPOS[g][0] + ' <em>' + ANU_GRUPOS[g][1] + '</em><span class="n">' + contagem[g] + '</span></div>';
-    }
-    h += anuLinha(i, g === 'cinza', d.ancoras);
-    if (anuAberto === i.ad) h += '<div class="anu-det" id="anuDet">' + anuDetTopo(i) + '<div id="anuDetDias"><h5>Dia a dia</h5>Carregando…</div></div>';
+  const ehAtivo = function (i) { return !i.status || i.status === 'ACTIVE'; };
+  const partes = [
+    { chave: 'ativo', titulo: 'Ativos', sub: 'veiculando agora', itens: d.itens.filter(ehAtivo) },
+    { chave: 'inativo', titulo: 'Inativos', sub: 'pausados — ficam aqui para comparar', itens: d.itens.filter(function (i) { return !ehAtivo(i); }) },
+  ];
+  partes.forEach(function (pt) {
+    if (!pt.itens.length) return;
+    h += '<div class="anu-secao ' + pt.chave + '"><i></i>' + pt.titulo + ' <em>' + pt.sub + '</em><span class="n">' + pt.itens.length + (pt.itens.length > 1 ? ' criativos' : ' criativo') + '</span></div>';
+    const contagem = {};
+    pt.itens.forEach(function (i) { const g = grupoDe(i); contagem[g] = (contagem[g] || 0) + 1; });
+    let grupo = null;
+    pt.itens.forEach(function (i) {
+      const g = grupoDe(i);
+      if (g !== grupo) {
+        grupo = g;
+        h += '<div class="anu-grupo">' + ANU_GRUPOS[g][0] + ' <em>' + ANU_GRUPOS[g][1] + '</em><span class="n">' + contagem[g] + '</span></div>';
+      }
+      h += anuLinha(i, g === 'cinza', d.ancoras, pt.chave === 'inativo');
+      if (anuAberto === i.ad) h += '<div class="anu-det" id="anuDet">' + anuDetTopo(i) + '<div id="anuDetDias"><h5>Dia a dia</h5>Carregando…</div></div>';
+    });
   });
   document.getElementById('anuConteudo').innerHTML = h;
   if (anuAberto) anuCarregarDetalhe(anuAberto);
@@ -1785,7 +1805,7 @@ function anuRegua(i) {
     '<div class="anu-rleg">' + esq + '<span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div></div>';
 }
 
-function anuLinha(i, cinza, ancoras) {
+function anuLinha(i, cinza, ancoras, inativo) {
   const av = i.av, m = av.metricas;
   const tags = [];
   (av.alertas || []).forEach(function (x) { tags.push('<span class="anu-tag alerta">' + escapeHtml(x.texto) + '</span>'); });
@@ -1815,7 +1835,7 @@ function anuLinha(i, cinza, ancoras) {
     '</div>';
 
   const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer"/>' : 'sem imagem';
-  return '<div class="anu-row' + (cinza ? ' cinza' : '') + (anuAberto === i.ad ? ' aberto' : '') + '" role="button" tabindex="0" aria-expanded="' + (anuAberto === i.ad) + '"' +
+  return '<div class="anu-row' + (cinza ? ' cinza' : '') + (inativo ? ' inativo' : '') + (anuAberto === i.ad ? ' aberto' : '') + '" role="button" tabindex="0" aria-expanded="' + (anuAberto === i.ad) + '"' +
     ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
     '<div class="anu-thumb">' + thumb + '</div>' +
     '<div class="anu-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="c">' + escapeHtml(nomeC) + '</div><div class="anu-tags">' + tags.join('') + '</div></div>' +
