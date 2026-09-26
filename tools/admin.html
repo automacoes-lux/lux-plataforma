@@ -330,6 +330,79 @@ body{
   .bal-peso{order:4}
   .bal-acao{order:5}
 }
+
+/* ─── Anúncios (gerenciador — fase 0) ───────────────────── */
+.anu-topo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.anu-chips{display:inline-flex;border:.5px solid var(--border-bright);border-radius:999px;overflow:hidden}
+.anu-chips button{background:transparent;border:none;color:var(--text-mid);padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+.anu-chips button.on{background:rgba(201,168,76,.15);color:var(--gold)}
+.anu-sel{background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:999px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:14px;max-width:100%}
+.anu-topo .btn-secondary{margin-left:auto}
+.anu-info{font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px}
+.anu-info b{color:var(--text);font-weight:600}
+.anu-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1.2rem;padding-bottom:1.1rem;border-bottom:.5px solid var(--border)}
+.anu-kpi span{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mid)}
+.anu-kpi b{font-family:'Cinzel',serif;font-size:20px;color:var(--gold);font-weight:600}
+.anu-kpi small{display:block;font-size:12px;color:var(--text-dim)}
+.anu-grupo{display:flex;align-items:center;gap:10px;margin:1.4rem 0 .6rem;font-family:'Cinzel',serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mid)}
+.anu-grupo em{font-family:'DM Sans',sans-serif;font-style:normal;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text-dim)}
+.anu-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
+.anu-row{display:grid;grid-template-columns:62px minmax(0,1.5fr) 96px minmax(0,1.4fr) minmax(0,1.3fr);gap:14px;align-items:center;padding:12px;border-radius:var(--radius);background:rgba(255,255,255,.02);border:.5px solid var(--border);margin-bottom:8px;cursor:pointer;transition:.15s}
+.anu-row:hover{border-color:var(--border-bright)}
+.anu-row.aberto{border-color:var(--gold-dim)}
+.anu-row.cinza{opacity:.55}
+.anu-thumb{width:62px;height:110px;border-radius:8px;background:var(--bg-input);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:11px}
+.anu-thumb img{width:100%;height:100%;object-fit:cover}
+.anu-nome{min-width:0}
+.anu-nome b{display:block;font-size:15px;color:#EDE6D6;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-nome .sub{font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anu-selos{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.anu-selo{font-size:11px;padding:2px 8px;border-radius:999px;border:.5px solid var(--border);color:var(--text-mid);white-space:nowrap}
+.anu-selo.alerta{border-color:var(--danger-border);color:var(--danger);background:var(--danger-bg)}
+.anu-selo.ok{border-color:rgba(74,222,128,.35);color:#4ADE80;background:rgba(74,222,128,.08)}
+.anu-selo.aviso{border-color:rgba(232,184,107,.4);color:#E8B86B;background:rgba(232,184,107,.08)}
+.anu-nota{text-align:center}
+.anu-nota b{display:block;font-family:'Cinzel',serif;font-size:30px;color:var(--gold);font-weight:700;line-height:1}
+.anu-nota span{display:block;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.35}
+.anu-nota.sem b{font-size:16px;color:var(--text-dim)}
+.anu-pilares{display:flex;flex-direction:column;gap:5px}
+.anu-pil{display:grid;grid-template-columns:62px 1fr 26px;gap:8px;align-items:center;font-size:12px;color:var(--text-mid)}
+.anu-pil i{display:block;height:7px;border-radius:4px;background:var(--bg-input);position:relative;overflow:hidden}
+.anu-pil i::before{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.35)}
+.anu-pil i s{display:block;height:100%;background:linear-gradient(90deg,rgba(201,168,76,.45),rgba(201,168,76,.85));text-decoration:none}
+.anu-pil em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+.anu-met{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;color:var(--text-mid);font-variant-numeric:tabular-nums}
+.anu-met b{color:var(--text);font-weight:600}
+.anu-met .full{grid-column:1/-1}
+.anu-det{grid-column:1/-1;cursor:default;margin:-2px 0 10px;padding:12px;border-radius:var(--radius);background:var(--bg-input);border:.5px solid var(--border)}
+.anu-det h4{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--gold-dim);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:4px 0 8px}
+.anu-tab{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.anu-tab th{color:var(--text-dim);font-weight:500;text-align:right;padding:5px 6px;border-bottom:.5px solid var(--border);white-space:nowrap}
+.anu-tab td{color:var(--text);text-align:right;padding:5px 6px;border-bottom:.5px solid rgba(255,255,255,.04);white-space:nowrap}
+.anu-tab th:first-child,.anu-tab td:first-child{text-align:left}
+.anu-tab tr.fds td{color:var(--text-dim)}
+.anu-rolar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.anu-ev{font-size:12px;color:var(--text-mid);line-height:1.6;padding:3px 0;border-bottom:.5px solid rgba(255,255,255,.04)}
+.anu-ev b{color:var(--text);font-weight:500}
+.anu-legenda{font-size:13px;color:var(--text-mid);line-height:1.7;margin-top:1.4rem}
+.anu-legenda summary{cursor:pointer;color:var(--gold-dim);font-weight:600}
+.anu-legenda p{margin-top:6px}
+/* abaixo de ~1000px as 5 colunas espremem as métricas: pilares e métricas descem para a linha de baixo */
+@media(max-width:1000px){
+  .anu-row{grid-template-columns:62px minmax(0,1fr) 96px;gap:12px 14px}
+  .anu-pilares{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+  .anu-met{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .anu-row{grid-template-columns:56px minmax(0,1fr) 72px;gap:10px 12px;padding:10px}
+  .anu-thumb{width:56px;height:100px}
+  .anu-pilares{grid-template-columns:1fr}
+  .anu-met{grid-template-columns:1fr 1fr}
+  .anu-nota b{font-size:24px}
+  .anu-topo .btn-secondary{margin-left:0;width:100%}
+  .anu-sel{flex:1 1 160px}
+  .anu-kpis{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -348,6 +421,7 @@ body{
     <button class="tab-btn active" id="tabUsuarios" onclick="abrirAba('usuarios')">Usuários</button>
     <button class="tab-btn" id="tabEquipes" onclick="abrirAba('equipes')">Monitoramento de Equipes</button>
     <button class="tab-btn" id="tabRemarketing" onclick="abrirAba('remarketing')">Remarketing Automático</button>
+    <button class="tab-btn" id="tabAnuncios" onclick="abrirAba('anuncios')">Anúncios</button>
   </div>
 
   <div id="secUsuarios">
@@ -417,6 +491,33 @@ body{
 
       <button class="btn-primary" id="rmkSalvar" onclick="rmkSalvar()">Salvar</button>
       <div class="rmk-ok" id="rmkOk" hidden></div>
+    </div>
+  </div>
+
+  <div id="secAnuncios" style="display:none">
+    <div class="card">
+      <div class="card-title">Anúncios — nota por criativo</div>
+      <div class="anu-topo">
+        <div class="anu-chips" id="anuJanela">
+          <button type="button" data-j="7" class="on" onclick="anuTrocarJanela(7)">7 dias</button>
+          <button type="button" data-j="14" onclick="anuTrocarJanela(14)">14 dias</button>
+          <button type="button" data-j="30" onclick="anuTrocarJanela(30)">30 dias</button>
+        </div>
+        <select class="anu-sel" id="anuCampanha" onchange="anuCarregar()">
+          <option value="">Todas as campanhas</option>
+        </select>
+        <button type="button" class="btn-secondary" id="anuAtualizar" onclick="anuAtualizarDados()">Atualizar dados</button>
+      </div>
+      <div class="anu-info" id="anuInfo">Carregando…</div>
+      <div id="anuConteudo"></div>
+      <details class="anu-legenda">
+        <summary>Como ler esta tela</summary>
+        <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra (contra a meta de custo do conjunto e o ponto de empate do produto), 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Anúncio com pouca impressão fica perto de 50 até provar — por isso a faixa entre parênteses: é onde a nota verdadeira provavelmente está.</p>
+        <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Só compare notas dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
+        <p><b>Ritmo:</b> quanto do orçamento do dia o conjunto (ou a campanha) conseguiu gastar no último dia útil, e o que está segurando. "Freio: meta de custo" quer dizer que subir o orçamento não aumenta a entrega.</p>
+        <p><b>Alerta vermelho:</b> gancho abaixo de 14% (com 2.000 impressões) ou CTR abaixo de 0,38% (com 4.000). Vale desde o primeiro dia — é a regra de corte do teste.</p>
+        <p><b>Fase 0:</b> por enquanto a tela só mostra e grava um retrato diário. O semáforo de escalar/manter/cortar só liga depois de 4 semanas de retratos, com a taxa de acerto medida.</p>
+      </details>
     </div>
   </div>
 
@@ -972,7 +1073,8 @@ function abrirAba(qual) {
   const abas = {
     usuarios:    ['secUsuarios', 'tabUsuarios'],
     equipes:     ['secEquipes', 'tabEquipes'],
-    remarketing: ['secRemarketing', 'tabRemarketing']
+    remarketing: ['secRemarketing', 'tabRemarketing'],
+    anuncios:    ['secAnuncios', 'tabAnuncios']
   };
   Object.keys(abas).forEach(function (k) {
     document.getElementById(abas[k][0]).style.display = k === qual ? '' : 'none';
@@ -986,6 +1088,7 @@ function abrirAba(qual) {
     if (!rmkCarregado) { rmkCarregado = true; carregarRemarketing(); } else rmkRecarregarStatus();
     rmkTimer = setInterval(rmkRecarregarStatus, 60000);
   }
+  if (qual === 'anuncios' && !anuCarregado) { anuCarregado = true; anuCarregar(); }
 }
 
 async function carregarBalanceador() {
@@ -1361,6 +1464,204 @@ async function rmkSalvar() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Salvar';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ANÚNCIOS — gerenciador (fase 0)
+// Worker próprio (lux-anuncios). A nota vem pronta do Worker (especificação v2);
+// esta tela só desenha. Sem semáforo de escalar/cortar na fase 0 — só o alerta de desastre.
+// ════════════════════════════════════════════════════════════
+const ANUNCIOS_URL = 'https://lux-anuncios.plataformalux.workers.dev';
+let anuCarregado = false, anuJanela = 7, anuDados = null, anuAberto = null;
+
+const ANU_GRUPOS = {
+  A: ['Julgáveis por venda', '25 compras ou mais'],
+  B: ['Quase julgáveis por venda', '10 a 24 compras'],
+  C: ['Julgáveis por lead', '20 leads ou mais'],
+  D: ['Só com impressões', 'ainda sem venda ou lead suficiente'],
+  E: ['Sem nota ainda', 'menos de 3 dias ou de 2.000 impressões'],
+  cinza: ['Gasto abaixo de US$20', 'na janela'],
+};
+
+function anuUS(x, c = 2) { return x == null ? '—' : 'US$' + Number(x).toFixed(c).replace('.', ','); }
+function anuPct(x, c = 1) { return x == null ? '—' : (100 * x).toFixed(c).replace('.', ',') + '%'; }
+function anuNum(x) { return x == null ? '—' : Number(x).toLocaleString('pt-BR'); }
+function anuDia(d) { return d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '—'; }
+
+function anuTrocarJanela(j) {
+  anuJanela = j;
+  document.querySelectorAll('#anuJanela button').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.j) === j); });
+  anuCarregar();
+}
+
+async function anuCarregar() {
+  const cont = document.getElementById('anuConteudo');
+  cont.innerHTML = '<div class="state-msg"><div>Carregando…</div></div>';
+  try {
+    const camp = document.getElementById('anuCampanha').value;
+    const q = '?janela=' + anuJanela + (camp ? '&campanha=' + encodeURIComponent(camp) : '');
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/painel' + q);
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
+    anuDados = d;
+    anuRender(d);
+  } catch (err) {
+    cont.innerHTML = '<div class="state-msg"><div>' + escapeHtml(err.message) + '</div></div>';
+    document.getElementById('anuInfo').textContent = '';
+  }
+}
+
+async function anuAtualizarDados() {
+  const btn = document.getElementById('anuAtualizar');
+  btn.disabled = true; btn.textContent = 'Atualizando…';
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/coletar', { method: 'POST', body: '{}' });
+    const d = await r.json();
+    if (!d.ok) throw new Error((d.coleta && d.coleta.erro) || d.error || 'Falha na coleta');
+    toast('Dados atualizados (' + d.coleta.linhas + ' linhas)', 'success');
+    anuCarregar();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Atualizar dados';
+  }
+}
+
+function anuRender(d) {
+  // campanhas no seletor (mantém a escolhida)
+  const sel = document.getElementById('anuCampanha');
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Todas as campanhas</option>' + d.campanhas.map(function (c) {
+    return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atual ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>';
+  }).join('');
+
+  const a = d.ancoras;
+  document.getElementById('anuInfo').innerHTML =
+    'Dados de <b>' + anuDia(d.ini) + ' a ' + anuDia(d.fim) + '</b>' +
+    (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '') +
+    ' · referências: CTR <b>' + anuPct(a.ctr_ref, 2) + '</b>, gancho <b>' + anuPct(a.gancho_ref) + '</b>, custo por lead <b>' + anuUS(a.cpl_ref) + '</b>' +
+    ' · empate: ' + a.produtos.map(function (p) { return escapeHtml(p.nome) + ' <b>' + anuUS(p.empate, 0) + '</b>'; }).join(', ') +
+    ' <span style="color:var(--text-dim)">(medidas em ' + anuDia(a.medido_em) + ')</span>';
+
+  const t = d.totais, m = t.metricas;
+  const lucro = d.itens.reduce(function (s, i) { return s + (i.av.lucro || 0); }, 0);
+  let h = '<div class="anu-kpis">' +
+    anuKpi('Gasto', anuUS(t.sp, 0), d.itens.length + ' anúncios') +
+    anuKpi('Compras', anuNum(t.puc + t.puv), t.puc + ' por clique') +
+    anuKpi('Custo por compra', anuUS(m.cpa_t), 'clique: ' + anuUS(m.cpa_c)) +
+    anuKpi('Leads', anuNum(t.ld), anuUS(m.cpl) + ' cada') +
+    anuKpi('CTR', anuPct(m.ctr, 2), 'gancho ' + anuPct(m.gancho)) +
+    anuKpi('Lucro estimado', anuUS(lucro, 0), 'antes da divisão') +
+    '</div>';
+
+  if (!d.itens.length) h += '<div class="state-msg"><div>Nenhum anúncio com impressão nesta janela.</div></div>';
+  let grupo = null;
+  d.itens.forEach(function (i) {
+    const g = i.agg.sp < 20 ? 'cinza' : i.av.faixaAmostra;
+    if (g !== grupo) {
+      grupo = g;
+      h += '<div class="anu-grupo">' + ANU_GRUPOS[g][0] + ' <em>' + ANU_GRUPOS[g][1] + '</em></div>';
+    }
+    h += anuLinha(i, g === 'cinza');
+    if (anuAberto === i.ad) h += '<div class="anu-det" id="anuDet">Carregando…</div>';
+  });
+  document.getElementById('anuConteudo').innerHTML = h;
+  if (anuAberto) anuCarregarDetalhe(anuAberto);
+}
+
+function anuKpi(rot, val, sub) {
+  return '<div class="anu-kpi"><span>' + rot + '</span><b>' + val + '</b><small>' + sub + '</small></div>';
+}
+
+function anuLinha(i, cinza) {
+  const av = i.av, m = av.metricas;
+  const selos = [];
+  (av.alertas || []).forEach(function (x) { selos.push('<span class="anu-selo alerta">Corte: ' + escapeHtml(x.texto) + '</span>'); });
+  if (i.status && i.status !== 'ACTIVE') selos.push('<span class="anu-selo">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(i.status.toLowerCase())) + '</span>');
+  if (i.aprendizado === 'LEARNING') selos.push('<span class="anu-selo aviso">em aprendizado</span>');
+  if (i.aprendizado === 'FAIL') selos.push('<span class="anu-selo aviso">aprendizado limitado</span>');
+  selos.push('<span class="anu-selo">' + escapeHtml(av.produto) + '</span>');
+
+  let notaHtml;
+  if (av.nota == null) {
+    const f = av.faltam;
+    const txt = !f ? 'sem nota' : f.tipo === 'impressoes' ? 'faltam ' + anuNum(f.n) + ' impressões' : f.tipo === 'dias' ? 'falta' + (f.n > 1 ? 'm ' : ' ') + f.n + ' dia' + (f.n > 1 ? 's' : '') + ' com gasto' : 'faltam ' + f.n + ' compras';
+    notaHtml = '<div class="anu-nota sem"><b>—</b><span>' + txt + '</span></div>';
+  } else {
+    notaHtml = '<div class="anu-nota"><b>' + Math.round(av.nota) + '</b><span>faixa ' + Math.round(av.faixa.lo) + '–' + Math.round(av.faixa.hi) + '</span>' +
+      (av.faltam && av.faltam.tipo === 'compras' ? '<span>faltam ' + av.faltam.n + ' compras p/ julgar venda</span>' : '') + '</div>';
+  }
+
+  let pil = '';
+  if (av.pilares) {
+    [['Venda', 'venda'], ['Lead', 'conversa'], ['CTR', 'interesse'], ['Gancho', 'atencao']].forEach(function (p) {
+      const v = av.pilares[p[1]];
+      pil += '<div class="anu-pil">' + p[0] + '<i><s style="width:' + Math.max(0, Math.min(100, v)) + '%"></s></i><em>' + Math.round(v) + '</em></div>';
+    });
+  } else {
+    pil = '<div class="anu-pil" style="grid-template-columns:1fr">Pilares aparecem com 3 dias e 2.000 impressões.</div>';
+  }
+
+  const rit = i.ritmo;
+  const ritTxt = !rit ? '—' : rit.parado ? 'parado' : rit.pct + '% do ' + (rit.dono === 'conjunto' ? 'orçamento do conjunto' : 'ritmo da campanha') + (rit.freio ? ' · freio: ' + rit.freio : '');
+  const tend = i.tendencia;
+  const tendTxt = tend.tipo === 'piorou' ? 'piorou: ' + tend.texto : tend.tipo === 'melhorou' ? 'melhorou: ' + tend.texto : tend.texto;
+
+  const met = '<div class="anu-met">' +
+    '<div>Gasto <b>' + anuUS(i.agg.sp, 0) + '</b></div>' +
+    '<div>Compras <b>' + (i.agg.puc + i.agg.puv) + '</b> <span style="color:var(--text-dim)">(' + i.agg.puc + ' clique)</span></div>' +
+    '<div>CPA <b>' + anuUS(m.cpa_t) + '</b></div>' +
+    '<div>meta ' + anuUS(av.meta, 0) + ' · empate ' + anuUS(av.empate, 0) + '</div>' +
+    '<div>Lead <b>' + anuUS(m.cpl) + '</b> <span style="color:var(--text-dim)">(' + i.agg.ld + ')</span></div>' +
+    '<div>CTR <b>' + anuPct(m.ctr, 2) + '</b> · gancho <b>' + anuPct(m.gancho) + '</b></div>' +
+    '<div class="full">Ritmo: ' + escapeHtml(ritTxt) + '</div>' +
+    '<div class="full">Tendência: ' + escapeHtml(tendTxt) + '</div>' +
+    '</div>';
+
+  const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer"/>' : 'sem<br/>imagem';
+  return '<div class="anu-row' + (cinza ? ' cinza' : '') + (anuAberto === i.ad ? ' aberto' : '') + '" onclick="anuAbrir(\'' + i.ad + '\')">' +
+    '<div class="anu-thumb">' + thumb + '</div>' +
+    '<div class="anu-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="sub">' + escapeHtml(i.campanhaNome || '') + ' · ' + escapeHtml(i.conjuntoNome || '') + '</div><div class="anu-selos">' + selos.join('') + '</div></div>' +
+    notaHtml +
+    '<div class="anu-pilares">' + pil + '</div>' +
+    met + '</div>';
+}
+
+function anuAbrir(ad) {
+  anuAberto = anuAberto === ad ? null : ad;
+  if (anuDados) anuRender(anuDados);
+}
+
+async function anuCarregarDetalhe(ad) {
+  const box = document.getElementById('anuDet');
+  if (!box) return;
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/detalhe?ad=' + encodeURIComponent(ad) + '&dias=' + Math.max(14, anuJanela));
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Falha');
+    if (anuAberto !== ad) return;
+    let h = '<h4>Dia a dia</h4><div class="anu-rolar"><table class="anu-tab"><tr><th>Dia</th><th>Gasto</th><th>Impressões</th><th>CTR</th><th>Gancho</th><th>Leads</th><th>Custo/lead</th><th>Compras</th><th>CPA</th></tr>';
+    d.serie.slice().reverse().forEach(function (x) {
+      const fds = new Date(x.d + 'T12:00:00Z').getUTCDay() % 6 === 0;
+      if (!x.im && !x.pu) {
+        h += '<tr class="fds"><td>' + anuDia(x.d) + '</td><td colspan="8" style="text-align:left">' + (x.puxado ? 'sem entrega' : 'não puxado') + '</td></tr>';
+        return;
+      }
+      const m = x.m || {};
+      h += '<tr' + (fds ? ' class="fds"' : '') + '><td>' + anuDia(x.d) + '</td><td>' + anuUS(x.sp) + '</td><td>' + anuNum(x.im) + '</td><td>' + anuPct(m.ctr, 2) + '</td><td>' + anuPct(m.gancho) + '</td><td>' + (x.ld || 0) + '</td><td>' + anuUS(m.cpl) + '</td><td>' + (x.pu || 0) + (x.puv ? ' <span style="color:var(--text-dim)">(' + x.puv + ' vis.)</span>' : '') + '</td><td>' + anuUS(m.cpa_t) + '</td></tr>';
+    });
+    h += '</table></div>';
+    h += '<h4 style="margin-top:14px">Mudanças no anúncio, conjunto ou campanha</h4>';
+    if (!d.eventos.length) h += '<div class="anu-ev">Nenhuma mudança registrada neste período.</div>';
+    d.eventos.slice().reverse().forEach(function (e) {
+      const quando = new Date(e.t).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const mud = (e.de != null || e.para != null) ? ': ' + escapeHtml(String(e.de == null ? '—' : e.de)) + ' → ' + escapeHtml(String(e.para == null ? '—' : e.para)) : '';
+      h += '<div class="anu-ev"><b>' + quando + '</b> · ' + escapeHtml(e.objNome || '') + ' · ' + escapeHtml(e.tipoTxt || e.tipo) + mud + (e.quem ? ' <span style="color:var(--text-dim)">(' + escapeHtml(e.quem) + ')</span>' : '') + '</div>';
+    });
+    box.innerHTML = h;
+  } catch (err) {
+    box.textContent = err.message;
   }
 }
 
