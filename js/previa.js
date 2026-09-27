@@ -19,11 +19,14 @@
 //   fim dos 20 s: a música some e, em SILÊNCIO,
 //           "Gostou? Ou deseja alguma alteração?"
 //
-// As falas vêm de UM arquivo gravado na ElevenLabs (voz Ana Alice, v3):
-// tools/luxmusic-previa-vozes.mp3. PREVIA.falas diz onde cada fala está
-// DENTRO dele — trocou a gravação, esses tempos mudam (ache pelos
-// silêncios). A ElevenLabs já cortou a última frase duas vezes: confira
-// que o arquivo novo termina em silêncio antes de usar.
+// As falas vêm de UM arquivo: desde 27/09/2026 (2a troca) a gravacao "som de previa" do
+// locutor (5 falas, 16,2 s), em tools/luxmusic-previa-vozes-v3.mp3.
+// (Antes era a voz Ana Alice da ElevenLabs, em ...-vozes.mp3.)
+// PREVIA.falas diz onde cada fala está DENTRO dele — trocou a gravação,
+// esses tempos mudam (ache pelos silêncios) e o arquivo ganha NOME NOVO,
+// senão o navegador do atendente continua tocando o antigo guardado.
+// Confira que a gravação termina em silêncio (a ElevenLabs já cortou a
+// última frase duas vezes).
 //
 // Uso:
 //   const blob = await PreviaLux.montar(bytesOuPromessa, txt => botao.textContent = txt);
@@ -34,15 +37,14 @@
   const AQUI = (document.currentScript && document.currentScript.src) || location.href;
 
   const PREVIA = {
-    vozes: new URL('../tools/luxmusic-previa-vozes.mp3', AQUI).href,
+    vozes: new URL('../tools/luxmusic-previa-vozes-v3.mp3', AQUI).href,
+    // medidos pelos silêncios da gravação "som de previa" (27/09/2026, 16,2 s)
     falas: {
-      abertura:    { ini: 0.12,  fim: 2.78 },   // "A Lúx cria as melhores músicas!"
-      marca:       { ini: 3.93,  fim: 5.71 },   // "Versão de teste Lúx."
-      comeco:      { ini: 6.82,  fim: 8.33 },   // "Isso é só o começo!"
-      impressione: { ini: 9.40,  fim: 11.15 },  // "Impressione com a Lúx."
-      // "Gostou?" + "Ou deseja alguma alteração?", com a pausa original da
-      // gravação (0,87 s = 0,77 + as folgas do recorte)
-      chamada:     { partes: [{ ini: 12.26, fim: 12.83 }, { ini: 13.70, fim: 15.39, fadeFim: 0.08 }], intervalo: 0.77 }
+      abertura:    { ini: 0.05,  fim: 3.33 },   // 1ª fala, em off (sem música)
+      marca:       { ini: 4.29,  fim: 6.14 },   // aos 6,6 s
+      comeco:      { ini: 6.98,  fim: 9.00 },   // aos 13 s
+      impressione: { ini: 10.06, fim: 11.88 },  // aos 19 s
+      chamada:     { ini: 12.88, fim: 16.04 }   // frase final, em off
     },
     noMeio:        [['marca', 6.6], ['comeco', 13], ['impressione', 19]],   // tempo do ARQUIVO
     respiroAntes:  0.15,   // silêncio antes da abertura
