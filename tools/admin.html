@@ -1820,8 +1820,10 @@ async function anuCarregar() {
     anuDados = d;
     anuRender(d);
     anuCarregarRecs();
-    // "Hoje" sem o dia puxado ainda: puxa uma vez sozinho (o cron só puxa o dia anterior)
-    if (anuJanela === 'hoje' && !anuAutoColetou && (d.faltando || []).indexOf(anuHojeBR()) >= 0) {
+    // "Hoje" sem o dia puxado, ou puxado há mais de 30 min (ex.: puxado de madrugada, ainda vazio):
+    // puxa de novo sozinho, uma vez por abertura da tela (o cron só puxa o dia anterior)
+    const velho = !d.puxadoEm || Date.now() - Date.parse(d.puxadoEm) > 30 * 60000;
+    if (anuJanela === 'hoje' && !anuAutoColetou && ((d.faltando || []).indexOf(anuHojeBR()) >= 0 || velho)) {
       anuAutoColetou = true;
       anuAtualizarDados();
     }
@@ -1868,7 +1870,7 @@ function anuRender(d) {
   const a = d.ancoras;
   const per = anuPeriodo();
   document.getElementById('anuInfo').innerHTML =
-    (per ? per.rot : anuDia(d.ini) + ' a ' + anuDia(d.fim)) + (d.fimParcial ? ' (hoje, ainda parcial)' : '') + ' · ' + d.itens.length + ' criativos' +
+    (per ? per.rot : anuDia(d.ini) + ' a ' + anuDia(d.fim)) + (d.fimParcial ? ' (hoje, ainda parcial' + (d.puxadoEm ? ', puxado às ' + new Date(d.puxadoEm).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '') + ')' : '') + ' · ' + d.itens.length + ' criativos' +
     (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '');
   document.getElementById('anuRefs').innerHTML =
     '<b>Referências da conta</b> (medidas em ' + anuDia(a.medido_em) + '): CTR ' + anuPct(a.ctr_ref, 2) + ', gancho ' + anuPct(a.gancho_ref) +
