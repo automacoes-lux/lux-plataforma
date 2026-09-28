@@ -480,6 +480,18 @@ body.anu-larga .container{max-width:1180px}
 .anu-row:hover{background:var(--a-hover)}
 .anu-row.aberto{border-radius:14px 14px 0 0;margin-bottom:0;background:var(--a-hover)}
 .anu-row.cinza{opacity:.52}
+/* resumo por tipo de campanha (teste × escala) */
+.anu-tipos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:-12px 0 26px}
+.anu-tipo{border-radius:16px;background:var(--a-card);padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.anu-tipo-cab{display:flex;align-items:baseline;gap:10px}
+.anu-tipo-cab b{font-size:15px;font-weight:600}
+.anu-tipo-cab .n{margin-left:auto;font-size:13px;color:var(--a-txt2)}
+.anu-tipo-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.anu-tipo-nums div{min-width:0}
+.anu-tipo-nums span{display:block;font-size:11.5px;color:var(--a-txt3)}
+.anu-tipo-nums b{display:block;font-size:17px;font-weight:600;margin-top:2px;white-space:nowrap}
+.anu-tipo-nums small{display:block;font-size:11.5px;color:var(--a-txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-fonte{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--a-txt3);margin-left:4px}
 .anu-thumb{width:44px;height:78px;border-radius:8px;background:var(--a-campo);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--a-txt3);font-size:10px;text-align:center}
 .anu-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .anu-nome{min-width:0}
@@ -687,7 +699,7 @@ body.anu-larga .container{max-width:1180px}
       <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra, 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Criativo com pouca impressão fica perto de 50 até provar; o intervalo embaixo da nota é onde ela provavelmente está.</p>
       <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Compare notas só dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
       <p><b>CTR e gancho em amarelo:</b> abaixo de 80% da referência da conta.</p>
-      <p><b>Linha "Lux" e "Vendas na Lux":</b> vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
+      <p><b>META × UTM:</b> gasto, impressões, CTR, gancho, leads e compras marcados <b>Meta</b> vêm da Meta. <b>Conversas reais</b>, <b>Vendas reais</b> e a linha <b>UTM</b> embaixo de cada criativo vêm do nosso sistema: conversas e vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
       <p><b>Períodos:</b> <b>Hoje</b> puxa o dia de hoje (parcial). <b>Semana</b> mostra de segunda a sexta; na segunda-feira mostra a semana passada. Para ver outra semana, escolha um dia dela no calendário e clique em Semana. O calendário sozinho mostra um dia só.</p>
       <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o painel recomenda o corte de quem cair nas regras (gancho abaixo de 14%, CTR abaixo de 0,38%, lead caro) e você confirma aqui. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
       <p id="anuRefs"></p>
@@ -1878,26 +1890,32 @@ function anuRender(d) {
     a.produtos.map(function (p) { return escapeHtml(p.nome) + ' ' + anuUS(p.empate, 0); }).join(' · ') + '.';
 
   const t = d.totais, m = t.metricas;
-  const lucro = d.itens.reduce(function (s, i) { return s + (i.av.lucro || 0); }, 0);
+  // Números com a FONTE escrita: META = o que a Meta conta; UTM = o que chegou de verdade no nosso WhatsApp.
+  const lx = d.lux || {};
   let h = '<div class="anu-kpis">' +
     anuKpi('Gasto', anuUS(t.sp, 0), 'no período') +
-    anuKpi('Compras', anuNum(t.puc + t.puv), t.puc + ' por clique') +
-    anuKpi('Custo por compra', anuUS(m.cpa_t), 'só clique: ' + anuUS(m.cpa_c)) +
-    anuKpi('Leads', anuNum(t.ld), anuUS(m.cpl) + ' cada') +
-    anuKpi('Lucro estimado', anuUS(lucro, 0), 'antes da divisão') +
+    anuKpi('Compras <em class="anu-fonte">Meta</em>', anuNum(t.puc + t.puv), t.puc + ' por clique') +
+    anuKpi('Custo por compra <em class="anu-fonte">Meta</em>', anuUS(m.cpa_t), 'só clique: ' + anuUS(m.cpa_c)) +
+    anuKpi('Leads <em class="anu-fonte">Meta</em>', anuNum(t.ld), anuUS(m.cpl) + ' cada') +
+    anuKpi('Conversas reais <em class="anu-fonte">UTM</em>', lx.diasComDado ? anuNum(lx.wa) : '—', lx.diasComDado ? (lx.wa ? anuUS(t.sp / lx.wa) + ' cada · ' + anuNum(lx.cl) + ' cliques' : anuNum(lx.cl) + ' cliques rastreados') : 'rastreio ainda sem dados') +
     anuKpiLux(d) +
     '</div>';
+  h += anuResumoTipos(d);
 
   if (!d.itens.length) {
     h += '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>';
   } else {
     h += '<div class="anu-colcab"><span></span><span>Criativo</span><span>Nota</span><span>Custo por compra</span>' +
-      '<span class="dir">Lead</span><span class="dir">CTR</span><span class="dir">Gancho</span><span class="dir">Gasto</span></div>';
+      '<span class="dir">Lead Meta</span><span class="dir">CTR</span><span class="dir">Gancho</span><span class="dir">Gasto</span></div>';
   }
   // conta por grupo para o cabeçalho de cada grupo
   // Duas partes: ATIVOS em cima, INATIVOS embaixo (mesmos números, para comparar).
   // Ativo = o anúncio está veiculando agora (status ACTIVE). Pausado, conjunto ou campanha pausada = inativo.
-  const grupoDe = function (i) { return i.agg.sp < 20 ? 'cinza' : i.av.faixaAmostra; };
+  // "Gasto baixo" (linha apagada) é proporcional ao período: US$20 em 7+ dias, US$3 por dia em períodos curtos
+  // (no Hoje, US$11 de um criativo de teste é o orçamento inteiro dele, não gasto baixo).
+  const limite = Math.min(20, 3 * (d.janela || 7));
+  ANU_GRUPOS.cinza = ['Gasto abaixo de ' + anuUS(limite, 0), 'no período'];
+  const grupoDe = function (i) { return i.agg.sp < limite ? 'cinza' : i.av.faixaAmostra; };
   const ehAtivo = function (i) { return !i.status || i.status === 'ACTIVE'; };
   const partes = [
     { chave: 'ativo', titulo: 'Ativos', sub: 'veiculando agora', itens: d.itens.filter(ehAtivo) },
@@ -1985,14 +2003,38 @@ function anuBRL(x) { return x == null ? '—' : 'R$ ' + Number(x).toLocaleString
 function anuKpiLux(d) {
   const x = d.lux || {};
   const sp = d.totais.sp;
-  if (!x.diasComDado) return anuKpi('Vendas na Lux', '—', 'rastreio ainda sem dados');
-  const sub = x.pu ? anuBRL(x.val) + ' · ' + anuUS(sp / x.pu) + ' cada' : (x.wa ? x.wa + ' conversas, nenhuma venda' : 'nenhum clique rastreado');
-  return anuKpi('Vendas na Lux', anuNum(x.pu), sub);
+  const rot = 'Vendas reais <em class="anu-fonte">UTM</em>';
+  if (!x.diasComDado) return anuKpi(rot, '—', 'rastreio ainda sem dados');
+  const sub = x.pu ? anuBRL(x.val) + ' · ' + anuUS(sp / x.pu) + ' cada' : (x.wa ? 'nenhuma ainda' : 'nenhum clique rastreado');
+  return anuKpi(rot, anuNum(x.pu), sub);
+}
+
+// Resumo no topo: campanhas de TESTE × ESCALA (× sem etiqueta), com quantidade de criativos e valores.
+function anuResumoTipos(d) {
+  const tipoDe = function (i) { const n = i.campanhaNome || ''; return /\[\s*teste\s*\]/i.test(n) ? 'teste' : /\[\s*escala\s*\]/i.test(n) ? 'escala' : 'outro'; };
+  const tipos = { escala: { rot: 'Escala', tag: 'escala', l: [] }, teste: { rot: 'Teste', tag: 'teste', l: [] }, outro: { rot: 'Sem etiqueta', tag: '', l: [] } };
+  d.itens.forEach(function (i) { tipos[tipoDe(i)].l.push(i); });
+  let h = '<div class="anu-tipos">';
+  ['escala', 'teste', 'outro'].forEach(function (k) {
+    const T = tipos[k]; if (!T.l.length) return;
+    const ativos = T.l.filter(function (i) { return !i.status || i.status === 'ACTIVE'; }).length;
+    let sp = 0, pu = 0, ld = 0, lpu = 0, lval = 0, lwa = 0, lucro = 0;
+    T.l.forEach(function (i) { sp += i.agg.sp; pu += i.agg.pu; ld += i.agg.ld; lucro += i.av.lucro || 0; if (i.lux) { lpu += i.lux.pu; lval += i.lux.val; lwa += i.lux.wa; } });
+    h += '<div class="anu-tipo"><div class="anu-tipo-cab"><span class="anu-tag ' + T.tag + '">' + T.rot.toLowerCase() + '</span><b>' + T.rot + '</b>' +
+      '<span class="n">' + ativos + ' ativo' + (ativos === 1 ? '' : 's') + ' de ' + T.l.length + ' criativo' + (T.l.length === 1 ? '' : 's') + '</span></div>' +
+      '<div class="anu-tipo-nums">' +
+      '<div><span>Gasto</span><b>' + anuUS(sp, 0) + '</b><small>lucro est. ' + (lucro < 0 ? '−' + anuUS(-lucro, 0) : anuUS(lucro, 0)) + '</small></div>' +
+      '<div><span>Compras Meta</span><b>' + anuNum(pu) + '</b><small>' + (!pu ? '—' : sp < 1 ? 'de cliques anteriores' : anuUS(sp / pu) + ' cada') + '</small></div>' +
+      '<div><span>Conversas UTM</span><b>' + anuNum(lwa) + '</b><small>' + ld + ' leads na Meta</small></div>' +
+      '<div><span>Vendas UTM</span><b>' + anuNum(lpu) + '</b><small>' + (lpu ? anuBRL(lval) : '—') + '</small></div>' +
+      '</div></div>';
+  });
+  return h + '</div>';
 }
 function anuLuxLinha(i) {
   const x = i.lux;
   if (!anuDados || !anuDados.lux || !anuDados.lux.diasComDado) return '';
-  if (!x) return '<div class="anu-lux">Lux: sem clique rastreado</div>';
+  if (!x) return '<div class="anu-lux">UTM: nenhum clique rastreado</div>';
   let custo = '';
   if (x.pu) {
     const c = i.agg.sp / x.pu;
@@ -2001,7 +2043,7 @@ function anuLuxLinha(i) {
     const roas = cambio && i.agg.sp > 0 ? x.val / (i.agg.sp * cambio) : null;
     custo = ' · <span class="' + cls + '">' + anuUS(c) + ' cada</span>' + (roas != null ? ' · ROAS ' + roas.toFixed(2).replace('.', ',') : '');
   }
-  return '<div class="anu-lux" title="Sistema da Lux: cliques com UTM, conversas no WhatsApp e vendas confirmadas, pelo dia do clique">Lux: <b>' + x.pu + (x.pu === 1 ? ' venda' : ' vendas') + '</b>' +
+  return '<div class="anu-lux" title="Sistema da Lux: cliques com UTM, conversas no WhatsApp e vendas confirmadas, pelo dia do clique">UTM: <b>' + x.pu + (x.pu === 1 ? ' venda' : ' vendas') + '</b>' +
     (x.pu ? ' · ' + anuBRL(x.val) : '') + custo + ' · ' + x.wa + ' conversas · ' + x.cl + ' cliques</div>';
 }
 
@@ -2013,7 +2055,10 @@ function anuRegua(i) {
   const pm = p(meta), pe = p(emp);
   const zonas = 'background:linear-gradient(90deg,rgba(74,222,128,.30) 0 ' + pm + '%,rgba(232,184,107,.30) ' + pm + '% ' + pe + '%,rgba(242,109,109,.30) ' + pe + '% 100%)';
   let dentro = '', esq;
-  if (cpa != null) {
+  if (cpa != null && i.agg.sp < 1) {
+    // quase sem gasto no período: as compras são de cliques de dias anteriores, o "custo" seria US$0 enganoso
+    esq = '<span class="vazio">' + (i.agg.puc + i.agg.puv) + ' compras de cliques de dias anteriores</span>';
+  } else if (cpa != null) {
     const zona = cpa <= meta ? 'ok' : cpa <= emp ? 'at' : 'ruim';
     const ic = av.ic95cpa;
     if (ic) {
@@ -2044,9 +2089,13 @@ function anuLinha(i, cinza, ancoras, inativo) {
 
   let notaHtml;
   if (av.nota == null) {
-    const f = av.faltam;
-    const txt = !f ? 'sem nota' : f.tipo === 'impressoes' ? 'faltam ' + anuNum(f.n) + ' impressões' : f.tipo === 'dias' ? 'falta' + (f.n > 1 ? 'm ' : ' ') + f.n + ' dia' + (f.n > 1 ? 's' : '') : 'faltam ' + f.n + ' compras';
-    notaHtml = '<div class="anu-nota sem"><b>—</b><span>' + txt + '</span></div>';
+    // A nota só sai com as DUAS condições dentro do período escolhido: 3 dias com gasto e 2 mil impressões.
+    // Mostra o andamento das duas, sempre no mesmo formato.
+    const dias = Math.min(3, i.agg.diasComGasto), impr = Math.min(2000, i.agg.im);
+    const curto = anuDados && anuDados.janela < 3;
+    const txt = curto ? 'nota só com 3 dias (Semana)'
+      : dias + '/3 dias<br>' + (impr >= 1000 ? (impr / 1000).toFixed(1).replace('.', ',') + ' mil' : impr) + '/2 mil impr.';
+    notaHtml = '<div class="anu-nota sem" title="A nota sai quando o criativo tem, no período escolhido, 3 dias com gasto e 2 mil impressões."><b>—</b><span>' + txt + '</span></div>';
   } else {
     notaHtml = '<div class="anu-nota" title="Nota de 0 a 100 (50 = referência). Provavelmente entre ' + Math.round(av.faixa.lo) + ' e ' + Math.round(av.faixa.hi) + '."><b>' + Math.round(av.nota) + '</b><span>' + Math.round(av.faixa.lo) + '–' + Math.round(av.faixa.hi) + '</span></div>';
   }
