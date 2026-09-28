@@ -424,6 +424,11 @@ body.anu-larga .container{max-width:1180px}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%239B9BA3' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;background-size:18px}
 .anu-sel option{background:#191A1D;color:#F2F2F3}
+.anu-data{border:none;border-radius:999px;background:var(--a-card);color:var(--a-txt2);font:500 13px/1 inherit;padding:9px 13px;color-scheme:dark;cursor:pointer}
+.anu-data.on{background:var(--a-sup);color:var(--a-txt)}
+.anu-lux{margin-top:6px;font-size:12px;color:var(--a-txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-lux b{color:var(--a-txt);font-weight:600}
+.anu-lux .ok{color:var(--a-ok)} .anu-lux .ruim{color:var(--a-ruim)}
 .anu-bt{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--a-sup);color:var(--a-txt);font-size:13px;font-weight:500;padding:9px 15px;cursor:pointer;white-space:nowrap}
 .anu-bt:hover{background:var(--a-sup-h)}
 .anu-bt:disabled{opacity:.5;cursor:wait}
@@ -449,7 +454,7 @@ body.anu-larga .container{max-width:1180px}
 .anu-rec .feito{font-size:12px;padding:4px 11px;border-radius:999px;background:var(--a-sup);color:var(--a-txt2)}
 
 /* números da conta */
-.anu-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-radius:16px;background:var(--a-card);margin-bottom:26px}
+.anu-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-radius:16px;background:var(--a-card);margin-bottom:26px}
 .anu-kpi{padding:15px 18px;border-left:1px solid var(--a-line);min-width:0}
 .anu-kpi:first-child{border-left:none}
 .anu-kpi span{display:block;font-size:12px;font-weight:500;color:var(--a-txt2)}
@@ -551,7 +556,6 @@ body.anu-larga .container{max-width:1180px}
   .anu-kpi{border-left:none;border-top:1px solid var(--a-line)}
   .anu-kpi:nth-child(-n+2){border-top:none}
   .anu-kpi:nth-child(even){border-left:1px solid var(--a-line)}
-  .anu-kpi:last-child{grid-column:1/-1;border-left:none}
   .anu-colcab{display:none}
   .anu-row{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"th nm nt" "rg rg rg" "ms ms ms";gap:12px 12px;padding:12px}
   .anu-thumb{grid-area:th} .anu-nome{grid-area:nm} .anu-nota{grid-area:nt;text-align:right} .anu-regua{grid-area:rg}
@@ -657,10 +661,13 @@ body.anu-larga .container{max-width:1180px}
       </div>
       <div class="anu-ferr">
         <div class="anu-seg" id="anuJanela" role="group" aria-label="Período">
+          <button type="button" data-j="hoje" onclick="anuTrocarJanela('hoje')">Hoje</button>
+          <button type="button" data-j="semana" onclick="anuTrocarJanela('semana')" title="Segunda a sexta da semana do dia escolhido no calendário. Na segunda-feira, mostra a semana passada.">Semana</button>
           <button type="button" data-j="7" class="on" onclick="anuTrocarJanela(7)">7 dias</button>
           <button type="button" data-j="14" onclick="anuTrocarJanela(14)">14 dias</button>
           <button type="button" data-j="30" onclick="anuTrocarJanela(30)">30 dias</button>
         </div>
+        <input type="date" class="anu-data" id="anuData" aria-label="Escolher um dia" title="Ver um dia só" onchange="anuEscolherDia(this.value)"/>
         <select class="anu-sel" id="anuCampanha" onchange="anuCarregar()" aria-label="Campanha">
           <option value="">Todas as campanhas</option>
         </select>
@@ -680,6 +687,8 @@ body.anu-larga .container{max-width:1180px}
       <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra, 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Criativo com pouca impressão fica perto de 50 até provar; o intervalo embaixo da nota é onde ela provavelmente está.</p>
       <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Compare notas só dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
       <p><b>CTR e gancho em amarelo:</b> abaixo de 80% da referência da conta.</p>
+      <p><b>Linha "Lux" e "Vendas na Lux":</b> vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
+      <p><b>Períodos:</b> <b>Hoje</b> puxa o dia de hoje (parcial). <b>Semana</b> mostra de segunda a sexta; na segunda-feira mostra a semana passada. Para ver outra semana, escolha um dia dela no calendário e clique em Semana. O calendário sozinho mostra um dia só.</p>
       <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o painel recomenda o corte de quem cair nas regras (gancho abaixo de 14%, CTR abaixo de 0,38%, lead caro) e você confirma aqui. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
       <p id="anuRefs"></p>
     </details>
@@ -1724,7 +1733,7 @@ async function rmkSalvar() {
 // esta tela só desenha. Sem semáforo de escalar/cortar na fase 0 — só o alerta de desastre.
 // ════════════════════════════════════════════════════════════
 const ANUNCIOS_URL = 'https://lux-anuncios.plataformalux.workers.dev';
-let anuCarregado = false, anuJanela = 7, anuDados = null, anuAberto = null;
+let anuCarregado = false, anuJanela = 7, anuDados = null, anuAberto = null, anuAutoColetou = false;
 
 const ANU_GRUPOS = {
   A: ['Julgáveis por venda', '25 compras ou mais'],
@@ -1755,9 +1764,46 @@ function anuCopiar(txt, btn) {
   else antigo();
 }
 
+// Período: 7/14/30 dias (janela móvel), 'hoje', 'semana' (segunda a sexta) ou 'dia' (o dia do calendário).
+// As datas são as do Brasil, nunca as de UTC (que troca o dia depois das 21h).
+function anuHojeBR() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); }
+function anuSomaDias(d, n) { const p = d.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n, 12)).toISOString().slice(0, 10); }
+function anuDiaSemana(d) { return new Date(d + 'T12:00:00Z').getUTCDay(); }
+let anuDiaRef = null; // dia escolhido no calendário (null = hoje)
+function anuPeriodo() {
+  const hoje = anuHojeBR();
+  if (anuJanela === 'hoje') return { de: hoje, ate: hoje, rot: 'Hoje' };
+  if (anuJanela === 'dia') return { de: anuDiaRef, ate: anuDiaRef, rot: 'Dia ' + anuDia(anuDiaRef) };
+  if (anuJanela === 'semana') {
+    let ref = anuDiaRef || hoje;
+    // na segunda-feira, sem dia escolhido, a semana útil ainda não aconteceu: mostra a passada
+    if (!anuDiaRef && anuDiaSemana(hoje) === 1) ref = anuSomaDias(hoje, -3);
+    const seg = anuSomaDias(ref, -((anuDiaSemana(ref) + 6) % 7));
+    const sex = anuSomaDias(seg, 4);
+    return { de: seg, ate: sex > hoje ? hoje : sex, rot: 'Semana de ' + anuDia(seg) + ' a ' + anuDia(sex) };
+  }
+  return null;
+}
+function anuMarcarPeriodo() {
+  document.querySelectorAll('#anuJanela button').forEach(function (b) { b.classList.toggle('on', b.dataset.j === String(anuJanela)); });
+  const inp = document.getElementById('anuData');
+  inp.classList.toggle('on', anuJanela === 'dia');
+  inp.max = anuHojeBR();
+  if (anuJanela !== 'dia' && anuJanela !== 'semana') inp.value = '';
+}
+// Semana usa o dia escolhido no calendário (escolha um dia da semana passada e clique em Semana).
+// Hoje e as janelas de 7/14/30 dias esquecem o dia escolhido.
 function anuTrocarJanela(j) {
+  if (j !== 'semana') anuDiaRef = null;
   anuJanela = j;
-  document.querySelectorAll('#anuJanela button').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.j) === j); });
+  anuMarcarPeriodo();
+  anuCarregar();
+}
+function anuEscolherDia(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) return;
+  anuDiaRef = v > anuHojeBR() ? anuHojeBR() : v;
+  anuJanela = 'dia';
+  anuMarcarPeriodo();
   anuCarregar();
 }
 
@@ -1766,13 +1812,19 @@ async function anuCarregar() {
   cont.innerHTML = '<div class="state-msg"><div>Carregando…</div></div>';
   try {
     const camp = document.getElementById('anuCampanha').value;
-    const q = '?janela=' + anuJanela + (camp ? '&campanha=' + encodeURIComponent(camp) : '');
+    const per = anuPeriodo();
+    const q = (per ? '?de=' + per.de + '&ate=' + per.ate : '?janela=' + anuJanela) + (camp ? '&campanha=' + encodeURIComponent(camp) : '');
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/painel' + q);
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
     anuDados = d;
     anuRender(d);
     anuCarregarRecs();
+    // "Hoje" sem o dia puxado ainda: puxa uma vez sozinho (o cron só puxa o dia anterior)
+    if (anuJanela === 'hoje' && !anuAutoColetou && (d.faltando || []).indexOf(anuHojeBR()) >= 0) {
+      anuAutoColetou = true;
+      anuAtualizarDados();
+    }
   } catch (err) {
     cont.innerHTML = '<div class="state-msg"><div>' + escapeHtml(err.message) + '</div></div>';
     document.getElementById('anuInfo').textContent = '';
@@ -1814,8 +1866,9 @@ function anuRender(d) {
   }).join('');
 
   const a = d.ancoras;
+  const per = anuPeriodo();
   document.getElementById('anuInfo').innerHTML =
-    anuDia(d.ini) + ' a ' + anuDia(d.fim) + (d.fimParcial ? ' (hoje, ainda parcial)' : '') + ' · ' + d.itens.length + ' criativos' +
+    (per ? per.rot : anuDia(d.ini) + ' a ' + anuDia(d.fim)) + (d.fimParcial ? ' (hoje, ainda parcial)' : '') + ' · ' + d.itens.length + ' criativos' +
     (d.faltando && d.faltando.length ? ' · <span style="color:#E8B86B">faltam os dias ' + d.faltando.map(anuDia).join(', ') + '</span>' : '');
   document.getElementById('anuRefs').innerHTML =
     '<b>Referências da conta</b> (medidas em ' + anuDia(a.medido_em) + '): CTR ' + anuPct(a.ctr_ref, 2) + ', gancho ' + anuPct(a.gancho_ref) +
@@ -1830,10 +1883,11 @@ function anuRender(d) {
     anuKpi('Custo por compra', anuUS(m.cpa_t), 'só clique: ' + anuUS(m.cpa_c)) +
     anuKpi('Leads', anuNum(t.ld), anuUS(m.cpl) + ' cada') +
     anuKpi('Lucro estimado', anuUS(lucro, 0), 'antes da divisão') +
+    anuKpiLux(d) +
     '</div>';
 
   if (!d.itens.length) {
-    h += '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha 14 ou 30 dias, ou outra campanha.</div>';
+    h += '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>';
   } else {
     h += '<div class="anu-colcab"><span></span><span>Criativo</span><span>Nota</span><span>Custo por compra</span>' +
       '<span class="dir">Lead</span><span class="dir">CTR</span><span class="dir">Gancho</span><span class="dir">Gasto</span></div>';
@@ -1923,6 +1977,32 @@ function anuKpi(rot, val, sub) {
   return '<div class="anu-kpi"><span>' + rot + '</span><b>' + val + '</b><small>' + sub + '</small></div>';
 }
 
+// Vendas REAIS (sistema do Anderson): cliente que clicou no anúncio, escreveu no WhatsApp e pagou.
+// Pega também as vendas que a Meta não enxerga. Contadas pelo dia do clique.
+function anuBRL(x) { return x == null ? '—' : 'R$ ' + Number(x).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+function anuKpiLux(d) {
+  const x = d.lux || {};
+  const sp = d.totais.sp;
+  if (!x.diasComDado) return anuKpi('Vendas na Lux', '—', 'rastreio ainda sem dados');
+  const sub = x.pu ? anuBRL(x.val) + ' · ' + anuUS(sp / x.pu) + ' cada' : (x.wa ? x.wa + ' conversas, nenhuma venda' : 'nenhum clique rastreado');
+  return anuKpi('Vendas na Lux', anuNum(x.pu), sub);
+}
+function anuLuxLinha(i) {
+  const x = i.lux;
+  if (!anuDados || !anuDados.lux || !anuDados.lux.diasComDado) return '';
+  if (!x) return '<div class="anu-lux">Lux: sem clique rastreado</div>';
+  let custo = '';
+  if (x.pu) {
+    const c = i.agg.sp / x.pu;
+    const cls = c <= i.av.meta ? 'ok' : c > i.av.empate ? 'ruim' : '';
+    const cambio = anuDados.lux.cambio && anuDados.lux.cambio.brl;
+    const roas = cambio && i.agg.sp > 0 ? x.val / (i.agg.sp * cambio) : null;
+    custo = ' · <span class="' + cls + '">' + anuUS(c) + ' cada</span>' + (roas != null ? ' · ROAS ' + roas.toFixed(2).replace('.', ',') : '');
+  }
+  return '<div class="anu-lux" title="Sistema da Lux: cliques com UTM, conversas no WhatsApp e vendas confirmadas, pelo dia do clique">Lux: <b>' + x.pu + (x.pu === 1 ? ' venda' : ' vendas') + '</b>' +
+    (x.pu ? ' · ' + anuBRL(x.val) : '') + custo + ' · ' + x.wa + ' conversas · ' + x.cl + ' cliques</div>';
+}
+
 // A régua: zonas até a meta (verde), até o empate (âmbar) e além (vermelho); ponto = CPA; faixa = IC95.
 function anuRegua(i) {
   const av = i.av, cpa = av.metricas.cpa_t, meta = av.meta, emp = av.empate;
@@ -1945,7 +2025,7 @@ function anuRegua(i) {
   }
   return '<div class="anu-regua" title="Custo por compra. Faixa clara: onde o custo verdadeiro provavelmente está.">' +
     '<div class="anu-trilha" style="' + zonas + '">' + dentro + '</div>' +
-    '<div class="anu-rleg">' + esq + '<span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div></div>';
+    '<div class="anu-rleg">' + esq + '<span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div>' + anuLuxLinha(i) + '</div>';
 }
 
 function anuLinha(i, cinza, ancoras, inativo) {
@@ -2018,7 +2098,7 @@ async function anuCarregarDetalhe(ad) {
   const box = document.getElementById('anuDetDias');
   if (!box) return;
   try {
-    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/detalhe?ad=' + encodeURIComponent(ad) + '&dias=' + Math.max(14, anuJanela));
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/detalhe?ad=' + encodeURIComponent(ad) + '&dias=' + Math.max(14, Number(anuJanela) || 14));
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Falha');
     if (anuAberto !== ad) return;
