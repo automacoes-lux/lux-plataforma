@@ -266,7 +266,7 @@ body{
 .bal-kpi span{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
 .bal-kpi.alerta b{color:var(--danger)}
 
-.bal-row{display:grid;grid-template-columns:172px 1fr 132px 104px 132px;gap:14px;align-items:center;
+.bal-row{display:grid;grid-template-columns:172px 1fr 128px 92px 92px 132px;gap:14px;align-items:center;
   padding:14px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
 .bal-row:last-child{border-bottom:none}
 .bal-nome{display:flex;align-items:center;gap:7px;min-width:0}
@@ -288,16 +288,18 @@ body{
 .bal-num .bal-rmk{color:#4ADE80;font-size:12px;font-weight:600;margin-top:1px}
 .bal-num .bal-rmk.zero{opacity:.5;font-weight:500}
 .bal-kpi.rmk b{color:#4ADE80}
-.bal-grupo em .bal-rmk-grupo{color:#4ADE80}
+.bal-grupo em .bal-rmk-grupo{color:#4ADE80;white-space:nowrap}
 
-.bal-peso{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
-.bal-peso button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
+/* .bal-hora = chave de entrada 7h/8h, mesmo desenho do 1×/2× */
+.bal-peso,.bal-hora{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
+.bal-peso button,.bal-hora button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
   background:transparent;border:none;border-left:.5px solid var(--border-bright);color:var(--text-mid);transition:.15s}
-.bal-peso button:first-child{border-left:none}
-.bal-peso button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
-.bal-peso button:disabled{opacity:.45;cursor:wait}
+.bal-peso button:first-child,.bal-hora button:first-child{border-left:none}
+.bal-peso button.on,.bal-hora button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
+.bal-peso button:disabled,.bal-hora button:disabled{opacity:.45;cursor:wait}
 
 .bal-acao{display:flex;justify-content:flex-end}
+.bal-extra{grid-column:span 3}   /* bloco das 7h: sem chaves, a linha ocupa o espaço delas */
 .bal-toggle{padding:6px 12px;font-size:14px;font-family:'DM Sans',sans-serif;border-radius:4px;cursor:pointer;
   background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;white-space:nowrap}
 .bal-toggle:hover{border-color:var(--border-bright)}
@@ -306,7 +308,7 @@ body{
   color:var(--text-mid);letter-spacing:.05em;white-space:nowrap}
 .bal-legenda{margin-top:1.2rem;font-size:14px;color:var(--text-mid);line-height:1.7}
 
-/* cabeçalho de cada turno */
+/* cabeçalho do grupo de equipes */
 .bal-grupo{display:flex;align-items:center;gap:10px;margin:1.5rem 0 .4rem;
   font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:.08em;
   text-transform:uppercase;color:var(--text-mid)}
@@ -320,15 +322,20 @@ body{
 .bal-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
 
 @media(max-width:720px){
-  /* cabeçalho do turno no celular: título + selo na 1ª linha, os números embaixo */
+  /* cabeçalho do grupo no celular: título + selo na 1ª linha, os números embaixo */
   .bal-grupo{flex-wrap:wrap;gap:6px 10px}
   .bal-grupo em{flex:1 0 100%;white-space:normal;order:3}
   .bal-grupo span{order:2}
   .bal-grupo::after{display:none}
-  .bal-row{grid-template-columns:1fr 1fr;gap:8px 12px}
+  /* celular: nome + números em cima, barra inteira no meio, os 3 controles lado a lado embaixo */
+  .bal-row{grid-template-columns:1fr 1fr 1fr;gap:8px 12px}
+  .bal-nome{grid-column:1/3}
   .bal-barra{grid-column:1/-1;order:3}
   .bal-peso{order:4}
-  .bal-acao{order:5}
+  .bal-hora{order:5}
+  .bal-acao{order:6}
+  .bal-acao .bal-tag{white-space:normal;text-align:center}   /* "fora: sem WhatsApp" cabe na coluna estreita */
+  .bal-extra{display:none}
 }
 
 /* ─── Anúncios (gerenciador) — padrão design-lux, ESCOPADO nesta aba ───────────
@@ -1169,9 +1176,10 @@ function escapeAttr(s) {
 
 // ════════════════════════════════════════════════════════════
 // MONITORAMENTO DE EQUIPES
-// Mostra, no turno que está rodando agora, quantos leads reais cada equipe
-// recebeu por pessoa — e deixa ajustar peso e ligar/desligar na hora.
+// Mostra quantos leads reais cada equipe recebeu HOJE por pessoa — e deixa ajustar
+// peso, hora de entrada (7h/8h) e ligar/desligar na hora.
 // A barra com a marca da média responde de um olhar: "está equilibrado?"
+// (27/09/2026) Acabaram os turnos A/B: todas até as 16h, entrando às 8h ou às 7h.
 // ════════════════════════════════════════════════════════════
 let balTimer = null;
 
@@ -1213,91 +1221,121 @@ async function carregarBalanceador() {
 
 function renderBalanceador(d) {
   const eq = d.equipes || [];
-  // Cada turno é uma disputa própria: média, escala da barra e diferença saem SEMPRE
-  // de dentro do grupo — misturar manhã com tarde não diria nada.
-  const medir = lista => {
-    const vals = lista.filter(e => e.naRoleta && e.cargaTurno > 0).map(e => e.porPessoa);
+  const hr = d.horario || { inicio: 8, inicioCedo: 7, fim: 16 };
+  // Dois blocos (27/09/2026): "das 7h às 8h" é uma contagem à parte, só de quem entra às 7h;
+  // "das 8h às 16h" é o equilíbrio de todas as equipes, contando só o que chegou desde as 8h.
+  // Média, escala da barra e diferença saem SEMPRE de dentro do bloco.
+  const medir = (lista, n, pp) => {
+    const vals = lista.filter(e => e.naRoleta && n(e) > 0).map(pp);
     return {
       media: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0,
-      maior: Math.max(1, ...lista.map(e => e.porPessoa)),
+      maior: Math.max(1, ...lista.map(pp)),
       dif: vals.length ? (Math.max(...vals) - Math.min(...vals)) : 0,
-      leads: lista.reduce((s, e) => s + (e.cargaTurno || 0), 0),
+      leads: lista.reduce((s, e) => s + n(e), 0),
       rmk: lista.reduce((s, e) => s + (e.remarketing || 0), 0)
     };
   };
-  const turnoTxt = d.turno === 'manha' ? 'Manhã (até 14h)' : d.turno === 'tarde' ? 'Tarde (a partir das 14h)' : 'Dia inteiro';
+  const n8 = e => e.cargaTurno || 0, pp8 = e => e.porPessoa || 0;            // desde as 8h
+  const n7 = e => e.leadsCedo || 0,  pp7 = e => e.porPessoaCedo || 0;        // das 7h às 8h
+  const fds = d.faixa === 'fds';
+  const agoraTxt = { cedo: 'Só quem entra às ' + hr.inicioCedo + 'h', expediente: 'Todas as equipes',
+                     depois: 'Depois das ' + hr.fim + 'h', fds: 'Fim de semana' }[d.faixa] || 'Dia inteiro';
   const idade = d.cargaIdadeSeg == null ? '—'
     : d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + 's atrás' : Math.round(d.cargaIdadeSeg / 60) + ' min atrás';
 
-  // cota = uma pessoa atendendo. Solo vale 1, dupla vale 2 — e só conta quem está na roleta.
-  const cotasDe = lista => lista.filter(e => e.naRoleta).reduce((s, e) => s + (e.peso || 1), 0);
+  // recebendo AGORA: na roleta e, antes das 8h, só quem entra às 7h
+  const recebendo = e => e.recebendoAgora !== undefined ? e.recebendoAgora : e.naRoleta;
+  // cota = uma pessoa atendendo. Solo vale 1, dupla vale 2 — e só conta quem está recebendo.
+  const cotasDe = lista => lista.filter(recebendo).reduce((s, e) => s + (e.peso || 1), 0);
   const cotasTotais = cotasDe(eq);
   const reais = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  // Separado por turno: cada grupo é uma disputa própria. O turno que já passou continua
-  // na tela com os números dele até a virada do dia — é o registro do que aconteceu.
-  const grupos = [
-    { titulo: 'Turno A — manhã (até 14h)',          lista: eq.filter(e => e.turnoEquipe === 'A'), ativo: d.turno === 'manha' || d.turno === 'dia' },
-    { titulo: 'Turno B — tarde (a partir das 14h)', lista: eq.filter(e => e.turnoEquipe === 'B'), ativo: d.turno === 'tarde' || d.turno === 'dia' },
-    { titulo: 'Sem turno definido',                 lista: eq.filter(e => !e.turnoEquipe),        ativo: false }
-  ].filter(g => g.lista.length);
-
-  // "diferença no turno" = dispersão de quem está atendendo AGORA (no fim de semana, todo mundo).
-  const dif = d.turno === 'dia' ? medir(eq).dif
-            : medir((grupos.find(g => g.ativo) || { lista: [] }).lista).dif;
+  const s = medir(eq, n8, pp8);
+  const qtd7 = eq.filter(e => e.inicio === hr.inicioCedo).length;
 
   let html = '<div class="bal-topo">' +
-    '<div class="bal-kpi txt"><b>' + turnoTxt + '</b><span>turno agora</span></div>' +
-    '<div class="bal-kpi"><b>' + cotasTotais + '</b><span>cotas ativas</span></div>' +
+    '<div class="bal-kpi txt"><b>' + agoraTxt + '</b><span>recebe lead agora</span></div>' +
+    '<div class="bal-kpi"><b>' + cotasTotais + '</b><span>cotas recebendo</span></div>' +
     '<div class="bal-kpi"><b>' + d.totalLeadsDia + '</b><span>leads hoje</span></div>' +
     '<div class="bal-kpi rmk" title="remarketing enviado hoje, somando todas as equipes"><b>' + (d.remarketingHoje || 0) + '</b><span>remarketing hoje</span></div>' +
-    '<div class="bal-kpi' + (dif > 2 ? ' alerta' : '') + '"><b>' + dif.toFixed(1) + '</b><span>diferença no turno</span></div>' +
+    '<div class="bal-kpi' + (s.dif > 2 ? ' alerta' : '') + '"><b>' + s.dif.toFixed(1) + '</b><span>' + (fds ? 'diferença no dia' : 'diferença desde as ' + hr.inicio + 'h') + '</span></div>' +
     (d.anuncioTotalBRL != null ? '<div class="bal-kpi txt"><b>' + reais(d.anuncioTotalBRL) + '</b><span>anúncio do dia</span></div>' : '') +
     '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
     '</div>';
 
-  grupos.forEach(g => {
-    const s = medir(g.lista);
-    const c = cotasDe(g.lista);
-    html += '<div class="bal-grupo' + (g.ativo ? ' agora' : '') + '">' + g.titulo +
-      '<em>' + c + (c === 1 ? ' cota ativa' : ' cotas ativas') +
-        ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
-        ' · <span class="bal-rmk-grupo">' + s.rmk + ' remarketing</span>' +
-        (s.dif > 0 ? ' · diferença ' + s.dif.toFixed(1) : '') + '</em>' +
-      (g.ativo ? '<span>atendendo agora</span>'
-               : s.leads > 0 ? '<span class="fim">registro de hoje</span>' : '') + '</div>';
-    linhasDoGrupo(g.lista, s);
-  });
+  // ── Bloco 1: das 7h às 8h — só quem entra às 7h, contagem à parte (some no fim de semana)
+  const doCedo = eq.filter(e => e.inicio === hr.inicioCedo || n7(e) > 0)
+    .sort((a, b) => (pp7(b) - pp7(a)) || a.nome.localeCompare(b.nome));
+  if (!fds && doCedo.length) {
+    const s7 = medir(doCedo, n7, pp7);
+    html += '<div class="bal-grupo' + (d.faixa === 'cedo' ? ' agora' : '') + '">' +
+      'Das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h' +
+      '<em>' + s7.leads + (s7.leads === 1 ? ' lead' : ' leads') +
+        (d.anuncioCedoTotalBRL != null ? ' · ' + reais(d.anuncioCedoTotalBRL) + ' de anúncio' : '') +
+        ' · só quem entra às ' + hr.inicioCedo + 'h</em>' +
+      (d.faixa === 'cedo' ? '<span>atendendo agora</span>'
+        : s7.leads > 0 ? '<span class="fim">registro de hoje</span>' : '') + '</div>';
+    doCedo.forEach(e => linha(e, s7, n7, pp7, e.anuncioCedoBRL, false));
+  }
 
-  function linhasDoGrupo(lista, s) {
-    const media = s.media, maior = s.maior;
-  lista.forEach(e => {
-    const pct = Math.max(2, (e.porPessoa / maior) * 100);
-    const classe = e.cargaTurno === 0 ? 'zero' : (e.porPessoa < media - 0.01 ? 'baixo' : '');
-    // verde = recebendo · vermelho = fora da distribuição, seja qual for o motivo
-    const luz = e.naRoleta ? '' : 'off';
+  // ── Bloco 2: das 8h às 16h — todas as equipes, com o equilíbrio (no fim de semana, o dia inteiro)
+  const cotas8 = d.faixa === 'cedo' ? eq.filter(e => e.naRoleta).reduce((a, e) => a + (e.peso || 1), 0) : cotasTotais;
+  const selo8 = d.faixa === 'expediente' ? '<span>atendendo agora</span>'
+              : d.faixa === 'cedo' ? '<span class="fim">começa às ' + hr.inicio + 'h</span>'
+              : d.faixa === 'depois' ? '<span class="fim">fora do expediente</span>'
+              : fds ? '<span class="fim">fim de semana</span>' : '';
+  html += '<div class="bal-grupo' + (d.faixa === 'expediente' ? ' agora' : '') + '">' +
+    (fds ? 'Fim de semana — dia inteiro' : 'Das ' + hr.inicio + 'h às ' + hr.fim + 'h') +
+    '<em>' + cotas8 + (cotas8 === 1 ? ' cota' : ' cotas') + (d.faixa === 'cedo' ? ' a partir das ' + hr.inicio + 'h' : ' recebendo') +
+      ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
+      ' · <span class="bal-rmk-grupo">' + s.rmk + ' remarketing</span>' +
+      (fds ? '' : ' · ' + qtd7 + (qtd7 === 1 ? ' entra' : ' entram') + ' às ' + hr.inicioCedo + 'h') +
+      (s.dif > 0 ? ' · diferença ' + s.dif.toFixed(1) : '') + '</em>' + selo8 + '</div>';
+  eq.forEach(e => linha(e, s, n8, pp8, e.anuncio8BRL !== undefined ? e.anuncio8BRL : e.anuncioBRL, true));
+
+  document.getElementById('balContainer').innerHTML = html;
+
+  // Uma linha de equipe. `controles` = false no bloco das 7h: as chaves ficam só no bloco das 8h.
+  function linha(e, st, n, pp, anuncio, controles) {
+    const media = st.media, maior = st.maior, valor = pp(e);
+    const pct = Math.max(2, (valor / maior) * 100);
+    const classe = n(e) === 0 ? 'zero' : (valor < media - 0.01 ? 'baixo' : '');
+    // verde = recebendo · cinza = ainda não entrou (antes das 8h) · vermelho = fora da distribuição
+    const luz = !e.naRoleta ? 'off' : (recebendo(e) ? '' : 'pausa');
     const tituloLuz = !e.conectado ? 'WhatsApp desconectado'
       : e.ligadoRotator === false ? 'Desligada na tela do Rotator'
-      : (!e.ativo ? 'Desligada aqui no painel' : 'Conectada e recebendo');
+      : !e.ativo ? 'Desligada aqui no painel'
+      : !recebendo(e) ? 'Entra às ' + e.inicio + 'h — ainda não recebe'
+      : 'Conectada e recebendo';
     const mediaPct = maior ? (media / maior) * 100 : 0;
+    const cedo = e.inicio === hr.inicioCedo;
     html += '<div class="bal-row">' +
       '<div class="bal-nome">' +
         '<span class="bal-luz ' + luz + '" title="' + tituloLuz + '"></span>' +
         '<b title="' + escapeHtml(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
         (e.estimado ? '<span class="bal-tag" title="WhatsApp ficou cego: valor estimado pelos cliques">estimado</span>' : '') +
       '</div>' +
-      '<div class="bal-barra" title="' + (media > 0 ? 'a linha branca é a média do turno (' + media.toFixed(1) + ')' : '') + '">' +
+      '<div class="bal-barra" title="' + (media > 0 ? 'a linha branca é a média deste bloco (' + media.toFixed(1) + ')' : '') + '">' +
         '<div class="bal-fill ' + classe + '" style="width:' + pct + '%"></div>' +
         (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
       '</div>' +
-      '<div class="bal-num"><b>' + e.porPessoa.toFixed(1) + '</b>' +
-        '<span>' + e.cargaTurno + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span>' +
-        '<span class="bal-rmk' + (e.remarketing ? '' : ' zero') + '" title="remarketing enviado hoje pelo WhatsApp desta equipe">' + (e.remarketing || 0) + ' remarketing</span>' +
-        (e.anuncioBRL != null ? '<span class="bal-anun" title="fatia do anúncio do dia, proporcional aos leads">' + reais(e.anuncioBRL) + '</span>' : '') +
+      '<div class="bal-num"><b>' + valor.toFixed(1) + '</b>' +
+        '<span>' + n(e) + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span>' +
+        (controles ? '<span class="bal-rmk' + (e.remarketing ? '' : ' zero') + '" title="remarketing enviado hoje pelo WhatsApp desta equipe">' + (e.remarketing || 0) + ' remarketing</span>' : '') +
+        (anuncio != null ? '<span class="bal-anun" title="parte do anúncio do dia pelos leads deste bloco (a mesma conta do fechamento)">' + reais(anuncio) + '</span>' : '') +
       '</div>' +
-      '<div class="bal-peso">' +
+      (controles ? controlesDe(e, cedo) : '<div class="bal-extra"></div>') +
+    '</div>';
+  }
+
+  function controlesDe(e, cedo) {
+    return '<div class="bal-peso">' +
         '<button class="' + (e.peso === 1 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',1)" title="Trabalha sozinha hoje">1×</button>' +
         '<button class="' + (e.peso === 2 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
+      '</div>' +
+      // chave de entrada: 7h = recebe lead desde as 7h (antes das 8h só essas recebem)
+      '<div class="bal-hora">' +
+        '<button class="' + (cedo ? 'on' : '') + '" onclick="mudarInicio(\'' + e.email + '\',' + hr.inicioCedo + ')" title="Entra às ' + hr.inicioCedo + 'h: recebe lead desde as ' + hr.inicioCedo + 'h">' + hr.inicioCedo + 'h</button>' +
+        '<button class="' + (cedo ? '' : 'on') + '" onclick="mudarInicio(\'' + e.email + '\',' + hr.inicio + ')" title="Entra às ' + hr.inicio + 'h (padrão)">' + hr.inicio + 'h</button>' +
       '</div>' +
       '<div class="bal-acao">' +
         (e.ligadoRotator === false
@@ -1306,12 +1344,8 @@ function renderBalanceador(d) {
             ? '<button class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + e.email + '\',' + (!e.ativo) + ')">' +
               (e.ativo ? 'Desligar' : 'Religar') + '</button>'
             : '<span class="bal-tag" title="Ela volta sozinha quando reconectar">fora: sem WhatsApp</span>') +
-      '</div>' +
-    '</div>';
-  });
+      '</div>';
   }
-
-  document.getElementById('balContainer').innerHTML = html;
 }
 
 async function mudarPeso(email, peso) {
@@ -1320,8 +1354,11 @@ async function mudarPeso(email, peso) {
 async function mudarAtivo(email, ativo) {
   await salvarAjuste({ email, ativo }, ativo ? 'Equipe religada' : 'Equipe desligada da roleta');
 }
+async function mudarInicio(email, inicio) {
+  await salvarAjuste({ email, inicio }, 'Agora entra às ' + inicio + 'h');
+}
 async function salvarAjuste(body, msgOk) {
-  document.querySelectorAll('.bal-peso button, .bal-toggle').forEach(b => b.disabled = true);
+  document.querySelectorAll('.bal-peso button, .bal-hora button, .bal-toggle').forEach(b => b.disabled = true);
   try {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/balanceador', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -1332,7 +1369,7 @@ async function salvarAjuste(body, msgOk) {
     await carregarBalanceador();
   } catch (err) {
     toast(err.message, 'error');
-    document.querySelectorAll('.bal-peso button, .bal-toggle').forEach(b => b.disabled = false);
+    document.querySelectorAll('.bal-peso button, .bal-hora button, .bal-toggle').forEach(b => b.disabled = false);
   }
 }
 
