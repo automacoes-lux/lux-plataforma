@@ -255,87 +255,142 @@ body{
   #rmkSalvar{width:100%}
 }
 
-/* ─── Monitoramento de Equipes ──────────────────────────── */
-/* grade em vez de flex-wrap: com a fonte maior, o wrap partia um indicador ao meio */
-.bal-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1rem 1.3rem;
-  margin-bottom:1.6rem;padding-bottom:1.2rem;border-bottom:.5px solid var(--border)}
-.bal-kpi{display:flex;flex-direction:column;gap:4px;min-width:0}
-.bal-kpi span{line-height:1.3}   /* deixa o rótulo quebrar em vez de cortar no celular */
-.bal-kpi b{font-family:'Cinzel',serif;font-size:22px;color:var(--gold);font-weight:600;line-height:1.15}
-.bal-kpi.txt b{font-size:16px;letter-spacing:.04em}
-.bal-kpi span{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid)}
-.bal-kpi.alerta b{color:var(--danger)}
+/* ─── Monitoramento de Equipes — padrão design-lux, ESCOPADO nesta aba (27/09/2026) ───────
+   Só vale dentro de #secEquipes (igual à aba Anúncios): as outras abas seguem no tema antigo.
+   Horário único desde 28/09: todas até as 16h, entrando às 7h ou às 8h.
+   Assinatura: a RÉGUA DO DIA no topo — 7h–8h em âmbar (só quem entra às 7h), 8h–16h clara
+   (todas), com o ponteiro de agora. O mesmo âmbar marca quem entra às 7h na chave e na etiqueta. */
+#secEquipes{
+  --e-card:#191A1D;--e-linha:#1F2024;--e-linha-h:#24252A;--e-sup:#2A2B30;--e-sup-h:#35363C;
+  --e-txt:#F2F2F3;--e-txt2:#9B9BA3;--e-txt3:#6B6C74;
+  --e-ok:#4ADE80;--e-ruim:#F26D6D;--e-cedo:#E8B86B;--e-cedo-fundo:rgba(232,184,107,.14);--e-baixo:#6E9BFF;
+  --e-cols:minmax(170px,1.3fr) minmax(130px,1.4fr) 150px 86px 92px 100px;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--e-txt);font-variant-numeric:tabular-nums;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+#secEquipes button{font-family:inherit}
+#secEquipes h2,#secEquipes h3{font-family:inherit;text-transform:none;letter-spacing:normal;color:var(--e-txt)}
+#secEquipes :focus-visible{outline:2px solid var(--e-txt2);outline-offset:2px}
 
-.bal-row{display:grid;grid-template-columns:172px 1fr 128px 92px 92px 132px;gap:14px;align-items:center;
-  padding:14px 0;border-bottom:.5px solid rgba(255,255,255,.045)}
-.bal-row:last-child{border-bottom:none}
-.bal-nome{display:flex;align-items:center;gap:7px;min-width:0}
-.bal-nome b{font-size:16px;font-weight:500;color:#EDE6D6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bal-luz{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#4ADE80}
-.bal-luz.off{background:var(--danger)}
-.bal-luz.pausa{background:#6B6B6B}
+/* cabeçalho */
+.eq-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:10px 18px;flex-wrap:wrap;margin:6px 0 16px}
+.eq-cab h2{font-size:21px;font-weight:600;letter-spacing:-.015em;line-height:1.2;margin:0}
+.eq-sub{font-size:13px;color:var(--e-txt2);margin-top:3px}
+.eq-vivo{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--e-txt2);background:var(--e-card);padding:7px 13px;border-radius:999px;white-space:nowrap}
+.eq-vivo i{width:7px;height:7px;border-radius:50%;background:var(--e-ok);animation:eqPulso 2.4s ease-out infinite}
+@keyframes eqPulso{0%{box-shadow:0 0 0 0 rgba(74,222,128,.45)}70%,100%{box-shadow:0 0 0 7px rgba(74,222,128,0)}}
+.eq-aviso{background:rgba(242,109,109,.12);color:#F7A1A1;border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;margin-bottom:12px}
+.eq-carregando,.eq-erro{background:var(--e-card);border-radius:16px;padding:36px 20px;text-align:center;font-size:13.5px;color:var(--e-txt2)}
+.eq-erro{color:#F7A1A1}
 
-/* a barra é o coração da tela: mostra num olhar quem está atrás e quem está à frente da média */
-.bal-barra{position:relative;height:24px;background:var(--bg-input);border-radius:4px;overflow:hidden}
-.bal-fill{height:100%;background:linear-gradient(90deg,rgba(201,168,76,.5),rgba(201,168,76,.8));transition:width .4s ease}
-.bal-fill.baixo{background:linear-gradient(90deg,rgba(90,140,255,.4),rgba(90,140,255,.7))}
-.bal-fill.zero{background:rgba(255,255,255,.05)}
-.bal-media{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.65)}
-.bal-num{text-align:right;font-variant-numeric:tabular-nums;line-height:1.35}
-.bal-num b{font-size:17px;color:#EDE6D6;font-weight:600}
-.bal-num span{display:block;font-size:13px;color:var(--text-mid)}
-.bal-num .bal-anun{color:var(--gold-dim);font-size:12px;margin-top:1px}
-.bal-num .bal-rmk{color:#4ADE80;font-size:12px;font-weight:600;margin-top:1px}
-.bal-num .bal-rmk.zero{opacity:.5;font-weight:500}
-.bal-kpi.rmk b{color:#4ADE80}
-.bal-grupo em .bal-rmk-grupo{color:#4ADE80;white-space:nowrap}
+/* régua do dia (a assinatura) */
+.eq-regua{background:var(--e-card);border-radius:16px;padding:16px 18px 12px;margin-bottom:12px}
+.eq-regua-topo{display:flex;justify-content:space-between;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin-bottom:26px}
+.eq-regua-topo b{font-size:14.5px;font-weight:600}
+.eq-regua-topo span{font-size:12px;color:var(--e-txt3)}
+.eq-regua-topo span em{font-style:normal;color:var(--e-cedo)}
+.eq-trilho{position:relative;height:10px}
+.eq-trecho{position:absolute;top:0;bottom:0;border-radius:999px;opacity:.32;transition:opacity .3s}
+.eq-trecho.cedo{background:var(--e-cedo)}
+.eq-trecho.todas{background:#D9DAE0}
+.eq-trecho.agora{opacity:1}
+.eq-agulha{position:absolute;top:-6px;bottom:-6px;width:2px;margin-left:-1px;border-radius:2px;background:var(--e-txt);pointer-events:none}
+.eq-agulha span{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;line-height:1;
+  color:#111214;background:var(--e-txt);padding:3px 7px;border-radius:999px;white-space:nowrap}
+.eq-agulha.borda-esq span{left:0;transform:none}
+.eq-agulha.borda-dir span{left:auto;right:0;transform:none}
+.eq-marcas{position:relative;height:15px;margin-top:8px;font-size:11px;color:var(--e-txt3)}
+.eq-marcas span{position:absolute;top:0;transform:translateX(-50%)}
+.eq-marcas span.ini{transform:none}
+.eq-marcas span.fim{transform:none;left:auto;right:0}
 
-/* .bal-hora = chave de entrada 7h/8h, mesmo desenho do 1×/2× */
-.bal-peso,.bal-hora{display:flex;gap:0;border:.5px solid var(--border-bright);border-radius:4px;overflow:hidden}
-.bal-peso button,.bal-hora button{flex:1;padding:6px 0;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;
-  background:transparent;border:none;border-left:.5px solid var(--border-bright);color:var(--text-mid);transition:.15s}
-.bal-peso button:first-child,.bal-hora button:first-child{border-left:none}
-.bal-peso button.on,.bal-hora button.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
-.bal-peso button:disabled,.bal-hora button:disabled{opacity:.45;cursor:wait}
+/* números do dia */
+.eq-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.eq-kpi{background:var(--e-card);border-radius:16px;padding:13px 15px;min-width:0}
+.eq-kpi b{display:block;font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-kpi span{display:block;font-size:12.5px;color:var(--e-txt2);margin-top:3px}
+.eq-kpi.alerta b{color:var(--e-ruim)}
+.eq-kpi.rmk b{color:var(--e-ok)}
 
+/* blocos: das 7h às 8h · das 8h às 16h */
+.eq-bloco{background:var(--e-card);border-radius:16px;padding:14px 12px 8px;margin-bottom:12px}
+.eq-bloco-cab{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:2px 6px 12px}
+.eq-bloco-cab h3{font-size:14.5px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px}
+.eq-bloco-cab h3 i{width:8px;height:8px;border-radius:50%;background:#D9DAE0}
+.eq-bloco.cedo .eq-bloco-cab h3 i{background:var(--e-cedo)}
+.eq-resumo{font-size:12.5px;color:var(--e-txt2)}
+.eq-resumo .bal-rmk-grupo{color:var(--e-ok);white-space:nowrap}
+.eq-selo{margin-left:auto;font-size:11.5px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--e-sup);color:var(--e-txt2);white-space:nowrap}
+.eq-selo.vivo{background:rgba(74,222,128,.12);color:var(--e-ok)}
+.eq-colunas{display:grid;grid-template-columns:var(--e-cols);gap:14px;padding:0 12px 7px;font-size:11.5px;color:var(--e-txt3)}
+
+/* linha de equipe */
+.bal-row{display:grid;grid-template-columns:var(--e-cols);gap:14px;align-items:center;background:var(--e-linha);border-radius:12px;padding:10px 12px;margin-bottom:6px;transition:background .15s}
+.bal-row:hover{background:var(--e-linha-h)}
+.bal-row.fora .bal-nome b,.bal-row.fora .bal-num{opacity:.55}
+.bal-nome{display:flex;align-items:center;gap:8px;min-width:0}
+.bal-nome b{font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bal-luz{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--e-ok)}
+.bal-luz.off{background:var(--e-ruim)}
+.bal-luz.pausa{background:#5A5B62}
+.bal-tag{font-size:11px;font-weight:500;line-height:1.5;padding:1px 8px;border-radius:999px;background:var(--e-sup);color:var(--e-txt2);white-space:nowrap;flex:0 0 auto}
+.bal-tag.cedo{background:var(--e-cedo-fundo);color:var(--e-cedo);font-weight:600}
+.bal-barra{position:relative;height:8px;border-radius:999px;background:var(--e-sup)}
+.bal-fill{height:100%;border-radius:999px;background:#D9DAE0;transition:width .4s ease}
+.bal-fill.baixo{background:var(--e-baixo)}
+.bal-fill.cedo{background:var(--e-cedo)}
+.bal-fill.zero{background:transparent}
+.bal-media{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;border-radius:2px;background:var(--e-txt);opacity:.5}
+.bal-num{text-align:right;line-height:1.3;min-width:0}
+.bal-num b{display:block;font-size:16px;font-weight:600}
+.bal-num span{display:block;font-size:12px;color:var(--e-txt2);white-space:nowrap}
+.bal-num .bal-anun{font-style:normal;color:var(--e-txt3)}
+.bal-tag.rmk{display:inline-flex;align-items:center;gap:3px;background:rgba(74,222,128,.12);color:var(--e-ok);padding:1px 7px 1px 6px}
+.bal-tag.rmk svg{width:12px;height:12px;fill:currentColor}
+
+/* chaves: peso (1×/2×) e entrada (7h/8h). A de entrada desliza e fica âmbar no 7h. */
+.bal-peso,.bal-hora{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--e-sup);border-radius:999px;padding:3px;isolation:isolate}
+.bal-peso button,.bal-hora button{position:relative;z-index:1;border:none;background:transparent;color:var(--e-txt2);font-size:13px;font-weight:600;
+  padding:6px 0;border-radius:999px;cursor:pointer;transition:color .2s,background .2s}
+.bal-peso button:hover,.bal-hora button:hover{color:var(--e-txt)}
+.bal-peso button.on{background:var(--e-txt);color:#141416}
+.bal-peso button:disabled{cursor:wait}
+.bal-hora::before{content:'';position:absolute;z-index:0;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;
+  background:#D9DAE0;transform:translateX(100%);transition:transform .25s cubic-bezier(.3,.7,.3,1),background .25s}
+.bal-hora[data-valor="7"]::before{transform:translateX(0);background:var(--e-cedo)}
+.bal-hora button.on,.bal-hora button.on:hover{color:#141416}
+.bal-hora button:disabled{cursor:wait}
 .bal-acao{display:flex;justify-content:flex-end}
+.bal-toggle{border:none;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:500;background:var(--e-sup);color:var(--e-txt);cursor:pointer;white-space:nowrap;transition:background .15s}
+.bal-toggle:hover{background:var(--e-sup-h)}
+.bal-toggle.off{background:rgba(242,109,109,.14);color:#F7A1A1}
+.bal-toggle:disabled{opacity:.5;cursor:wait}
+.bal-acao .bal-tag{white-space:normal;text-align:center}
 .bal-extra{grid-column:span 3}   /* bloco das 7h: sem chaves, a linha ocupa o espaço delas */
-.bal-toggle{padding:6px 12px;font-size:14px;font-family:'DM Sans',sans-serif;border-radius:4px;cursor:pointer;
-  background:transparent;border:.5px solid var(--border);color:var(--text-mid);transition:.15s;white-space:nowrap}
-.bal-toggle:hover{border-color:var(--border-bright)}
-.bal-toggle.off{border-color:var(--danger-border);color:var(--danger);background:var(--danger-bg)}
-.bal-tag{font-size:12px;padding:2px 7px;border-radius:20px;border:.5px solid var(--border);
-  color:var(--text-mid);letter-spacing:.05em;white-space:nowrap}
-.bal-legenda{margin-top:1.2rem;font-size:14px;color:var(--text-mid);line-height:1.7}
 
-/* cabeçalho do grupo de equipes */
-.bal-grupo{display:flex;align-items:center;gap:10px;margin:1.5rem 0 .4rem;
-  font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--text-mid)}
-.bal-grupo:first-of-type{margin-top:.4rem}
-.bal-grupo.agora{color:var(--gold)}
-.bal-grupo em{font-family:'DM Sans',sans-serif;font-style:normal;font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--gold-dim);white-space:nowrap}
-.bal-grupo span{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.06em;
-  text-transform:none;padding:2px 9px;border-radius:20px;
-  background:rgba(74,222,128,.12);color:#4ADE80;border:.5px solid rgba(74,222,128,.35)}
-.bal-grupo span.fim{background:rgba(212,175,55,.10);color:var(--gold-dim);border-color:rgba(212,175,55,.30)}
-.bal-grupo::after{content:'';flex:1;height:.5px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
-
-@media(max-width:720px){
-  /* cabeçalho do grupo no celular: título + selo na 1ª linha, os números embaixo */
-  .bal-grupo{flex-wrap:wrap;gap:6px 10px}
-  .bal-grupo em{flex:1 0 100%;white-space:normal;order:3}
-  .bal-grupo span{order:2}
-  .bal-grupo::after{display:none}
-  /* celular: nome + números em cima, barra inteira no meio, os 3 controles lado a lado embaixo */
-  .bal-row{grid-template-columns:1fr 1fr 1fr;gap:8px 12px}
+@media(max-width:760px){
+  .eq-cab h2{font-size:18px}
+  .eq-regua{padding:14px 14px 10px}
+  .eq-kpis{grid-template-columns:1fr 1fr}
+  .eq-kpi.largo{grid-column:1/-1}
+  .eq-colunas{display:none}
+  .eq-selo{margin-left:0}
+  /* celular: nome + número em cima, barra inteira no meio, o detalhe (leads · dupla · anúncio)
+     numa linha inteira embaixo dela, e as 3 chaves lado a lado no fim */
+  .bal-row{grid-template-columns:1fr 1fr 1fr;gap:8px 10px;padding:11px 12px}
   .bal-nome{grid-column:1/3}
+  .bal-num{display:contents}
+  .bal-num b{grid-column:3;text-align:right}
   .bal-barra{grid-column:1/-1;order:3}
+  .bal-num span{grid-column:1/-1;order:3;text-align:left;margin-top:-2px}
   .bal-peso{order:4}
   .bal-hora{order:5}
   .bal-acao{order:6}
-  .bal-acao .bal-tag{white-space:normal;text-align:center}   /* "fora: sem WhatsApp" cabe na coluna estreita */
+  .bal-toggle{width:100%;padding:7px 8px}
   .bal-extra{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  #secEquipes *,#secEquipes *::before{transition:none!important;animation:none!important}
 }
 
 /* ─── Anúncios (gerenciador) — padrão design-lux, ESCOPADO nesta aba ───────────
@@ -543,14 +598,8 @@ body.anu-larga .container{max-width:1180px}
   </div>
 
   <div id="secEquipes" style="display:none">
-    <div class="card">
-      <div class="card-title">Distribuição de Leads — Ao Vivo</div>
-      <div id="balContainer">
-        <div class="state-msg">
-          <span class="icon">⏳</span>
-          <div>Carregando…</div>
-        </div>
-      </div>
+    <div id="balContainer">
+      <div class="eq-carregando">Carregando a distribuição de leads…</div>
     </div>
   </div>
 
@@ -1215,8 +1264,47 @@ async function carregarBalanceador() {
     renderBalanceador(d);
   } catch (err) {
     document.getElementById('balContainer').innerHTML =
-      '<div class="state-msg"><span class="icon">⚠️</span><div>' + escapeHtml(err.message) + '</div></div>';
+      '<div class="eq-erro">Não deu para carregar o painel: ' + escapeHtml(err.message) + '. Ele tenta de novo em 30 segundos.</div>';
   }
+}
+
+// número com vírgula e uma casa (9,5) — como o Thiago lê
+function eqNum(v) { return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+// megafone (Material "campaign") — remarketing enviado hoje; desenho, nunca emoji (padrão design-lux)
+const EQ_IC_RMK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/></svg>';
+
+// RÉGUA DO DIA: 7h–8h (só quem entra às 7h) e 8h–16h (todas), com o ponteiro de agora.
+// A hora vem do relógio deste computador, no fuso de Brasília.
+function eqRegua(d, hr) {
+  if (d.faixa === 'fds') {
+    return '<div class="eq-regua"><div class="eq-regua-topo"><b>Fim de semana: todas as equipes recebem, o dia inteiro</b></div>' +
+      '<div class="eq-trilho"><div class="eq-trecho todas agora" style="left:0;right:0"></div></div></div>';
+  }
+  const ini = hr.inicioCedo, meio = hr.inicio, fim = hr.fim;
+  const pos = h => Math.max(0, Math.min(100, ((h - ini) / (fim - ini)) * 100));
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const hh = Number((p.find(x => x.type === 'hour') || {}).value) % 24, mm = Number((p.find(x => x.type === 'minute') || {}).value);
+  const agora = hh + mm / 60;
+  const titulo = { cedo: 'Agora só recebe quem entra às ' + ini + 'h', expediente: 'Agora todas as equipes recebem',
+                   depois: 'Passou das ' + fim + 'h: todas continuam na roleta' }[d.faixa] || 'Horário das equipes';
+  const x = pos(meio);
+  let agulha = '';
+  if (agora >= ini && agora <= fim) {
+    const a = pos(agora);
+    agulha = '<div class="eq-agulha' + (a < 8 ? ' borda-esq' : a > 92 ? ' borda-dir' : '') + '" style="left:' + a.toFixed(2) + '%">' +
+      '<span>' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + '</span></div>';
+  }
+  return '<div class="eq-regua">' +
+    '<div class="eq-regua-topo"><b>' + titulo + '</b>' +
+      '<span><em>' + ini + 'h–' + meio + 'h</em> só quem entra às ' + ini + 'h · ' + meio + 'h–' + fim + 'h todas as equipes</span></div>' +
+    '<div class="eq-trilho">' +
+      '<div class="eq-trecho cedo' + (d.faixa === 'cedo' ? ' agora' : '') + '" style="left:0;width:calc(' + x.toFixed(2) + '% - 2px)"></div>' +
+      '<div class="eq-trecho todas' + (d.faixa === 'expediente' ? ' agora' : '') + '" style="left:' + x.toFixed(2) + '%;right:0"></div>' +
+      agulha +
+    '</div>' +
+    '<div class="eq-marcas"><span class="ini" style="left:0">' + ini + 'h</span><span style="left:' + x.toFixed(2) + '%">' + meio + 'h</span>' +
+      '<span style="left:' + pos(12).toFixed(2) + '%">12h</span><span class="fim">' + fim + 'h</span></div>' +
+  '</div>';
 }
 
 function renderBalanceador(d) {
@@ -1238,10 +1326,8 @@ function renderBalanceador(d) {
   const n8 = e => e.cargaTurno || 0, pp8 = e => e.porPessoa || 0;            // desde as 8h
   const n7 = e => e.leadsCedo || 0,  pp7 = e => e.porPessoaCedo || 0;        // das 7h às 8h
   const fds = d.faixa === 'fds';
-  const agoraTxt = { cedo: 'Só quem entra às ' + hr.inicioCedo + 'h', expediente: 'Todas as equipes',
-                     depois: 'Depois das ' + hr.fim + 'h', fds: 'Fim de semana' }[d.faixa] || 'Dia inteiro';
-  const idade = d.cargaIdadeSeg == null ? '—'
-    : d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + 's atrás' : Math.round(d.cargaIdadeSeg / 60) + ' min atrás';
+  const idade = d.cargaIdadeSeg == null ? ''
+    : ' · contagem há ' + (d.cargaIdadeSeg < 90 ? d.cargaIdadeSeg + ' s' : Math.round(d.cargaIdadeSeg / 60) + ' min');
 
   // recebendo AGORA: na roleta e, antes das 8h, só quem entra às 7h
   const recebendo = e => e.recebendoAgora !== undefined ? e.recebendoAgora : e.naRoleta;
@@ -1252,53 +1338,59 @@ function renderBalanceador(d) {
   const s = medir(eq, n8, pp8);
   const qtd7 = eq.filter(e => e.inicio === hr.inicioCedo).length;
 
-  let html = '<div class="bal-topo">' +
-    '<div class="bal-kpi txt"><b>' + agoraTxt + '</b><span>recebe lead agora</span></div>' +
-    '<div class="bal-kpi"><b>' + cotasTotais + '</b><span>cotas recebendo</span></div>' +
-    '<div class="bal-kpi"><b>' + d.totalLeadsDia + '</b><span>leads hoje</span></div>' +
-    '<div class="bal-kpi rmk" title="remarketing enviado hoje, somando todas as equipes"><b>' + (d.remarketingHoje || 0) + '</b><span>remarketing hoje</span></div>' +
-    '<div class="bal-kpi' + (s.dif > 2 ? ' alerta' : '') + '"><b>' + s.dif.toFixed(1) + '</b><span>' + (fds ? 'diferença no dia' : 'diferença desde as ' + hr.inicio + 'h') + '</span></div>' +
-    (d.anuncioTotalBRL != null ? '<div class="bal-kpi txt"><b>' + reais(d.anuncioTotalBRL) + '</b><span>anúncio do dia</span></div>' : '') +
-    '<div class="bal-kpi txt"><b>' + idade + '</b><span>última contagem</span></div>' +
-    '</div>';
+  let html = '<div class="eq-cab"><div><h2>Distribuição de leads</h2>' +
+    '<div class="eq-sub">Leads novos de hoje por equipe, e quem recebe agora</div></div>' +
+    '<div class="eq-vivo"><i></i>Ao vivo' + idade + '</div></div>';
+  // servidor ainda na versão antiga: a chave 7h/8h não tem onde gravar (foi o que aconteceu em 27/09)
+  if (!d.horario) html += '<div class="eq-aviso">O servidor ainda está na versão antiga. A chave 7h/8h e o bloco das 7h só passam a funcionar quando a atualização for publicada.</div>';
+  html += eqRegua(d, hr);
+
+  const kpis = [
+    { v: d.totalLeadsDia, r: 'Leads hoje' },
+    { v: cotasTotais, r: 'Cotas recebendo agora' },
+    { v: eqNum(s.dif), r: fds ? 'Diferença no dia' : 'Diferença desde as ' + hr.inicio + 'h', c: s.dif > 2 ? 'alerta' : '' },
+    d.anuncioTotalBRL != null ? { v: reais(d.anuncioTotalBRL), r: 'Anúncio do dia' } : null,
+    { v: d.remarketingHoje || 0, r: 'Remarketing hoje', c: 'rmk' }
+  ].filter(Boolean);
+  html += '<div class="eq-kpis">' + kpis.map((k, i) =>
+    '<div class="eq-kpi ' + (k.c || '') + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '"><b>' + k.v + '</b><span>' + k.r + '</span></div>').join('') + '</div>';
 
   // ── Bloco 1: das 7h às 8h — só quem entra às 7h, contagem à parte (some no fim de semana)
   const doCedo = eq.filter(e => e.inicio === hr.inicioCedo || n7(e) > 0)
     .sort((a, b) => (pp7(b) - pp7(a)) || a.nome.localeCompare(b.nome));
   if (!fds && doCedo.length) {
     const s7 = medir(doCedo, n7, pp7);
-    html += '<div class="bal-grupo' + (d.faixa === 'cedo' ? ' agora' : '') + '">' +
-      'Das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h' +
-      '<em>' + s7.leads + (s7.leads === 1 ? ' lead' : ' leads') +
-        (d.anuncioCedoTotalBRL != null ? ' · ' + reais(d.anuncioCedoTotalBRL) + ' de anúncio' : '') +
-        ' · só quem entra às ' + hr.inicioCedo + 'h</em>' +
-      (d.faixa === 'cedo' ? '<span>atendendo agora</span>'
-        : s7.leads > 0 ? '<span class="fim">registro de hoje</span>' : '') + '</div>';
-    doCedo.forEach(e => linha(e, s7, n7, pp7, e.anuncioCedoBRL, false));
+    html += '<section class="eq-bloco cedo"><div class="eq-bloco-cab">' +
+      '<h3><i></i>Das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h</h3>' +
+      '<span class="eq-resumo">Só quem entra às ' + hr.inicioCedo + 'h · ' + s7.leads + (s7.leads === 1 ? ' lead' : ' leads') +
+        (d.anuncioCedoTotalBRL != null ? ' · ' + reais(d.anuncioCedoTotalBRL) + ' de anúncio' : '') + '</span>' +
+      (d.faixa === 'cedo' ? '<span class="eq-selo vivo">recebendo agora</span>'
+        : s7.leads > 0 ? '<span class="eq-selo">encerrado às ' + hr.inicio + 'h</span>' : '') +
+      '</div>' + doCedo.map(e => linha(e, s7, n7, pp7, e.anuncioCedoBRL, false)).join('') + '</section>';
   }
 
   // ── Bloco 2: das 8h às 16h — todas as equipes, com o equilíbrio (no fim de semana, o dia inteiro)
-  const cotas8 = d.faixa === 'cedo' ? eq.filter(e => e.naRoleta).reduce((a, e) => a + (e.peso || 1), 0) : cotasTotais;
-  const selo8 = d.faixa === 'expediente' ? '<span>atendendo agora</span>'
-              : d.faixa === 'cedo' ? '<span class="fim">começa às ' + hr.inicio + 'h</span>'
-              : d.faixa === 'depois' ? '<span class="fim">fora do expediente</span>'
-              : fds ? '<span class="fim">fim de semana</span>' : '';
-  html += '<div class="bal-grupo' + (d.faixa === 'expediente' ? ' agora' : '') + '">' +
-    (fds ? 'Fim de semana — dia inteiro' : 'Das ' + hr.inicio + 'h às ' + hr.fim + 'h') +
-    '<em>' + cotas8 + (cotas8 === 1 ? ' cota' : ' cotas') + (d.faixa === 'cedo' ? ' a partir das ' + hr.inicio + 'h' : ' recebendo') +
-      ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
+  const selo8 = d.faixa === 'expediente' ? '<span class="eq-selo vivo">recebendo agora</span>'
+              : d.faixa === 'cedo' ? '<span class="eq-selo">começa às ' + hr.inicio + 'h</span>'
+              : d.faixa === 'depois' ? '<span class="eq-selo">fora do expediente</span>' : '';
+  html += '<section class="eq-bloco"><div class="eq-bloco-cab">' +
+    '<h3><i></i>' + (fds ? 'Fim de semana' : 'Das ' + hr.inicio + 'h às ' + hr.fim + 'h') + '</h3>' +
+    '<span class="eq-resumo">' + (fds ? 'Dia inteiro' : 'Todas as equipes') + ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
       ' · <span class="bal-rmk-grupo">' + s.rmk + ' remarketing</span>' +
-      (fds ? '' : ' · ' + qtd7 + (qtd7 === 1 ? ' entra' : ' entram') + ' às ' + hr.inicioCedo + 'h') +
-      (s.dif > 0 ? ' · diferença ' + s.dif.toFixed(1) : '') + '</em>' + selo8 + '</div>';
-  eq.forEach(e => linha(e, s, n8, pp8, e.anuncio8BRL !== undefined ? e.anuncio8BRL : e.anuncioBRL, true));
+      (fds ? '' : ' · ' + qtd7 + (qtd7 === 1 ? ' entra' : ' entram') + ' às ' + hr.inicioCedo + 'h') + '</span>' +
+    selo8 + '</div>' +
+    '<div class="eq-colunas"><span>Equipe</span><span>Leads por pessoa' + (fds ? '' : ' desde as ' + hr.inicio + 'h') + '</span><span></span>' +
+      '<span>Peso</span><span>Entrada</span><span>Roleta</span></div>' +
+    eq.map(e => linha(e, s, n8, pp8, e.anuncio8BRL !== undefined ? e.anuncio8BRL : e.anuncioBRL, true)).join('') +
+  '</section>';
 
   document.getElementById('balContainer').innerHTML = html;
 
   // Uma linha de equipe. `controles` = false no bloco das 7h: as chaves ficam só no bloco das 8h.
   function linha(e, st, n, pp, anuncio, controles) {
-    const media = st.media, maior = st.maior, valor = pp(e);
-    const pct = Math.max(2, (valor / maior) * 100);
-    const classe = n(e) === 0 ? 'zero' : (valor < media - 0.01 ? 'baixo' : '');
+    const media = st.media, maior = st.maior, valor = pp(e), leads = n(e);
+    const pct = leads === 0 ? 0 : Math.max(3, (valor / maior) * 100);
+    const classe = leads === 0 ? 'zero' : !controles ? 'cedo' : (valor < media - 0.01 ? 'baixo' : '');
     // verde = recebendo · cinza = ainda não entrou (antes das 8h) · vermelho = fora da distribuição
     const luz = !e.naRoleta ? 'off' : (recebendo(e) ? '' : 'pausa');
     const tituloLuz = !e.conectado ? 'WhatsApp desconectado'
@@ -1308,40 +1400,43 @@ function renderBalanceador(d) {
       : 'Conectada e recebendo';
     const mediaPct = maior ? (media / maior) * 100 : 0;
     const cedo = e.inicio === hr.inicioCedo;
-    html += '<div class="bal-row">' +
+    return '<div class="bal-row' + (e.naRoleta ? '' : ' fora') + '">' +
       '<div class="bal-nome">' +
         '<span class="bal-luz ' + luz + '" title="' + tituloLuz + '"></span>' +
-        '<b title="' + escapeHtml(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
+        '<b title="' + escapeAttr(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
+        (controles && cedo ? '<span class="bal-tag cedo" title="Entra às ' + hr.inicioCedo + 'h">' + hr.inicioCedo + 'h</span>' : '') +
+        (controles && e.remarketing ? '<span class="bal-tag rmk" title="' + e.remarketing + ' remarketing enviado hoje pelo WhatsApp desta equipe">' + EQ_IC_RMK + e.remarketing + '</span>' : '') +
         (e.estimado ? '<span class="bal-tag" title="WhatsApp ficou cego: valor estimado pelos cliques">estimado</span>' : '') +
       '</div>' +
-      '<div class="bal-barra" title="' + (media > 0 ? 'a linha branca é a média deste bloco (' + media.toFixed(1) + ')' : '') + '">' +
+      '<div class="bal-barra" title="' + (media > 0 ? 'o risco claro é a média deste bloco (' + eqNum(media) + ' por pessoa)' : '') + '">' +
         '<div class="bal-fill ' + classe + '" style="width:' + pct + '%"></div>' +
         (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
       '</div>' +
-      '<div class="bal-num"><b>' + valor.toFixed(1) + '</b>' +
-        '<span>' + n(e) + ' leads' + (e.peso === 2 ? ' · dupla' : '') + '</span>' +
-        (controles ? '<span class="bal-rmk' + (e.remarketing ? '' : ' zero') + '" title="remarketing enviado hoje pelo WhatsApp desta equipe">' + (e.remarketing || 0) + ' remarketing</span>' : '') +
-        (anuncio != null ? '<span class="bal-anun" title="parte do anúncio do dia pelos leads deste bloco (a mesma conta do fechamento)">' + reais(anuncio) + '</span>' : '') +
+      '<div class="bal-num"><b>' + eqNum(valor) + '</b>' +
+        '<span>' + leads + (leads === 1 ? ' lead' : ' leads') + (e.peso === 2 ? ' · dupla' : '') +
+          (anuncio != null ? ' · <i class="bal-anun" title="parte do anúncio do dia pelos leads deste bloco (a mesma conta do fechamento)">' + reais(anuncio) + '</i>' : '') + '</span>' +
       '</div>' +
       (controles ? controlesDe(e, cedo) : '<div class="bal-extra"></div>') +
     '</div>';
   }
 
   function controlesDe(e, cedo) {
-    return '<div class="bal-peso">' +
-        '<button class="' + (e.peso === 1 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',1)" title="Trabalha sozinha hoje">1×</button>' +
-        '<button class="' + (e.peso === 2 ? 'on' : '') + '" onclick="mudarPeso(\'' + e.email + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
+    const em = String(e.email).replace(/'/g, '');
+    const hora = (h, on) => '<button type="button" data-h="' + h + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '" ' +
+      'onclick="mudarInicio(\'' + em + '\',' + h + ',this)" title="' + (h === hr.inicioCedo ? 'Entra às ' + h + 'h: recebe lead desde as ' + h + 'h' : 'Entra às ' + h + 'h') + '">' + h + 'h</button>';
+    return '<div class="bal-peso" role="group" aria-label="Peso">' +
+        '<button type="button" class="' + (e.peso === 1 ? 'on' : '') + '" aria-pressed="' + (e.peso === 1) + '" onclick="mudarPeso(\'' + em + '\',1)" title="Trabalha sozinha hoje">1×</button>' +
+        '<button type="button" class="' + (e.peso === 2 ? 'on' : '') + '" aria-pressed="' + (e.peso === 2) + '" onclick="mudarPeso(\'' + em + '\',2)" title="Dupla: recebe o dobro">2×</button>' +
       '</div>' +
-      // chave de entrada: 7h = recebe lead desde as 7h (antes das 8h só essas recebem)
-      '<div class="bal-hora">' +
-        '<button class="' + (cedo ? 'on' : '') + '" onclick="mudarInicio(\'' + e.email + '\',' + hr.inicioCedo + ')" title="Entra às ' + hr.inicioCedo + 'h: recebe lead desde as ' + hr.inicioCedo + 'h">' + hr.inicioCedo + 'h</button>' +
-        '<button class="' + (cedo ? '' : 'on') + '" onclick="mudarInicio(\'' + e.email + '\',' + hr.inicio + ')" title="Entra às ' + hr.inicio + 'h (padrão)">' + hr.inicio + 'h</button>' +
+      // chave de entrada: desliza e fica âmbar no 7h (antes das 8h só essas recebem)
+      '<div class="bal-hora" role="group" aria-label="Entrada" data-valor="' + (cedo ? hr.inicioCedo : hr.inicio) + '">' +
+        hora(hr.inicioCedo, cedo) + hora(hr.inicio, !cedo) +
       '</div>' +
       '<div class="bal-acao">' +
         (e.ligadoRotator === false
           ? '<span class="bal-tag" title="Para religar, use a tela de Números do Rotator — o painel só espelha">desligada no Rotator</span>'
           : e.conectado
-            ? '<button class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + e.email + '\',' + (!e.ativo) + ')">' +
+            ? '<button type="button" class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + em + '\',' + (!e.ativo) + ')">' +
               (e.ativo ? 'Desligar' : 'Religar') + '</button>'
             : '<span class="bal-tag" title="Ela volta sozinha quando reconectar">fora: sem WhatsApp</span>') +
       '</div>';
@@ -1354,7 +1449,18 @@ async function mudarPeso(email, peso) {
 async function mudarAtivo(email, ativo) {
   await salvarAjuste({ email, ativo }, ativo ? 'Equipe religada' : 'Equipe desligada da roleta');
 }
-async function mudarInicio(email, inicio) {
+// A chave muda NA HORA (desliza e troca de cor); em seguida a tela recarrega com o que o
+// servidor gravou — se não gravou, ela volta e o erro aparece.
+async function mudarInicio(email, inicio, btn) {
+  const grupo = btn && btn.closest('.bal-hora');
+  if (grupo) {
+    grupo.setAttribute('data-valor', String(inicio));
+    grupo.querySelectorAll('button').forEach(b => {
+      const on = Number(b.getAttribute('data-h')) === inicio;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
   await salvarAjuste({ email, inicio }, 'Agora entra às ' + inicio + 'h');
 }
 async function salvarAjuste(body, msgOk) {
@@ -1369,7 +1475,7 @@ async function salvarAjuste(body, msgOk) {
     await carregarBalanceador();
   } catch (err) {
     toast(err.message, 'error');
-    document.querySelectorAll('.bal-peso button, .bal-hora button, .bal-toggle').forEach(b => b.disabled = false);
+    await carregarBalanceador();   // desfaz o que a tela mostrou antes da hora
   }
 }
 
@@ -1546,7 +1652,7 @@ function rmkStatus(st, cfg) {
     return;
   }
   if (!st) {
-    box.innerHTML = '<div><span class="rmk-modo ensaio">AGUARDANDO</span>Configurado. O robô confere a cada 5 minutos, de segunda a sexta, das 8h às 21h.</div>';
+    box.innerHTML = '<div><span class="rmk-modo ensaio">AGUARDANDO</span>Configurado. O robô confere a cada 5 minutos, de segunda a sexta, das 7h às 16h (cada equipe só a partir da hora em que entra).</div>';
     return;
   }
   const ligado = st.modo === 'ligado', desligado = st.modo === 'desligado';
