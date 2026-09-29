@@ -12,11 +12,12 @@
 //
 // O FORMATO foi calibrado pelo Thiago de ouvido ("ficou perfeito"):
 //   0,15 s  "A Lúx cria as melhores músicas!"   (sem música)
-//           a música entra e toca 20 s CHEIOS
+//           a música entra e toca 40 s CHEIOS (20 s até 29/09/2026)
 //   6,6 s   "Versão de teste Lúx."              ┐ tempos do PLAYER (desde
 //   13 s    "Isso é só o começo!"               │ o começo do arquivo, não
 //   19 s    "Impressione com a Lúx."            ┘ da música); a música abaixa
-//   fim dos 20 s: a música some e, em SILÊNCIO,
+//   25,6 / 32 / 38 s  as mesmas 3 falas de novo (2ª rodada, +19 s)
+//   fim dos 40 s: a música some e, em SILÊNCIO,
 //           "Gostou? Ou deseja alguma alteração?"
 //
 // As falas vêm de UM arquivo: desde 27/09/2026 (2a troca) a gravacao "som de previa" do
@@ -46,10 +47,12 @@
       impressione: { ini: 10.06, fim: 11.88 },  // aos 19 s
       chamada:     { ini: 12.88, fim: 16.04 }   // frase final, em off
     },
-    noMeio:        [['marca', 6.6], ['comeco', 13], ['impressione', 19]],   // tempo do ARQUIVO
+    // tempo do ARQUIVO; desde 29/09/2026 a rodada das 3 falas se repete +19 s
+    noMeio:        [['marca', 6.6],  ['comeco', 13], ['impressione', 19],
+                    ['marca', 25.6], ['comeco', 32], ['impressione', 38]],
     respiroAntes:  0.15,   // silêncio antes da abertura
     respiroDepois: 0.35,   // entre a abertura e a música
-    musicaDura:    20,     // segundos de música
+    musicaDura:    40,     // segundos de música (era 20 até 29/09/2026)
     someEm:        1.2,    // fade da música no fim
     silencio:      0.25,   // silêncio antes da chamada
     abaixaPara:    0.35,   // volume da música sob as falas
