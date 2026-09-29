@@ -188,6 +188,20 @@ audio{width:100%;margin:4px 0 6px;height:40px}
   background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);cursor:pointer;
 }
 .btn-mini:hover{border-color:var(--gold);color:var(--gold)}
+/* (29/09) IMAGEM PRONTA 9:16 — atalho destacado logo abaixo das fotos */
+.pronta-box{
+  margin-top:12px;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--gold);background:rgba(201,168,76,.08);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.pronta-txt{font-size:12.5px;color:var(--text-mid);line-height:1.45;flex:1;min-width:200px}
+.pronta-txt b{color:#fff}
+.btn-pronta{
+  padding:10px 16px;border-radius:999px;border:1px solid var(--gold);background:transparent;
+  color:#fff;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;
+}
+.btn-pronta:hover{background:var(--gold);color:#0d0d0f}
+@media (max-width:520px){ .btn-pronta{width:100%} }
 .btn-letra{
   display:block;width:100%;margin-top:12px;padding:13px 16px;border-radius:var(--radius);
   font-size:14px;font-weight:600;letter-spacing:.2px;cursor:pointer;
@@ -538,6 +552,15 @@ button.btn-baixar{cursor:pointer}
       <input type="file" id="clientPhoto2Input" accept="image/*,.heic,.heif" hidden/>
       <input type="file" id="clientPhoto3Input" accept="image/*,.heic,.heif" hidden/>
 
+      <!-- (29/09) IMAGEM PRONTA 9:16 (pedido do Thiago): quem já tem a imagem final — personagem no cenário, em pé,
+           no formato do celular — sobe aqui e pula a geração da imagem: não gasta IA de imagem, só o vídeo.
+           Trava: só aceita 9:16; qualquer outra proporção é recusada com aviso. -->
+      <div class="pronta-box" id="prontaBox">
+        <div class="pronta-txt"><b>Já tem uma imagem pronta em 9:16?</b> Suba aqui — ela vai direto para o vídeo, <b>sem custo de geração de imagem</b>.</div>
+        <button type="button" class="btn-pronta" onclick="document.getElementById('prontaInput').click()">📲 Subir imagem pronta (9:16)</button>
+      </div>
+      <input type="file" id="prontaInput" accept="image/*,.heic,.heif" hidden/>
+
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
         <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
@@ -545,6 +568,7 @@ button.btn-baixar{cursor:pointer}
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
         <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
+        <div id="prontaAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(80,200,120,.12);border:1px solid rgba(80,200,120,.35);color:#7ED9A0;font-size:12px;line-height:1.45">✅ Imagem pronta enviada — vai direto para o vídeo, <b>sem custo de geração de imagem</b>.</div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
@@ -1104,6 +1128,64 @@ document.getElementById('clientPhotoInput').addEventListener('change', async (e)
   const f = (e.target.files || [])[0]; e.target.value = '';   // (12/09) este espaço é só do Personagem 1
   if (f) await setClientPhotoFromFile(f);
 });
+
+// ───────────────────────────────────────────────
+// (29/09) IMAGEM PRONTA 9:16 — pula a geração da imagem (pedido do Thiago)
+// ───────────────────────────────────────────────
+// O atendente que já tem a imagem final (personagem dentro do cenário, em pé, no formato do celular) sobe
+// aqui: ela vira a imagem aprovada e o pedido sai com montado:true → o servidor NÃO cobra o desenho, só o vídeo.
+// TRAVA: só aceita 9:16, com a mesma tolerância (2%) que o servidor usa para pôr o vídeo em tela cheia.
+// Deitada, quadrada ou outra proporção → alerta com as medidas e nada é trocado.
+// A mesma imagem também vai como foto do Personagem 1: o servidor exige a foto, e o botão Editar (Resultados)
+// usa essa foto para trazer o pedido de volta. Sai em PNG porque o servidor lê o formato pelo cabeçalho do PNG.
+const PRONTA_PROPORCAO = 9 / 16;
+const PRONTA_TOLERANCIA = 0.02;
+const PRONTA_MAX_ALTURA = 1920;   // maior que isso, reduz (o vídeo sai em 720p/1080p)
+const PRONTA_MIN_LARGURA = 720;   // menor que isso, avisa que pode perder nitidez
+document.getElementById('prontaInput').addEventListener('change', async (e) => {
+  const f = (e.target.files || [])[0]; e.target.value = '';
+  if (f) await setImagemProntaFromFile(f);
+});
+async function setImagemProntaFromFile(file) {
+  try {
+    const arq = await converterSeHeic(file);   // foto do iPhone (.HEIC) vira JPEG antes
+    const dataUrl = await readFileAsDataURL(arq);
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Arquivo não é uma imagem válida.'));
+      i.src = dataUrl;
+    });
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h || Math.abs(w / h - PRONTA_PROPORCAO) >= PRONTA_TOLERANCIA) {
+      const tipo = (w > h) ? 'deitada (horizontal)' : (w === h ? 'quadrada (1:1)' : 'em pé, mas não em 9:16');
+      alert('⚠️ A imagem pronta precisa estar no formato 9:16 (em pé, do tamanho da tela do celular).\n\n' +
+            'Essa imagem tem ' + w + ' × ' + h + ' — está ' + tipo + '.\n\n' +
+            'Recorte a imagem em 9:16 e envie de novo. Se preferir, use as fotos acima para a IA criar a imagem.');
+      return;
+    }
+    if (w < PRONTA_MIN_LARGURA &&
+        !confirm('Essa imagem é pequena (' + w + ' × ' + h + '). O vídeo pode sair com menos nitidez.\n\nUsar mesmo assim?')) return;
+    const escala = Math.min(1, PRONTA_MAX_ALTURA / h);
+    const W = Math.round(w * escala), H = Math.round(h * escala);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    c.getContext('2d').drawImage(img, 0, 0, W, H);
+    const png = c.toDataURL('image/png').split(',')[1];
+    const jpg = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    // a imagem pronta JÁ é a cena completa: substitui as três fotos
+    clientPhoto  = { base64: jpg, mimeType: 'image/jpeg', thumbUrl: 'data:image/jpeg;base64,' + jpg, name: 'imagem-pronta.jpg' };
+    clientPhoto2 = null; clientPhoto3 = null;
+    avatarPreview = { cartoonBase64: png, approved: true, pronta: true };
+    cartoonGens = 0; cartoonGensRes = 0;
+    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + png;
+    { const av = document.getElementById('avatarMotorAviso'); if (av) { av.textContent = ''; av.style.display = 'none'; } }
+    renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
+    if (typeof rascSalvar === 'function') rascSalvar();   // entra no projeto salvo, como as outras etapas
+    toast('✅ Imagem pronta carregada (' + W + ' × ' + H + ') — sem custo de geração de imagem.');
+  } catch (err) {
+    toast('⚠️ Não consegui ler essa imagem: ' + err.message);
+  }
+}
 // (12/09) um input por papel: Personagem 2 e Ambiente
 document.getElementById('clientPhoto2Input').addEventListener('change', async (e) => {
   const f = (e.target.files || [])[0]; e.target.value = ''; if (f) await setClientPhoto2FromFile(f);
@@ -1186,13 +1268,14 @@ function refreshAvatarUI() {
   // (07/09) Na edição o Passo 1 fica escondido SÓ enquanto o avatar está travado. Se a atendente
   // destravou (botão "Quero trocar o avatar"), a tela de gerar/aprovar volta a funcionar igual à criação.
   if (editState && !editTrocaAvatar) {
-    ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'prontaBox', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     return;
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
+  const pbx = document.getElementById('prontaBox'); if (pbx) pbx.style.display = '';          // (29/09) idem, imagem pronta
   const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = '';   // Imagem 2 sempre disponível (UI universal 19/08)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
@@ -1203,6 +1286,8 @@ function refreshAvatarUI() {
   genRow.style.display  = (hasPhoto && !hasPrev) ? 'block' : 'none';
   preview.style.display = hasPrev ? 'block' : 'none';   // (12/09) o editor fica aberto com a imagem: ajustar, gerar de novo, baixar
   okBadge.style.display = 'none';   // (12/09) sem etapa de aprovação
+  const pa = document.getElementById('prontaAviso');   // (29/09) imagem pronta 9:16: aviso verde de "sem custo"
+  if (pa) pa.style.display = (hasPrev && avatarPreview.pronta) ? 'block' : 'none';
 }
 
 // Normaliza a posição do avatar: mede onde estão os PÉS (ignorando braços esticados) e
@@ -3197,6 +3282,7 @@ async function gerarClipe() {
       corte: corteUsado,
       avatarNote: ((document.getElementById('avatarNote') || {}).value || '').trim(),
       imagemReaproveitada: !!(avatarPreview && avatarPreview.reaproveitada),   // imagem trazida pelo Editar e não gerada de novo: não cobra
+      montado: !!(avatarPreview && avatarPreview.pronta),   // (29/09) imagem pronta 9:16 enviada pelo atendente: o servidor não cobra o desenho
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
@@ -3679,6 +3765,7 @@ async function rascSalvarAgora() {
       origName: rawAudioName || '',
       arquivos: _rascArquivos,
       cartoonKey: (_rascArquivos.cartoon || {}).key || '',
+      imagemPronta: !!(avatarPreview && avatarPreview.pronta),   // (29/09) imagem pronta 9:16 (sem custo de geração)
       passo: rascPasso(), passoMax: 3
     };
     const r = await api('/a97RascunhoSalvar', { method: 'POST', body: JSON.stringify({ projectId: rascunhoId, estado }) });
@@ -3767,7 +3854,7 @@ async function continuarProjeto(pid) {
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = e.avatarNote || ''; }
     clientPhoto = f1; clientPhoto2 = f2; clientPhoto3 = f3;
     if (cartoonB64) {
-      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi paga
+      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true, pronta: !!e.imagemPronta };   // já foi paga (ou é imagem pronta)
       cartoonGens = 0; cartoonGensRes = 0;
       const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
     }
