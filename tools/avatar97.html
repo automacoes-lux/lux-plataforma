@@ -508,8 +508,10 @@ button.btn-baixar{cursor:pointer}
         <label style="margin:0">Foto do personagem / pessoa / ambiente</label>
         <!-- (13/09) MASCOTE ATIVADO — desligado = pessoa; ligado = mascote, produto ou personagem (o canto usa outro motor) -->
         <!-- (16/09) IMAGEM REAL — desligado = desenho; ligado = a pessoa sai como FOTO, igual à foto enviada -->
+        <!-- (29/09) Mascote ESCONDIDO (não apagado): o canto passou para a VisionStory, que mantém o mascote como
+             mascote sem precisar de motor separado. Volta a aparecer tirando o display:none, se um dia precisar. -->
         <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:none;align-items:center;gap:8px">
             <span class="sw-label" id="mascoteLbl">Mascote<br/>ativado</span>
             <button type="button" class="sw" id="btnMascote" role="switch" aria-checked="false" onclick="toggleMascote()"
                     title="Ligue quando quem canta é um mascote, produto ou personagem. Desligado: pessoa.">
@@ -2464,8 +2466,9 @@ function renderChecklist() {
   ul.innerHTML = itens.map(([ok, nome, dica]) =>
       '<li class="' + (ok ? 'ok' : 'falta') + '"><span class="ck-ico">' + (ok ? '✅' : '❌') + '</span><span>' + nome +
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
-    '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : (mascote ? '🐶' : '🧑')) + '</span><span>Configurado para ' +
-      (mascote ? 'mascote' : 'pessoa') + (imagemReal ? ', em imagem real' : '') + '</span></li>';
+    // (29/09) sem a chave Mascote (o motor novo serve pessoa e mascote), a linha mostra só o estilo da imagem
+    '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : '🎨') + '</span><span>' +
+      (imagemReal ? 'Imagem real (foto)' : 'Imagem em desenho') + '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {

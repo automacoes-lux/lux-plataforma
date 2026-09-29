@@ -1233,7 +1233,9 @@ function monthSocioHtml(){
   const datas=[]; for(let i=1;i<=nDays;i++){ datas.push(ymd(new Date(M.start.getFullYear(),M.start.getMonth(),i))); }
   const mapa={}; (M.d.atendentes||[]).forEach(a=>(a.dias||[]).forEach(x=>{ mapa[x.data]=(mapa[x.data]||0)+(x.liquidoBRL||0); }));
   // lucro do sócio no dia = (soma dos líquidos dos atendentes naquele dia) ÷ 2
-  const diarios=datas.map(dt=>(mapa[dt]||0)/2);
+  // − anúncio que a Lux absorveu naquele dia (zerado das equipes, 28/09/2026) ÷ 2: foi gasto e sai só dos sócios
+  const abs=M.d.absorvidoPorDia||{};
+  const diarios=datas.map(dt=>((mapa[dt]||0)-(abs[dt]||0))/2);
   const total=diarios.reduce((s,v)=>s+v,0);
   const CW=320,CH=96,P=12, maxV=Math.max(...diarios,1);
   const slotW=(CW-2*P)/nDays, barW=Math.max(1.5, slotW*0.62), chartH=CH-2*P;
