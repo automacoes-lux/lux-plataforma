@@ -786,8 +786,8 @@ const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
-const EST_USD_LIPSEC  = 0.03;      // lip-sync MultiTalk 720p, por segundo (solo)
-const EST_USD_LIPSEC_DUO = 0.03;   // dupla voltou ao MultiTalk 18/08 — mesmo preço do solo
+const EST_USD_LIPSEC  = 0.0243;    // (29/09) canto 1080p: 0,40 crédito/s × US$0,0607 (plano Ultra + IOF) — era 0,03 (MultiTalk)
+const EST_USD_LIPSEC_DUO = 0.0243; // dupla canta no mesmo motor, mesmo preço
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
 const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
