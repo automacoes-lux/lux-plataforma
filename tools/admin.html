@@ -305,9 +305,17 @@ body{
 .eq-marcas span.fim{transform:none;left:auto;right:0}
 
 /* números do dia */
-.eq-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
-.eq-kpi{background:var(--e-card);border-radius:16px;padding:13px 15px;min-width:0}
-.eq-kpi b{display:block;font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:12px}
+.eq-kpi{background:var(--e-card);border-radius:16px;padding:13px 14px;min-width:0}
+.eq-kpi-topo{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.eq-kpi b{display:block;min-width:0;font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* sinal × dia anterior: ▲ verde = mais · ▼ vermelho = menos · ● amarelo = na média (só o sinal, sem número) */
+.eq-sinal{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.eq-sinal svg{width:14px;height:14px;fill:currentColor}
+.eq-sinal.bom{background:rgba(74,222,128,.14);color:var(--e-ok)}
+.eq-sinal.ruim{background:rgba(242,109,109,.14);color:var(--e-ruim)}
+.eq-sinal.media{background:rgba(250,204,21,.14);color:#FACC15}
+.eq-bloco-cab h3 .eq-sinal{width:20px;height:20px}
 .eq-kpi span{display:block;font-size:12.5px;color:var(--e-txt2);margin-top:3px}
 .eq-kpi.alerta b{color:var(--e-ruim)}
 .eq-kpi.rmk b{color:var(--e-ok)}
@@ -316,8 +324,8 @@ body{
 .eq-bloco{background:var(--e-card);border-radius:16px;padding:14px 12px 8px;margin-bottom:12px}
 .eq-bloco-cab{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:2px 6px 12px}
 .eq-bloco-cab h3{font-size:14.5px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px}
-.eq-bloco-cab h3 i{width:8px;height:8px;border-radius:50%;background:#D9DAE0}
-.eq-bloco.cedo .eq-bloco-cab h3 i{background:var(--e-cedo)}
+.eq-bloco-cab h3 i:not(.eq-sinal){width:8px;height:8px;border-radius:50%;background:#D9DAE0}
+.eq-bloco.cedo .eq-bloco-cab h3 i:not(.eq-sinal){background:var(--e-cedo)}
 .eq-resumo{font-size:12.5px;color:var(--e-txt2)}
 .eq-resumo .bal-rmk-grupo{color:var(--e-ok);white-space:nowrap}
 .eq-selo{margin-left:auto;font-size:11.5px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--e-sup);color:var(--e-txt2);white-space:nowrap}
@@ -1331,6 +1339,31 @@ async function carregarBalanceador() {
 
 // número com vírgula e uma casa (9,5) — como o Thiago lê
 function eqNum(v) { return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+
+// Sinal de comparação com o dia anterior (30/09/2026): desenho, nunca emoji (padrão design-lux).
+const EQ_SETA_CIMA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6l7 10H5z"/></svg>';
+const EQ_SETA_BAIXO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18L5 8h14z"/></svg>';
+const EQ_PONTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>';
+function eqQuando(cmp) {
+  const dia = cmp && cmp.ontem ? ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(cmp.ontem + 'T12:00:00Z').getUTCDay()] : 'ontem';
+  return dia + ' até esta hora';
+}
+// frases = [mais, menos, na média]; 'sobe' é bom (verde ▲), 'desce' é ruim (vermelho ▼)
+function eqSinal(estado, frases, cmp) {
+  if (!estado) return '';
+  const [cls, ic, txt] = estado === 'sobe' ? ['bom', EQ_SETA_CIMA, frases[0] + ' que ' + eqQuando(cmp)]
+    : estado === 'desce' ? ['ruim', EQ_SETA_BAIXO, frases[1] + ' que ' + eqQuando(cmp)]
+    : ['media', EQ_PONTO, frases[2] + ' de ' + eqQuando(cmp)];
+  return '<i class="eq-sinal ' + cls + '" title="' + txt + '" aria-label="' + txt + '">' + ic + '</i>';
+}
+// custo por lead: menor é o BOM (▼ verde), maior é o ruim (▲ vermelho)
+function eqSinalCusto(estado, cmp) {
+  if (!estado) return '';
+  const [cls, ic, txt] = estado === 'melhor' ? ['bom', EQ_SETA_BAIXO, 'Custo por lead menor que ' + eqQuando(cmp)]
+    : estado === 'pior' ? ['ruim', EQ_SETA_CIMA, 'Custo por lead maior que ' + eqQuando(cmp)]
+    : ['media', EQ_PONTO, 'Custo por lead na média de ' + eqQuando(cmp)];
+  return '<i class="eq-sinal ' + cls + '" title="' + txt + '" aria-label="' + txt + '">' + ic + '</i>';
+}
 // megafone (Material "campaign") — remarketing enviado hoje; desenho, nunca emoji (padrão design-lux)
 const EQ_IC_RMK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/></svg>';
 
@@ -1406,15 +1439,25 @@ function renderBalanceador(d) {
   if (!d.horario) html += '<div class="eq-aviso">O servidor ainda está na versão antiga. A chave 7h/8h e o bloco das 7h só passam a funcionar quando a atualização for publicada.</div>';
   html += eqRegua(d, hr);
 
+  // Sinal de comparação com o dia anterior ATÉ A MESMA HORA (Thiago, 30/09/2026): só o sinal, sem
+  // número. ▲ verde = mais · ▼ vermelho = menos · ● amarelo = na média (±5 leads; ±2,5 no trecho
+  // das 7h). No custo por lead a cor segue o que é bom: custo menor = ▼ verde.
+  const cmp = d.comparacao || null;
+  const reaisInt = v => 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-BR');
   const kpis = [
-    { v: d.totalLeadsDia, r: 'Leads hoje' },
-    { v: cotasTotais, r: 'Cotas recebendo agora' },
-    { v: eqNum(s.dif), r: fds ? 'Diferença no dia' : 'Diferença desde as ' + hr.inicio + 'h', c: s.dif > 2 ? 'alerta' : '' },
-    d.anuncioTotalBRL != null ? { v: reais(d.anuncioTotalBRL), r: 'Anúncio do dia' } : null,
-    { v: d.remarketingHoje || 0, r: 'Remarketing hoje', c: 'rmk' }
+    { v: d.totalLeadsDia, r: 'Leads', t: eqSinal(cmp && cmp.leads, ['Mais leads', 'Menos leads', 'Leads na média'], cmp) },
+    d.anuncioTotalBRL != null ? { v: reaisInt(d.anuncioTotalBRL), r: 'Anúncio do dia',
+      t: eqSinal(cmp && cmp.anuncio, ['Mais investimento', 'Menos investimento', 'Investimento na média'], cmp) } : null,
+    d.anuncioTotalBRL != null ? { v: d.custoPorLeadBRL != null ? reais(d.custoPorLeadBRL) : '—', r: 'Custo por lead',
+      t: eqSinalCusto(cmp && cmp.cpl, cmp) } : null,
+    { v: cotasTotais, r: 'Cotas' },
+    { v: eqNum(s.dif), r: 'Diferença', c: s.dif > 2 ? 'alerta' : '' },
+    { v: d.remarketingHoje || 0, r: 'Remarketing', c: 'rmk',
+      t: eqSinal(cmp && cmp.remarketing, ['Mais remarketing', 'Menos remarketing', 'Remarketing na média'], cmp) }
   ].filter(Boolean);
   html += '<div class="eq-kpis">' + kpis.map((k, i) =>
-    '<div class="eq-kpi ' + (k.c || '') + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '"><b>' + k.v + '</b><span>' + k.r + '</span></div>').join('') + '</div>';
+    '<div class="eq-kpi ' + (k.c || '') + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '">' +
+      '<div class="eq-kpi-topo"><b>' + k.v + '</b>' + (k.t || '') + '</div><span>' + k.r + '</span></div>').join('') + '</div>';
 
   // ── Bloco 1: das 7h às 8h — só quem entra às 7h, contagem à parte (some no fim de semana)
   const doCedo = eq.filter(e => e.inicio === hr.inicioCedo || n7(e) > 0)
@@ -1422,7 +1465,8 @@ function renderBalanceador(d) {
   if (!fds && doCedo.length) {
     const s7 = medir(doCedo, n7, pp7);
     html += '<section class="eq-bloco cedo"><div class="eq-bloco-cab">' +
-      '<h3><i></i>Das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h</h3>' +
+      '<h3><i></i>Das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h' +
+        eqSinal(cmp && cmp.cedo, ['Mais leads das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h', 'Menos leads das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h', 'Leads das ' + hr.inicioCedo + 'h às ' + hr.inicio + 'h na média'], cmp) + '</h3>' +
       '<span class="eq-resumo">Só quem entra às ' + hr.inicioCedo + 'h · ' + s7.leads + (s7.leads === 1 ? ' lead' : ' leads') +
         (d.anuncioCedoTotalBRL != null ? ' · ' + reais(d.anuncioCedoTotalBRL) + ' de anúncio' : '') + '</span>' +
       (d.faixa === 'cedo' ? '<span class="eq-selo vivo">recebendo agora</span>'
