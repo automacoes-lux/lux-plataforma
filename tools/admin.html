@@ -533,7 +533,11 @@ body.anu-larga .container{max-width:1180px}
 .anu-c-gasto b{display:block;font-size:19px;font-weight:600;margin-top:1px}
 .anu-c-gasto small{display:block;font-size:11.5px;color:var(--a-txt3)}
 .anu-card .anu-nota{min-width:104px;text-align:right}
-.anu-grupos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.45fr);gap:10px}
+.anu-grupos{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr) minmax(0,1.45fr);gap:10px}
+.anu-g-ts.um{grid-template-columns:1fr}
+.anu-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--a-sup);color:var(--a-txt);font-size:11px;font-weight:700;margin-right:3px;flex-shrink:0}
+.anu-meta-l{margin-top:auto;padding-top:8px;border-top:1px solid var(--a-line);font-size:11.5px;color:var(--a-txt3);line-height:1.35}
+.anu-meta-l .anu-fonte{margin-left:0;margin-right:3px}
 .anu-g{background:var(--a-campo);border-radius:12px;padding:11px 13px 13px;display:flex;flex-direction:column;gap:9px;min-width:0}
 .anu-g h6{margin:0;font-size:12.5px;font-weight:600;color:var(--a-txt);display:flex;flex-wrap:wrap;gap:2px 7px;align-items:baseline}
 .anu-g h6 em{font-style:normal;font-weight:400;color:var(--a-txt3);font-size:11.5px}
@@ -730,10 +734,11 @@ body.anu-larga .container{max-width:1180px}
     <div id="anuConteudo"></div>
     <details class="anu-legenda">
       <summary>Como ler esta tela</summary>
-      <p><b>Régua de custo por compra:</b> o ponto é quanto cada venda está custando. Até a meta de custo do conjunto é verde, entre a meta e o ponto de empate é amarelo, depois do empate (a venda para de dar lucro) é vermelho. A faixa clara em volta do ponto é onde o custo verdadeiro provavelmente está: com poucas compras ela é larga.</p>
+      <p><b>Os 3 filtros de cada card:</b> <b>1 Chamou atenção?</b> é o gancho, de cada 100 pessoas que viram o anúncio, quantas assistiram 3 segundos (abaixo de 14% o robô recomenda cortar). <b>2 Virou conversa?</b> mostra os cliques rastreados que viraram conversa no nosso WhatsApp e o custo de cada conversa, comparado com a média da conta. <b>3 Virou venda?</b> mostra as vendas confirmadas, quanto das conversas comprou, o custo real por venda e o ROAS real. Os números grandes vêm da UTM, ou seja, do que chegou de verdade no nosso WhatsApp. A linha cinza <b>META</b> embaixo mostra o que a Meta está contando: é com esses números que o algoritmo aprende, e uma diferença grande entre as duas indica evento que não chegou na Meta.</p>
+      <p><b>Régua de custo real por venda:</b> o ponto é quanto cada venda confirmada está custando. Até a meta de custo é verde, entre a meta e o ponto de empate é amarelo, depois do empate (a venda para de dar lucro) é vermelho.</p>
       <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra, 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Criativo com pouca impressão fica perto de 50 até provar; o intervalo embaixo da nota é onde ela provavelmente está.</p>
       <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Compare notas só dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
-      <p><b>CTR e gancho em amarelo:</b> abaixo de 80% da referência da conta.</p>
+      <p><b>Cores:</b> gancho em amarelo = abaixo de 80% da referência da conta. Custo por conversa: verde até a média da conta, amarelo até o dobro, vermelho acima. O CTR saiu do card (fica no Gerenciador da Meta), mas o robô continua cortando abaixo de 0,38%.</p>
       <p><b>META × UTM:</b> gasto, impressões, CTR, gancho, leads e compras marcados <b>Meta</b> vêm da Meta. <b>Conversas reais</b>, <b>Vendas reais</b> e a linha <b>UTM</b> embaixo de cada criativo vêm do nosso sistema: conversas e vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
       <p><b>Períodos:</b> <b>Hoje</b> puxa o dia de hoje (parcial). <b>Semana</b> mostra de segunda a sexta; na segunda-feira mostra a semana passada. Para ver outra semana, escolha um dia dela no calendário e clique em Semana. O calendário sozinho mostra um dia só.</p>
       <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o painel recomenda o corte de quem cair nas regras (gancho abaixo de 14%, CTR abaixo de 0,38%, lead caro) e você confirma aqui. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
@@ -2141,46 +2146,56 @@ function anuLinha(i, cinza, ancoras, inativo) {
   const abaixo = function (x, ref) { return x != null && ref && x < 0.8 * ref ? 'at' : x != null && ref && x >= ref ? 'ok' : ''; };
   const lx = i.lux, temRastreio = anuDados && anuDados.lux && anuDados.lux.diasComDado;
 
-  // 1) Chamou atenção? (antes do clique — Meta)
-  const g1 = '<div class="anu-g"><h6>Chamou atenção? <em>antes do clique · Meta</em></h6><div class="anu-g-ts">' +
-    T('Gancho', anuPct(m.gancho), 'ref ' + anuPct(ancoras.gancho_ref) + ' · assistiu 3 s', abaixo(m.gancho, ancoras.gancho_ref)) +
-    T('CTR', anuPct(m.ctr, 2), 'ref ' + anuPct(ancoras.ctr_ref, 2) + ' · clicou no link', abaixo(m.ctr, ancoras.ctr_ref)) +
+  // Os 3 filtros do card (formato A, decidido pelo Thiago em 29/09): o número principal vem da UTM (o que chegou de
+  // verdade no nosso WhatsApp); a Meta fica numa linha cinza embaixo, para vigiar o que o algoritmo está vendo.
+  const semUtm = !temRastreio;
+  const linhaMeta = function (txt) { return '<div class="anu-meta-l"><span class="anu-fonte">Meta</span> ' + txt + '</div>'; };
+  const titulo = function (n, txt, sub) { return '<h6><span class="anu-num">' + n + '</span>' + txt + (sub ? ' <em>' + sub + '</em>' : '') + '</h6>'; };
+
+  // ① Chamou atenção? — o único filtro de antes do clique (só a Meta vê)
+  const g1 = '<div class="anu-g">' + titulo(1, 'Chamou atenção?', 'antes do clique') + '<div class="anu-g-ts um">' +
+    T('Gancho', anuPct(m.gancho), 'ref ' + anuPct(ancoras.gancho_ref) + ' · de cada 100 que viram, quantos assistiram 3 s', abaixo(m.gancho, ancoras.gancho_ref)) +
     '</div></div>';
 
-  // 2) Virou conversa? (depois do clique)
-  const clsCpl = m.cpl == null ? 'apagado' : m.cpl <= ancoras.cpl_ref ? 'ok' : m.cpl > 2 * ancoras.cpl_ref ? 'ruim' : 'at';
-  const convUtm = !temRastreio ? T('Conversas <span class="anu-fonte">UTM</span>', '—', 'rastreio sem dados', 'apagado')
-    : !lx ? T('Conversas <span class="anu-fonte">UTM</span>', '0', 'nenhum clique rastreado', 'apagado')
-    : T('Conversas <span class="anu-fonte">UTM</span>', anuNum(lx.wa), (lx.wa ? anuUS(i.agg.sp / lx.wa) + ' cada · ' : '') + lx.cl + ' cliques');
-  const g2 = '<div class="anu-g"><h6>Virou conversa? <em>depois do clique</em></h6><div class="anu-g-ts">' +
-    T('Leads <span class="anu-fonte">Meta</span>', anuNum(i.agg.ld), (m.cpl != null ? anuUS(m.cpl) + ' cada' : 'sem lead') + ' · ref ' + anuUS(ancoras.cpl_ref), clsCpl) +
-    convUtm + '</div></div>';
+  // ② Virou conversa? — cliques rastreados → conversas no WhatsApp (UTM)
+  const mediaConv = anuDados && anuDados.lux && anuDados.lux.wa ? anuDados.totais.sp / anuDados.lux.wa : null;
+  let t2a, t2b;
+  if (semUtm) {
+    t2a = T('Cliques → conversas <span class="anu-fonte">UTM</span>', '—', 'sem rastreio neste período', 'apagado');
+    t2b = T('Custo por conversa', '—', '', 'apagado');
+  } else {
+    const cl = lx ? lx.cl : 0, wa = lx ? lx.wa : 0;
+    t2a = T('Cliques → conversas <span class="anu-fonte">UTM</span>', cl + ' → ' + wa, cl ? Math.round(100 * wa / cl) + '% dos cliques viraram conversa' : 'nenhum clique rastreado', cl ? '' : 'apagado');
+    const cc = wa ? i.agg.sp / wa : null;
+    t2b = T('Custo por conversa', cc != null ? anuUS(cc) : '—', mediaConv ? 'média da conta ' + anuUS(mediaConv) : '',
+      cc == null ? 'apagado' : !mediaConv ? '' : cc <= mediaConv ? 'ok' : cc <= 2 * mediaConv ? 'at' : 'ruim');
+  }
+  const g2 = '<div class="anu-g">' + titulo(2, 'Virou conversa?', 'depois do clique') + '<div class="anu-g-ts">' + t2a + t2b + '</div>' +
+    linhaMeta(i.agg.ld + (i.agg.ld === 1 ? ' lead' : ' leads') + (m.cpl != null ? ' · ' + anuUS(m.cpl) + ' cada (ref ' + anuUS(ancoras.cpl_ref) + ')' : '')) + '</div>';
 
-  // 3) Virou venda? (Meta × vendas reais UTM) + a régua do custo por compra
-  const nComp = i.agg.puc + i.agg.puv, cpa = m.cpa_t, meta = av.meta, emp = av.empate;
-  const clsCpa = cpa == null ? 'apagado' : cpa <= meta ? 'ok' : cpa <= emp ? 'at' : 'ruim';
-  const compMeta = !nComp ? T('Compras <span class="anu-fonte">Meta</span>', '0', 'sem compra ainda', 'apagado')
-    : i.agg.sp < 1 ? T('Compras <span class="anu-fonte">Meta</span>', anuNum(nComp), 'de cliques de dias anteriores')
-    : T('Compras <span class="anu-fonte">Meta</span>', anuUS(cpa) + ' cada', nComp + (nComp === 1 ? ' compra' : ' compras') + ' · meta ' + anuUS(meta, 0), clsCpa);
-  let vendUtm;
-  if (!temRastreio) vendUtm = T('Vendas reais <span class="anu-fonte">UTM</span>', '—', 'rastreio sem dados', 'apagado');
-  else if (!lx || !lx.pu) vendUtm = T('Vendas reais <span class="anu-fonte">UTM</span>', '0', 'nenhuma confirmada', 'apagado');
-  else {
-    const c = i.agg.sp / lx.pu, cambio = anuDados.lux.cambio && anuDados.lux.cambio.brl;
-    const roas = cambio && i.agg.sp > 0 ? lx.val / (i.agg.sp * cambio) : null;
-    vendUtm = T('Vendas reais <span class="anu-fonte">UTM</span>', anuUS(c) + ' cada', lx.pu + (lx.pu === 1 ? ' venda' : ' vendas') + ' · ' + anuBRL(lx.val) + (roas != null ? ' · ROAS ' + roas.toFixed(2).replace('.', ',') : ''), c <= meta ? 'ok' : c <= emp ? 'at' : 'ruim');
+  // ③ Virou venda? — vendas confirmadas (UTM), custo real por venda e a régua pelo custo real
+  const nComp = i.agg.puc + i.agg.puv, meta = av.meta, emp = av.empate;
+  let t3a, t3b, cReal = null;
+  if (semUtm) {
+    t3a = T('Vendas <span class="anu-fonte">UTM</span>', '—', 'sem rastreio neste período', 'apagado');
+    t3b = T('Custo por venda', '—', '', 'apagado');
+  } else {
+    const pu = lx ? lx.pu : 0, wa = lx ? lx.wa : 0;
+    t3a = T('Vendas <span class="anu-fonte">UTM</span>', pu ? pu + ' · ' + anuBRL(lx.val) : '0', pu && wa ? Math.round(100 * pu / wa) + '% das conversas compraram' : pu ? '' : 'nenhuma confirmada', pu ? '' : 'apagado');
+    if (pu) {
+      cReal = i.agg.sp / pu;
+      const cambio = anuDados.lux.cambio && anuDados.lux.cambio.brl;
+      const roas = cambio && i.agg.sp > 0 ? lx.val / (i.agg.sp * cambio) : null;
+      t3b = T('Custo por venda', anuUS(cReal), (roas != null ? 'ROAS real ' + roas.toFixed(2).replace('.', ',') + ' · ' : '') + 'meta ' + anuUS(meta, 0), cReal <= meta ? 'ok' : cReal <= emp ? 'at' : 'ruim');
+    } else t3b = T('Custo por venda', '—', 'meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0), 'apagado');
   }
   const max = emp * 1.6, p = function (x) { return Math.max(0, Math.min(100, 100 * x / max)); };
   const pm = p(meta), pe = p(emp);
-  let dentro = '';
-  if (cpa != null && i.agg.sp >= 1) {
-    const ic = av.ic95cpa;
-    if (ic) { const lo = p(ic.lo), hi = ic.hi == null ? 100 : p(ic.hi); dentro += '<i class="ic" style="left:' + lo + '%;width:' + Math.max(1.5, hi - lo) + '%"></i>'; }
-    dentro += '<i class="pt ' + clsCpa + '" style="left:' + p(cpa) + '%"></i>';
-  }
-  const trilha = '<div class="anu-trilha" title="Custo por compra da Meta: verde até a meta, amarelo até o empate, vermelho depois. Faixa clara = onde o custo verdadeiro provavelmente está." style="background:linear-gradient(90deg,rgba(74,222,128,.30) 0 ' + pm + '%,rgba(232,184,107,.30) ' + pm + '% ' + pe + '%,rgba(242,109,109,.30) ' + pe + '% 100%)">' + dentro + '</div>' +
-    '<div class="anu-tleg"><span>custo por compra</span><span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div>';
-  const g3 = '<div class="anu-g"><h6>Virou venda?</h6><div class="anu-g-ts">' + compMeta + vendUtm + '</div>' + trilha + '</div>';
+  const dentro = cReal != null ? '<i class="pt ' + (cReal <= meta ? 'ok' : cReal <= emp ? 'at' : 'ruim') + '" style="left:' + p(cReal) + '%"></i>' : '';
+  const trilha = '<div class="anu-trilha" title="Custo real por venda (UTM): verde até a meta, amarelo até o empate, vermelho depois." style="background:linear-gradient(90deg,rgba(74,222,128,.30) 0 ' + pm + '%,rgba(232,184,107,.30) ' + pm + '% ' + pe + '%,rgba(242,109,109,.30) ' + pe + '% 100%)">' + dentro + '</div>' +
+    '<div class="anu-tleg"><span>custo real por venda</span><span>meta ' + anuUS(meta, 0) + ' · empate ' + anuUS(emp, 0) + '</span></div>';
+  const metaComp = !nComp ? '0 compras' : i.agg.sp < 1 ? nComp + ' compras de cliques de dias anteriores' : nComp + (nComp === 1 ? ' compra' : ' compras') + ' · ' + anuUS(m.cpa_t) + ' cada';
+  const g3 = '<div class="anu-g">' + titulo(3, 'Virou venda?') + '<div class="anu-g-ts">' + t3a + t3b + '</div>' + trilha + linhaMeta(metaComp) + '</div>';
 
   const gasto = '<div class="anu-c-gasto"><span>Gasto</span><b>' + anuUS(i.agg.sp, 0) + '</b><small>' + anuMil(i.agg.im) + ' impressões</small></div>';
   const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer"/>' : 'sem imagem';
