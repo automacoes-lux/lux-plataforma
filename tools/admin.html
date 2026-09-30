@@ -415,7 +415,7 @@ body.anu-larga .container{max-width:1180px}
   color:var(--a-txt);font-variant-numeric:tabular-nums;line-height:1.45;-webkit-font-smoothing:antialiased;
 }
 #secAnuncios button,#secAnuncios select{font-family:inherit}
-#secAnuncios h2,#secAnuncios h4,#secAnuncios h5,#secAnuncios h6{font-family:inherit;text-transform:none;letter-spacing:normal}
+#secAnuncios h2,#secAnuncios h3,#secAnuncios h4,#secAnuncios h5,#secAnuncios h6{font-family:inherit;text-transform:none;letter-spacing:normal}
 #secAnuncios :focus-visible{outline:2px solid var(--a-txt2);outline-offset:2px}
 
 /* cabeçalho + ferramentas */
@@ -627,6 +627,107 @@ body.anu-larga .container{max-width:1180px}
   .anu-ms{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.anu-row{transition:none}}
+
+/* ─── Motor v3 (30/09): campanha → estados → card com o funil ───
+   Cores: verde = forte · amarelo = atenção · vermelho = ruim · azul = analisando · cinza = sem amostra */
+#secAnuncios{--a-azul:#6AA5FF}
+.anu-camp{border-radius:18px;background:var(--a-card);padding:18px 20px 20px;margin:34px 0 12px}
+.anu-camp:first-child{margin-top:0}
+.anu-camp-cab{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap}
+.anu-camp-cab h3{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0;min-width:0;overflow-wrap:anywhere}
+.anu-camp-cab .jan{font-size:12.5px;color:var(--a-txt2)}
+.anu-camp-cab .anu-bt{margin-left:auto}
+.anu-metas{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.anu-meta-p{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--a-campo);color:var(--a-txt2);white-space:nowrap}
+.anu-meta-p b{color:var(--a-txt);font-weight:600}
+.anu-meta-p.pad{background:transparent;color:var(--a-txt3);padding-left:2px}
+.anu-econ{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--a-campo)}
+.anu-econ label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--a-txt2)}
+.anu-econ input{width:92px;border:1px solid transparent;border-radius:10px;background:var(--a-sup);color:var(--a-txt);font:600 14px/1 inherit;padding:9px 10px}
+.anu-econ input:focus{outline:none;border-color:var(--a-txt3)}
+.anu-econ .dica{flex-basis:100%;font-size:11.5px;color:var(--a-txt3)}
+.anu-camp-nums{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--a-line)}
+.anu-cn{min-width:0}
+.anu-cn span{display:block;font-size:11.5px;color:var(--a-txt2)}
+.anu-cn b{display:block;font-size:19px;font-weight:600;margin-top:2px;white-space:nowrap}
+.anu-cn b.ok{color:var(--a-ok)} .anu-cn b.at{color:var(--a-at)} .anu-cn b.ruim{color:var(--a-ruim)} .anu-cn b.est{color:var(--a-txt2);font-weight:500}
+.anu-cn small{display:block;font-size:11.5px;color:var(--a-txt3);line-height:1.35}
+.anu-cont{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.anu-exec{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--a-campo);font-size:13.5px;line-height:1.55;color:var(--a-txt2)}
+.anu-exec p+p{margin-top:6px}
+.anu-exec p:first-child{color:var(--a-txt)}
+
+/* pílula de estado: ponto + texto, fundo da mesma cor a 12% */
+.anu-est{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px 3px 8px;border-radius:999px;white-space:nowrap;background:var(--a-sup);color:var(--a-txt2)}
+.anu-est i{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.anu-est.ok,.anu-est.estrela{background:rgba(74,222,128,.12);color:var(--a-ok)}
+.anu-est.at{background:rgba(232,184,107,.13);color:var(--a-at)}
+.anu-est.ruim{background:rgba(242,109,109,.13);color:var(--a-ruim)}
+.anu-est.azul{background:rgba(106,165,255,.13);color:var(--a-azul)}
+.anu-est.cinza{background:var(--a-sup);color:var(--a-txt3)}
+.anu-est b{font-weight:700;color:var(--a-txt);margin-left:2px}
+.anu-conf{font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--a-sup);color:var(--a-txt2);white-space:nowrap}
+.anu-melhor{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 10px 3px 7px;border-radius:999px;background:rgba(240,206,104,.14);color:#F0CE68;white-space:nowrap}
+.anu-melhor svg,.anu-et-cab svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+.anu-extra{font-size:11.5px;padding:3px 9px;border-radius:999px;background:transparent;box-shadow:inset 0 0 0 1px var(--a-line);color:var(--a-txt2);white-space:nowrap}
+
+/* grupos por estado dentro da campanha */
+.anu-egrupo{display:flex;align-items:center;gap:10px;margin:18px 4px 9px}
+.anu-egrupo em{font-style:normal;font-size:12.5px;color:var(--a-txt3)}
+.anu-egrupo .n{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--a-txt3)}
+.anu-dobra{margin-top:14px}
+.anu-dobra>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:14px;background:var(--a-card2);font-size:13px;font-weight:500;color:var(--a-txt2)}
+.anu-dobra>summary::-webkit-details-marker{display:none}
+.anu-dobra>summary::before{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);margin-right:4px;transition:transform .15s}
+.anu-dobra[open]>summary::before{transform:rotate(45deg)}
+.anu-dobra>summary:hover{color:var(--a-txt)}
+.anu-dobra[open]>summary{margin-bottom:10px}
+
+/* card v3 */
+.anu-v3-top{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:start}
+.anu-v3-top .anu-thumb{width:56px;height:100px}
+.anu-v3-nome b{display:block;font-size:15.5px;font-weight:600;overflow-wrap:anywhere}
+.anu-v3-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.anu-motivo{margin-top:8px;font-size:13px;color:var(--a-txt2);line-height:1.45}
+.anu-v3-dir{display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right;white-space:nowrap}
+.anu-v3-dir span{display:block;font-size:11.5px;color:var(--a-txt2)}
+.anu-v3-dir b{display:block;font-size:19px;font-weight:600;margin-top:1px}
+.anu-v3-dir small{display:block;font-size:11.5px;color:var(--a-txt3)}
+.anu-reco{font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;background:var(--a-sup);color:var(--a-txt)}
+.anu-reco.ruim{background:var(--a-ruim);color:#1A0707}
+.anu-reco.ok{background:rgba(74,222,128,.14);color:var(--a-ok)}
+.anu-reco.forte{background:var(--a-ok);color:#06210F}
+.anu-reco.at{background:rgba(232,184,107,.14);color:var(--a-at)}
+.anu-reco.cinza{background:var(--a-sup);color:var(--a-txt2);font-weight:500}
+.anu-funil{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.2fr);gap:8px}
+.anu-et{position:relative;background:var(--a-campo);border-radius:12px;padding:10px 12px 11px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.anu-et-cab{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--a-txt3)}
+.anu-et-cab i{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--a-txt3)}
+.anu-et.ok .anu-et-cab i,.anu-et.estrela .anu-et-cab i{background:var(--a-ok)}
+.anu-et.at .anu-et-cab i{background:var(--a-at)}
+.anu-et.ruim .anu-et-cab i{background:var(--a-ruim)}
+.anu-et.azul .anu-et-cab i{background:var(--a-azul)}
+.anu-et>b{font-size:13px;font-weight:600;line-height:1.3;color:var(--a-txt)}
+.anu-et.ok>b,.anu-et.estrela>b{color:var(--a-ok)} .anu-et.at>b{color:var(--a-at)} .anu-et.ruim>b{color:var(--a-ruim)} .anu-et.azul>b{color:var(--a-azul)} .anu-et.cinza>b{color:var(--a-txt2);font-weight:500}
+.anu-et .v{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-et .v em{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--a-txt3);margin-left:5px}
+.anu-et small{font-size:11.5px;color:var(--a-txt3);line-height:1.35}
+.anu-et.ret .v{font-size:19px}
+.anu-card .anu-meta-l{margin-top:0;padding-top:0;border-top:none}
+@media(max-width:900px){
+  .anu-camp{padding:16px 14px}
+  .anu-camp-nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anu-camp-cab .anu-bt{margin-left:0}
+  .anu-v3-top{grid-template-columns:48px minmax(0,1fr)}
+  .anu-v3-top .anu-thumb{width:48px;height:86px}
+  .anu-v3-dir{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between;text-align:left;padding-top:10px;border-top:1px solid var(--a-line)}
+  .anu-funil{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anu-et.ret{grid-column:1 / -1}
+  .anu-et .v{white-space:normal;overflow:visible}
+  .anu-econ input{width:78px}
+  .anu-sel{min-width:0;width:100%}
+  .anu-seg button{padding:7px 10px;white-space:nowrap}
+}
 </style>
 </head>
 <body>
@@ -735,21 +836,22 @@ body.anu-larga .container{max-width:1180px}
     </div>
     <div class="anu-etqs">
       Etiqueta no nome da campanha:
-      <button type="button" class="anu-etq" onclick="anuCopiar('[TESTE]', this)" title="Campanha de teste: às 23h55 o painel recomenda o corte de quem cair nas regras, e você confirma aqui"><code>[TESTE]</code><span class="lbl">copiar</span></button>
+      <button type="button" class="anu-etq" onclick="anuCopiar('[TESTE]', this)" title="Campanha de teste: o motor avalia o lote inteiro e, às 23h55, recomenda o corte dos candidatos; você confirma aqui"><code>[TESTE]</code><span class="lbl">copiar</span></button>
       <button type="button" class="anu-etq" onclick="anuCopiar('[ESCALA]', this)" title="Campanha de escala: acompanha e recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte"><code>[ESCALA]</code><span class="lbl">copiar</span></button>
     </div>
     <div class="anu-recs" id="anuRecs" hidden></div>
     <div id="anuConteudo"></div>
     <details class="anu-legenda">
       <summary>Como ler esta tela</summary>
-      <p><b>Os 3 filtros de cada card:</b> <b>1 Chamou atenção?</b> é o gancho, de cada 100 pessoas que viram o anúncio, quantas assistiram 3 segundos (abaixo de 14% o robô recomenda cortar). <b>2 Virou conversa?</b> mostra os cliques rastreados que viraram conversa no nosso WhatsApp e o custo de cada conversa, comparado com a média da conta. <b>3 Virou venda?</b> mostra as vendas confirmadas, quanto das conversas comprou, o custo real por venda e o ROAS real. Os números grandes vêm da UTM, ou seja, do que chegou de verdade no nosso WhatsApp. A linha cinza <b>META</b> embaixo mostra o que a Meta está contando: é com esses números que o algoritmo aprende, e uma diferença grande entre as duas indica evento que não chegou na Meta.</p>
-      <p><b>Régua de custo real por venda:</b> o ponto é quanto cada venda confirmada está custando. Até a meta de custo é verde, entre a meta e o ponto de empate é amarelo, depois do empate (a venda para de dar lucro) é vermelho.</p>
-      <p><b>Nota (0 a 100):</b> 50 é "na referência". Pesa 50% o custo por compra, 30% o custo por lead, 10% o CTR, 5% o gancho e 5% a saúde. Criativo com pouca impressão fica perto de 50 até provar; o intervalo embaixo da nota é onde ela provavelmente está.</p>
-      <p><b>Grupos:</b> a lista é separada pelo tamanho da amostra. Compare notas só dentro do mesmo grupo: uma nota com 30 compras vale mais que a mesma nota com 3.</p>
-      <p><b>Cores:</b> gancho em amarelo = abaixo de 80% da referência da conta. Custo por conversa: verde até a média da conta, amarelo até o dobro, vermelho acima. O CTR saiu do card (fica no Gerenciador da Meta), mas o robô continua cortando abaixo de 0,38%.</p>
+      <p><b>A pergunta que manda:</b> este criativo transforma investimento em faturamento dentro da meta da campanha? No teste, <b>a conversa prevê, a venda confirma e a escala comprova</b>. Por isso o peso é: venda real, depois conversa real, depois potencial, depois interesse e atenção.</p>
+      <p><b>Cada campanha</b> mostra as metas (ticket, ROAS alvo 2,0, saudável 1,5 e mínimo de sobrevivência no teste 1,25), que você muda em <b>Editar metas</b>. Quando há venda pela UTM, o motor usa o valor que o cliente pagou de verdade. <b>ROAS real</b> conta só as vendas ligadas ao anúncio pela UTM. <b>ROAS calibrado</b> é uma estimativa que considera as vendas que a UTM não consegue ligar a um anúncio (a perda é medida sozinha, nos últimos 14 dias); ele só aparece, nunca entra na decisão.</p>
+      <p><b>No teste, a conta é pelo lote inteiro</b> (do primeiro dia com gasto até hoje), qualquer que seja o período escolhido lá em cima. Sem venda suficiente, o ROAS é <b>projetado</b>: conversas × taxa de fechamento da Lux × ticket ÷ gasto. Com 1 a 4 vendas é <b>estimado</b> (mistura o real com a projeção) e com 5 vendas ou mais vale só o <b>real</b>.</p>
+      <p><b>Estados:</b> <b>Vencedor</b> = 3 vendas reais ou mais com ROAS dentro da meta. <b>Promissor</b> = caminhando para a meta. <b>Observar</b> = ainda sem veredito. <b>Analisando</b> (azul) = observar com amostra ainda pequena para concluir. <b>Candidato a corte</b> = sinal claro de baixa performance (gancho abaixo de 14%, CTR abaixo de 0,38%, gasto sem nenhuma conversa, ROAS abaixo do mínimo a partir do dia 3, ou conversa muito mais cara que a do resto do lote). <b>Sem amostra</b> = pouca entrega, ou o link do anúncio não passa pelo rastreio. O robô nunca recomenda cortar todos do lote de uma vez, e <b>Melhor do lote</b> marca quem tem a maior chance de chegar a ROAS 2,0.</p>
+      <p><b>Retorno:</b> 2,0 ou mais = dentro ou acima da meta · 1,5 a 1,99 = bom potencial · 1,25 a 1,49 = sobrevive, mas precisa melhorar · abaixo de 1,25 = sinal ruim (só com amostra suficiente). <b>Cores:</b> verde forte, amarelo atenção, vermelho ruim, azul analisando, cinza sem amostra.</p>
+      <p><b>Mais verba:</b> o resumo da campanha diz quais criativos já têm evidência para receber mais verba. A decisão de aumentar é sempre sua.</p>
       <p><b>META × UTM:</b> gasto, impressões, CTR, gancho, leads e compras marcados <b>Meta</b> vêm da Meta. <b>Conversas reais</b>, <b>Vendas reais</b> e a linha <b>UTM</b> embaixo de cada criativo vêm do nosso sistema: conversas e vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
       <p><b>Períodos:</b> <b>Hoje</b> puxa o dia de hoje (parcial). <b>Semana</b> mostra de segunda a sexta; na segunda-feira mostra a semana passada. Para ver outra semana, escolha um dia dela no calendário e clique em Semana. O calendário sozinho mostra um dia só.</p>
-      <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o painel recomenda o corte de quem cair nas regras (gancho abaixo de 14%, CTR abaixo de 0,38%, lead caro) e você confirma aqui. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
+      <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o motor recomenda o corte de quem virou <b>Candidato a corte</b> e você confirma no quadro vermelho. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
       <p id="anuRefs"></p>
     </details>
   </div>
@@ -1984,6 +2086,15 @@ function anuRender(d) {
     anuKpi('Conversas reais <em class="anu-fonte">UTM</em>', lx.diasComDado ? anuNum(lx.wa) : '—', lx.diasComDado ? (lx.wa ? anuUS(t.sp / lx.wa) + ' cada · ' + anuNum(lx.cl) + ' cliques' : anuNum(lx.cl) + ' cliques rastreados') : 'rastreio ainda sem dados') +
     anuKpiLux(d) +
     '</div>';
+
+  // Motor v3 (30/09/2026): campanha → estados → card com o funil. O layout antigo fica só de reserva,
+  // para o caso de a tela subir antes do Worker novo.
+  if (d.campanhasDec) {
+    document.getElementById('anuConteudo').innerHTML = h + (d.itens.length ? anuMotor(d) :
+      '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
+    if (anuAberto) anuCarregarDetalhe(anuAberto);
+    return;
+  }
   h += anuResumoTipos(d);
 
   if (!d.itens.length) {
@@ -2249,6 +2360,172 @@ function anuLinha(i, cinza, ancoras, inativo) {
     '<div class="anu-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="c">' + escapeHtml(nomeC) + '</div><div class="anu-tags">' + tags.join('') + '</div></div>' +
     gasto + notaHtml + '</div>' +
     '<div class="anu-grupos">' + g1 + g2 + g3 + '</div></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// MOTOR v3 (definições do Thiago, 30/09/2026). A decisão vem pronta do Worker (src/decisao.js);
+// aqui só desenha. Conversa prevê → venda confirma → escala comprova. Nada é pausado daqui.
+// ════════════════════════════════════════════════════════════
+const ANU_EST = { vencedor: 'Vencedor', promissor: 'Promissor', observar: 'Observar', analisando: 'Analisando', corte: 'Candidato a corte', sem_amostra: 'Sem amostra' };
+const ANU_EST_ORD = ['vencedor', 'promissor', 'observar', 'analisando', 'corte', 'sem_amostra'];
+// "analisando" não é estado do motor: é o Observar com amostra ainda pequena (azul), separado só na tela
+function anuGrupoDe(x) { return x.estado === 'observar' && x.conf === 'baixa' ? 'analisando' : x.estado; }
+const ANU_EST_COR = { vencedor: 'ok', promissor: 'ok', observar: 'at', analisando: 'azul', corte: 'ruim', sem_amostra: 'cinza' };
+const ANU_EST_SUB = { vencedor: 'venda real dentro da meta', promissor: 'caminhando para a meta', observar: 'ainda sem veredito', analisando: 'amostra ainda pequena para concluir', corte: 'sinais claros de baixa performance', sem_amostra: 'pouca entrega ou link sem rastreio' };
+const ANU_RECO_COR = { 'Cortar': 'ruim', 'Escalar': 'forte', 'Manter': 'ok', 'Observar': 'at', 'Aguardar mais dados': 'cinza', 'Conferir o link': 'at' };
+const ANU_SVG = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>'; };
+const ANU_ET = {
+  atencao: ['Atenção', ANU_SVG('M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z')],
+  interesse: ['Interesse', ANU_SVG('M13 1.07V9h7c0-4.08-3.05-7.44-7-7.93zM4 15c0 4.42 3.58 8 8 8s8-3.58 8-8v-4H4v4zm7-13.93C7.05 1.56 4 4.92 4 9h7V1.07z')],
+  conversa: ['Conversa', ANU_SVG('M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z')],
+  venda: ['Venda', ANU_SVG('M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z')],
+  retorno: ['Retorno', ANU_SVG('M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z')],
+};
+ANU_IC.estrela = ANU_SVG('M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z');
+ANU_IC.editar = ANU_SVG('M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z');
+let anuEditEcon = null; // campanha com o formulário de metas aberto
+
+function anuR(x) { return x == null ? '—' : 'R$ ' + Math.round(x).toLocaleString('pt-BR'); }
+function anuD(x, c = 2) { return x == null ? '—' : Number(x).toFixed(c).replace('.', ','); }
+function anuPlural(n, s, p) { return n + ' ' + (n === 1 ? s : p); }
+function anuEst(txt, cor, n) { return '<span class="anu-est ' + cor + '"><i></i>' + txt + (n != null ? ' <b>' + n + '</b>' : '') + '</span>'; }
+function anuCorRoas(r, E) { return r == null ? '' : r >= E.saudavel ? 'ok' : r >= E.minimo ? 'at' : 'ruim'; }
+function anuEhAtivo(i) { return !i.status || i.status === 'ACTIVE'; }
+
+function anuMotor(d) {
+  let h = '', pausadas = '';
+  let nPausadas = 0;
+  (d.campanhasDec || []).forEach(function (c) {
+    const bloco = anuCampV3(c, d);
+    if (c.ativos) h += bloco; else { pausadas += bloco; nPausadas++; }
+  });
+  if (nPausadas) h += '<details class="anu-dobra"><summary>' + anuPlural(nPausadas, 'campanha pausada', 'campanhas pausadas') + ' neste período — ficam aqui para comparar</summary>' + pausadas + '</details>';
+  return h;
+}
+
+function anuCampV3(c, d) {
+  const E = c.econ, itens = d.itens.filter(function (i) { return i.campanha === c.id && i.dec; });
+  const ativos = itens.filter(anuEhAtivo), pausados = itens.filter(function (i) { return !anuEhAtivo(i); });
+  const tag = c.teste ? '<span class="anu-tag teste">teste</span>' : /\[\s*escala\s*\]/i.test(c.nome) ? '<span class="anu-tag escala">escala</span>' : '<span class="anu-tag">sem etiqueta</span>';
+  const jan = c.teste ? 'Dia ' + c.diaLote + ' do lote · desde ' + anuDia(c.janela.ini) : anuDia(c.janela.ini) === anuDia(c.janela.fim) ? 'no dia ' + anuDia(c.janela.fim) : 'de ' + anuDia(c.janela.ini) + ' a ' + anuDia(c.janela.fim);
+  let h = '<section class="anu-camp" aria-label="' + escapeHtml(c.nome) + '"><div class="anu-camp-cab">' + tag + '<h3>' + escapeHtml(c.nome) + '</h3><span class="jan">' + jan + '</span>' +
+    '<button type="button" class="anu-bt fino" onclick="anuEditarEcon(\'' + c.id + '\')">' + ANU_IC.editar + 'Editar metas</button></div>';
+
+  // metas econômicas (editáveis)
+  h += '<div class="anu-metas"><span class="anu-meta-p">Ticket <b>' + anuR(E.ticket) + '</b></span><span class="anu-meta-p">ROAS alvo <b>' + anuD(E.alvo, 1) + '</b></span>' +
+    '<span class="anu-meta-p">Saudável <b>' + anuD(E.saudavel, 1) + '</b></span><span class="anu-meta-p">Mínimo' + (c.teste ? ' no teste' : '') + ' <b>' + anuD(E.minimo, 2) + '</b></span>' +
+    '<span class="anu-meta-p pad">' + (E.padrao ? 'padrão para este produto' : 'ajustado' + (E.em ? ' em ' + anuDia(E.em.slice(0, 10)) : '')) + '</span></div>';
+  if (anuEditEcon === c.id) {
+    const inp = function (id, rot, v) { return '<label>' + rot + '<input id="econ_' + id + '" inputmode="decimal" value="' + String(v).replace('.', ',') + '"/></label>'; };
+    h += '<div class="anu-econ">' + inp('ticket', 'Ticket (R$)', E.ticket) + inp('alvo', 'ROAS alvo', E.alvo) + inp('saudavel', 'Saudável', E.saudavel) + inp('minimo', 'Mínimo', E.minimo) +
+      '<button type="button" class="anu-bt" onclick="anuSalvarEcon(\'' + c.id + '\',this)">Salvar metas</button>' +
+      (E.padrao ? '' : '<button type="button" class="anu-bt" onclick="anuSalvarEcon(\'' + c.id + '\',this,true)">Voltar ao padrão</button>') +
+      '<button type="button" class="anu-bt" onclick="anuEditarEcon(null)">Cancelar</button>' +
+      '<div class="dica">Quando houver venda pela UTM, o motor usa o valor que o cliente pagou de verdade; o ticket daqui vale até lá.</div></div>';
+  }
+
+  // números da campanha (UTM = o que chegou de verdade no nosso WhatsApp)
+  const perda = d.motor && d.motor.fatorCalib > 1 ? Math.round(100 * (1 - 1 / d.motor.fatorCalib)) : null;
+  const cn = function (rot, val, sub, cls) { return '<div class="anu-cn"><span>' + rot + '</span><b' + (cls ? ' class="' + cls + '"' : '') + '>' + val + '</b><small>' + (sub || '&nbsp;') + '</small></div>'; };
+  h += '<div class="anu-camp-nums">' +
+    cn('Gasto', anuR(c.gastoBRL), anuUS(c.gastoUS, 0)) +
+    cn('Conversas <em class="anu-fonte">UTM</em>', anuNum(c.conversas), c.conversas ? anuR(c.gastoBRL / c.conversas) + ' cada' : anuNum(c.cliques) + ' cliques') +
+    cn('Vendas <em class="anu-fonte">UTM</em>', anuNum(c.vendas), c.vendas ? anuR(c.gastoBRL / c.vendas) + ' cada' : 'nenhuma ainda') +
+    cn('Faturamento', anuR(c.faturamento), 'pago de verdade') +
+    cn('ROAS real', anuD(c.roasReal), 'só vendas da UTM', anuCorRoas(c.roasReal, E)) +
+    cn('ROAS calibrado', c.roasCalib != null ? '≈ ' + anuD(c.roasCalib) : '—', 'estimativa' + (perda != null ? ' · a UTM perde ~' + perda + '%' : ''), 'est') +
+    '</div>';
+
+  // contagem por estado + resumo executivo
+  const k = {};
+  ativos.forEach(function (i) { const g = anuGrupoDe(i.dec); k[g] = (k[g] || 0) + 1; });
+  h += '<div class="anu-cont">' + ANU_EST_ORD.filter(function (e) { return k[e]; }).map(function (e) { return anuEst(ANU_EST[e], ANU_EST_COR[e], k[e]); }).join('') + '</div>';
+  if (c.resumo && c.resumo.linhas && c.resumo.linhas.length) h += '<div class="anu-exec">' + c.resumo.linhas.map(function (l) { return '<p>' + escapeHtml(l) + '</p>'; }).join('') + '</div>';
+  h += '</section>';
+
+  // criativos ativos, agrupados por estado (dentro do grupo: maior chance de chegar à meta primeiro)
+  ANU_EST_ORD.forEach(function (e) {
+    const l = ativos.filter(function (i) { return anuGrupoDe(i.dec) === e; })
+      .sort(function (a, b) { return (!!b.dec.melhor - !!a.dec.melhor) || (b.dec.prob - a.dec.prob) || ((b.dec.etapas.retorno.roas || 0) - (a.dec.etapas.retorno.roas || 0)) || (b.dec.gasto - a.dec.gasto); });
+    if (!l.length) return;
+    h += '<div class="anu-egrupo">' + anuEst(ANU_EST[e], ANU_EST_COR[e]) + '<em>' + ANU_EST_SUB[e] + '</em><span class="n">' + anuPlural(l.length, 'criativo', 'criativos') + '</span></div>';
+    l.forEach(function (i) { h += anuCardV3(i, c, d); });
+  });
+  if (pausados.length) {
+    h += '<details class="anu-dobra"' + (pausados.some(function (i) { return i.ad === anuAberto; }) ? ' open' : '') + '><summary>' + anuPlural(pausados.length, 'criativo pausado', 'criativos pausados') + (ativos.length ? '' : '') + '</summary>';
+    pausados.forEach(function (i) { h += anuCardV3(i, c, d); });
+    h += '</details>';
+  }
+  return h;
+}
+
+function anuCardV3(i, c, d) {
+  const x = i.dec, E = c.econ, et = x.etapas, ativo = anuEhAtivo(i);
+  const cambio = (d.motor && d.motor.cambio) || 5.2;
+  const pills = [anuEst(ANU_EST[anuGrupoDe(x)], x.cor)];
+  if (x.estado !== 'sem_amostra') pills.push('<span class="anu-conf">confiança ' + (x.conf === 'media' ? 'média' : x.conf) + '</span>');
+  if (x.melhor) pills.push('<span class="anu-melhor">' + ANU_IC.estrela + 'Melhor do lote</span>');
+  else if (x.extra) pills.push('<span class="anu-extra">' + escapeHtml(x.extra) + '</span>');
+  if (!ativo) pills.push('<span class="anu-tag">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(String(i.status).toLowerCase())) + '</span>');
+  if (i.aprendizado === 'FAIL') pills.push('<span class="anu-tag aviso">aprendizado limitado</span>');
+
+  const reco = ativo ? '<span class="anu-reco ' + (ANU_RECO_COR[x.recomendacao] || 'cinza') + '" title="Recomendação do motor. Nada é pausado sem você confirmar.">' + escapeHtml(x.recomendacao) + '</span>' : '';
+  const dir = '<div class="anu-v3-dir"><div><span>Gasto ' + (c.teste ? 'no lote' : 'no período') + '</span><b>' + anuR(x.gasto) + '</b><small>' + anuUS(x.gasto / cambio, 0) + '</small></div>' + reco + '</div>';
+  const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : 'sem imagem';
+
+  // o funil: atenção → interesse → conversa → venda → retorno
+  const etapa = function (k, e, v, sub, extraCls) {
+    return '<div class="anu-et ' + e.cor + (extraCls ? ' ' + extraCls : '') + '"><div class="anu-et-cab">' + ANU_ET[k][1] + '<span>' + ANU_ET[k][0] + '</span><i></i></div>' +
+      '<b>' + escapeHtml(e.txt) + '</b><div class="v">' + v + '</div>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+  };
+  const a = et.atencao, it = et.interesse, cv = et.conversa, vd = et.venda, r = et.retorno;
+  const fonteTxt = { real: 'real', estimado: 'estimado', projetado: 'projetado' };
+  let subRet = 'meta ' + anuD(E.alvo, 1);
+  if (r.roas != null && r.fonte !== 'real' && r.roasReal != null) subRet += ' · real ' + anuD(r.roasReal);
+  if (r.roasCalib != null) subRet += ' · calibrado ≈ ' + anuD(r.roasCalib) + ' (estimativa)';
+  if (r.roas != null && x.prob > 0 && x.estado !== 'corte') subRet += ' · chance de bater a meta ' + Math.round(100 * x.prob) + '%';
+  const funil = '<div class="anu-funil">' +
+    etapa('atencao', a, a.num != null ? anuPct(a.num) : '—', 'gancho · ref ' + anuPct(a.ref)) +
+    etapa('interesse', it, it.num != null ? anuPct(it.num, 2) : '—', 'CTR · ref ' + anuPct(it.ref, 2)) +
+    etapa('conversa', cv, cv.n ? anuPlural(cv.n, 'conversa', 'conversas') : '0', cv.custo != null ? anuR(cv.custo) + ' cada · bom até ' + anuR(x.refs.cConvSaud) : (cv.cliques ? cv.cliques + ' cliques rastreados' : 'bom até ' + anuR(x.refs.cConvSaud) + ' cada')) +
+    etapa('venda', vd, vd.n ? anuPlural(vd.n, 'venda', 'vendas') + ' · ' + anuR(vd.val) : '0', vd.custo != null ? anuR(vd.custo) + ' cada · meta ' + anuR(x.refs.cVendaAlvo) : 'meta ' + anuR(x.refs.cVendaAlvo) + ' por venda') +
+    etapa('retorno', r, r.roas != null ? 'ROAS ' + anuD(r.roas) + '<em>' + (fonteTxt[r.fonte] || '') + '</em>' : '—', subRet, 'ret') +
+    '</div>';
+
+  const nComp = i.agg.puc + i.agg.puv;
+  const meta = '<div class="anu-meta-l"><span class="anu-fonte">Meta</span> no período: ' + anuPlural(i.agg.ld, 'lead', 'leads') + ' · ' + anuPlural(nComp, 'compra', 'compras') + ' · ' + anuUS(i.agg.sp, 0) + ' gastos · ' + anuMil(i.agg.im) + ' impressões</div>';
+
+  let html = '<div class="anu-row anu-card' + (ativo ? '' : ' inativo') + (anuAberto === i.ad ? ' aberto' : '') + '" role="button" tabindex="0" aria-expanded="' + (anuAberto === i.ad) + '"' +
+    ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
+    '<div class="anu-v3-top"><div class="anu-thumb">' + thumb + '</div>' +
+    '<div class="anu-v3-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="anu-v3-pills">' + pills.join('') + '</div>' +
+    '<div class="anu-motivo">' + escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1)) + '.</div></div>' + dir + '</div>' +
+    funil + meta + '</div>';
+  if (anuAberto === i.ad) html += '<div class="anu-det" id="anuDet">' + anuDetTopo(i) + '<div id="anuDetDias"><h5>Dia a dia</h5>Carregando…</div></div>';
+  return html;
+}
+
+function anuEditarEcon(cid) {
+  anuEditEcon = cid;
+  if (anuDados) anuRender(anuDados);
+  if (cid) { const el = document.getElementById('econ_ticket'); if (el) el.focus(); }
+}
+
+async function anuSalvarEcon(cid, btn, padrao) {
+  const v = function (id) { return (document.getElementById('econ_' + id) || {}).value || ''; };
+  const corpo = padrao ? { campanha: cid, padrao: true } : { campanha: cid, ticket: v('ticket'), alvo: v('alvo'), saudavel: v('saudavel'), minimo: v('minimo') };
+  btn.disabled = true;
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/econ', { method: 'POST', body: JSON.stringify(corpo) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Não salvou');
+    toast(padrao ? 'Metas de volta ao padrão' : 'Metas salvas', 'success');
+    anuEditEcon = null;
+    anuCarregar();
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false;
+  }
 }
 
 // Parte de cima do detalhe: sai direto do painel, sem esperar a série diária.
