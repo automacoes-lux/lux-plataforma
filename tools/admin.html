@@ -715,6 +715,8 @@ body.anu-larga .container{max-width:1180px}
 .anu-et .v{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .anu-et .v em{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--a-txt3);margin-left:5px}
 .anu-et small{font-size:11.5px;color:var(--a-txt3);line-height:1.35}
+.anu-et-meta{margin-top:auto;padding-top:7px;border-top:1px solid var(--a-line);font-size:11.5px;color:var(--a-txt2);line-height:1.35}
+.anu-et-meta .anu-fonte{margin-left:0;margin-right:3px}
 .anu-et.ret .v{font-size:19px}
 .anu-card .anu-meta-l{margin-top:0;padding-top:0;border-top:none}
 @media(max-width:900px){
@@ -852,6 +854,7 @@ body.anu-larga .container{max-width:1180px}
       <p><b>Estados:</b> <b>Vencedor</b> = 3 vendas reais ou mais com ROAS dentro da meta. <b>Promissor</b> = caminhando para a meta. <b>Observar</b> = ainda sem veredito. <b>Analisando</b> (azul) = observar com amostra ainda pequena para concluir. <b>Candidato a corte</b> = sinal claro de baixa performance (gancho abaixo de 14%, CTR abaixo de 0,38%, gasto sem nenhuma conversa, ROAS abaixo do mínimo a partir do dia 3, ou conversa muito mais cara que a do resto do lote). <b>Sem amostra</b> = pouca entrega, ou o link do anúncio não passa pelo rastreio. O robô nunca recomenda cortar todos do lote de uma vez, e <b>Melhor do lote</b> marca quem tem a maior chance de chegar a ROAS 2,0.</p>
       <p><b>Retorno:</b> 2,0 ou mais = dentro ou acima da meta · 1,5 a 1,99 = bom potencial · 1,25 a 1,49 = sobrevive, mas precisa melhorar · abaixo de 1,25 = sinal ruim (só com amostra suficiente). <b>Cores:</b> verde forte, amarelo atenção, vermelho ruim, azul analisando, cinza sem amostra.</p>
       <p><b>Mais verba:</b> o resumo da campanha diz quais criativos já têm evidência para receber mais verba. A decisão de aumentar é sempre sua.</p>
+      <p><b>Proteção de corte (UTM × Meta):</b> as duas fontes contam venda de jeitos diferentes. A <b>UTM</b> conta quem chegou ao nosso WhatsApp pela página do anúncio (dá para conferir venda por venda). A <b>Meta</b> conta também quem clicou e não chegou à página, e quem só <b>viu</b> o anúncio e comprou depois por outro caminho. Por isso o card de Venda mostra as duas, e o motor <b>só recomenda cortar quando as duas concordam</b>: venda por clique em qualquer uma delas segura o criativo em observação. Compra da Meta "só por visualização" não segura (com US$10 por dia, é ruído).</p>
       <p><b>META × UTM:</b> gasto, impressões, CTR, gancho, leads e compras marcados <b>Meta</b> vêm da Meta. <b>Conversas reais</b>, <b>Vendas reais</b> e a linha <b>UTM</b> embaixo de cada criativo vêm do nosso sistema: conversas e vendas confirmadas no nosso WhatsApp, ligadas ao anúncio pela UTM do link. Pegam também as vendas que a Meta não enxerga. Contam pelo dia do clique: a venda vai para o último anúncio que o cliente clicou antes de escrever, até 7 dias antes de pagar. Só aparecem para anúncios com os parâmetros de UTM no link (começou em 28/09).</p>
       <p><b>Períodos:</b> <b>Hoje</b> puxa o dia de hoje (parcial). <b>Semana</b> mostra de segunda a sexta; na segunda-feira mostra a semana passada. Para ver outra semana, escolha um dia dela no calendário e clique em Semana. O calendário sozinho mostra um dia só.</p>
       <p><b>Etiquetas:</b> <b>[TESTE]</b> no começo do nome da campanha de teste — às 23h55 o motor recomenda o corte de quem virou <b>Candidato a corte</b> e você confirma no quadro vermelho. <b>[ESCALA]</b> na campanha de escala — recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte. Nada é pausado sem você clicar em Cortar.</p>
@@ -2494,10 +2497,14 @@ function anuCardV3(i, c, d) {
   const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : 'sem imagem';
 
   // o funil: atenção → interesse → conversa → venda → retorno
-  const etapa = function (k, e, v, sub, extraCls) {
+  const etapa = function (k, e, v, sub, extraCls, rodape) {
     return '<div class="anu-et ' + e.cor + (extraCls ? ' ' + extraCls : '') + '"><div class="anu-et-cab">' + ANU_ET[k][1] + '<span>' + ANU_ET[k][0] + '</span><i></i></div>' +
-      '<b>' + escapeHtml(e.txt) + '</b><div class="v">' + v + '</div>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+      '<b>' + escapeHtml(e.txt) + '</b><div class="v">' + v + '</div>' + (sub ? '<small>' + sub + '</small>' : '') + (rodape ? '<div class="anu-et-meta">' + rodape + '</div>' : '') + '</div>';
   };
+  // Vendas lado a lado (30/09): UTM (o que chegou ao WhatsApp) × Meta (7 dias de clique; "só viu" = 1 dia de visualização).
+  // Com venda por clique em qualquer uma das duas, o motor não recomenda cortar.
+  const mClique = et.venda.metaClique || 0, mView = et.venda.metaView || 0;
+  const rodapeVenda = '<span class="anu-fonte">Meta</span> ' + mClique + ' por clique (+' + mView + ' só por visualização)';
   const a = et.atencao, it = et.interesse, cv = et.conversa, vd = et.venda, r = et.retorno;
   const fonteTxt = { real: 'real', estimado: 'estimado', projetado: 'projetado' };
   let subRet = 'meta ' + anuD(E.alvo, 1);
@@ -2508,12 +2515,12 @@ function anuCardV3(i, c, d) {
     etapa('atencao', a, a.num != null ? anuPct(a.num) : '—', 'gancho · ref ' + anuPct(a.ref)) +
     etapa('interesse', it, it.num != null ? anuPct(it.num, 2) : '—', 'CTR · ref ' + anuPct(it.ref, 2)) +
     etapa('conversa', cv, cv.n ? anuPlural(cv.n, 'conversa', 'conversas') : '0', cv.custo != null ? anuR(cv.custo) + ' cada · bom até ' + anuR(x.refs.cConvSaud) : (cv.cliques ? cv.cliques + ' cliques rastreados' : 'bom até ' + anuR(x.refs.cConvSaud) + ' cada')) +
-    etapa('venda', vd, vd.n ? anuPlural(vd.n, 'venda', 'vendas') + ' · ' + anuR(vd.val) : '0', vd.custo != null ? anuR(vd.custo) + ' cada · meta ' + anuR(x.refs.cVendaAlvo) : 'meta ' + anuR(x.refs.cVendaAlvo) + ' por venda') +
+    etapa('venda', vd, (vd.n ? anuPlural(vd.n, 'venda', 'vendas') + ' · ' + anuR(vd.val) : '0') + '<em>UTM</em>', vd.custo != null ? anuR(vd.custo) + ' cada · meta ' + anuR(x.refs.cVendaAlvo) : 'meta ' + anuR(x.refs.cVendaAlvo) + ' por venda', '', rodapeVenda) +
     etapa('retorno', r, r.roas != null ? 'ROAS ' + anuD(r.roas) + '<em>' + (fonteTxt[r.fonte] || '') + '</em>' : '—', subRet, 'ret') +
     '</div>';
 
   const nComp = i.agg.puc + i.agg.puv;
-  const meta = '<div class="anu-meta-l"><span class="anu-fonte">Meta</span> no período: ' + anuPlural(i.agg.ld, 'lead', 'leads') + ' · ' + anuPlural(nComp, 'compra', 'compras') + ' · ' + anuUS(i.agg.sp, 0) + ' gastos · ' + anuMil(i.agg.im) + ' impressões</div>';
+  const meta = '<div class="anu-meta-l"><span class="anu-fonte">Meta</span> no período: ' + anuPlural(i.agg.ld, 'lead', 'leads') + ' · ' + anuPlural(nComp, 'compra', 'compras') + (nComp ? ' (' + (i.agg.puc || 0) + ' por clique, ' + (i.agg.puv || 0) + ' só por visualização)' : '') + ' · ' + anuUS(i.agg.sp, 0) + ' gastos · ' + anuMil(i.agg.im) + ' impressões</div>';
 
   let html = '<div class="anu-row anu-card' + (ativo ? '' : ' inativo') + (anuAberto === i.ad ? ' aberto' : '') + '" role="button" tabindex="0" aria-expanded="' + (anuAberto === i.ad) + '"' +
     ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
