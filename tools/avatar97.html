@@ -354,6 +354,15 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 }
 .empty-state{color:var(--text-dim);font-size:13.5px;text-align:center;padding:1.6rem 0;line-height:1.6}
 
+/* ESTRELA "Postar?" (01/10) — marca o vídeo para os Stories */
+.estrela{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;padding:2px 4px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.estrela .est-lbl{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:.02em;line-height:1}
+.estrela svg{width:26px;height:26px;fill:rgba(255,255,255,.32);stroke:rgba(255,255,255,.55);stroke-width:1;transition:fill .2s,filter .2s,transform .15s}
+.estrela:hover svg{transform:scale(1.08)}
+.estrela.on svg{fill:#F5C542;stroke:#FFE08A;filter:drop-shadow(0 0 6px rgba(245,197,66,.85))}
+.estrela.on .est-lbl{color:#F5C542}
+.estrela:disabled{opacity:.5;cursor:wait}
+
 /* BUSCA DA VITRINE (23/09) — achar o vídeo de qualquer colega pelo ramo do cliente */
 .busca{
   display:flex;align-items:center;gap:8px;background:var(--bg-input);
@@ -3450,6 +3459,7 @@ async function loadOrders() {
 // todos e abre qualquer um no Editar, inclusive os que falharam.
 let _meusOrders = [], _ehAdmin = false;
 let _vitrine = [], _vitTotal = 0, _vitAchados = 0, _buscaTimer = null;
+let _estrelas = {};   // (01/10) vídeos marcados com a estrela "Postar?"
 
 function termoBusca() {
   const cx = document.getElementById('buscaRes');
@@ -3461,6 +3471,8 @@ async function carregaVitrine(termo) {
     const resp = await api('/vitrine97?q=' + encodeURIComponent(termo || ''));
     const d = await resp.json();
     if (!d.ok) { _vitrine = []; return; }
+    _estrelas   = {};
+    (d.estrelas || []).forEach(function (id) { _estrelas[id] = true; });
     _vitrine    = d.videos  || [];
     _vitTotal   = d.total   || 0;
     _vitAchados = d.achados || 0;
@@ -3565,13 +3577,37 @@ function cardVitrine(v, custoBRL) {
   const editar = podeEditar
     ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>'
     : '';
+  const id = String(v.orderId || '');
+  const estrela = '<button class="estrela' + (_estrelas[id] ? ' on' : '') + '" data-id="' + escapeHtml(id) + '" onclick="alternaEstrela(this)">' +
+    '<span class="est-lbl">Postar?</span>' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></button>';
   return '<div class="order-item">' +
     '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' +
     quem +
     '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
-    '<div class="order-side"><span class="st-chip st-ok">Pronto</span>' +
+    '<div class="order-side">' + estrela + '<span class="st-chip st-ok">Pronto</span>' +
     '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar +
     '</div></div>';
+}
+
+// (01/10) Estrela "Postar?": acende na hora e grava no servidor; se falhar, volta como estava.
+async function alternaEstrela(bt) {
+  const id = bt.dataset.id;
+  if (!id) return;
+  const on = !bt.classList.contains('on');
+  bt.classList.toggle('on', on);
+  bt.disabled = true;
+  try {
+    const r = await api('/estrela97', { method: 'POST', body: JSON.stringify({ orderId: id, on: on }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'não salvou');
+    if (on) _estrelas[id] = true; else delete _estrelas[id];
+  } catch (e) {
+    bt.classList.toggle('on', !on);
+    toast('⚠️ ' + e.message);
+  } finally {
+    bt.disabled = false;
+  }
 }
 
 // Busca: espera 300ms depois da última tecla, porque a consulta vai ao servidor

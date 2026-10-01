@@ -307,15 +307,28 @@ body{
 /* números do dia */
 .eq-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:12px}
 .eq-kpi{background:var(--e-card);border-radius:16px;padding:13px 14px;min-width:0}
-.eq-kpi-topo{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.eq-kpi b{display:block;min-width:0;font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* sinal × dia anterior: ▲ verde = mais · ▼ vermelho = menos · ● amarelo = na média (só o sinal, sem número) */
-.eq-sinal{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
-.eq-sinal svg{width:14px;height:14px;fill:currentColor}
-.eq-sinal.bom{background:rgba(74,222,128,.14);color:var(--e-ok)}
-.eq-sinal.ruim{background:rgba(242,109,109,.14);color:var(--e-ruim)}
-.eq-sinal.media{background:rgba(250,204,21,.14);color:#FACC15}
-.eq-bloco-cab h3 .eq-sinal{width:20px;height:20px}
+.eq-kpi-topo{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.eq-kpi b{display:block;min-width:0;font-size:19px;font-weight:600;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* sinal × dia anterior (01/10/2026: seta CHEIA em cor sólida, sem bolinha): verde = bom ·
+   vermelho = ruim · ponto amarelo = na média. No custo por lead a seta mostra o movimento e a
+   cor diz se foi bom (custo caiu = seta para baixo verde). */
+.eq-sinal{flex:0 0 auto;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
+.eq-sinal svg{width:22px;height:22px;fill:currentColor}
+.eq-sinal.bom{color:var(--e-ok)}
+.eq-sinal.ruim{color:var(--e-ruim)}
+.eq-sinal.media{color:#FACC15}
+.eq-sinal.media svg{width:13px;height:13px}
+.eq-bloco-cab h3 .eq-sinal,.eq-bloco-cab h3 .eq-sinal svg{width:20px;height:20px}
+.eq-bloco-cab h3 .eq-sinal.media svg{width:11px;height:11px}
+/* fileira "Dia anterior" (01/10/2026): os mesmos cartões, na mesma ordem, sem sinal e em tom apagado */
+.eq-kpi-rotulo{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:0 2px 7px;font-size:12.5px;font-weight:600;color:var(--e-txt2)}
+.eq-kpi-rotulo em{font-style:normal;font-weight:400;color:var(--e-txt3)}
+.eq-kpis.ontem{margin-bottom:14px}
+.eq-kpis.ontem .eq-kpi{background:#141518}
+.eq-kpis.ontem .eq-kpi b{color:var(--e-txt2)}
+.eq-kpis.ontem .eq-kpi span{color:var(--e-txt3)}
+/* tela média: 6 cartões viram 2 linhas de 3 (as duas fileiras), senão o valor de hoje some atrás da seta */
+@media(min-width:761px) and (max-width:1000px){.eq-kpis.n6{grid-template-columns:repeat(3,1fr)}}
 .eq-kpi span{display:block;font-size:12.5px;color:var(--e-txt2);margin-top:3px}
 .eq-kpi.alerta b{color:var(--e-ruim)}
 .eq-kpi.rmk b{color:var(--e-ok)}
@@ -384,6 +397,12 @@ body{
   .eq-regua{padding:14px 14px 10px}
   .eq-kpis{grid-template-columns:1fr 1fr}
   .eq-kpi.largo{grid-column:1/-1}
+  /* dia anterior: 3 por linha, número menor — é a referência, a fileira de hoje continua grande */
+  .eq-kpis.ontem{grid-template-columns:repeat(3,1fr);gap:8px}
+  .eq-kpis.ontem .eq-kpi{padding:10px}
+  .eq-kpis.ontem .eq-kpi b{font-size:15px}
+  .eq-kpis.ontem .eq-kpi span{font-size:11.5px}
+  .eq-kpis.ontem .eq-kpi.largo{grid-column:auto}
   .eq-colunas{display:none}
   .eq-selo{margin-left:0}
   /* celular: nome + número em cima, barra inteira no meio, o detalhe (leads · dupla · anúncio)
@@ -1449,13 +1468,16 @@ async function carregarBalanceador() {
 function eqNum(v) { return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
 
 // Sinal de comparação com o dia anterior (30/09/2026): desenho, nunca emoji (padrão design-lux).
-const EQ_SETA_CIMA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6l7 10H5z"/></svg>';
-const EQ_SETA_BAIXO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18L5 8h14z"/></svg>';
-const EQ_PONTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>';
+// (01/10/2026) seta cheia com haste, cor sólida — mais visível que o triângulo na bolinha
+const EQ_SETA_CIMA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 12h-5.5v9.5h-7V12H3z"/></svg>';
+const EQ_SETA_BAIXO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5 3 12h5.5V2.5h7V12H21z"/></svg>';
+const EQ_PONTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12"/></svg>';
 function eqQuando(cmp) {
   const dia = cmp && cmp.ontem ? ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(cmp.ontem + 'T12:00:00Z').getUTCDay()] : 'ontem';
   return dia + ' até esta hora';
 }
+// minuto do dia (0–1439) → "11:10"
+function eqHoraMin(m) { m = Number(m) || 0; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 // frases = [mais, menos, na média]; 'sobe' é bom (verde ▲), 'desce' é ruim (vermelho ▼)
 function eqSinal(estado, frases, cmp) {
   if (!estado) return '';
@@ -1550,22 +1572,38 @@ function renderBalanceador(d) {
   // Sinal de comparação com o dia anterior ATÉ A MESMA HORA (Thiago, 30/09/2026): só o sinal, sem
   // número. ▲ verde = mais · ▼ vermelho = menos · ● amarelo = na média (±5 leads; ±2,5 no trecho
   // das 7h). No custo por lead a cor segue o que é bom: custo menor = ▼ verde.
+  // (01/10/2026) Em cima, a fileira "Dia anterior": os MESMOS cartões com os números de ontem até
+  // este minuto (o servidor manda em comparacao.valores e atualiza a cada minuto). Sem sinal nela —
+  // o sinal fica só na fileira de hoje, e sai desses mesmos números.
   const cmp = d.comparacao || null;
+  const vo = cmp && cmp.valores ? cmp.valores : null;
   const reaisInt = v => 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-BR');
+  const igual = x => x;
   const kpis = [
-    { v: d.totalLeadsDia, r: 'Leads', t: eqSinal(cmp && cmp.leads, ['Mais leads', 'Menos leads', 'Leads na média'], cmp) },
-    d.anuncioTotalBRL != null ? { v: reaisInt(d.anuncioTotalBRL), r: 'Anúncio do dia',
+    { v: d.totalLeadsDia, o: vo && vo.leads, f: igual, r: 'Leads', t: eqSinal(cmp && cmp.leads, ['Mais leads', 'Menos leads', 'Leads na média'], cmp) },
+    d.anuncioTotalBRL != null ? { v: d.anuncioTotalBRL, o: vo && vo.anuncioBRL, f: reaisInt, r: 'Anúncio do dia',
       t: eqSinal(cmp && cmp.anuncio, ['Mais investimento', 'Menos investimento', 'Investimento na média'], cmp) } : null,
-    d.anuncioTotalBRL != null ? { v: d.custoPorLeadBRL != null ? reais(d.custoPorLeadBRL) : '—', r: 'Custo por lead',
+    d.anuncioTotalBRL != null ? { v: d.custoPorLeadBRL, o: vo && vo.cplBRL, f: reais, r: 'Custo por lead',
       t: eqSinalCusto(cmp && cmp.cpl, cmp) } : null,
-    { v: cotasTotais, r: 'Cotas' },
-    { v: eqNum(s.dif), r: 'Diferença', c: s.dif > 2 ? 'alerta' : '' },
-    { v: d.remarketingHoje || 0, r: 'Remarketing', c: 'rmk',
+    { v: cotasTotais, o: vo && vo.cotas, f: igual, r: 'Cotas', gravado: true },
+    { v: s.dif, o: vo && vo.diferenca, f: eqNum, r: 'Diferença', c: s.dif > 2 ? 'alerta' : '', gravado: true },
+    { v: d.remarketingHoje || 0, o: vo && vo.remarketing, f: igual, r: 'Remarketing', c: 'rmk',
       t: eqSinal(cmp && cmp.remarketing, ['Mais remarketing', 'Menos remarketing', 'Remarketing na média'], cmp) }
   ].filter(Boolean);
-  html += '<div class="eq-kpis">' + kpis.map((k, i) =>
-    '<div class="eq-kpi ' + (k.c || '') + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '">' +
-      '<div class="eq-kpi-topo"><b>' + k.v + '</b>' + (k.t || '') + '</div><span>' + k.r + '</span></div>').join('') + '</div>';
+  const grade = ontem => '<div class="eq-kpis' + (ontem ? ' ontem' : '') + ' n' + kpis.length + '">' + kpis.map((k, i) => {
+    const val = ontem ? k.o : k.v;
+    const semDado = ontem && val == null
+      ? ' title="' + (k.gravado ? 'Este número só passou a ser guardado minuto a minuto em 01/10/2026' : 'Sem este número do dia anterior') + '"' : '';
+    return '<div class="eq-kpi ' + (ontem ? '' : (k.c || '')) + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '"' + semDado + '>' +
+      '<div class="eq-kpi-topo"><b>' + (val == null ? '—' : k.f(val)) + '</b>' + (ontem ? '' : (k.t || '')) + '</div><span>' + k.r + '</span></div>';
+  }).join('') + '</div>';
+  if (vo) {
+    const p = cmp.ontem.split('-');
+    const nomeDia = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(cmp.ontem + 'T12:00:00Z').getUTCDay()];
+    html += '<div class="eq-kpi-rotulo">Dia anterior<em>' + nomeDia + ', ' + p[2] + '/' + p[1] + ' · até ' + eqHoraMin(cmp.minuto) + '</em></div>' +
+      grade(true) + '<div class="eq-kpi-rotulo">Hoje<em>até ' + eqHoraMin(cmp.minuto) + '</em></div>';
+  }
+  html += grade(false);
 
   // ── Bloco 1: das 7h às 8h — só quem entra às 7h, contagem à parte (some no fim de semana)
   const doCedo = eq.filter(e => e.inicio === hr.inicioCedo || n7(e) > 0)

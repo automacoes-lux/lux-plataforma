@@ -129,6 +129,14 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .atr-item small{display:block;color:var(--text-dim);font-size:11px;margin-top:.15rem}
 .atr-fechar{background:transparent;border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.55rem;font-size:13px;cursor:pointer;font-family:inherit}
 .pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
+/* ESTRELA "Postar?" (01/10) — marca o vídeo para os Stories */
+.estrela{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;padding:2px 4px;cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.estrela .est-lbl{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:.02em;line-height:1}
+.estrela svg{width:26px;height:26px;fill:rgba(255,255,255,.32);stroke:rgba(255,255,255,.55);stroke-width:1;transition:fill .2s,filter .2s,transform .15s}
+.estrela:hover svg{transform:scale(1.08)}
+.estrela.on svg{fill:#F5C542;stroke:#FFE08A;filter:drop-shadow(0 0 6px rgba(245,197,66,.85))}
+.estrela.on .est-lbl{color:#F5C542}
+.estrela:disabled{opacity:.5;cursor:wait}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
 .pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
@@ -948,10 +956,31 @@ function pjCard(p, tipo){
   const atr = souAdmin ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
   const lixo = podeMexer ? '<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button>' : '';
   const cat = p.categoria ? '<div class="pj-cat">'+esc(p.categoria)+'</div>' : '';
+  // (01/10) estrela "Postar?" só nos vídeos prontos
+  const estrela = tipo==='res'
+    ? ('<button class="estrela'+(p.estrela?' on':'')+'" data-id="'+escA(p.projectId)+'" onclick="alternaEstrela(this)">'+
+       '<span class="est-lbl">Postar?</span>'+
+       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></button>')
+    : '';
   return '<div class="pj">'+th+
     '<div class="pj-in">'+cat+'<div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
-      '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+
+      '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+estrela+
     '<div class="pj-bt">'+bts+atr+lixo+'</div></div>';
+}
+// (01/10) Estrela "Postar?": acende na hora e grava no servidor; se falhar, volta como estava.
+async function alternaEstrela(bt){
+  const id = bt.dataset.id; if(!id) return;
+  const on = !bt.classList.contains('on');
+  bt.classList.toggle('on', on); bt.disabled = true;
+  try{
+    const r = await api('/histEstrela', { method:'POST', body: JSON.stringify({ projectId:id, on:on }) });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'não salvou');
+    (_resultados||[]).forEach(function(p){ if(p.projectId===id) p.estrela = on; });
+  }catch(e){
+    bt.classList.toggle('on', !on);
+    toast('⚠️ '+e.message);
+  }finally{ bt.disabled = false; }
 }
 async function carregarProjetos(){
   const lp=document.getElementById('listaProjetos'), lr=document.getElementById('listaResultados');
