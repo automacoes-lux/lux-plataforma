@@ -13,10 +13,11 @@
 // O FORMATO foi calibrado pelo Thiago de ouvido ("ficou perfeito"):
 //   0,15 s  "A Lúx cria as melhores músicas!"   (sem música)
 //           a música entra e toca 40 s CHEIOS (20 s até 29/09/2026)
-//   6,6 s   "Versão de teste Lúx."              ┐ tempos do PLAYER (desde
-//   13 s    "Isso é só o começo!"               │ o começo do arquivo, não
-//   19 s    "Impressione com a Lúx."            ┘ da música); a música abaixa
-//   25,6 / 32 / 38 s  as mesmas 3 falas de novo (2ª rodada, +19 s)
+//   8 s     "Versão de teste Lúx."              ┐ tempos do PLAYER (desde
+//   18 s    "Impressione com a Lúx."            │ o começo do arquivo, não
+//   28 s    "Versão de teste Lúx."              │ da música); a música abaixa
+//   38 s    "Impressione com a Lúx."            ┘ um pouco e a voz vem mais baixa
+//           ("Isso é só o começo" saiu em 01/10/2026)
 //   fim dos 40 s: a música some e, em SILÊNCIO,
 //           "Gostou? Ou deseja alguma alteração?"
 //
@@ -43,19 +44,20 @@
     falas: {
       abertura:    { ini: 0.05,  fim: 3.33 },   // 1ª fala, em off (sem música)
       marca:       { ini: 4.29,  fim: 6.14 },   // aos 6,6 s
-      comeco:      { ini: 6.98,  fim: 9.00 },   // aos 13 s
+      comeco:      { ini: 6.98,  fim: 9.00 },   // fora da prévia desde 01/10/2026
       impressione: { ini: 10.06, fim: 11.88 },  // aos 19 s
       chamada:     { ini: 12.88, fim: 16.04 }   // frase final, em off
     },
-    // tempo do ARQUIVO; desde 29/09/2026 a rodada das 3 falas se repete +19 s
-    noMeio:        [['marca', 6.6],  ['comeco', 13], ['impressione', 19],
-                    ['marca', 25.6], ['comeco', 32], ['impressione', 38]],
+    // tempo do ARQUIVO. Desde 01/10/2026: sem "Isso é só o começo" e uma fala
+    // a cada 10 s (antes: 3 falas a cada ~6,4 s, repetidas +19 s)
+    noMeio:        [['marca', 8], ['impressione', 18], ['marca', 28], ['impressione', 38]],
     respiroAntes:  0.15,   // silêncio antes da abertura
     respiroDepois: 0.35,   // entre a abertura e a música
     musicaDura:    40,     // segundos de música (era 20 até 29/09/2026)
     someEm:        1.2,    // fade da música no fim
     silencio:      0.25,   // silêncio antes da chamada
-    abaixaPara:    0.35,   // volume da música sob as falas
+    abaixaPara:    0.45,   // volume da música sob as falas (era 0,35 até 01/10/2026)
+    volumeMeio:    0.4,    // volume das falas SOBRE a música (01/10/2026: 0,75 -> 0,6 -> 0,4, escolhido de ouvido; abertura e chamada ficam em 1)
     rampa:         0.08,
     kbps:          192     // mesmo MP3 do Corte e do Suno Download
   };
@@ -151,7 +153,11 @@
 
     const Off = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     const off = new Off(2, Math.round(taxa * total), taxa);
-    const fala = (buf, t) => { const s = off.createBufferSource(); s.buffer = buf; s.connect(off.destination); s.start(t); };
+    const fala = (buf, t, volume = 1) => {
+      const s = off.createBufferSource(); s.buffer = buf;
+      const g = off.createGain(); g.gain.value = volume;
+      s.connect(g).connect(off.destination); s.start(t);
+    };
     const fonte = off.createBufferSource();
     fonte.buffer = musica;
     const vol = off.createGain();
@@ -161,7 +167,7 @@
     vol.gain.setValueCurveAtTime(curva, tMus, (passos - 1) / 200);
 
     fala(v.abertura, P.respiroAntes);
-    meio.forEach(m => fala(v[m.nome], m.t));
+    meio.forEach(m => fala(v[m.nome], m.t, P.volumeMeio));
     fala(v.chamada, tCta);
     fonte.start(tMus, 0);
 
