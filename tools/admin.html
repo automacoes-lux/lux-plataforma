@@ -373,6 +373,9 @@ body{
 .bal-toggle:hover{background:var(--e-sup-h)}
 .bal-toggle.off{background:rgba(242,109,109,.14);color:#F7A1A1}
 .bal-toggle:disabled{opacity:.5;cursor:wait}
+/* depois das 16h o Religar só vale amanhã (30/09): botão em 2 linhas e etiqueta azul de volta agendada */
+.bal-toggle.amanha{white-space:normal;line-height:1.15;padding:5px 10px;border-radius:14px}
+.bal-tag.volta{background:rgba(110,155,255,.14);color:#9DBBFF}
 .bal-acao .bal-tag{white-space:normal;text-align:center}
 .bal-extra{grid-column:span 3}   /* bloco das 7h: sem chaves, a linha ocupa o espaço delas */
 
@@ -1602,6 +1605,7 @@ function renderBalanceador(d) {
     const luz = !e.naRoleta ? 'off' : (recebendo(e) ? '' : 'pausa');
     const tituloLuz = !e.conectado ? 'WhatsApp desconectado'
       : e.ligadoRotator === false ? 'Desligada na tela do Rotator'
+      : !e.ativo && e.voltaEm ? 'Desligada até a meia-noite: volta à roleta em ' + eqDataCurta(e.voltaEm)
       : !e.ativo ? 'Desligada aqui no painel'
       : !recebendo(e) ? 'Entra às ' + e.inicio + 'h — ainda não recebe'
       : 'Conectada e recebendo';
@@ -1613,7 +1617,9 @@ function renderBalanceador(d) {
         '<b title="' + escapeAttr(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
         (controles && cedo ? '<span class="bal-tag cedo" title="Entra às ' + hr.inicioCedo + 'h">' + hr.inicioCedo + 'h</span>' : '') +
         (controles && e.remarketing ? '<span class="bal-tag rmk" title="' + e.remarketing + ' remarketing enviado hoje pelo WhatsApp desta equipe">' + EQ_IC_RMK + e.remarketing + '</span>' : '') +
-        (e.estimado ? '<span class="bal-tag" title="WhatsApp ficou cego: valor estimado pelos cliques">estimado</span>' : '') +
+        (e.estimado ? '<span class="bal-tag" title="WhatsApp parou de gravar: ' + (e.capturados != null ? e.capturados + ' conversas gravadas em ' + e.cliques + ' cliques; ' : '') + 'o resto foi estimado pelos cliques">estimado</span>' : '') +
+        (controles && !e.ativo && e.voltaEm ? '<span class="bal-tag volta" title="Religada depois das ' + hr.fim + 'h: volta à roleta à meia-noite de ' + eqDataCurta(e.voltaEm) + '. Até lá não recebe lead.">' + eqVoltaTexto(e.voltaEm) + '</span>' : '') +
+        (controles && e.ativo && e.creditoLeads > 0 ? '<span class="bal-tag" title="Voltou à roleta hoje e entrou na média das outras: para distribuir, conta como se já tivesse recebido ' + eqNum(e.creditoLeads) + ' leads. Não muda o fechamento.">na média</span>' : '') +
       '</div>' +
       '<div class="bal-barra" title="' + (media > 0 ? 'o risco claro é a média deste bloco (' + eqNum(media) + ' por pessoa)' : '') + '">' +
         '<div class="bal-fill ' + classe + '" style="width:' + pct + '%"></div>' +
@@ -1642,6 +1648,10 @@ function renderBalanceador(d) {
       '<div class="bal-acao">' +
         (e.ligadoRotator === false
           ? '<span class="bal-tag" title="Para religar, use a tela de Números do Rotator — o painel só espelha">desligada no Rotator</span>'
+          : e.conectado && !e.ativo && e.voltaEm
+            ? '<button type="button" class="bal-toggle" onclick="mudarAtivo(\'' + em + '\',false,true)" title="Cancela a volta agendada: ela continua desligada">Cancelar</button>'
+          : e.conectado && !e.ativo && d.faixa === 'depois'
+            ? '<button type="button" class="bal-toggle off amanha" onclick="mudarAtivo(\'' + em + '\',true)" title="Depois das ' + hr.fim + 'h ela não entra na roleta da noite: volta à meia-noite">Religar amanhã</button>'
           : e.conectado
             ? '<button type="button" class="bal-toggle ' + (e.ativo ? '' : 'off') + '" onclick="mudarAtivo(\'' + em + '\',' + (!e.ativo) + ')">' +
               (e.ativo ? 'Desligar' : 'Religar') + '</button>'
@@ -1653,8 +1663,18 @@ function renderBalanceador(d) {
 async function mudarPeso(email, peso) {
   await salvarAjuste({ email, peso }, 'Peso de ' + peso + '× aplicado');
 }
-async function mudarAtivo(email, ativo) {
-  await salvarAjuste({ email, ativo }, ativo ? 'Equipe religada' : 'Equipe desligada da roleta');
+// Religar depois das 16h só vale amanhã; religar no meio do dia entra na média (30/09/2026)
+async function mudarAtivo(email, ativo, cancelarVolta) {
+  await salvarAjuste({ email, ativo }, d => !ativo ? (cancelarVolta ? 'Volta cancelada: ela segue desligada' : 'Equipe desligada da roleta')
+    : d.agendado ? 'Religada para amanhã: volta à roleta à meia-noite de ' + eqDataCurta(d.agendado)
+    : d.credito ? 'Equipe religada na média das outras, sem enxurrada de leads'
+    : 'Equipe religada');
+}
+function eqDataCurta(dia) { const p = String(dia || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] : String(dia || ''); }
+function eqVoltaTexto(dia) {
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const amanha = new Date(Date.parse(hoje + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10);
+  return dia === amanha ? 'volta amanhã' : 'volta ' + eqDataCurta(dia);
 }
 // A chave muda NA HORA (desliza e troca de cor); em seguida a tela recarrega com o que o
 // servidor gravou — se não gravou, ela volta e o erro aparece.
@@ -1678,7 +1698,7 @@ async function salvarAjuste(body, msgOk) {
     });
     const d = await resp.json();
     if (!d.ok) throw new Error(d.error || 'Não salvou');
-    toast(msgOk, 'success');
+    toast(typeof msgOk === 'function' ? msgOk(d) : msgOk, 'success');
     await carregarBalanceador();
   } catch (err) {
     toast(err.message, 'error');
