@@ -329,6 +329,11 @@ body{
 .eq-kpis.ontem .eq-kpi span{color:var(--e-txt3)}
 /* tela média: 6 cartões viram 2 linhas de 3 (as duas fileiras), senão o valor de hoje some atrás da seta */
 @media(min-width:761px) and (max-width:1000px){.eq-kpis.n6{grid-template-columns:repeat(3,1fr)}}
+/* 7 cartões (com o Ritmo, 01/10/2026): numa linha só a partir de 1181 px — a aba fica larga como a de
+   Anúncios —; abaixo disso, 4 + 3 */
+body.eq-larga .container{max-width:1180px}
+@media(min-width:1181px){.eq-kpis.n7{grid-template-columns:repeat(7,1fr)}}
+@media(min-width:761px) and (max-width:1180px){.eq-kpis.n7{grid-template-columns:repeat(4,1fr)}}
 .eq-kpi span{display:block;font-size:12.5px;color:var(--e-txt2);margin-top:3px}
 .eq-kpi.alerta b{color:var(--e-ruim)}
 .eq-kpi.rmk b{color:var(--e-ok)}
@@ -1441,6 +1446,7 @@ function abrirAba(qual) {
     document.getElementById(abas[k][1]).classList.toggle('active', k === qual);
   });
   document.body.classList.toggle('anu-larga', qual === 'anuncios');
+  document.body.classList.toggle('eq-larga', qual === 'equipes');      // 7 cartões numa linha (01/10/2026)
   clearInterval(balTimer);
   clearInterval(rmkTimer);
   if (qual === 'equipes') { carregarBalanceador(); balTimer = setInterval(carregarBalanceador, 30000); }
@@ -1579,10 +1585,15 @@ function renderBalanceador(d) {
   const vo = cmp && cmp.valores ? cmp.valores : null;
   const reaisInt = v => 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-BR');
   const igual = x => x;
+  const duasCasas = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const kpis = [
     { v: d.totalLeadsDia, o: vo && vo.leads, f: igual, r: 'Leads', t: eqSinal(cmp && cmp.leads, ['Mais leads', 'Menos leads', 'Leads na média'], cmp) },
     d.anuncioTotalBRL != null ? { v: d.anuncioTotalBRL, o: vo && vo.anuncioBRL, f: reaisInt, r: 'Anúncio do dia',
       t: eqSinal(cmp && cmp.anuncio, ['Mais investimento', 'Menos investimento', 'Investimento na média'], cmp) } : null,
+    // RITMO (Thiago, 01/10/2026) = leads ÷ anúncio × 100: quantos leads a cada R$ 100. Maior é melhor.
+    d.anuncioTotalBRL != null ? { v: d.ritmo, o: vo && vo.ritmo, f: duasCasas, r: 'Ritmo',
+      dica: 'Ritmo = leads ÷ anúncio do dia × 100 (quantos leads a cada R$ 100 de anúncio)',
+      t: eqSinal(cmp && cmp.ritmo, ['Ritmo maior', 'Ritmo menor', 'Ritmo na média'], cmp) } : null,
     d.anuncioTotalBRL != null ? { v: d.custoPorLeadBRL, o: vo && vo.cplBRL, f: reais, r: 'Custo por lead',
       t: eqSinalCusto(cmp && cmp.cpl, cmp) } : null,
     { v: cotasTotais, o: vo && vo.cotas, f: igual, r: 'Cotas', gravado: true },
@@ -1592,9 +1603,11 @@ function renderBalanceador(d) {
   ].filter(Boolean);
   const grade = ontem => '<div class="eq-kpis' + (ontem ? ' ontem' : '') + ' n' + kpis.length + '">' + kpis.map((k, i) => {
     const val = ontem ? k.o : k.v;
-    const semDado = ontem && val == null
-      ? ' title="' + (k.gravado ? 'Este número só passou a ser guardado minuto a minuto em 01/10/2026' : 'Sem este número do dia anterior') + '"' : '';
-    return '<div class="eq-kpi ' + (ontem ? '' : (k.c || '')) + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '"' + semDado + '>' +
+    const titulo = ontem && val == null
+      ? (k.gravado ? 'Este número só passou a ser guardado minuto a minuto em 01/10/2026' : 'Sem este número do dia anterior')
+      : (k.dica || '');
+    return '<div class="eq-kpi ' + (ontem ? '' : (k.c || '')) + (kpis.length % 2 && i === kpis.length - 1 ? ' largo' : '') + '"' +
+      (titulo ? ' title="' + titulo + '"' : '') + '>' +
       '<div class="eq-kpi-topo"><b>' + (val == null ? '—' : k.f(val)) + '</b>' + (ontem ? '' : (k.t || '')) + '</div><span>' + k.r + '</span></div>';
   }).join('') + '</div>';
   if (vo) {
