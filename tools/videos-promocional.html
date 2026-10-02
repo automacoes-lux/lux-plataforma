@@ -1257,11 +1257,15 @@ async function gerarTudo(){
   try{
     // Com arte pronta a IA NÃO desenha: era exatamente aí que o gpt-image inventava um fundo
     // que o cliente não pediu e devolvia um personagem sem nada a ver com o original.
-    const r = await Promise.all([
-      refs.montado.length ? Promise.resolve(usarPersonagemMontado()) : gerarPersonagem(true),
-      gerarRoteiro('', true)
-    ]);
-    const okPers=r[0], okRot=r[1];
+    // (02/10) O TEXTO VEM PRIMEIRO (~6s) e a imagem só depois de ele dar certo. Em paralelo, um
+    // briefing que a IA recusa já tinha pago o desenho do personagem (US$ 0,18) à toa.
+    ultimoErroRoteiro = '';
+    const okRot = await gerarRoteiro('', true);
+    if(!okRot){
+      toast(ultimoErroRoteiro ? ultimoErroRoteiro.slice(0,160) : '⚠️ O texto falhou — tente de novo.');
+      return;
+    }
+    const okPers = refs.montado.length ? usarPersonagemMontado() : await gerarPersonagem(true);
     // ⚠️ o auto-save é silencioso AQUI de propósito: o toast dele era apagado meio segundo depois
     // pelo aviso de "personagem e roteiro prontos". Os dois viraram uma frase só.
     let salvou = false;
@@ -1465,16 +1469,44 @@ async function gerarRoteiro(ajuste, silencioso){
     const r = await api('/pvsRoteiro', { method:'POST', body: JSON.stringify({
       briefing: briefTexto(), ajuste: String(ajuste||'') }) });   // sem imagem: o texto é só texto
     const d = await r.json();
+    // (02/10) a IA recusou o briefing: a leitura foi paga, mas NADA mais é gerado — e o motivo fica na tela
+    if(!d.ok && d.recusa){ somaCusto(d.aiCostUSD); const er = new Error(d.error); er.recusa = true; throw er; }
     if(!d.ok) throw new Error(d.error||'Erro');
+    if(pareceRecusa(d.fala)) { const er = new Error('🚫 A IA não escreve este comercial. Nenhum vídeo foi gerado. Ajuste as informações do cliente — sem ataques ou estereótipos contra pessoas ou grupos — e gere de novo.'); er.recusa = true; throw er; }
     campanha = { marca: d.marca||'', tom: d.tom||'', sexoVoz: sexoVoz };
     cenas = [{ numero:1, papel:'texto corrido', fala: d.fala, legenda: d.legenda||d.fala, palavras: d.palavras,
                video_url:'', video_status:'', video_error:'' }];
     somaCusto(d.aiCostUSD);
+    const nrOk=document.getElementById('notaRoteiro'); if(nrOk) nrOk.innerHTML='';   // tira a recusa anterior
     if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Texto pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
     return true;
-  }catch(e){ if(!silencioso) toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); return false; }
+  }catch(e){
+    ultimoErroRoteiro = e.message;
+    if(!silencioso) toast((e.recusa?'':'⚠️ ')+e.message);
+    const nr=document.getElementById('notaRoteiro');
+    if(nr){
+      // recusa = caixa vermelha que fica (o toast some em 4s e o atendente achava que era falha de rede)
+      nr.innerHTML = e.recusa ? '<div class="alerta" style="text-align:left;font-size:13.5px">'+esc(e.message)+'</div>' : '⚠️ '+esc(e.message);
+      if(e.recusa) nr.scrollIntoView({block:'center', behavior:'smooth'});
+    }
+    return false;
+  }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
 }
+let ultimoErroRoteiro = '';
+// (02/10) mesmo detector do Worker (pareceRecusaIA): reconhece o JEITO de a IA recusar, não o assunto.
+// Comercial político passa; "Não posso criar propaganda... Posso ajudar com uma versão neutra" não.
+function pareceRecusa(t){
+  const s = String(t||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(!s) return false;
+  if(/^(i'?m sorry|i can'?t|i cannot|i am unable)/.test(s)) return true;
+  if(/^(desculp\w*|sinto muito|lamento|infelizmente)\b.{0,80}\bnao (posso|consigo|e possivel)\b/.test(s)) return true;
+  if(/^(eu )?nao (posso|consigo|e possivel) (te )?(ajudar com|criar|escrever|produzir|gerar|elaborar)/.test(s)) return true;
+  const nega = /\bnao (posso|consigo|vou) (ajudar|criar|escrever|produzir|gerar|elaborar)\b/.test(s);
+  const oferece = /\b(posso ajudar|posso (te )?oferecer|posso (escrever|criar|organizar) (uma|um)|em vez disso|envie (mais )?(informacoes|politicas|dados|detalhes))\b/.test(s);
+  return nega && oferece;
+}
+const MSG_TEXTO_RECUSA = '🚫 Este texto é a <b>resposta de recusa da IA</b>, não um comercial — o personagem ia ler a recusa no vídeo. Ajuste as informações do cliente (sem ataques ou estereótipos contra pessoas ou grupos) e gere outro texto.';
 async function outroRoteiro(){
   const dir = prompt('Quer dar alguma direção para a nova versão? (pode deixar em branco)\n\nEx: mais engraçado, foque na promoção, fale menos do horário');
   if(dir === null) return;   // cancelou
@@ -1560,6 +1592,8 @@ function alertaFalaEditor(i){
   const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala);
   if(!ehLegado()){   // (02/10) vídeo único: mesmo espírito — aviso amarelo, nunca trava
+    // a única exceção: a recusa da IA não é texto do atendente, é a IA dizendo não (o Refazer barra)
+    if(pareceRecusa(cenas[i].fala)){ el.className='alerta'; el.innerHTML=MSG_TEXTO_RECUSA; return; }
     if(n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto grande (<b>'+n+' palavras</b>) — o vídeo vai passar de 30 segundos (~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s). Não impede fazer o vídeo.'; return; }
     if(n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto curto (<b>'+n+' palavras</b>) — o vídeo fica com ~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s. Não impede fazer o vídeo.'; return; }
     el.className='alerta hide'; el.innerHTML=''; return;
@@ -1579,6 +1613,7 @@ function alertaFala(i){
     const cont = document.querySelector('[data-cont="'+i+'"]');
     const seg = Math.round(n * PVS_SEG_POR_PALAVRA);
     if(cont){ cont.textContent = n+' palavras · ~'+seg+'s de vídeo'; cont.style.color = (n>=PVS_MIN && n<=PVS_MAX) ? 'var(--gold)' : ''; }
+    if(pareceRecusa(cenas[i].fala)){ el.className='alerta'; el.innerHTML=MSG_TEXTO_RECUSA; return; }
     if(n > PVS_TRAVA_MAX){ el.className='alerta'; el.innerHTML='⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
     if(n < PVS_TRAVA_MIN){ el.className='alerta'; el.innerHTML='⛔ Texto curto demais: <b>'+n+' palavras</b>. O mínimo é <b>'+PVS_TRAVA_MIN+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
     if(n > PVS_MAX || n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s. O ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras (~30s). Não impede gerar.'; return; }
@@ -1590,7 +1625,7 @@ function alertaFala(i){
 }
 // (02/10) texto que impede gerar: no vídeo único só os extremos travam; no Veo, a faixa 13–15
 function falasRuins(){
-  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>PVS_TRAVA_MAX; }).length;
+  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>PVS_TRAVA_MAX || pareceRecusa(s.fala); }).length;
   return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
 }
 function atualizarBotaoVideo(){
@@ -3063,6 +3098,7 @@ async function refazerCena(i){
   if(ehLegado()){ toast('🔁 Projeto do motor antigo: use "Passar para o motor novo", no topo do editor.'); return; }
   // (02/10) vídeo único: o tamanho só vira aviso dentro do confirm, junto com a duração e o custo
   if(!String(s.fala||'').trim()){ toast('✍️ Escreva o texto antes de refazer.'); return; }
+  if(pareceRecusa(s.fala)){ toast('🚫 Este texto é a recusa da IA, não um comercial. Reescreva antes de refazer.'); return; }
   const seg = Math.round(np * PVS_SEG_POR_PALAVRA);
   const risco = (np > PVS_MAX || np < PVS_MIN) ? ('⚠️ O texto tem '+np+' palavras: o vídeo vai ter ~'+seg+'s (o ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras, ~30s).\n\n') : '';
   const vozNova = (s._vozUsada && s._vozUsada !== vozAtual()) ? ('Voz nova: '+vozAtual()+'\n\n') : '';
