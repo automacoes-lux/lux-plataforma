@@ -313,7 +313,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 <div class="container">
   <div class="page-head">
     <div class="page-title">🐱 Personagem Animado</div>
-    <div class="page-sub">Personagem → roteiro publicitário → <b>vídeo de 32s</b>. Você manda as fotos e as informações do cliente; a IA monta a campanha.</div>
+    <div class="page-sub">Personagem → texto do comercial → <b>vídeo corrido de ~30s</b>. Você manda as fotos e as informações do cliente; a IA escreve a fala.</div>
   </div>
 
   <!-- abas: criar × projetos salvos × vídeos prontos -->
@@ -389,7 +389,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <div class="step">
     <div class="step-head"><div class="step-title">Voz do personagem <span style="color:var(--gold)">*</span></div></div>
-    <div class="step-hint">Vale para as 4 cenas. Escolha aqui em vez de deixar a IA adivinhar pelo personagem.</div>
+    <div class="step-hint">Masculina ou feminina. No passo 2 você ouve as vozes e escolhe a que combina com o personagem.</div>
     <!-- ⚠️ nenhum vem marcado de propósito (27/08): com "masculina" pré-selecionado, o atendente
          passava batido e a voz saía errada sem ninguém ter decidido nada. -->
     <div class="chips" id="chipsVoz">
@@ -398,14 +398,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     </div>
   </div>
 
-  <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E ROTEIRO</button>
+  <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E TEXTO</button>
   <div class="soon-note" id="notaRoteiro"></div>
   <div class="soon-note" id="notaPersonagem"></div>
   </div><!-- /p1 -->
 
   <!-- ══════════ PASSO 2 — O ROTEIRO ══════════ -->
   <div id="telaRoteiro" class="hide">
-    <div class="sec-title">Passo 2 · 📝 Personagem e roteiro</div>
+    <div class="sec-title">Passo 2 · 📝 Personagem e texto</div>
     <div id="avisoRoteiro" class="hide"></div>
     <div id="boxCampanha"></div>
 
@@ -426,15 +426,21 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="cx-montado">
         <div class="tit">🎨 Prefere usar a arte pronta do cliente?</div>
         <div class="sub">Suba aqui e ela <b>substitui a imagem acima</b>, indo direto para os vídeos,
-          <b>sem a IA redesenhar nada</b>. O roteiro das 4 cenas continua o mesmo.</div>
+          <b>sem a IA redesenhar nada</b>. O texto continua o mesmo.</div>
         <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onMontadoPasso2(event)"/></label>
       </div>
     </div>
 
     <div id="boxRoteiro"></div>
     <div class="btn-row" style="margin-bottom:.9rem">
-      <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar roteiro</button>
-      <button class="btn-ghost" onclick="outroRoteiro()">✨ Gerar outro roteiro</button>
+      <button class="btn-ghost" onclick="copiarRoteiro()">📋 Copiar texto</button>
+      <button class="btn-ghost" onclick="outroRoteiro()">✨ Gerar outro texto</button>
+    </div>
+    <!-- (02/10) VOZ DA VISIONSTORY: a lista vem do Worker (/pvsVozes); ▶ toca a amostra -->
+    <div class="step" id="boxVozPasso2">
+      <div class="step-head"><div class="step-title">Voz do personagem</div></div>
+      <div class="step-hint">Toque em <b>▶</b> pra ouvir uma amostra. A voz escolhida fala o texto inteiro.</div>
+      <div id="seletorVoz2"></div>
     </div>
     <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎬 GERAR VÍDEO</button>
     <div class="soon-note" id="notaFalas"></div>
@@ -450,11 +456,10 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
          em modo edição assim que fica pronta. O atendente ajusta o que quiser (ou nada) e
          clica em MONTAR O VÍDEO embaixo — que sempre usa os clipes ATUAIS. -->
     <div id="editorCortes">
-      <div class="sec-title">✂️ As 4 cenas</div>
-      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">As alças amarelas começam nas pontas — arraste-as pra escolher onde cada cena entra e termina. Você também pode baixar uma cena ou refazer só a que não ficou boa.</div>
-      <div class="btn-row" style="margin-bottom:.9rem">
-        <button class="btn-ghost" onclick="refazerTodasAsCenas()">🔄 Refazer as 4 cenas com o personagem atual</button>
-      </div>
+      <div class="sec-title">✂️ O vídeo</div>
+      <div class="soon-note" style="text-align:center;margin-bottom:.9rem">As alças amarelas começam nas pontas — arraste-as pra escolher onde o vídeo começa e termina. Se alguma parte da fala saiu errada, corrija o texto e clique em <b>Refazer</b>.</div>
+      <!-- (02/10) projeto do motor antigo (4 cenas do Veo): aviso + botão de passar pro motor novo -->
+      <div id="boxLegado" class="hide"></div>
       <div id="boxCortes"></div>
 
       <!-- (24/09) CORRETOR DE PRONÚNCIA: fica FORA das cenas, logo abaixo da última, e com cor
@@ -462,7 +467,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
            troca a palavra é o atendente. -->
       <div class="step bloco-pron">
         <div class="step-head"><div class="step-title">Corrigir pronúncia</div></div>
-        <div class="step-hint">O personagem falou uma palavra errada? Cole a palavra aqui (nome, marca, cidade, sobrenome). Você recebe a grafia que o motor lê certo — troque na fala da cena e refaça só aquela cena.</div>
+        <div class="step-hint">O personagem falou uma palavra errada? Cole a palavra aqui (nome, marca, cidade, sobrenome). Você recebe a grafia que o motor lê certo — troque a palavra na fala e clique em Refazer.</div>
         <div class="pron-linha">
           <input type="text" id="inpPron" maxlength="60" placeholder="ex.: Maximiniano" onkeydown="if(event.key==='Enter'){event.preventDefault();corrigirPronuncia();}"/>
           <button type="button" class="btn-pron" id="btnPron" onclick="corrigirPronuncia()">Corrigir pronúncia</button>
@@ -531,7 +536,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
       <!-- (21/09) TRANSIÇÃO ENTRE AS CENAS: ligada de praxe (o fade rápido de sempre). Desligada,
            o editor emenda uma cena direto na outra — corte seco. -->
-      <div class="step" style="margin-top:.8rem">
+      <!-- (02/10) com o vídeo único da VisionStory não há emenda: só aparece em projeto antigo de 4 cenas -->
+      <div class="step hide" id="stepTransicao" style="margin-top:.8rem">
         <div class="step-head"><div class="step-title">Transição entre as cenas</div></div>
         <div class="step-hint">Ligada, cada cena entra com um fade rápido. Desligada, é corte seco: uma cena emenda direto na outra.</div>
         <label class="chave" for="chkTransicao">
@@ -617,7 +623,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ ABA RESULTADOS ══ -->
   <div id="abaResultados" class="hide">
     <div class="sec-title">🎬 Resultados</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você pode refazer só uma cena.</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você corrige o texto e refaz o vídeo.</div>
     <div class="busca">
       <span class="lupa">🔎</span>
       <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
@@ -629,6 +635,20 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- (02/10) MANUTENÇÃO: troca do motor (Veo → VisionStory). O Worker já barra começar algo novo;
+     esta tela só explica. Projetos e Resultados continuam abertos: quem começou um vídeo termina. -->
+<div id="personagemSoon" style="display:none;position:fixed;inset:0;z-index:99999;background:#0d0d0f;align-items:center;justify-content:center;text-align:center;padding:24px">
+  <div style="max-width:430px">
+    <div style="font-size:54px;margin-bottom:14px">🚧</div>
+    <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:22px;margin-bottom:12px">Personagem Animado — Em breve</h2>
+    <p style="font-size:14.5px;color:var(--text-dim);line-height:1.65">Estamos trocando o motor do Personagem Animado: ele volta já já, melhor do que antes. 💛<br><br>Enquanto isso não dá pra começar vídeo novo, mas você ainda pode <b>montar e baixar</b> os que já começou.</p>
+    <div class="btn-row" style="margin-top:1.2rem;justify-content:center">
+      <button class="btn-ghost" onclick="sairDoAviso('projetos')">📁 Meus projetos</button>
+      <button class="btn-ghost" onclick="sairDoAviso('resultados')">🎬 Resultados</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <script src="../js/auth-iframe.js"></script>
@@ -655,6 +675,27 @@ const PALAVRAS_MIN = 13, PALAVRAS_MAX = 15;      // passo 2: o que a IA escreve 
 const BRIEFING_MAX = 500;   // (07/09) informações do cliente: acima disso a IA tenta enfiar tudo e a fala estoura
 const EDIT_MIN = 13, EDIT_MAX = 20;              // passo 3: aviso abaixo de 13 e acima de PALAVRAS_MAX (15); 20 = risco extra no Refazer
 const LIMITES = { product: 4, environment: 4, logo: 1, montado: 1 };
+// ══ (02/10) MOTOR VISIONSTORY ══════════════════════════════════════════════════
+// Um vídeo corrido (~30s) no lugar das 4 cenas do Veo: a imagem do personagem + UM texto + uma
+// voz da biblioteca da VisionStory. Medido no teste do Pra Brinkar: ~0,37s por palavra, então
+// 70–80 palavras dão 26–30s. Tem que bater com o Worker (PVS_PALAVRAS_MIN/MAX).
+// Projeto antigo (4 cenas) continua abrindo e montando — ver ehLegado().
+// A versão Veo desta tela está em lux-plataforma/_backup-personagem-veo-2026-10-02/.
+const PVS_MIN = 70, PVS_MAX = 80;
+const PVS_TRAVA_MIN = 40, PVS_TRAVA_MAX = 100;   // fora disso o GERAR VÍDEO não libera (passo 2)
+const PVS_SEG_POR_PALAVRA = 0.37;
+const PVS_USD_POR_SEG = 0.53 * 0.0607;           // 11 créditos em 20,75s × US$ 0,0607 por crédito
+const PVS_VOZ_PADRAO = { masculina: 'Locução para Propaganda', feminina: 'Raquel - Expressive and Energetic' };
+let vozes = [], vozId = '';                      // vozId vazio = usa a padrão do sexo escolhido no passo 1
+let travadoManut = false, abriuProjeto = false;  // manutenção (admin nunca trava)
+// projeto do motor antigo: mais de uma cena (as 4 do Veo)
+function ehLegado(){ return cenas.length > 1; }
+function custoVideoTxt(nPal){
+  const seg = Math.max(10, (nPal || PVS_MAX) * PVS_SEG_POR_PALAVRA);
+  return '~US$ ' + (seg * PVS_USD_POR_SEG).toFixed(2).replace('.', ',');
+}
+// duração de UMA cena/vídeo: a do vídeo da VisionStory (vem do servidor) ou os 8s do Veo
+function durCena(s){ const d = Number(s && s._duracao); return d > 0 ? d : CLIPE_SEG; }
 
 function api(path, opts){
   const url = WORKER_URL + path;
@@ -710,7 +751,7 @@ function marcaPersonagem(v){
 // ── Wizard: 3 passos ──
 const PASSOS = [
   { n:1, id:'p1',          rot:'Briefing'            },
-  { n:2, id:'telaRoteiro', rot:'Personagem e roteiro' },
+  { n:2, id:'telaRoteiro', rot:'Personagem e texto' },
   { n:3, id:'telaTrilha',  rot:'Editor'     }
 ];
 let passoAtual = 1, passoMax = 1;
@@ -880,6 +921,10 @@ function ligarArrastoLegenda(){
 
 // ══════════════════ ABAS · SALVAR · PROJETOS · RESULTADOS ══════════════════
 function abrirAba(nome){
+  // (02/10) em manutenção, a aba Criar mostra o aviso — menos quando há um projeto aberto,
+  // que é justamente o caso de terminar (montar/baixar) o que já foi começado.
+  const aviso = document.getElementById('personagemSoon');
+  if(aviso) aviso.style.display = (nome==='criar' && travadoManut && !abriuProjeto) ? 'flex' : 'none';
   ['criar','projetos','resultados'].forEach(function(a){
     const el=document.getElementById('aba'+a.charAt(0).toUpperCase()+a.slice(1));
     if(el) el.classList.toggle('hide', a!==nome);
@@ -897,7 +942,7 @@ function estadoAtual(){
     cliente: (document.getElementById('fCliente')||{}).value||'',
     briefing: (document.getElementById('fBriefing')||{}).value||'',
     ambienteTexto: (document.getElementById('fAmbienteTxt')||{}).value||'',
-    sexoVoz: sexoVoz,
+    sexoVoz: sexoVoz, vozId: vozId,   // (02/10) a voz da VisionStory escolhida no passo 2
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
@@ -1112,6 +1157,8 @@ async function abrirProjeto(id){
     document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
       c.classList.toggle('on', !!sexoVoz && c.dataset.v === sexoVoz);
     });
+    vozId = String(p.vozId || '');   // (02/10) projeto do Veo não tem: fica a padrão do sexo
+    abriuProjeto = true;             // (02/10) em manutenção, deixa terminar o que já começou
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     personagemImg = p.personagem||'';
@@ -1300,6 +1347,7 @@ function limparCenas(){
     s._porEnergia=false; s._tentCorte=0;   // (10/09) clipe novo começa com a ficha limpa
     s._vozId=null; s._vozUrl=''; s._vozErro=''; s._audio=null; s._pron=null;
     s.cortaIni=0; s.cortaFim=0; s._cortouManual=false;
+    s._duracao=undefined; s._videoId=''; s._pedidoVs='';   // (02/10) VisionStory
   });
   videoFinalUrl='';                              // o vídeo montado também era do personagem velho
   const v=document.getElementById('videoFinal'); if(v) v.removeAttribute('src');
@@ -1310,12 +1358,12 @@ function limparCenas(){
 function invalidarCenas(){
   const feitas = cenas.filter(s=>s.video_url).length;
   if(!feitas) return true;                       // nada gerado ainda: segue sem perguntar
-  const ok = confirm('Você já tem '+feitas+' cena(s) gerada(s) com o personagem ATUAL.\n\n' +
-    'Mudando a imagem, esses vídeos serão descartados e as '+cenas.length+' cenas terão que ser geradas de novo ' +
-    '(US$ 0,40 cada).\n\nContinuar?');
+  const ok = confirm('Você já tem um vídeo gerado com o personagem ATUAL.\n\n' +
+    'Mudando a imagem, ele será descartado e terá que ser gerado de novo ' +
+    '('+custoVideoTxt(contarPalavras((cenas[0]||{}).fala))+').\n\nContinuar?');
   if(!ok) return false;
   limparCenas();
-  toast('🗑️ Cenas antigas descartadas — clique em GERAR VÍDEO pra refazer com o personagem novo.');
+  toast('🗑️ Vídeo antigo descartado — clique em GERAR VÍDEO pra refazer com o personagem novo.');
   return true;
 }
 
@@ -1370,7 +1418,7 @@ function pintarPersonagem(falha){
   }
   if(av){
     const txt = personagemImg ? '' : (falha || 'A imagem do personagem ainda não foi gerada.');
-    av.innerHTML = txt ? ('⚠️ '+esc(txt)+'<br><br>Você pode <b>gerar de novo</b>, pedir um <b>ajuste</b> no campo abaixo ou <b>subir a arte pronta</b> do cliente. O roteiro das 4 cenas continua o mesmo.') : '';
+    av.innerHTML = txt ? ('⚠️ '+esc(txt)+'<br><br>Você pode <b>gerar de novo</b>, pedir um <b>ajuste</b> no campo abaixo ou <b>subir a arte pronta</b> do cliente. O texto continua o mesmo.') : '';
     av.classList.toggle('hide', !txt);
   }
   box.classList.remove('hide');
@@ -1411,14 +1459,18 @@ async function gerarRoteiro(ajuste, silencioso){
   const btn=silencioso?null:document.getElementById('btnTudo'); const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Criando o roteiro…'; }
   const av=document.getElementById('avisoRoteiro');
-  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Criando o roteiro…</b> a IA está lendo as informações do cliente e montando as 4 cenas.'; }
+  if(av){ av.className='aviso-ok'; av.innerHTML='<span class="spin" style="border-top-color:#fff"></span><b>Escrevendo o texto…</b> a IA está lendo as informações do cliente e montando o comercial.'; }
   try{
-    const r = await api('/rotRoteiro', { method:'POST', body: JSON.stringify({
-      briefing: briefTexto(), ajuste: String(ajuste||''), sexoVoz: sexoVoz }) });   // sem imagem: o roteiro é só texto
+    // (02/10) VisionStory: UM texto corrido (70–80 palavras), não mais 4 cenas
+    const r = await api('/pvsRoteiro', { method:'POST', body: JSON.stringify({
+      briefing: briefTexto(), ajuste: String(ajuste||'') }) });   // sem imagem: o texto é só texto
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
-    campanha = d.campanha; cenas = d.cenas; somaCusto(d.aiCostUSD);
-    if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Roteiro pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
+    campanha = { marca: d.marca||'', tom: d.tom||'', sexoVoz: sexoVoz };
+    cenas = [{ numero:1, papel:'texto corrido', fala: d.fala, legenda: d.legenda||d.fala, palavras: d.palavras,
+               video_url:'', video_status:'', video_error:'' }];
+    somaCusto(d.aiCostUSD);
+    if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Texto pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
     return true;
   }catch(e){ if(!silencioso) toast('⚠️ '+e.message); const nr=document.getElementById('notaRoteiro'); if(nr) nr.innerHTML='⚠️ '+esc(e.message); return false; }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
@@ -1426,10 +1478,38 @@ async function gerarRoteiro(ajuste, silencioso){
 async function outroRoteiro(){
   const dir = prompt('Quer dar alguma direção para a nova versão? (pode deixar em branco)\n\nEx: mais engraçado, foque na promoção, fale menos do horário');
   if(dir === null) return;   // cancelou
-  await gerarRoteiro(dir);
+  if(cenas.some(s=>s.video_url) && !confirm('Este projeto já tem vídeo gerado. Um texto novo descarta esse vídeo.\n\nContinuar?')) return;
+  if(await gerarRoteiro(dir)) salvarProjeto(true);
 }
 const PAPEL_ROT = ['GANCHO','PRODUTO / SERVIÇO','DIFERENCIAL / OFERTA','FECHAMENTO + CTA'];
+// (02/10) passo 2 da VisionStory: UMA caixa com o texto inteiro + contador + voz.
+function renderTextoUnico(){
+  const cab=document.getElementById('boxCampanha');
+  if(cab) cab.innerHTML = (campanha && (campanha.marca || campanha.tom)) ? ('<div class="cc">'+
+      '<div class="cc-tit">🎯 '+esc(campanha.marca || 'Comercial')+'</div>'+
+      (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+'</div>') : '';
+  const box=document.getElementById('boxRoteiro'); if(!box) return;
+  const s = cenas[0];
+  box.innerHTML =
+    '<div class="step"><div class="step-head"><div class="step-title">O texto do personagem</div></div>'+
+    '<div class="step-hint">É o que o personagem fala, do começo ao fim, num vídeo só. Ideal: <b>'+PVS_MIN+' a '+PVS_MAX+' palavras</b> (~30 segundos). Pode editar à vontade.</div>'+
+    '<div class="cena-rot"><textarea data-fa="0" maxlength="1200" style="min-height:190px">'+esc(s.fala||'')+'</textarea>'+
+    '<div class="soon-note" data-cont="0" style="text-align:right;margin-top:.25rem"></div>'+
+    '<div class="alerta hide" data-al="0"></div></div></div>';
+  const el = box.querySelector('[data-fa="0"]');
+  el.addEventListener('input', function(){
+    s.fala = el.value; s.palavras = contarPalavras(el.value); s._legendaSuja = true;
+    alertaFala(0); atualizarBotaoVideo();
+  });
+  el.addEventListener('change', function(){ sincronizarTextos(0); });
+  alertaFala(0); atualizarBotaoVideo();
+  if(s.fala) sincronizarTextos(0);
+  const bv = document.getElementById('boxVozPasso2'); if(bv) bv.classList.remove('hide');
+  pintarSeletorVoz('seletorVoz2');
+}
 function renderRoteiro(){
+  if(!ehLegado() && cenas.length) return renderTextoUnico();
+  const bv = document.getElementById('boxVozPasso2'); if(bv) bv.classList.add('hide');   // Veo: a voz era descrita, não escolhida
   const cab=document.getElementById('boxCampanha');
   if(cab && campanha){
     cab.innerHTML = '<div class="cc">'+
@@ -1479,6 +1559,11 @@ function renderRoteiro(){
 function alertaFalaEditor(i){
   const el = document.querySelector('[data-aled="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala);
+  if(!ehLegado()){   // (02/10) vídeo único: mesmo espírito — aviso amarelo, nunca trava
+    if(n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto grande (<b>'+n+' palavras</b>) — o vídeo vai passar de 30 segundos (~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s). Não impede fazer o vídeo.'; return; }
+    if(n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto curto (<b>'+n+' palavras</b>) — o vídeo fica com ~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s. Não impede fazer o vídeo.'; return; }
+    el.className='alerta hide'; el.innerHTML=''; return;
+  }
   // ⚠️ (08/09) NADA de vermelho e NADA de ⛔ aqui — no passo 3 nenhum tamanho de texto impede o
   // atendente de refazer a cena nem de montar o vídeo. É um aviso amarelo, informativo, e só.
   if(n > PALAVRAS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto grande (<b>'+n+' palavras</b>) — pode não caber inteiro na fala do personagem. Não impede fazer o vídeo.'; return; }
@@ -1490,18 +1575,33 @@ function alertaFalaEditor(i){
 function alertaFala(i){
   const el = document.querySelector('[data-al="'+i+'"]'); if(!el) return;
   const n = contarPalavras(cenas[i].fala); const card = el.closest('.sb');
+  if(!ehLegado()){
+    const cont = document.querySelector('[data-cont="'+i+'"]');
+    const seg = Math.round(n * PVS_SEG_POR_PALAVRA);
+    if(cont){ cont.textContent = n+' palavras · ~'+seg+'s de vídeo'; cont.style.color = (n>=PVS_MIN && n<=PVS_MAX) ? 'var(--gold)' : ''; }
+    if(n > PVS_TRAVA_MAX){ el.className='alerta'; el.innerHTML='⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
+    if(n < PVS_TRAVA_MIN){ el.className='alerta'; el.innerHTML='⛔ Texto curto demais: <b>'+n+' palavras</b>. O mínimo é <b>'+PVS_TRAVA_MIN+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
+    if(n > PVS_MAX || n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s. O ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras (~30s). Não impede gerar.'; return; }
+    el.className='alerta hide'; el.innerHTML=''; return;
+  }
   if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — cada palavra leva meio segundo, e passando disso a fala é cortada no meio no vídeo.'; if(card) card.classList.remove('ok'); return; }
   if(n < PALAVRAS_MIN){ el.className='alerta'; el.innerHTML='⛔ Fala curta: <b>'+n+' palavras</b>. O mínimo é <b>'+PALAVRAS_MIN+'</b> — o personagem vai falar arrastado.'; if(card) card.classList.remove('ok'); return; }
   el.className='alerta hide'; el.innerHTML=''; if(card) card.classList.add('ok');
 }
+// (02/10) texto que impede gerar: no vídeo único só os extremos travam; no Veo, a faixa 13–15
+function falasRuins(){
+  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>PVS_TRAVA_MAX; }).length;
+  return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+}
 function atualizarBotaoVideo(){
-  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
+  const ruins = falasRuins();
   const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaFalas');
   if(btn) btn.disabled = ruins>0;
-  if(nota) nota.innerHTML = ruins>0 ? '⛔ Ajuste a(s) fala(s) marcada(s) em vermelho pra liberar a produção.' : '';
+  if(nota) nota.innerHTML = ruins>0 ? '⛔ Ajuste o texto marcado em vermelho pra liberar a produção.' : '';
 }
 function copiarRoteiro(){
   if(!cenas.length) return;
+  if(!ehLegado()){ copiar(String(cenas[0].legenda||cenas[0].fala||'').trim(), '📋 Texto copiado!'); return; }
   let t='CAMPANHA — '+((campanha&&campanha.marca)||'')+'\n';
   if(campanha){
     if(campanha.objetivo)  t+='Objetivo: '+campanha.objetivo+'\n';
@@ -1517,8 +1617,7 @@ function copiarRoteiro(){
   copiar(t.trim(), '📋 Roteiro copiado!');
 }
 async function irParaVideo(){
-  const ruins = cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
-  if(ruins){ toast('⛔ Ajuste as falas em vermelho.'); return; }
+  if(falasRuins()){ toast('⛔ Ajuste o texto marcado em vermelho.'); return; }
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
 
   // Já existem cenas? Então o atendente voltou ao passo 2 pra mudar alguma coisa — personagem,
@@ -1528,10 +1627,15 @@ async function irParaVideo(){
     const aviso = cenasDesatualizadas()
       ? 'O personagem mudou depois que estas cenas foram geradas.\n\n'
       : '';
-    const refaz = confirm(aviso +
-      'Este projeto já tem ' + feitas + ' cena(s) gerada(s).\n\n' +
-      'OK = REFAZER as ' + cenas.length + ' cenas com o personagem e as falas de agora (US$ 0,40 por cena)\n' +
-      'Cancelar = manter as cenas atuais e só abrir o editor');
+    const refaz = ehLegado()
+      ? confirm(aviso +
+        'Este projeto já tem ' + feitas + ' cena(s) gerada(s).\n\n' +
+        'OK = REFAZER as ' + cenas.length + ' cenas com o personagem e as falas de agora (US$ 0,40 por cena)\n' +
+        'Cancelar = manter as cenas atuais e só abrir o editor')
+      : confirm(aviso +
+        'Este projeto já tem o vídeo gerado.\n\n' +
+        'OK = REFAZER o vídeo com o personagem, o texto e a voz de agora (' + custoVideoTxt(contarPalavras(cenas[0].fala)) + ')\n' +
+        'Cancelar = manter o vídeo atual e só abrir o editor');
     if(refaz){
       limparCenas();
       toast('🗑️ Cenas antigas descartadas — gerando as novas…');
@@ -1580,10 +1684,87 @@ function cenaLimpa(s){
 async function gerarVideo(i){
   const s=cenas[i]; if(!s) return;
   if(!personagemImg){ toast('🧍 Gere o personagem antes.'); return; }
+  // (02/10) projeto de 4 cenas é do motor antigo: não gera mais no Veo — passa pro motor novo
+  if(ehLegado()){ toast('🔁 Este projeto é do motor antigo. Use "Passar para o motor novo", no topo do editor.'); return; }
   s.video_status='gerando'; s.video_url=''; s.video_error=''; renderVideos();
   try{
-    await acompanharVideo(i, await dispararCena(i));
-  } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Cena '+(i+1)+': '+msg); }
+    await acompanharVs(i, await dispararVs(i));
+  } catch(e){ const msg=traduzErroRede(e); s.video_status='erro'; s.video_error=msg.slice(0,220); renderVideos(); toast('⚠️ Vídeo: '+msg); }
+}
+
+// ══ (02/10) VISIONSTORY: pede o vídeo e acompanha até ficar pronto ══════════════
+// O pedidoId nasce aqui, UM por clique. Se a rede cair e o apiRetry repetir, vai o MESMO id e a
+// VisionStory devolve o pedido já feito (não cobra 2x). Refazer/pedir de novo = id novo.
+// O custo NÃO entra aqui: a VisionStory só cobra o que entrega (cost_credit), e ele chega no fim.
+async function dispararVs(i){
+  const s=cenas[i];
+  const img = await subirPersonagem();
+  s._pedidoVs = projectId.replace(/[^A-Za-z0-9_-]/g,'').slice(-30) + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const r = await apiRetry('/pvsVideoStart', { method:'POST', body: JSON.stringify({
+    projectId, imagem: img, texto: String(s.fala||'').trim(), vozId: vozAtual(), pedidoId: s._pedidoVs }) });
+  const d = await r.json();
+  if(!d.ok) throw new Error(d.error||'Falha ao pedir o vídeo');
+  s._vozUsada = vozAtual();
+  return d.videoId;
+}
+async function acompanharVs(i, videoId){
+  const s=cenas[i];
+  s._videoId = videoId; s._desde = Date.now();
+  let semContato = 0, erroServidor = 0, idAtual = videoId;
+  const CICLOS = 150;                 // 150 x 10s = 25 minutos (1080p leva ~6s por segundo de vídeo)
+  const AVISO_LENTO = 54;             // 9 minutos: um vídeo de 30s costuma sair em 3 a 5
+  for(let t=0;t<CICLOS;t++){
+    await new Promise(r=>setTimeout(r, 10000));
+    relogioCena(i);
+    if(s._videoId !== idAtual) return;   // outro pedido (Refazer) assumiu este vídeo
+    avisarLento(i, t+1 >= AVISO_LENTO);
+    if(s._pedeDeNovo){
+      s._pedeDeNovo = false;
+      try{
+        idAtual = await dispararVs(i);
+        s._videoId = idAtual; s._desde = Date.now();
+        t = -1; semContato = 0; erroServidor = 0;
+        avisarLento(i, false); renderVideos();
+        toast('🔄 Pedi o vídeo de novo.');
+        continue;
+      }catch(e){ toast('⚠️ Não consegui pedir de novo: '+traduzErroRede(e)+' — sigo esperando o anterior.'); }
+    }
+    try{
+      const r = await api('/pvsVideoStatus', { method:'POST', body: JSON.stringify({ videoId: idAtual, projectId, fala: s.fala||'' }) });
+      const d = await r.json();
+      semContato = 0;
+      if(d && d.ok === false){
+        if(++erroServidor >= 5){ falharCena(i, 'o servidor recusou a consulta: '+(d.error||'erro desconhecido')); return; }
+        continue;
+      }
+      erroServidor = 0;
+      if(d.status==='done' && d.url){
+        s.video_url=d.url; s.video_status='pronto'; s.video_error='';
+        s._personagemUsado = marcaPersonagem(personagemImg);
+        s._duracao = Number(d.duracao) || undefined;
+        s._vozId = null; s._vozUrl = '';     // a voz da VisionStory já sai limpa: nada pra separar
+        if(d.transcricao){
+          s._fimFala   = Number(d.transcricao.fimFala);
+          s._inicioFala= Number(d.transcricao.inicioFala||0);
+          s._palavra   = d.transcricao.palavra||'';
+          s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
+        }
+        // custo real (créditos + transcrição), UMA vez por vídeo — reconsultar não soma de novo
+        if(s._custoDe !== d.videoId){ s._custoDe = d.videoId; somaCusto(d.custoUSD); }
+        renderVideos(); pintarCusto();
+        await salvarProjeto(true);
+        toast('✅ Vídeo pronto!');
+        return;
+      }
+      if(d.status==='failed'){ falharCena(i, d.error||'a VisionStory recusou este vídeo'); return; }
+    }catch(e){
+      if(++semContato >= 15){
+        falharCena(i, 'sem contato com o servidor há dois minutos e meio — o vídeo pode ter ficado pronto; reabra o projeto antes de refazer');
+        return;
+      }
+    }
+  }
+  falharCena(i, 'passou de 25 minutos sem resposta da VisionStory');
 }
 function falharCena(i, msg){
   const s=cenas[i]; if(!s) return;
@@ -1591,7 +1772,7 @@ function falharCena(i, msg){
   s.video_error=String(msg||'falhou').slice(0,220);
   renderVideos();
   salvarProjeto(true);              // não perder o resto do projeto por causa de uma cena
-  toast('⚠️ Cena '+(i+1)+': '+s.video_error);
+  toast('⚠️ '+(ehLegado() ? ('Cena '+(i+1)) : 'Vídeo')+': '+s.video_error);
 }
 // relógio no card, pra a espera não ser uma caixa preta
 function relogioCena(i){
@@ -1631,11 +1812,11 @@ function avisarLento(i, mostrar){
 // acompanhamento da própria cena, na volta seguinte do laço (evita duas tentativas correndo juntas).
 function tentarDeNovoCena(i){
   const s=cenas[i]; if(!s || s.video_status!=='gerando' || s._pedeDeNovo) return;
-  if(!confirm('A cena '+(i+1)+' está demorando mais que o normal.\n\nPedir esta cena de novo ao motor?\n\n'+
-     'Custa US$ 0,40. O pedido travado também pode ser cobrado, se ele voltar depois.')) return;
+  if(!confirm('O vídeo está demorando mais que o normal.\n\nPedir de novo à VisionStory?\n\n'+
+     'Custa '+custoVideoTxt(contarPalavras(s.fala))+'. O pedido travado também pode ser cobrado, se ele voltar depois.')) return;
   s._pedeDeNovo = true;
   const av = document.querySelector('#boxCortes [data-lento="'+i+'"]');
-  if(av) av.innerHTML = '<span class="spin"></span> Pedindo esta cena de novo ao motor…';
+  if(av) av.innerHTML = '<span class="spin"></span> Pedindo o vídeo de novo…';
 }
 
 async function acompanharVideo(i, predictionId){
@@ -1791,7 +1972,7 @@ let legendas = true;
 let corDestaque = '#ffffff';
 // volume da música de fundo. 0,12 = "Volume padrão" (escolhido pelo Thiago comparando em vídeo).
 let volumeTrilha = 0.12;
-ligarChips('chipsVoz', function(v){ sexoVoz = v; });
+ligarChips('chipsVoz', function(v){ sexoVoz = v; vozId = ''; });   // (02/10) trocou o sexo: volta pra voz padrão dele
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 // (21/09) transição entre as cenas: true = fade rápido (padrão, como sempre foi); false = corte seco
@@ -1847,6 +2028,86 @@ function refsPayload(){
   };
 }
 
+
+// ══ (02/10) VOZES DA VISIONSTORY ═══════════════════════════════════════════════
+// A lista vem do Worker (cache de 24h lá). O sexo escolhido no passo 1 decide a voz PADRÃO e qual
+// grupo aparece primeiro; a escolha do atendente fica em `vozId` e vai salva no projeto.
+// Não existe voz de criança em pt-BR na VisionStory (conferido em 02/10).
+let audioVoz = null;
+function vozAtual(){
+  if(vozId) return vozId;
+  return PVS_VOZ_PADRAO[sexoVoz === 'feminina' ? 'feminina' : 'masculina'];
+}
+async function carregarVozes(){
+  if(vozes.length) return true;
+  try{
+    const r = await api('/pvsVozes'); const d = await r.json();
+    if(d.ok && Array.isArray(d.vozes)) vozes = d.vozes;
+  }catch(e){}
+  return vozes.length > 0;
+}
+function rotuloVoz(v){ return v.nome + (v.estilo ? ' — ' + v.estilo : '') + (v.idade ? ' (' + v.idade + ')' : ''); }
+async function pintarSeletorVoz(boxId){
+  const box = document.getElementById(boxId); if(!box) return;
+  if(!vozes.length){
+    box.innerHTML = '<div class="soon-note"><span class="spin" style="border-top-color:var(--gold)"></span> Carregando as vozes…</div>';
+    if(!await carregarVozes()){
+      box.innerHTML = '<div class="alerta aviso">⚠️ Não consegui carregar a lista de vozes. Vou usar a voz padrão <b>'+esc(vozAtual())+'</b>. '+
+        '<button type="button" class="btn-ghost" style="margin-top:.4rem" onclick="pintarSeletorVoz(\''+boxId+'\')">Tentar de novo</button></div>';
+      return;
+    }
+  }
+  const atual = vozAtual();
+  const fem = sexoVoz === 'feminina';
+  const grupo = function(g, tit){
+    const lista = vozes.filter(v => v.genero === g);
+    return lista.length ? '<optgroup label="'+escA(tit)+'">'+lista.map(v =>
+      '<option value="'+escA(v.id)+'"'+(v.id===atual?' selected':'')+'>'+esc(rotuloVoz(v))+
+      (v.id===PVS_VOZ_PADRAO[g]?' ★ padrão':'')+'</option>').join('')+'</optgroup>' : '';
+  };
+  const gruposHtml = fem ? (grupo('feminina','Vozes femininas') + grupo('masculina','Vozes masculinas'))
+                         : (grupo('masculina','Vozes masculinas') + grupo('feminina','Vozes femininas'));
+  const conhecida = vozes.some(v => v.id === atual);
+  box.innerHTML =
+    '<div class="voz-linha" style="display:flex;gap:.5rem;align-items:stretch;flex-wrap:wrap">'+
+      '<select data-voz="'+boxId+'" style="flex:1 1 220px;min-width:0">'+
+        (conhecida ? '' : '<option value="'+escA(atual)+'" selected>'+esc(atual)+'</option>')+gruposHtml+'</select>'+
+      '<button type="button" class="btn-ghost" data-ouvir="'+boxId+'" style="flex:0 0 auto;width:auto;margin:0">▶ Ouvir</button>'+
+    '</div>'+
+    '<div class="soon-note" data-vozaviso="'+boxId+'" style="margin-top:.35rem"></div>';
+  const sel = box.querySelector('select');
+  sel.addEventListener('change', function(){
+    vozId = sel.value;
+    pararVoz();
+    avisoVozTrocada();
+    ['seletorVoz2','seletorVoz3'].forEach(function(id){ if(id !== boxId) pintarSeletorVoz(id); });
+    salvarProjeto(true);
+  });
+  box.querySelector('[data-ouvir]').addEventListener('click', function(){ ouvirVoz(sel.value, this); });
+  avisoVozTrocada();
+}
+function pararVoz(){
+  if(audioVoz){ try{ audioVoz.pause(); }catch(e){} audioVoz = null; }
+  document.querySelectorAll('[data-ouvir]').forEach(function(b){ b.textContent = '▶ Ouvir'; });
+}
+function ouvirVoz(id, bt){
+  const tocando = audioVoz && audioVoz._id === id;
+  pararVoz();
+  if(tocando) return;                               // 2º clique = parar
+  const v = vozes.find(x => x.id === id);
+  if(!v || !v.amostra){ toast('Esta voz não tem amostra pra ouvir.'); return; }
+  audioVoz = new Audio(v.amostra); audioVoz._id = id;
+  audioVoz.addEventListener('ended', pararVoz);
+  audioVoz.play().catch(function(){ toast('Não consegui tocar a amostra.'); pararVoz(); });
+  if(bt) bt.textContent = '❚❚ Parar';
+}
+// vídeo já feito com outra voz: a troca só vale no próximo Refazer — o atendente precisa saber
+function avisoVozTrocada(){
+  const s = cenas[0];
+  const msg = (s && s.video_url && s._vozUsada && s._vozUsada !== vozAtual())
+    ? '🔁 Voz trocada. O vídeo atual continua com a voz antiga — clique em <b>Refazer</b> pra gerar com a nova.' : '';
+  document.querySelectorAll('[data-vozaviso]').forEach(function(el){ el.innerHTML = msg; });
+}
 
 // (24/09) CORRETOR DE PRONÚNCIA. Pede a grafia fonética de UMA palavra e mostra pro atendente
 // copiar. Não encosta na fala das cenas de propósito: quem troca é ele, antes de refazer a cena.
@@ -1995,15 +2256,16 @@ async function subirTrilha(nome, b64, tipo){
 // Só entra em cena quando o atendente sobe um MP3 maior que o vídeo. A conta do alvo é a
 // MESMA do Worker (histMontar): cada cena vale 8s menos o preâmbulo e menos os cortes.
 function duracaoDoVideo(){
-  const PREAMBULO = 0.1, PER = 8;
+  const PREAMBULO = 0.1;
   let t = 0, n = 0;
   (cenas||[]).forEach(function(c){
     if(!c || !c.video_url) return;
-    const ini = Math.min(Number(c.cortaIni)||0, PER-1);
-    const fim = Math.min(Number(c.cortaFim)||0, PER-1);
-    t += Math.max(1, PER - PREAMBULO - ini - fim); n++;
+    const per = durCena(c);   // (02/10) a do vídeo da VisionStory; 8 no Veo
+    const ini = Math.min(Number(c.cortaIni)||0, per-1);
+    const fim = Math.min(Number(c.cortaFim)||0, per-1);
+    t += Math.max(1, per - PREAMBULO - ini - fim); n++;
   });
-  return n ? Math.round(t) : 32;        // sem cenas prontas ainda: 4 x 8s
+  return n ? Math.round(t) : 30;        // sem vídeo pronto ainda: ~30s
 }
 function fmtTime(sec){
   sec = Math.max(0, Math.round(sec));
@@ -2353,7 +2615,7 @@ async function sincronizarTextos(i){
 // não virar uma pasta de "video.mp4", "video (1).mp4"...
 function baixarCena(i){
   const s = cenas[i]; if(!s || !s.video_url) return;
-  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-cena-'+(i+1)+'.mp4';
+  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+(ehLegado() ? ('-cena-'+(i+1)) : '-video-bruto')+'.mp4';
   const a = document.createElement('a');
   a.href = WORKER_URL + '/promoBaixar?u=' + encodeURIComponent(s.video_url) + '&nome=' + encodeURIComponent(nome);
   a.download = nome;
@@ -2379,7 +2641,7 @@ async function gerarCenas(){
   await subirPersonagem();
   const btn=document.getElementById('btnCenas'); const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>Gerando Vídeo…'; }
-  document.getElementById('notaFinal').innerHTML='<span class="spin"></span> Gerando as cenas… tempo estimado de 2 a 5 minutos.';
+  document.getElementById('notaFinal').innerHTML='<span class="spin"></span> Gerando o vídeo… tempo estimado de 3 a 6 minutos.';
   pintarProgresso();
   try{
     const faltam = cenas.map((s,i)=>i).filter(i=>!cenas[i].video_url);
@@ -2389,15 +2651,15 @@ async function gerarCenas(){
     }));
     const prontas = cenas.filter(s=>s.video_url).length;
     if(prontas < cenas.length){
-      document.getElementById('notaFinal').innerHTML='⚠️ '+prontas+' de '+cenas.length+' prontas. Clique de novo pra refazer só as que faltaram (você paga só essas).';
-      await salvarProjeto(true);   // as que saíram já foram pagas — não perder
-      toast('⚠️ Faltaram cenas — clique de novo (você paga só as que faltam).'); return false;
+      document.getElementById('notaFinal').innerHTML='⚠️ O vídeo não ficou pronto. Corrija o texto se precisar e clique em Refazer.';
+      await salvarProjeto(true);
+      return false;
     }
     // ⚠️ NÃO abre o editor (27/08). O fluxo agora é um clique só e o atendente só vê as cenas
     // se clicar em "Editar" depois do vídeo pronto. Aqui só salvamos: US$1,60 já foram gastos.
     document.getElementById('notaFinal').innerHTML='';
     await salvarProjeto(true);
-    toast('✅ Cenas prontas — confira e ajuste o que quiser.');
+    toast('✅ Vídeo pronto — confira e ajuste o que quiser.');
     return true;
   } finally { if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
@@ -2462,12 +2724,13 @@ function desenharOnda(i){
   cv.width = L;
   const ctx = cv.getContext('2d');
   ctx.clearRect(0,0,L,A);
-  const ini = Number(cenas[i].cortaIni||0), fim = CLIPE_SEG - Number(cenas[i].cortaFim||0);
+  const D = durCena(cenas[i]);   // (02/10) o vídeo único tem ~30s, não 8
+  const ini = Number(cenas[i].cortaIni||0), fim = D - Number(cenas[i].cortaFim||0);
   const n = a.env.length;
   for(let x=0; x<L; x++){
     const v = a.env[Math.floor(x/L*n)]||0;
     const h = Math.max(1, v*(A-6));
-    const t = (x/L)*CLIPE_SEG;
+    const t = (x/L)*D;
     ctx.fillStyle = (t>=ini && t<=fim) ? 'rgba(201,168,76,.85)' : 'rgba(255,255,255,.13)';
     ctx.fillRect(x, (A-h)/2, 1, h);
   }
@@ -2507,13 +2770,19 @@ function renderCortes(){
   const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
   // (01/10) guarda o prompt que a IA escreveu, UMA vez, pro botão "Voltar ao original"
   cenas.forEach(function(s){ if(s && s.prompt_veo_ia === undefined && s.prompt_veo) s.prompt_veo_ia = s.prompt_veo; });
+  // (02/10) VisionStory = 1 vídeo corrido; projeto de 4 cenas é do motor antigo (Veo)
+  const L = ehLegado();
+  const rotulo = function(i){ return L ? ('CENA '+(i+1)) : 'VÍDEO'; };
+  const custoRefaz = function(s){ return L ? 'US$ 0,40' : custoVideoTxt(contarPalavras(s.fala)); };
+  const st = document.getElementById('stepTransicao'); if(st) st.classList.toggle('hide', !L);
+  pintarLegado();
   box.innerHTML='';
   cenas.forEach(function(s,i){
     if(!s.video_url){
       const falhou = (s.video_status === 'erro');
       const f=document.createElement('div'); f.className='sb'; f.setAttribute('data-cena',i);
       f.innerHTML =
-        '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div>'+
+        '<div class="sb-head"><div class="sb-n">'+rotulo(i)+'</div>'+
           (falhou ? '' : '<span class="stt" style="color:var(--text-dim)">gerando…</span>')+
         '</div>'+
         (falhou
@@ -2521,21 +2790,21 @@ function renderCortes(){
           // ainda vindo: nada de vermelho e NENHUM botão de refazer — clicar aqui pagaria
           // US$ 0,40 por uma cena que já está sendo gerada.
           : ('<div class="soon-note" style="text-align:center;padding:1.4rem 0">'+
-               '<span class="spin" style="border-top-color:var(--gold)"></span> Gerando esta cena… <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">(leva de 1 a 2 minutos)</span>'+
+               '<span class="spin" style="border-top-color:var(--gold)"></span> '+(L?'Gerando esta cena…':'Gerando o vídeo…')+' <b data-relogio="'+i+'">0:00</b> <span style="opacity:.7">'+(L?'(leva de 1 a 2 minutos)':'(leva de 3 a 6 minutos)')+'</span>'+
              '</div>'+
              // (24/09) só aparece depois de 4 minutos — antes disso o botão ficaria convidando a
              // pagar US$ 0,40 por uma cena que está a caminho.
              '<div class="alerta aviso hide" data-lento="'+i+'">⏳ <b>Está demorando mais que o normal.</b> A fila do motor de vídeo às vezes engasga e a cena não volta sozinha. Espere mais um pouco ou peça de novo.'+
-               '<div class="btn-row" style="margin-top:.5rem"><button class="btn-refaz" onclick="tentarDeNovoCena('+i+')">🔄 Pedir esta cena de novo (US$ 0,40)</button></div>'+
+               '<div class="btn-row" style="margin-top:.5rem"><button class="btn-refaz" onclick="tentarDeNovoCena('+i+')">🔄 Pedir de novo ('+custoRefaz(s)+')</button></div>'+
              '</div>'))+
-        '<div class="mini" style="margin-top:.6rem">💬 Fala desta cena</div>'+
+        '<div class="mini" style="margin-top:.6rem">💬 '+(L?'Fala desta cena':'Texto do vídeo')+'</div>'+
         (falhou
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (segue a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-             '<textarea data-faed="'+i+'" maxlength="250" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" maxlength="'+(L?250:1200)+'" style="min-height:'+(L?52:150)+'px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
-             blocoPrompt(i, s)+
+             (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz</div><div id="seletorVoz3"></div>')+
              '<div class="btn-row" style="margin-top:.4rem">'+
-               '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+               (L ? '' : '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer ('+custoRefaz(s)+')</button>')+
              '</div>')
           // enquanto gera, a fala é só leitura: editar agora não mudaria o clipe que já saiu,
           // e deixaria a tela mostrando um texto diferente do que o personagem fala.
@@ -2550,7 +2819,7 @@ function renderCortes(){
     if(typeof s.cortaFim!=='number' || !s._cortouManual) s.cortaFim=0;
     const d=document.createElement('div'); d.className='sb'; d.setAttribute('data-cena',i);
     d.innerHTML =
-      '<div class="sb-head"><div class="sb-n">CENA '+(i+1)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
+      '<div class="sb-head"><div class="sb-n">'+rotulo(i)+'</div><span class="stt s-ok" data-dur="'+i+'"></span></div>'+
       // (22/09) preload "auto" → "metadata": com "auto" o celular BAIXAVA as 4 cenas inteiras
       // (uns 10MB cada) toda vez que esta lista era redesenhada — e ela é redesenhada a cada cena
       // que fica pronta. Com "metadata" ele pega só o comecinho pra mostrar o 1º quadro; ao tocar
@@ -2572,10 +2841,10 @@ function renderCortes(){
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
       //  • FALA (embaixo) = o que o personagem PRONUNCIA. Por extenso, porque o Veo engole dígito.
       // Mexer na fala suja a legenda: ao Refazer, ela é reescrita a partir da fala nova (/rotLegenda).
-      '<div class="mini" style="margin-top:.6rem">💬 Legenda desta cena <span style="color:var(--text-dim)">(o que aparece escrito — segue a fala; você pode ajustar)</span></div>'+
-      '<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-      '<div class="mini" style="margin-top:.5rem">🔊 Fala desta cena <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
-      '<textarea data-faed="'+i+'" maxlength="250" style="min-height:52px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<div class="mini" style="margin-top:.6rem">💬 Legenda '+(L?'desta cena':'do vídeo')+' <span style="color:var(--text-dim)">(o que aparece escrito — segue a fala; você pode ajustar)</span></div>'+
+      '<textarea data-leg="'+i+'" style="min-height:'+(L?52:150)+'px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
+      '<div class="mini" style="margin-top:.5rem">🔊 Fala '+(L?'desta cena':'do vídeo')+' <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
+      '<textarea data-faed="'+i+'" maxlength="'+(L?250:1200)+'" style="min-height:'+(L?52:150)+'px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda vai acompanhar esta fala.':'')+'</div>'+
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
@@ -2585,12 +2854,12 @@ function renderCortes(){
         : (s._vozErro ? ('<span style="color:#F5B7B1">⚠️ Não consegui limpar o áudio desta cena ('+esc(s._vozErro)+'). Ela vai entrar com a música do motor por baixo.</span>')
         : (s._vozId ? '<span class="spin"></span> Limpando o áudio (removendo a música do motor)…' : ''))
       )+'</div>'+
-      blocoPrompt(i, s)+
+      (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz <span style="color:var(--text-dim)">(trocar vale no próximo Refazer)</span></div><div id="seletorVoz3"></div>')+
       '<div class="btn-row" style="margin-top:.4rem">'+
-        '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
+        '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ '+(L?'Baixar cena':'Baixar vídeo')+'</button>'+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
         // BAIXAR (é o primeiro da linha) e era ELE que virava "Refazendo…"
-        '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
+        (L ? '' : '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer ('+custoRefaz(s)+')</button>')+
       '</div>';
     box.appendChild(d);
     ligarTrim(d, i);
@@ -2631,6 +2900,7 @@ function renderCortes(){
     el.addEventListener('change', function(){ salvarProjeto(true); });
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
+  if(!L) pintarSeletorVoz('seletorVoz3');
   prepararAudios();
   // ⚠️ (08/09) O passo 3 NÃO sincroniza mais ao abrir. Quem formata é o passo 2 (ao abrir, ao sair
   // da caixa e ao clicar em GERAR VÍDEO). Reescrever aqui apagava a edição manual do atendente.
@@ -2696,8 +2966,9 @@ async function prepararAudios(){
 
 function pintarTrim(i){
   const s=cenas[i]; const box=document.getElementById('boxCortes'); if(!box||!s) return;
-  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
-  const pi=(ini/CLIPE_SEG*100), pf=(fim/CLIPE_SEG*100);
+  const D=durCena(s);   // (02/10) duração real do vídeo (VisionStory) ou os 8s do Veo
+  const ini=Number(s.cortaIni||0), fim=D-Number(s.cortaFim||0);
+  const pi=(ini/D*100), pf=(fim/D*100);
   const q=(sel)=>box.querySelector(sel+'="'+i+'"]');
   const fe=q('[data-fe'), fd=q('[data-fd'), se=q('[data-sel'), hi=q('[data-hi'), hf=q('[data-hf');
   if(fe) fe.style.width=pi+'%';
@@ -2712,13 +2983,14 @@ function pintarTrim(i){
   if(td) td.textContent='corte: '+(ini>0?('-'+ini.toFixed(1)+'s no início '):'')+(s.cortaFim>0?('-'+Number(s.cortaFim).toFixed(1)+'s no fim'):'')+(ini===0&&!s.cortaFim?'sem corte':'');
   if(du) du.textContent=(fim-ini).toFixed(1)+'s';
   if(typeof desenharOnda==='function') desenharOnda(i);   // a onda pinta o trecho escolhido em dourado
-  const tot=cenas.reduce((a,x)=>a+(x.video_url?Math.max(1,CLIPE_SEG-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
+  const tot=cenas.reduce((a,x)=>a+(x.video_url?Math.max(1,durCena(x)-Number(x.cortaIni||0)-Number(x.cortaFim||0)):0),0);
   const nm=document.getElementById('notaMontagem'); if(nm) nm.textContent='Vídeo final: ~'+tot.toFixed(0)+'s';
 }
 function ligarTrim(card, i){
   const bar=card.querySelector('[data-bar]'), video=card.querySelector('video');
   const cur=card.querySelector('[data-cur]');
-  const tempoDoX=(x)=>{ const r=bar.getBoundingClientRect(); return Math.max(0, Math.min(CLIPE_SEG, ((x-r.left)/r.width)*CLIPE_SEG)); };
+  const D=()=>durCena(cenas[i]);   // (02/10) duração real do vídeo
+  const tempoDoX=(x)=>{ const r=bar.getBoundingClientRect(); return Math.max(0, Math.min(D(), ((x-r.left)/r.width)*D())); };
   const seek=(t)=>{ try{ video.currentTime=t; }catch(e){} };
   let arrastando=null;
   const mover=(ev)=>{
@@ -2727,10 +2999,10 @@ function ligarTrim(card, i){
     s._cortouManual = true;   // mexeu na mão: o pré-corte automático não mexe mais nesta cena
     // menos de 0,2s no início = encosta no zero. O atendente só corta o FIM na prática, e um
     // arrasto de 3 pixels sem querer comia a primeira sílaba sem ninguém perceber.
-    if(arrastando==='ini'){ const v=Math.max(0, Math.min(t, CLIPE_SEG-Number(s.cortaFim||0)-1)); s.cortaIni = v<0.2 ? 0 : v; }
-    else                   s.cortaFim=Math.max(0, Math.min(CLIPE_SEG-t, CLIPE_SEG-Number(s.cortaIni||0)-1));
+    if(arrastando==='ini'){ const v=Math.max(0, Math.min(t, D()-Number(s.cortaFim||0)-1)); s.cortaIni = v<0.2 ? 0 : v; }
+    else                   s.cortaFim=Math.max(0, Math.min(D()-t, D()-Number(s.cortaIni||0)-1));
     pintarTrim(i);
-    seek(arrastando==='ini' ? Number(s.cortaIni) : CLIPE_SEG-Number(s.cortaFim));   // vídeo acompanha a alça
+    seek(arrastando==='ini' ? Number(s.cortaIni) : D()-Number(s.cortaFim));   // vídeo acompanha a alça
   };
   const soltar=(ev)=>{ if(!arrastando) return; arrastando=null; try{ bar.releasePointerCapture(ev.pointerId); }catch(e){} };
   card.querySelectorAll('.trim-h').forEach(function(h){
@@ -2744,7 +3016,7 @@ function ligarTrim(card, i){
   // Sem isso o atendente arrastava a alça, dava play e via os 8s inteiros — sem enxergar onde
   // o vídeo realmente vai terminar depois de montado.
   const alcaIni = function(){ return Number(cenas[i].cortaIni)||0; };
-  const alcaFim = function(){ return CLIPE_SEG - (Number(cenas[i].cortaFim)||0); };
+  const alcaFim = function(){ return D() - (Number(cenas[i].cortaFim)||0); };
   video.addEventListener('play', function(){
     const t = video.currentTime||0;
     // fora do trecho escolhido (ou parado no fim dele): volta pro início da alça
@@ -2760,7 +3032,7 @@ function ligarTrim(card, i){
   // clicar na barra = pular pra aquele ponto do vídeo (igual ao editor de áudio)
   bar.addEventListener('pointerdown', function(ev){ if(arrastando) return; video.pause(); seek(tempoDoX(ev.clientX)); });
   // marcador branco acompanha a reprodução
-  video.addEventListener('timeupdate', function(){ if(cur) cur.style.left=((video.currentTime||0)/CLIPE_SEG*100)+'%'; });
+  video.addEventListener('timeupdate', function(){ if(cur) cur.style.left=((video.currentTime||0)/D()*100)+'%'; });
   // ⚠️ o "#t=0.1" do src serve só pra pintar a capa. Sem isto o vídeo FICA em 0,1s: o marcador
   // branco nasce fora do zero e o play come o comecinho da fala.
   const zerar = function(){
@@ -2774,7 +3046,7 @@ function ligarTrim(card, i){
 function verTrecho(i){
   const card=document.querySelector('#boxCortes [data-cena="'+i+'"]'); if(!card) return;
   const v=card.querySelector('video'); const s=cenas[i];
-  const ini=Number(s.cortaIni||0), fim=CLIPE_SEG-Number(s.cortaFim||0);
+  const ini=Number(s.cortaIni||0), fim=durCena(s)-Number(s.cortaFim||0);
   try{ v.currentTime=ini; }catch(e){}
   v.play();
   const parar=()=>{ if(v.currentTime>=fim){ v.pause(); v.removeEventListener('timeupdate',parar); } };
@@ -2788,38 +3060,45 @@ async function refazerCena(i){
   // (08/09) O tamanho da fala vira ADVERTÊNCIA dentro do confirm, não uma barreira: o atendente vê
   // o risco e o custo na mesma tela e decide. Antes o botão nem chegava aqui.
   const np = contarPalavras(s.fala);
-  const risco = (np > EDIT_MAX) ? ('⚠️ A fala tem '+np+' palavras (acima de '+EDIT_MAX+'): ela pode sair cortada no meio.\n\n')
-              : (np > PALAVRAS_MAX) ? ('⚠️ A fala tem '+np+' palavras (acima de '+PALAVRAS_MAX+'): pode sair corrida.\n\n')
-              : (np < EDIT_MIN) ? ('⚠️ A fala tem só '+np+' palavras (mínimo sugerido '+EDIT_MIN+'): o personagem pode falar arrastado.\n\n') : '';
-  if(!confirm(risco+'Refazer a CENA '+(i+1)+'?\n\nCusta US$ 0,40 (só esta cena). O clipe atual será substituído.')) return;
+  if(ehLegado()){ toast('🔁 Projeto do motor antigo: use "Passar para o motor novo", no topo do editor.'); return; }
+  // (02/10) vídeo único: o tamanho só vira aviso dentro do confirm, junto com a duração e o custo
+  if(!String(s.fala||'').trim()){ toast('✍️ Escreva o texto antes de refazer.'); return; }
+  const seg = Math.round(np * PVS_SEG_POR_PALAVRA);
+  const risco = (np > PVS_MAX || np < PVS_MIN) ? ('⚠️ O texto tem '+np+' palavras: o vídeo vai ter ~'+seg+'s (o ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras, ~30s).\n\n') : '';
+  const vozNova = (s._vozUsada && s._vozUsada !== vozAtual()) ? ('Voz nova: '+vozAtual()+'\n\n') : '';
+  if(!confirm(risco+vozNova+'Refazer o VÍDEO com o texto e a voz de agora?\n\nCusta '+custoVideoTxt(np)+'. O vídeo atual será substituído.')) return;
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
   // vermelho de propósito: o atendente precisa enxergar de longe que a cena ESTÁ sendo refeita,
   // senão ele clica de novo e paga US$ 0,40 duas vezes. Volta ao normal quando o card re-renderiza.
-  if(bt){ bt.disabled=true; bt.classList.add('refazendo'); bt.innerHTML='<span class="spin"></span>Refazendo... (1 - 2 min)'; }
+  if(bt){ bt.disabled=true; bt.classList.add('refazendo'); bt.innerHTML='<span class="spin"></span>Refazendo... (3 - 6 min)'; }
   // guarda o clipe atual ANTES de mexer: se o refazer falhar, ele volta.
   // Antes o código zerava video_url de cara — e uma falha deixava a cena órfã, sem vídeo nenhum,
   // depois de o atendente já ter um clipe que funcionava.
   const backup = { video_url:s.video_url, video_status:s.video_status, video_error:s.video_error,
                    cortaIni:s.cortaIni, cortaFim:s.cortaFim,
-                   _fimFala:s._fimFala, _palavra:s._palavra, _porEnergia:s._porEnergia, _audio:s._audio };
+                   _fimFala:s._fimFala, _palavra:s._palavra, _porEnergia:s._porEnergia, _audio:s._audio,
+                   // (02/10) sem estes, uma falha devolvia o vídeo SEM as marcações da legenda e sem a duração
+                   _marcacoes:s._marcacoes, _inicioFala:s._inicioFala, _duracao:s._duracao, _videoId:s._videoId, _vozUsada:s._vozUsada,
+                   _personagemUsado:s._personagemUsado, _cortouManual:s._cortouManual };
   // o clipe é outro e a fala pode ter mudado: o corte TEM que ser recalculado. Sem zerar isso, a
   // cena nova era cortada no tempo da fala ANTIGA.
   s.video_url=''; s.cortaIni=0; s.cortaFim=0;
   s._fimFala=undefined; s._palavra=''; s._porEnergia=false; s._audio=null; s._cortouManual=false;
   s._marcacoes=[]; s._inicioFala=undefined;   // o clipe é outro: marcações da fala antiga não valem
   s._vozId=undefined; s._vozUrl=''; s._vozErro='';   // e a voz isolada do clipe antigo também não
+  s._duracao=undefined;                              // (02/10) a do vídeo novo vem com ele
   try{
     // ⚠️ (08/09) SEM sincronizar: vai pro motor exatamente a fala que está na tela.
     await gerarVideo(i);
     if(!s.video_url) throw new Error(s.video_error||'a cena falhou — tente de novo');
     await calcularCortes();                       // corte novo, medido no clipe novo
-    renderCortes(); pintarCusto(); toast('✅ Cena '+(i+1)+' refeita!');
+    renderCortes(); pintarCusto(); toast('✅ Vídeo refeito!');
     salvarProjeto(true);
   }catch(e){
     // devolve o clipe anterior: falhar no refazer não pode custar um vídeo que já estava bom
     Object.assign(s, backup);
     renderCortes();
-    toast('⚠️ Não deu pra refazer: '+traduzErroRede(e)+(backup.video_url?' — mantive a cena anterior.':''));
+    toast('⚠️ Não deu pra refazer: '+traduzErroRede(e)+(backup.video_url?' — mantive o vídeo anterior.':''));
   }
 }
 
@@ -2848,10 +3127,11 @@ function cenasDesatualizadas(){
 async function iniciarCenasSeNecessario(){
   if(gerandoCenas) return;                                   // já está rodando
   if(!cenas.length || !personagemImg) return;                // roteiro/personagem ainda não existem
+  if(ehLegado()) return;                                     // (02/10) motor antigo: só monta o que já existe
   // Aviso, não pergunta: quem pergunta é o GERAR VÍDEO. Dois confirms seguidos seriam ruído,
   // e aqui a gente pode ter chegado pela barra de passos, sem intenção de refazer nada.
   if(cenasDesatualizadas()){
-    toast('⚠️ Estas cenas são do personagem anterior. Use "Refazer as 4 cenas" acima pra atualizar.');
+    toast('⚠️ Este vídeo é do personagem anterior. Use "Refazer" no editor pra atualizar.');
   }
   if(cenas.every(function(s){ return !!s.video_url; })) return;   // todas já prontas
   gerandoCenas = true;
@@ -2871,7 +3151,7 @@ async function finalizar(){
   // desabilitado segurava o segundo clique. Qualquer caminho que reabilite o botão no meio
   // deixava passar uma segunda montagem — dois renders pagos no Shotstack pelo mesmo vídeo.
   if(montando){ toast('⏳ Já estou montando este vídeo.'); return; }
-  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast('🎥 Gere as cenas antes.'); return; }
+  if(!cenas.length || !cenas.every(s=>s.video_url)){ toast(ehLegado() ? '🎥 Gere as cenas antes.' : '🎥 Gere o vídeo antes.'); return; }
   if(!trilhaSel && !musica && !confirm('Nenhuma trilha escolhida.\n\nMontar o vídeo SEM música de fundo?')) return;
   // ⚠️ (08/09) O botão é capturado AQUI, ANTES de qualquer passo mexer no texto dele.
   // Se o que estiver escrito já for um "carregando", volta pro padrão em vez de perpetuá-lo.
@@ -2913,7 +3193,8 @@ async function finalizar(){
     const clips = cenas.map(s=>({ url:s.video_url, cortaIni:Number(s.cortaIni||0), cortaFim:Number(s.cortaFim||0),
       marcacoes: legendas ? (s._marcacoes||[]) : [], legenda: legendas ? (s.legenda||s.fala||'') : '',
       inicioFala: (s._inicioFala===undefined||s._inicioFala===null) ? undefined : Number(s._inicioFala),
-      vozUrl: s._vozUrl || '' }));
+      vozUrl: s._vozUrl || '',
+      duracao: Number(s._duracao) || undefined }));   // (02/10) sem ela o Worker cortaria nos 8s do Veo
     const r = await apiRetry('/histMontar', { method:'POST', body: JSON.stringify({ projectId, clips,
       musicUrl: trilhaSel?trilhaSel.url:null, music: musica, legendas: legendas, corDestaque: corDestaque,
       volumeTrilha: volumeTrilha, legendaY: legendaY,   // (11/09) altura da legenda no vídeo
@@ -2957,7 +3238,7 @@ async function finalizar(){
 function baixarFinal(){
   if(!videoFinalUrl) return;
   // mesmo motivo do baixarCena(): download="" não vale pra outra origem — vai pelo Worker
-  const nomeFinal=(clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-32s.mp4';
+  const nomeFinal=(clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+'-personagem-animado.mp4';
   const a=document.createElement('a');
   a.href=WORKER_URL+'/promoBaixar?u='+encodeURIComponent(videoFinalUrl)+'&nome='+encodeURIComponent(nomeFinal);
   a.download=nomeFinal;
@@ -2968,8 +3249,52 @@ function copiarLinkFinal(){ if(videoFinalUrl) copiar(videoFinalUrl, '🔗 Link c
 
 
 
+// ══ (02/10) PROJETO DO MOTOR ANTIGO (4 cenas do Veo) ═════════════════════════════
+// Abre e monta como sempre. Pra refazer, vira um projeto da VisionStory: as 4 falas (e as 4
+// legendas) se juntam num texto corrido e o atendente gera UM vídeo novo no passo 2.
+function pintarLegado(){
+  const box = document.getElementById('boxLegado'); if(!box) return;
+  if(!ehLegado()){ box.classList.add('hide'); box.innerHTML=''; return; }
+  box.className = 'alerta aviso';
+  box.style.marginBottom = '.9rem';
+  box.innerHTML = '🔁 <b>Projeto do motor antigo</b> (4 cenas). Você pode montar e baixar como está. '+
+    'Pra mudar alguma fala ou refazer, passe para o motor novo: as 4 falas viram um texto corrido e sai <b>um vídeo só</b>, com a voz que você escolher.'+
+    '<div class="btn-row" style="margin-top:.5rem"><button type="button" class="btn-refaz" onclick="converterParaVs()">🔁 Passar para o motor novo</button></div>';
+}
+async function converterParaVs(){
+  if(!ehLegado()) return;
+  if(!confirm('Passar este projeto para o motor novo?\n\nAs 4 falas viram um texto corrido. As cenas atuais saem do editor '+
+    '(o vídeo já montado continua na aba Resultados até você montar o novo).\n\nDepois, escolha a voz e clique em GERAR VÍDEO.')) return;
+  const junta = function(campo){ return cenas.map(function(c){ return String(c[campo]||c.fala||'').trim(); }).filter(Boolean).join(' '); };
+  const fala = junta('fala'), legenda = junta('legenda');
+  cenas = [{ numero:1, papel:'texto corrido', fala: fala, legenda: legenda, palavras: contarPalavras(fala),
+             video_url:'', video_status:'', video_error:'' }];
+  renderRoteiro(); renderCortes();
+  irPara(2);
+  await salvarProjeto(true);
+  toast('✅ Pronto: confira o texto, escolha a voz e clique em GERAR VÍDEO.');
+}
+// aviso de manutenção: só pra quem NÃO é admin (o Worker diz). Sem rede, não trava a tela —
+// o Worker barra de qualquer jeito.
+async function checarManutencao(){
+  try{
+    const r = await api('/personagemStatus'); const d = await r.json();
+    travadoManut = !!(d && d.locked);
+    const criar = document.getElementById('abaCriar');
+    if(travadoManut && criar && !criar.classList.contains('hide') && !abriuProjeto){
+      const el = document.getElementById('personagemSoon'); if(el) el.style.display = 'flex';
+    }
+  }catch(e){}
+}
+function sairDoAviso(aba){
+  const el = document.getElementById('personagemSoon'); if(el) el.style.display = 'none';
+  abrirAba(aba);
+}
+
 // ── início ──
 pintarBarra();
+carregarVozes();      // (02/10) a lista chega antes de o atendente precisar dela
+checarManutencao();
 pintarContadorBriefing();
 (function(){
   const c=document.getElementById('fCliente');
