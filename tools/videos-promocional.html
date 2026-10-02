@@ -2092,18 +2092,19 @@ async function pintarSeletorVoz(boxId){
       return;
     }
   }
+  // (02/10, pedido do Thiago) SÓ as vozes do sexo escolhido no passo 1. Uma voz salva do outro sexo
+  // (o atendente trocou o botão depois) volta pra padrão do sexo atual.
+  const g = sexoVoz === 'feminina' ? 'feminina' : 'masculina';
+  const doSexo = vozes.filter(v => v.genero === g);
+  if(vozId && vozes.some(v => v.id === vozId) && !doSexo.some(v => v.id === vozId)) vozId = '';
   const atual = vozAtual();
-  const fem = sexoVoz === 'feminina';
-  const grupo = function(g, tit){
-    const lista = vozes.filter(v => v.genero === g);
-    return lista.length ? '<optgroup label="'+escA(tit)+'">'+lista.map(v =>
+  const gruposHtml = doSexo.map(v =>
       '<option value="'+escA(v.id)+'"'+(v.id===atual?' selected':'')+'>'+esc(rotuloVoz(v))+
-      (v.id===PVS_VOZ_PADRAO[g]?' ★ padrão':'')+'</option>').join('')+'</optgroup>' : '';
-  };
-  const gruposHtml = fem ? (grupo('feminina','Vozes femininas') + grupo('masculina','Vozes masculinas'))
-                         : (grupo('masculina','Vozes masculinas') + grupo('feminina','Vozes femininas'));
-  const conhecida = vozes.some(v => v.id === atual);
+      (v.id===PVS_VOZ_PADRAO[g]?' ★ padrão':'')+'</option>').join('');
+  const conhecida = doSexo.some(v => v.id === atual);
   box.innerHTML =
+    '<div class="soon-note" style="margin-bottom:.35rem">'+doSexo.length+' vozes '+(g==='feminina'?'femininas':'masculinas')+
+      ' <span style="opacity:.75">— pra trocar pra voz '+(g==='feminina'?'masculina':'feminina')+', mude o botão no passo 1.</span></div>'+
     '<div class="voz-linha" style="display:flex;gap:.5rem;align-items:stretch;flex-wrap:wrap">'+
       '<select data-voz="'+boxId+'" style="flex:1 1 220px;min-width:0">'+
         (conhecida ? '' : '<option value="'+escA(atual)+'" selected>'+esc(atual)+'</option>')+gruposHtml+'</select>'+
@@ -3212,6 +3213,9 @@ async function finalizar(){
   // no passo 3 a palavra final é do atendente.
   if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
     passo('Preparando as legendas…');
+    // (02/10) MONTAR é uma tentativa nova de propósito: zera o contador das cenas sem legenda.
+    // Sem isto, um vídeo que falhou 3 vezes (o de 39 MB do teste "te") nunca mais tentava.
+    cenas.forEach(function(x){ if(x.video_url && !(x._marcacoes||[]).length) x._tentCorte = 0; });
     await calcularCortes();
     if(cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
       if(!confirm('Não consegui a transcrição de alguma cena.\n\nMontar mesmo assim, SEM legenda?')) {
