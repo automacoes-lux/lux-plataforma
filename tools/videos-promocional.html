@@ -53,6 +53,14 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pron-res{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:.8rem;
   background:rgba(0,0,0,.28);border-radius:var(--radius);padding:.7rem .8rem}
 .pron-saida{flex:1 1 160px;font-size:17px;letter-spacing:.4px;color:#EAF7FE;word-break:break-word}
+/* (01/10) prompt do personagem: recolhido por padrão dentro do cartão da cena */
+.prompt-cena{margin-top:.7rem;border:.5px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,.02);padding:.55rem .7rem}
+.prompt-cena summary{cursor:pointer;font-size:13px;color:var(--text-mid);list-style:none;user-select:none;min-height:28px;display:flex;align-items:center;flex-wrap:wrap;gap:.3rem}
+.prompt-cena summary::-webkit-details-marker{display:none}
+.prompt-cena summary::before{content:'▸';color:var(--gold)}
+.prompt-cena[open] summary::before{content:'▾'}
+.prompt-cena summary span{color:var(--text-dim)}
+.pv-tag{font-size:11px;font-weight:600;color:#141414;background:var(--gold);border-radius:999px;padding:.1rem .5rem}
 .btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
 .btn-gold:hover{filter:brightness(1.07)}
 .btn-gold:disabled{opacity:.55;cursor:not-allowed}
@@ -1599,6 +1607,12 @@ function relogioCena(i){
 // seletor não mudava nada em Refazer — só regerando o roteiro. O Worker acerta a descrição.
 async function dispararCena(i){
   const s=cenas[i];
+  // (01/10) prompt apagado no editor → volta o original. Vazio, o Worker cairia no modelo de
+  // prompt do motor ANTIGO e a cena sairia em outro estilo. Vale pra todo caminho que gera cena.
+  if(!String(s.prompt_veo||'').trim() && s.prompt_veo_ia){
+    s.prompt_veo = s.prompt_veo_ia;
+    toast('Cena '+(i+1)+': o prompt estava vazio — usei o original.');
+  }
   const r = await apiRetry('/histVideoStart', { method:'POST', body: JSON.stringify({
     projectId, imageBase64: personagemImg, scene: cenaLimpa(s), voz: (campanha && campanha.voz) || '',
     sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });
@@ -2461,8 +2475,38 @@ function desenharOnda(i){
   // O que sobra na barra é o marcador da reprodução e as duas alças amarelas.
 }
 
+// (01/10) bloco do prompt dentro do cartão. Só a AÇÃO da cena aparece aqui: fala, voz, cenário e
+// as travas entram pelo Worker na hora de gerar.
+function blocoPrompt(i, s){
+  const mudou = promptMudou(s);
+  return '<details class="prompt-cena" data-pd="'+i+'"'+(mudou?' open':'')+'>'+
+    '<summary>🎬 Prompt do personagem <span>(o que ele faz nesta cena)</span>'+
+      '<b class="pv-tag'+(mudou?'':' hide')+'" data-pvtag="'+i+'">alterado</b></summary>'+
+    '<div class="step-hint" style="margin:.5rem 0 .4rem">Descreva gestos, expressão e movimento — pode escrever em português. '+
+      'A fala, a voz e o cenário entram sozinhos. Vale no próximo <b>Refazer</b> desta cena.</div>'+
+    '<textarea data-pved="'+i+'" maxlength="2000" style="min-height:110px;font-size:12.5px;line-height:1.45">'+esc(s.prompt_veo||'')+'</textarea>'+
+    '<div class="btn-row" style="margin-top:.4rem"><button type="button" class="btn-ghost" onclick="voltarPromptOriginal('+i+')">↩️ Voltar ao original</button></div>'+
+  '</details>';
+}
+function promptMudou(s){
+  return !!s && s.prompt_veo_ia !== undefined && String(s.prompt_veo||'') !== String(s.prompt_veo_ia||'');
+}
+function marcarPromptAlterado(i){
+  const tag = document.querySelector('#boxCortes [data-pvtag="'+i+'"]');
+  if(tag) tag.classList.toggle('hide', !promptMudou(cenas[i]));
+}
+function voltarPromptOriginal(i){
+  const c=cenas[i]; if(!c || c.prompt_veo_ia===undefined) return;
+  c.prompt_veo = c.prompt_veo_ia;
+  const el=document.querySelector('#boxCortes [data-pved="'+i+'"]'); if(el) el.value = c.prompt_veo;
+  marcarPromptAlterado(i); salvarProjeto(true);
+  toast('↩️ Cena '+(i+1)+': prompt original de volta.');
+}
+
 function renderCortes(){
   const box=document.getElementById('boxCortes'); if(!box||!cenas.length) return;
+  // (01/10) guarda o prompt que a IA escreveu, UMA vez, pro botão "Voltar ao original"
+  cenas.forEach(function(s){ if(s && s.prompt_veo_ia === undefined && s.prompt_veo) s.prompt_veo_ia = s.prompt_veo; });
   box.innerHTML='';
   cenas.forEach(function(s,i){
     if(!s.video_url){
@@ -2489,6 +2533,7 @@ function renderCortes(){
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (segue a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
              '<textarea data-faed="'+i+'" maxlength="250" style="min-height:52px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
+             blocoPrompt(i, s)+
              '<div class="btn-row" style="margin-top:.4rem">'+
                '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer (US$ 0,40)</button>'+
              '</div>')
@@ -2540,6 +2585,7 @@ function renderCortes(){
         : (s._vozErro ? ('<span style="color:#F5B7B1">⚠️ Não consegui limpar o áudio desta cena ('+esc(s._vozErro)+'). Ela vai entrar com a música do motor por baixo.</span>')
         : (s._vozId ? '<span class="spin"></span> Limpando o áudio (removendo a música do motor)…' : ''))
       )+'</div>'+
+      blocoPrompt(i, s)+
       '<div class="btn-row" style="margin-top:.4rem">'+
         '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>'+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
@@ -2574,6 +2620,15 @@ function renderCortes(){
       c.legenda = el.value; c._legendaSuja = false;
       c._textosDe = String(c.fala||'').trim(); c._legendaFeita = String(el.value||'').trim();
     });
+  });
+  // (01/10) o prompt editado vale no próximo Refazer desta cena. Salva ao sair da caixa: é texto
+  // comprido, perder por fechar a aba seria pior do que com a fala.
+  box.querySelectorAll('[data-pved]').forEach(function(el){
+    el.addEventListener('input', function(){
+      const i=+el.dataset.pved; const c=cenas[i]; if(!c) return;
+      c.prompt_veo = el.value; marcarPromptAlterado(i);
+    });
+    el.addEventListener('change', function(){ salvarProjeto(true); });
   });
   cenas.forEach(function(s,i){ if(s.video_url) pintarTrim(i); alertaFalaEditor(i); });
   prepararAudios();
