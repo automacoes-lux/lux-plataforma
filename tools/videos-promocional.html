@@ -1474,7 +1474,7 @@ async function gerarRoteiro(ajuste, silencioso){
     if(!d.ok) throw new Error(d.error||'Erro');
     if(pareceRecusa(d.fala)) { const er = new Error('🚫 A IA não escreve este comercial. Nenhum vídeo foi gerado. Ajuste as informações do cliente — sem ataques ou estereótipos contra pessoas ou grupos — e gere de novo.'); er.recusa = true; throw er; }
     campanha = { marca: d.marca||'', tom: d.tom||'', sexoVoz: sexoVoz };
-    cenas = [{ numero:1, papel:'texto corrido', fala: d.fala, legenda: d.legenda||d.fala, palavras: d.palavras,
+    cenas = [{ numero:1, papel:'texto corrido', fala: organizaTexto(d.fala), legenda: organizaTexto(d.legenda||d.fala), palavras: d.palavras,
                video_url:'', video_status:'', video_error:'' }];
     somaCusto(d.aiCostUSD);
     const nrOk=document.getElementById('notaRoteiro'); if(nrOk) nrOk.innerHTML='';   // tira a recusa anterior
@@ -1494,6 +1494,47 @@ async function gerarRoteiro(ajuste, silencioso){
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } if(av){ av.className='hide'; av.innerHTML=''; } }
 }
 let ultimoErroRoteiro = '';
+// (02/10, pedido do Thiago) TEXTO ORGANIZADO pra copiar e mandar pro cliente: uma frase por linha e,
+// frase comprida, quebrada na vírgula (~60 caracteres por linha). Só muda a ARRUMAÇÃO: as palavras
+// são as mesmas, e o Worker junta tudo de novo antes de mandar pra VisionStory (pvsLimpaTexto), então
+// o vídeo sai igual. Texto que já tem quebra de linha (o atendente arrumou) não é mexido.
+function plano(t){ return String(t||'').replace(/\s+/g,' ').trim(); }
+function organizaTexto(t){
+  const s = plano(t);
+  if(!s || /\n/.test(String(t||'').trim())) return String(t||'').trim();
+  const toks = s.split(' ');
+  // 1) frases: termina em . ! ? e a próxima começa com maiúscula. Assim "54. trinta e dois" (telefone)
+  //    e "20.000" não quebram.
+  const frases = []; let atual = '';
+  toks.forEach(function(w, k){
+    atual += (atual ? ' ' : '') + w;
+    const prox = toks[k+1];
+    if(/[.!?…]["”»)]?$/.test(w) && (!prox || /^["“«(¡¿]?[A-ZÀ-Ý]/.test(prox))){ frases.push(atual); atual = ''; }
+  });
+  if(atual) frases.push(atual);
+  // 2) frase comprida (mais de 70 caracteres): quebra perto do MEIO, de preferência numa vírgula ou
+  //    dois-pontos; cada metade ainda grande quebra de novo. A do telefone nunca: é uma sequência só.
+  const quebra = function(l){
+    if(l.length <= 70) return [l];
+    const ws = l.split(' '); let melhor = -1, nota = 9;
+    for(let k = 0; k < ws.length - 1; k++){
+      const r = ws.slice(0, k+1).join(' ').length / l.length;
+      if(r < 0.25 || r > 0.75) continue;
+      // linha terminando em "e", "de", "ou", "que"... fica feia: só em último caso
+      const n = Math.abs(r - 0.5) - (/[,:;]$/.test(ws[k]) ? 0.3 : 0) +
+                (/^(e|ou|de|da|do|das|dos|a|o|as|os|um|uma|que|com|para|pra|por|em|no|na|se|sua|seu)$/i.test(ws[k]) ? 0.5 : 0);
+      if(n < nota){ nota = n; melhor = k; }
+    }
+    if(melhor < 0) return [l];
+    return quebra(ws.slice(0, melhor+1).join(' ')).concat(quebra(ws.slice(melhor+1).join(' ')));
+  };
+  const linhas = [];
+  frases.forEach(function(f){
+    if(/whatsapp|telefone|fone|ligue|liga pra|:\s*\d{2}\./i.test(f)) linhas.push(f);
+    else quebra(f).forEach(function(l){ linhas.push(l); });
+  });
+  return linhas.join('\n');
+}
 // (02/10) mesmo detector do Worker (pareceRecusaIA): reconhece o JEITO de a IA recusar, não o assunto.
 // Comercial político passa; "Não posso criar propaganda... Posso ajudar com uma versão neutra" não.
 function pareceRecusa(t){
@@ -1522,6 +1563,12 @@ function renderTextoUnico(){
       (campanha.tom?('<div class="cc-lin"><b>Tom:</b> '+esc(campanha.tom)+'</div>'):'')+'</div>') : '';
   const box=document.getElementById('boxRoteiro'); if(!box) return;
   const s = cenas[0];
+  // (02/10) projeto salvo com o texto corrido: organiza em linhas, mantendo o recibo da legenda
+  if(s.fala && !/\n/.test(s.fala)){
+    const reciboOk = s._textosDe === String(s.fala).trim() && s._legendaFeita === String(s.legenda||'').trim();
+    s.fala = organizaTexto(s.fala); s.legenda = organizaTexto(s.legenda || s.fala);
+    if(reciboOk){ s._textosDe = s.fala.trim(); s._legendaFeita = s.legenda.trim(); }
+  }
   box.innerHTML =
     '<div class="step"><div class="step-head"><div class="step-title">O texto do personagem</div></div>'+
     '<div class="step-hint">É o que o personagem fala, do começo ao fim, num vídeo só. Ideal: <b>'+PVS_MIN+' a '+PVS_MAX+' palavras</b> (~30 segundos). Pode editar à vontade.</div>'+
@@ -2627,6 +2674,12 @@ async function sincronizarTextos(i){
   }catch(e){ /* sem servidor: a legenda vira a própria fala, SEM recibo (tenta de novo na próxima) */ }
   if(!cenas[i] || cenas[i] !== s) return;                 // a cena foi refeita/trocada no meio
   if(String(s.fala||'').trim() !== fala) return;          // o atendente continuou digitando: esta resposta já é velha
+  // (02/10) texto ORGANIZADO em linhas: o servidor devolve corrido. Se só as quebras mudaram, fica o
+  // jeito que estava (inclusive as quebras que o atendente fez à mão); se mudou palavra, reorganiza.
+  if(!ehLegado()){
+    if(falaNova) falaNova = (plano(falaNova) === plano(fala)) ? fala : organizaTexto(falaNova);
+    if(legNova)  legNova  = (plano(legNova)  === plano(fala)) ? fala : organizaTexto(legNova);
+  }
   if(falaNova && falaNova !== fala){
     s.fala = falaNova; s.palavras = contarPalavras(falaNova);
     ['[data-fa="'+i+'"]', '#boxCortes [data-faed="'+i+'"]'].forEach(function(sel){
