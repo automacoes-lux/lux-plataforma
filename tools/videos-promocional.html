@@ -687,6 +687,7 @@ const PVS_SEG_POR_PALAVRA = 0.37;
 const PVS_USD_POR_SEG = 0.53 * 0.0607;           // 11 créditos em 20,75s × US$ 0,0607 por crédito
 const PVS_VOZ_PADRAO = { masculina: 'Locução para Propaganda', feminina: 'Raquel - Expressive and Energetic' };
 let vozes = [], vozId = '';                      // vozId vazio = usa a padrão do sexo escolhido no passo 1
+let vozesTrocadas = {};                          // (02/10) clone apagado → substituto (vem do /pvsVozes)
 let travadoManut = false, abriuProjeto = false;  // manutenção (admin nunca trava)
 // projeto do motor antigo: mais de uma cena (as 4 do Veo)
 function ehLegado(){ return cenas.length > 1; }
@@ -2124,7 +2125,7 @@ async function carregarVozes(){
   if(vozes.length) return true;
   try{
     const r = await api('/pvsVozes'); const d = await r.json();
-    if(d.ok && Array.isArray(d.vozes)) vozes = d.vozes;
+    if(d.ok && Array.isArray(d.vozes)){ vozes = d.vozes; vozesTrocadas = d.trocadas || {}; }
   }catch(e){}
   return vozes.length > 0;
 }
@@ -2143,6 +2144,10 @@ async function pintarSeletorVoz(boxId){
   // (o atendente trocou o botão depois) volta pra padrão do sexo atual.
   const g = sexoVoz === 'feminina' ? 'feminina' : 'masculina';
   const doSexo = vozes.filter(v => v.genero === g);
+  // (02/10) voz que NÃO existe mais (clone apagado na VisionStory): aparecia o NÚMERO dela na lista e
+  // gerar dava erro. Vira a substituta (o Kids antigo → o Kids novo) ou, sem substituta, a padrão.
+  if(vozId && vozesTrocadas[vozId]) vozId = vozesTrocadas[vozId];
+  if(vozId && !vozes.some(v => v.id === vozId)) vozId = '';
   if(vozId && vozes.some(v => v.id === vozId) && !doSexo.some(v => v.id === vozId)) vozId = '';
   const atual = vozAtual();
   const gruposHtml = doSexo.map(v =>
