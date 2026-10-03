@@ -948,7 +948,7 @@ body.anu-larga .container{max-width:1180px}
     <details class="anu-legenda">
       <summary>Como ler esta tela</summary>
       <p><b>De onde vêm os números:</b> conversas, vendas, faturamento e ROAS vêm do <b>nosso rastreio</b> (a UTM): quem clicou no anúncio, chamou no nosso WhatsApp e pagou. Cada venda pode ser conferida uma por uma. Da Meta usamos só o <b>gasto</b> e o topo do funil (<b>gancho</b> e <b>interesse</b>). As compras que a Meta atribui ficam no detalhe de cada criativo, só para conferência: ela conta quem só viu o anúncio e não recebe as vendas sem e-mail.</p>
-      <p><b>A jornada de cada criativo:</b> <b>Gancho</b> = de cada 100 que viram, quantos assistiram 3 segundos. <b>Interesse</b> = quantos clicaram (CTR). <b>Conversas</b> = quantos chamaram no WhatsApp e quanto custou cada conversa. <b>Vendas</b> = vendas confirmadas e o valor pago. <b>Retorno</b> = ROAS real (faturamento ÷ gasto). Gancho e interesse só ajudam a entender: nesta conta eles não preveem venda, por isso nunca cortam sozinhos.</p>
+      <p><b>A jornada de cada criativo:</b> <b>Gancho</b> = de cada 100 que viram, quantos assistiram 3 segundos. <b>Interesse</b> = quantos clicaram (CTR). <b>Conversas</b> = quantos chamaram no WhatsApp e quanto custou cada conversa. <b>Vendas</b> = o 1º pedido de cada cliente que veio pelo anúncio: 1 venda por cliente, com o que ele pagou na 1ª hora (combo inclusive). Recompra depois disso (por exemplo, o vídeo vendido na entrega) não conta: é mérito da atendente, não do criativo. O cliente é reconhecido pelo link: um cliente antigo que volta por um link novo conta de novo. <b>Retorno</b> = ROAS real (faturamento ÷ gasto). Gancho e interesse só ajudam a entender: nesta conta eles não preveem venda, por isso nunca cortam sozinhos.</p>
       <p><b>As notas:</b> Fraco · Mediano · Bom · Muito bom · Excelente. Gancho: abaixo de 14% é fraco, 32% ou mais é excelente. Interesse: abaixo de 0,38% é fraco, 1,20% ou mais é excelente. Retorno: abaixo do mínimo (1,25) é fraco, entre o mínimo e o saudável (1,5) é mediano, até a meta (2,0) é bom, a partir da meta é muito bom, e 25% acima da meta é excelente. Conversas: pelo custo de cada conversa, comparado ao custo que ainda dá cada um desses ROAS.</p>
       <p><b>O teste da semana</b> (segunda a sexta) tem 3 fases. <b>Dias 1 e 2 (eliminação):</b> só corto desastre, como gastar e ninguém chamar no WhatsApp. <b>Dia 3 em diante (torneio):</b> o motor calcula a chance de cada criativo terminar entre os 3 melhores; quem tem no máximo 1 venda e menos de 15% de chance fica <b>Fora da disputa</b> e eu recomendo cortar (nunca sobram menos de 3). <b>Fechamento:</b> provisório na sexta às 23h55 e <b>definitivo no domingo às 18h</b>, já com as vendas que chegam depois. Até 3 viram <b>Candidato à escala</b> (2+ vendas e ROAS real acima do mínimo); <b>Apto à escala</b> só quem já está na meta (ROAS real 2,0, 3+ vendas em mais de um dia). Até 2 ficam de <b>Reserva</b>.</p>
       <p><b>Empate:</b> com US$40 por criativo, é comum vários terminarem com as mesmas vendas. O aviso de empate diz isso; aí a ordem vem do valor das vendas, e a escala deve começar com verba controlada.</p>
@@ -2406,7 +2406,7 @@ function anuLuxLinha(i) {
     const roas = cambio && i.agg.sp > 0 ? x.val / (i.agg.sp * cambio) : null;
     custo = ' · <span class="' + cls + '">' + anuUS(c) + ' cada</span>' + (roas != null ? ' · ROAS ' + roas.toFixed(2).replace('.', ',') : '');
   }
-  return '<div class="anu-lux" title="Sistema da Lux: cliques com UTM, conversas no WhatsApp e vendas confirmadas, pelo dia do clique">UTM: <b>' + x.pu + (x.pu === 1 ? ' venda' : ' vendas') + '</b>' +
+  return '<div class="anu-lux" title="Sistema da Lux: cliques com UTM, conversas no WhatsApp e clientes que compraram (1 por cliente, 1º pedido), pelo dia do clique">UTM: <b>' + x.pu + (x.pu === 1 ? ' venda' : ' vendas') + '</b>' +
     (x.pu ? ' · ' + anuBRL(x.val) : '') + custo + ' · ' + x.wa + ' conversas · ' + x.cl + ' cliques</div>';
 }
 
@@ -2592,8 +2592,8 @@ function anuKpisV4(d) {
     anuKpi('Gasto', anuR(g), anuUS(sp, 0) + ' no período') +
     anuKpi('Conversas', anuNum(wa), 'no WhatsApp') +
     anuKpi('Custo por conversa', wa ? anuR(g / wa) : '—', 'gasto ÷ conversas') +
-    anuKpi('Vendas', anuNum(pu), 'confirmadas') +
-    anuKpi('Faturamento', anuR(val), 'pago de verdade') +
+    anuKpi('Vendas', anuNum(pu), '1 por cliente') +
+    anuKpi('Faturamento', anuR(val), '1º pedido de cada cliente') +
     anuKpi('ROAS real', pu && g ? anuD(val / g) : '—', 'faturamento ÷ gasto') +
     '</div>';
 }
@@ -2643,7 +2643,7 @@ function anuCampV4(c, d) {
     cn('Conversas', anuNum(c.conversas), c.cliques ? anuNum(c.cliques) + ' cliques' : '') +
     cn('Custo por conversa', c.conversas ? anuR(c.gastoBRL / c.conversas) : '—', 'gasto ÷ conversas') +
     cn('Vendas', anuNum(c.vendas), c.vendas ? anuR(c.gastoBRL / c.vendas) + ' cada' : 'nenhuma ainda') +
-    cn('Faturamento', anuR(c.faturamento), 'pago de verdade') +
+    cn('Faturamento', anuR(c.faturamento), '1º pedido de cada cliente') +
     cn('ROAS real', anuD(c.roasReal), 'meta ' + anuD(E.alvo, 1), anuCorRoas(c.roasReal, E)) +
     '</div>';
   if (c.teste && d.qualidade) {
