@@ -541,6 +541,15 @@ button.btn-baixar{cursor:pointer}
               <span class="sw-knob"></span><span class="sw-txt" id="mascoteState">Off</span>
             </button>
           </div>
+          <!-- (03/10) CORPO INTEIRO — desligado (padrão) = meio corpo, dos joelhos pra cima (rosto grande, regras da
+               VisionStory); ligado = o enquadramento antigo, da cabeça aos pés -->
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="inteiroLbl">Corpo<br/>inteiro</span>
+            <button type="button" class="sw" id="btnInteiro" role="switch" aria-checked="false" onclick="toggleInteiro()"
+                    title="Ligue para a imagem mostrar o personagem da cabeça aos pés. Desligado: dos joelhos pra cima, com o rosto grande.">
+              <span class="sw-knob"></span><span class="sw-txt" id="inteiroState">Off</span>
+            </button>
+          </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="sw-label" id="realLbl">Imagem<br/>real</span>
             <button type="button" class="sw" id="btnReal" role="switch" aria-checked="false" onclick="toggleReal()"
@@ -947,6 +956,7 @@ let transicoes = true;             // Passo 3: transições entre cenas LIGADAS 
 let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let imagemReal = false;            // (16/09) Passo 1: 'Imagem real' — DESLIGADO por padrão (desenho)
+let corpoInteiro = false;          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
 let pollTimer = null;
@@ -1410,7 +1420,7 @@ async function gerarAvatar() {
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
+    const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal, corpoInteiro: corpoInteiro };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
     if (clientPhoto2) payload.personagem2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.ambiente = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
@@ -2543,6 +2553,22 @@ function setRealBtn() {
   if (l) l.classList.toggle('on', imagemReal);
   renderChecklist();
 }
+// (03/10) CORPO INTEIRO — troca o enquadramento da imagem: desligada (padrão), dos joelhos pra cima com o rosto
+// grande (a IA do canto copia melhor o rosto); ligada, da cabeça aos pés como antes. Não muda o preço.
+function toggleInteiro() {
+  corpoInteiro = !corpoInteiro;
+  setInteiroBtn();
+  if (avatarPreview) toast(corpoInteiro ? 'Corpo inteiro ligado — gere a imagem de novo pra ver.' : 'Meio corpo — gere a imagem de novo pra ver.');
+}
+function setInteiroBtn() {
+  const b = document.getElementById('btnInteiro');
+  const e = document.getElementById('inteiroState');
+  const l = document.getElementById('inteiroLbl');
+  if (b) { b.classList.toggle('on', corpoInteiro); b.setAttribute('aria-checked', corpoInteiro ? 'true' : 'false'); }
+  if (e) e.textContent = corpoInteiro ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', corpoInteiro);
+  renderChecklist();
+}
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
 function renderChecklist() {
   const ul = document.getElementById('checklist');
@@ -2562,7 +2588,7 @@ function renderChecklist() {
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
     // (29/09) sem a chave Mascote (o motor novo serve pessoa e mascote), a linha mostra só o estilo da imagem
     '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : '🎨') + '</span><span>' +
-      (imagemReal ? 'Imagem real (foto)' : 'Imagem em desenho') + '</span></li>';
+      (imagemReal ? 'Imagem real (foto)' : 'Imagem em desenho') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
@@ -3285,6 +3311,7 @@ async function gerarClipe() {
       semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
       mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
       real: imagemReal,                      // (16/09) chave "Imagem real" do Passo 1: fica guardada para o Editar
+      corpoInteiro: corpoInteiro,            // (03/10) chave "Corpo inteiro" do Passo 1: fica guardada para o Editar
       // (13/09) o resto do que a atendente preencheu, guardado para o botão Editar trazer de volta
       clientPhoto2: clientPhoto2 ? { base64: clientPhoto2.base64, name: clientPhoto2.name, mimeType: clientPhoto2.mimeType } : null,
       clientPhoto3: clientPhoto3 ? { base64: clientPhoto3.base64, name: clientPhoto3.name, mimeType: clientPhoto3.mimeType } : null,
@@ -3683,6 +3710,7 @@ async function editarClipe(orderId) {
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = d.avatarNote || ''; }
     mascote = !!d.mascote; setMascoteBtn();
     imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
+    corpoInteiro = !!d.corpoInteiro; setInteiroBtn();   // (03/10) volta a chave "Corpo inteiro" do jeito que estava
     renderClientPhoto(); refreshAvatarUI();
 
     rawAudioBuffer = audioBuf;
@@ -3795,7 +3823,7 @@ async function rascSalvarAgora() {
     await rascSincroniza();
     const estado = {
       clientName: campo('clientName'), categoria: campo('fCategoria'), avatarNote: campo('avatarNote'),
-      mascote: !!mascote, real: !!imagemReal, trechoLivre: !!trechoLivre,
+      mascote: !!mascote, real: !!imagemReal, corpoInteiro: !!corpoInteiro, trechoLivre: !!trechoLivre,
       corte: corteUsado || null,
       musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
       origName: rawAudioName || '',
@@ -3896,6 +3924,7 @@ async function continuarProjeto(pid) {
     }
     mascote = !!e.mascote; setMascoteBtn();
     imagemReal = !!e.real; setRealBtn();
+    corpoInteiro = !!e.corpoInteiro; setInteiroBtn();
     renderClientPhoto(); refreshAvatarUI();
 
     if (bTrecho) {
@@ -4109,6 +4138,7 @@ function resetCreateForm() {
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
+  corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -4135,6 +4165,7 @@ function sairEdicao() {
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
+  corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
