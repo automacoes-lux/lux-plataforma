@@ -1788,6 +1788,8 @@ async function dispararVs(i){
   const d = await r.json();
   if(!d.ok) throw new Error(d.error||'Falha ao pedir o vídeo');
   s._vozUsada = vozAtual();
+  // (05/10) com o respiro, a voz é gerada à parte (~2 créditos). Ela NÃO é somada aqui: o servidor já
+  // põe no custo do vídeo pronto (/pvsVideoStatus), que a tela soma uma vez por vídeo.
   return d.videoId;
 }
 async function acompanharVs(i, videoId){
@@ -2709,7 +2711,7 @@ async function sincronizarTextos(i){
 // não virar uma pasta de "video.mp4", "video (1).mp4"...
 function baixarCena(i){
   const s = cenas[i]; if(!s || !s.video_url) return;
-  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+(ehLegado() ? ('-cena-'+(i+1)) : '-video-bruto')+'.mp4';
+  const nome = (clienteNome()||'video').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()+(ehLegado() ? ('-cena-'+(i+1)) : '-personagem-animado')+'.mp4';
   const a = document.createElement('a');
   a.href = WORKER_URL + '/promoBaixar?u=' + encodeURIComponent(s.video_url) + '&nome=' + encodeURIComponent(nome);
   a.download = nome;
@@ -2869,6 +2871,9 @@ function renderCortes(){
   const rotulo = function(i){ return L ? ('CENA '+(i+1)) : 'VÍDEO'; };
   const custoRefaz = function(s){ return L ? 'US$ 0,40' : custoVideoTxt(contarPalavras(s.fala)); };
   const st = document.getElementById('stepTransicao'); if(st) st.classList.toggle('hide', !L);
+  // (05/10) no vídeo único, montar serve só pra pôr legenda/música — o nome do botão diz isso
+  const bf = document.getElementById('btnFinal');
+  if(bf && !montando && bf.innerHTML.indexOf('spin') < 0) bf.innerHTML = L ? TXT_BTN_MONTAR : TXT_BTN_MONTAR_LEG;
   pintarLegado();
   box.innerHTML='';
   cenas.forEach(function(s,i){
@@ -2919,7 +2924,11 @@ function renderCortes(){
       // que fica pronta. Com "metadata" ele pega só o comecinho pra mostrar o 1º quadro; ao tocar
       // no play, o vídeo baixa normalmente.
       '<video src="'+s.video_url+'#t=0.1" playsinline preload="metadata" controls></video>'+
-      '<div class="trim">'+
+      // (05/10) a linha de corte é só do motor antigo (4 cenas do Veo, que alucinavam no fim). O vídeo
+      // da VisionStory é uma tomada só, com respiro no começo e no fim: não tem o que aparar.
+      (!L ? ('<div class="soon-note" style="margin-top:.5rem">✅ <b>O vídeo já está pronto</b>, com a voz. '+
+             'Pode baixar direto. Quer <b>legenda</b> ou <b>música</b>? Use o <b>MONTAR COM LEGENDA</b> lá embaixo.</div>') : '')+
+      (L ? ('<div class="trim">'+
         '<div class="trim-bar" data-bar="'+i+'">'+
           '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
           '<div class="trim-fora" data-fe="'+i+'" style="left:0"></div>'+
@@ -2929,7 +2938,7 @@ function renderCortes(){
           '<div class="trim-h" data-h="fim" data-hf="'+i+'"></div>'+
         '</div>'+
         '<div class="trim-lab"><span data-ti="'+i+'"></span><span class="trim-dur" data-td="'+i+'"></span><span data-tf="'+i+'"></span></div>'+
-      '</div>'+
+      '</div>') : '')+
       '<div class="soon-note" data-auto="'+i+'"></div>'+
       // ⚠️ DUAS CAIXAS (28/08). São o MESMO conteúdo em formatos diferentes, e os dois importam:
       //  • LEGENDA (em cima) = o que aparece ESCRITO. Numeral: R$ 18,90, 500ml, 30 minutos, 10h.
@@ -2950,13 +2959,15 @@ function renderCortes(){
       )+'</div>'+
       (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz <span style="color:var(--text-dim)">(trocar vale no próximo Refazer)</span></div><div id="seletorVoz3"></div>')+
       '<div class="btn-row" style="margin-top:.4rem">'+
-        '<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ '+(L?'Baixar cena':'Baixar vídeo')+'</button>'+
+        // (05/10) VisionStory: baixar o vídeo pronto LANÇA o custo (antes só a montagem lançava)
+        (L ? ('<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>')
+           : ('<button class="btn-refaz" data-entrega="'+i+'" onclick="entregarEBaixar('+i+')">⬇️ Baixar vídeo pronto</button>'))+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
         // BAIXAR (é o primeiro da linha) e era ELE que virava "Refazendo…"
         (L ? '' : '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer ('+custoRefaz(s)+')</button>')+
       '</div>';
     box.appendChild(d);
-    ligarTrim(d, i);
+    if(L) ligarTrim(d, i);
   });
   // a fala editada aqui vale pro roteiro inteiro: quem refizer a cena usa o texto novo
   box.querySelectorAll('[data-faed]').forEach(function(el){
@@ -3048,7 +3059,9 @@ async function prepararAudios(){
   await calcularCortes();                            // barato: se já transcreveu, não repete
   // as ondas também em paralelo — são 4 downloads independentes
   await Promise.all(cenas.map(async function(s,i){
-    if(s.video_url && !s._audio){ const a = await analisarAudio(s.video_url); if(a) s._audio = a; }
+    // (05/10) a análise só desenha a onda da linha de corte — que o vídeo único não tem. Pular poupa
+    // baixar o vídeo inteiro de novo (30 s em 1080p passam de 30 MB no celular).
+    if(s.video_url && !s._audio && ehLegado()){ const a = await analisarAudio(s.video_url); if(a) s._audio = a; }
   }));
   for(let i=0;i<cenas.length;i++){
     const s=cenas[i]; if(!s.video_url) continue;
@@ -3240,7 +3253,40 @@ async function iniciarCenasSeNecessario(){
 // PASSO 5-B: monta os clipes (já aparados) + trilha e entrega o vídeo final.
 // Chamada só pelo botão MONTAR O VÍDEO, no fim do editor. Sempre usa os clipes ATUAIS
 // (cenas[i].video_url) e os cortes que estiverem na tela naquele instante.
+// (05/10) BAIXAR O VÍDEO PRONTO, sem montar. O vídeo da VisionStory já sai completo (voz + respiro);
+// a montagem virou opcional (legenda/música). Antes de baixar, lança no financeiro o que estiver
+// pendente — era a montagem que lançava, e baixar direto deixaria o vídeo sem cobrança. O vídeo vira o
+// "vídeo pronto" do projeto (aparece em Resultados) se ainda não houver um montado.
+let entregando = false;
+async function entregarEBaixar(i){
+  const s = cenas[i]; if(!s || !s.video_url) return;
+  if(entregando) return;
+  entregando = true;
+  const bt = document.querySelector('#boxCortes [data-entrega="'+i+'"]'); const old = bt ? bt.innerHTML : '';
+  if(bt){ bt.disabled = true; bt.innerHTML = '<span class="spin"></span>Preparando…'; }
+  try{
+    const pend = custoPendente();
+    if(pend.aLancar > 0 || Object.keys(pend.outros).length){
+      const r = await apiRetry('/pvsEntregar', { method:'POST', body: JSON.stringify({
+        projectId, cliente: clienteNome(), videoUrl: s.video_url,
+        entregaId: String(s._videoId || 'v') + '-' + Date.now().toString(36),
+        custoUSD: pend.aLancar, custoOutros: pend.outros }) });
+      const d = await r.json();
+      if(!d.ok) throw new Error(d.error || 'não consegui registrar o vídeo');
+      custoLancadoUSD = custoUSD;
+      custoPorLancado = JSON.parse(JSON.stringify(custoPor));
+    }
+    if(!videoFinalUrl){ videoFinalUrl = s.video_url; const v = document.getElementById('videoFinal'); if(v) v.src = videoFinalUrl; }
+    pintarCusto();
+    await salvarProjeto(true);
+    baixarCena(i);
+    toast('⬇️ Baixando o vídeo pronto…');
+  }catch(e){ toast('⚠️ '+traduzErroRede(e)); }
+  finally{ entregando = false; if(bt){ bt.disabled = false; bt.innerHTML = old; } }
+}
+
 const TXT_BTN_MONTAR = '🎬 MONTAR O VÍDEO';
+const TXT_BTN_MONTAR_LEG = '🎬 MONTAR COM LEGENDA';   // (05/10) vídeo único: a montagem só põe legenda/música
 async function finalizar(){
   // ⚠️ (10/09) A trava existia como variável (`montando`) mas nunca era LIDA: só o botão
   // desabilitado segurava o segundo clique. Qualquer caminho que reabilite o botão no meio
