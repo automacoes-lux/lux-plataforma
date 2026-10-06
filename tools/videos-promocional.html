@@ -3026,6 +3026,15 @@ async function calcularCortes(){
   // Quase sempre não sobra nada pra fazer aqui — a transcrição já veio junto com o clipe.
   await Promise.all(cenas.map(function(s,i){ return umCorte(s,i); }));
 }
+// (05/10) marcações que EXISTEM mas estão incompletas contam como faltando. O projeto "EGA" guardou 16
+// palavras de 76 (a transcrição desandou) e, como "tinha marcação", nunca transcrevia de novo: a legenda
+// sairia com 16 palavras amontoadas no último segundo. Menos de 60% das palavras da fala = refaz.
+function temMarcacoes(s){
+  const m = (s && s._marcacoes) || [];
+  if(!m.length) return false;
+  const esperadas = contarPalavras(s.fala);
+  return !(esperadas >= 10 && m.length < esperadas * 0.6);
+}
 async function umCorte(s,i){
   {
     if(!s.video_url) return;
@@ -3034,7 +3043,7 @@ async function umCorte(s,i){
     // existe porque a transcrição falhou. Uma queda de rede de um segundo condenava a cena a
     // sair SEM LEGENDA no vídeo final, e nem a tentativa da montagem recuperava, porque caía
     // nesta mesma linha. Como `_porEnergia` vai salvo no projeto, o defeito voltava ao reabrir.
-    if((s._marcacoes||[]).length && s._fimFala !== undefined && s._fimFala !== null) return;
+    if(temMarcacoes(s) && s._fimFala !== undefined && s._fimFala !== null) return;
     if((s._tentCorte||0) >= 3) return;   // não insiste pra sempre (cada tentativa custa US$ 0,0008)
     s._tentCorte = (s._tentCorte||0) + 1;
     const nota=document.querySelector('#boxCortes [data-auto="'+i+'"]');
@@ -3315,13 +3324,13 @@ async function finalizar(){
   // duas frases diferentes, sem depender de o atendente ter clicado em Refazer.
   // ⚠️ (08/09) A montagem usa os textos COMO ESTÃO na tela. Não conferimos, não reescrevemos:
   // no passo 3 a palavra final é do atendente.
-  if(legendas && cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
+  if(legendas && cenas.some(function(x){ return x.video_url && !temMarcacoes(x); })){
     passo('Preparando as legendas…');
     // (02/10) MONTAR é uma tentativa nova de propósito: zera o contador das cenas sem legenda.
     // Sem isto, um vídeo que falhou 3 vezes (o de 39 MB do teste "te") nunca mais tentava.
-    cenas.forEach(function(x){ if(x.video_url && !(x._marcacoes||[]).length) x._tentCorte = 0; });
+    cenas.forEach(function(x){ if(x.video_url && !temMarcacoes(x)) x._tentCorte = 0; });
     await calcularCortes();
-    if(cenas.some(function(x){ return x.video_url && !(x._marcacoes||[]).length; })){
+    if(cenas.some(function(x){ return x.video_url && !temMarcacoes(x); })){
       if(!confirm('Não consegui a transcrição de alguma cena.\n\nMontar mesmo assim, SEM legenda?')) {
         soltarBotao();   // desistiu: o botão volta ao normal, clicável
         return;
