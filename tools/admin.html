@@ -303,6 +303,10 @@ body{
    atual (não encavalam): verde = maior que a mesma hora do dia anterior, vermelho = menor */
 .eq-corte{position:absolute;top:-1px;bottom:-1px;width:2px;margin-left:-1px;background:var(--e-card);pointer-events:none}
 .eq-regua.com-ritmo .eq-regua-topo{margin-bottom:52px}
+/* (07/10/2026) régua do dia anterior: tom apagado; o tracejado marca a mesma hora de agora */
+.eq-regua.ontem{background:#141518}
+.eq-regua.ontem .eq-regua-topo b{color:var(--e-txt2)}
+.eq-agulha.fantasma{width:0;margin-left:0;background:transparent;border-left:1px dashed var(--e-txt3)}
 .eq-hora{position:absolute;bottom:100%;width:1px;height:31px;margin-left:-.5px;background:rgba(242,242,243,.22);pointer-events:none}
 .eq-hora span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);pointer-events:auto;cursor:default;font-size:11px;font-weight:600;
   line-height:1;padding:3px 7px;border-radius:999px;white-space:nowrap;background:var(--e-sup);color:var(--e-txt)}
@@ -1582,7 +1586,9 @@ const EQ_IC_RMK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11v2
 
 // RÉGUA DO DIA: 7h–8h (só quem entra às 7h) e 8h–16h (todas), com o ponteiro de agora.
 // A hora vem do relógio deste computador, no fuso de Brasília.
-function eqRegua(d, hr) {
+// (07/10/2026) ontemModo = a mesma régua com o ritmo de CADA hora do dia anterior, em cima da de hoje
+// (comparação visual hora a hora): tom apagado, balões cinza, só um tracejado na hora de agora.
+function eqRegua(d, hr, ontemModo) {
   if (d.faixa === 'fds') {
     return '<div class="eq-regua"><div class="eq-regua-topo"><b>Fim de semana: todas as equipes recebem, o dia inteiro</b></div>' +
       '<div class="eq-trilho"><div class="eq-trecho todas agora" style="left:0;right:0"></div></div></div>';
@@ -1592,11 +1598,16 @@ function eqRegua(d, hr) {
   const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
   const hh = Number((p.find(x => x.type === 'hour') || {}).value) % 24, mm = Number((p.find(x => x.type === 'minute') || {}).value);
   const agora = hh + mm / 60;
-  const titulo = { cedo: 'Agora só recebe quem entra às ' + ini + 'h', expediente: 'Agora todas as equipes recebem',
-                   depois: 'Passou das ' + fim + 'h: todas continuam na roleta' }[d.faixa] || 'Horário das equipes';
+  const cmp = d.comparacao || null;
+  const nomeOntem = cmp && cmp.ontem ? ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(cmp.ontem + 'T12:00:00Z').getUTCDay()] : 'dia anterior';
+  const titulo = ontemModo ? 'Dia anterior · ' + nomeOntem + ', ' + String(cmp.ontem).slice(8, 10) + '/' + String(cmp.ontem).slice(5, 7)
+    : ({ cedo: 'Agora só recebe quem entra às ' + ini + 'h', expediente: 'Agora todas as equipes recebem',
+         depois: 'Passou das ' + fim + 'h: todas continuam na roleta' }[d.faixa] || 'Horário das equipes');
   const x = pos(meio);
   let agulha = '';
-  if (agora >= ini && agora <= fim) {
+  if (ontemModo) {
+    if (agora >= ini && agora <= fim) agulha = '<div class="eq-agulha fantasma" style="left:' + pos(agora).toFixed(2) + '%" title="Mesma hora de agora"></div>';
+  } else if (agora >= ini && agora <= fim) {
     const a = pos(agora);
     agulha = '<div class="eq-agulha' + (a < 8 ? ' borda-esq' : a > 92 ? ' borda-dir' : '') + '" style="left:' + a.toFixed(2) + '%">' +
       '<span>' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + '</span></div>';
@@ -1604,29 +1615,30 @@ function eqRegua(d, hr) {
   // (01/10/2026) Tracinho em cada hora e, em cima dele, o RITMO da hora que terminou ali — o das 8h é
   // o trecho das 7h às 8h. Verde = maior que a mesma hora do dia anterior, vermelho = menor. O servidor
   // só manda hora fechada (5 min depois, por causa do atraso da Meta).
-  const cmp = d.comparacao || null;
-  const rh = cmp && Array.isArray(cmp.ritmoHoras) ? cmp.ritmoHoras : [];
+  const rh = ontemModo
+    ? (cmp && Array.isArray(cmp.ritmoHorasOntem) ? cmp.ritmoHorasOntem : []).map(r => ({ ini: r.ini, fim: r.fim, hoje: r.ritmo, ontem: null, sinal: null }))
+    : (cmp && Array.isArray(cmp.ritmoHoras) ? cmp.ritmoHoras : []);
   const duas = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const nomeOntem = cmp && cmp.ontem ? ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(cmp.ontem + 'T12:00:00Z').getUTCDay()] : 'dia anterior';
   let cortes = '', baloes = '', marcas = '';
   for (let h = meio + 1; h < fim; h++) cortes += '<i class="eq-corte" style="left:' + pos(h).toFixed(2) + '%"></i>';
   rh.forEach(r => {
     const t = r.fim;                                   // o balão fica no tracinho onde a hora termina
     const cls = r.sinal === 'sobe' ? 'sobe' : r.sinal === 'desce' ? 'desce' : '';
-    const tit = 'Ritmo das ' + r.ini + 'h às ' + r.fim + 'h: ' + duas(r.hoje) + ' leads a cada R$ 100' +
-      (r.ontem != null ? ' · ' + nomeOntem + ' na mesma hora: ' + duas(r.ontem) : ' · sem a mesma hora do dia anterior');
+    const tit = 'Ritmo das ' + r.ini + 'h às ' + r.fim + 'h' + (ontemModo ? ' (' + nomeOntem + ')' : '') + ': ' + duas(r.hoje) + ' leads a cada R$ 100' +
+      (ontemModo ? '' : r.ontem != null ? ' · ' + nomeOntem + ' na mesma hora: ' + duas(r.ontem) : ' · sem a mesma hora do dia anterior');
     baloes += '<div class="eq-hora' + ((t - meio) % 2 ? ' alto' : '') + (pos(t) > 96 ? ' borda-dir' : '') + '" style="left:' + pos(t).toFixed(2) + '%">' +
       '<span class="' + cls + '" title="' + tit + '">' + duas(r.hoje) + '</span></div>';
   });
   for (let h = ini; h <= fim; h++)
     marcas += '<span' + (h === ini ? ' class="ini"' : h === fim ? ' class="fim"' : '') +
       (h === fim ? '' : ' style="left:' + pos(h).toFixed(2) + '%"') + '>' + h + 'h</span>';   // a última encosta à direita (.fim)
-  return '<div class="eq-regua' + (rh.length ? ' com-ritmo' : '') + '">' +
+  return '<div class="eq-regua' + (rh.length ? ' com-ritmo' : '') + (ontemModo ? ' ontem' : '') + '">' +
     '<div class="eq-regua-topo"><b>' + titulo + '</b>' +
-      '<span><em>' + ini + 'h–' + meio + 'h</em> só quem entra às ' + ini + 'h · ' + meio + 'h–' + fim + 'h todas as equipes</span></div>' +
+      (ontemModo ? '<span>Ritmo de cada hora (leads a cada R$ 100)</span></div>'
+        : '<span><em>' + ini + 'h–' + meio + 'h</em> só quem entra às ' + ini + 'h · ' + meio + 'h–' + fim + 'h todas as equipes</span></div>') +
     '<div class="eq-trilho">' +
-      '<div class="eq-trecho cedo' + (d.faixa === 'cedo' ? ' agora' : '') + '" style="left:0;width:calc(' + x.toFixed(2) + '% - 2px)"></div>' +
-      '<div class="eq-trecho todas' + (d.faixa === 'expediente' ? ' agora' : '') + '" style="left:' + x.toFixed(2) + '%;right:0"></div>' +
+      '<div class="eq-trecho cedo' + (!ontemModo && d.faixa === 'cedo' ? ' agora' : '') + '" style="left:0;width:calc(' + x.toFixed(2) + '% - 2px)"></div>' +
+      '<div class="eq-trecho todas' + (!ontemModo && d.faixa === 'expediente' ? ' agora' : '') + '" style="left:' + x.toFixed(2) + '%;right:0"></div>' +
       cortes + baloes + agulha +
     '</div>' +
     '<div class="eq-marcas">' + marcas + '</div>' +
@@ -1669,6 +1681,9 @@ function renderBalanceador(d) {
     '<div class="eq-vivo"><i></i>Ao vivo' + idade + '</div></div>';
   // servidor ainda na versão antiga: a chave 7h/8h não tem onde gravar (foi o que aconteceu em 27/09)
   if (!d.horario) html += '<div class="eq-aviso">O servidor ainda está na versão antiga. A chave 7h/8h e o bloco das 7h só passam a funcionar quando a atualização for publicada.</div>';
+  // (07/10/2026) régua do dia anterior em cima da de hoje, como os cartões
+  if (d.faixa !== 'fds' && d.comparacao && Array.isArray(d.comparacao.ritmoHorasOntem) && d.comparacao.ritmoHorasOntem.length)
+    html += eqRegua(d, hr, true);
   html += eqRegua(d, hr);
 
   // Sinal de comparação com o dia anterior ATÉ A MESMA HORA (Thiago, 30/09/2026): só o sinal, sem
