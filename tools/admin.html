@@ -789,6 +789,10 @@ body.anu-larga .container{max-width:1180px}
 .anu-pos{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--a-sup);color:var(--a-txt);white-space:nowrap}
 .anu-qual{margin-top:12px;font-size:12.5px;color:var(--a-txt3);line-height:1.6}
 .anu-qual b{color:var(--a-txt2);font-weight:600} .anu-qual b.at{color:var(--a-at)} .anu-qual .ruim{color:var(--a-ruim)}
+.anu-qual b.ok{color:var(--a-ok)} .anu-qual .at{color:var(--a-at)}
+.anu-alarme{margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(242,109,109,.12);color:#F6B3B3;font-size:13px;line-height:1.5}
+.anu-alarme b{color:#FFD0D0;font-weight:600}
+.anu-aud-it .txt .camp{color:var(--a-txt3);font-weight:400}
 .anu-link{border:none;background:none;padding:0;font:inherit;color:var(--a-txt2);text-decoration:underline;cursor:pointer}
 .anu-link:hover{color:var(--a-txt)} .anu-link:disabled{opacity:.6;cursor:wait}
 .anu-fech{margin-top:14px;padding:14px 16px;border-radius:12px;background:rgba(74,222,128,.07)}
@@ -2257,7 +2261,7 @@ function anuRender(d) {
   // Motor v3 (30/09/2026): campanha → estados → card com o funil. O layout antigo fica só de reserva,
   // para o caso de a tela subir antes do Worker novo.
   if (d.campanhasDec) {
-    document.getElementById('anuConteudo').innerHTML = anuKpisV4(d) + (d.itens.length ? anuMotor(d) :
+    document.getElementById('anuConteudo').innerHTML = anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
       '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
     if (anuAberto) anuCarregarDetalhe(anuAberto);
     return;
@@ -2646,12 +2650,8 @@ function anuCampV4(c, d) {
     cn('Faturamento', anuR(c.faturamento), '1º pedido de cada cliente') +
     cn('ROAS real', anuD(c.roasReal), 'meta ' + anuD(E.alvo, 1), anuCorRoas(c.roasReal, E)) +
     '</div>';
-  if (c.teste && d.qualidade) {
-    const q = d.qualidade;
-    h += '<div class="anu-qual">Vendas lidas em <b>' + anuHora(q.vendasEm) + '</b>' + (q.vendasOk ? '' : ' <span class="ruim">(a última leitura falhou)</span>') +
-      ' · ' + (q.pendentes ? '<b class="at">' + anuPlural(q.pendentes, 'pagamento a confirmar', 'pagamentos a confirmar') + '</b> (no topo da página)' : 'nenhum pagamento a confirmar') +
-      ' · <button type="button" class="anu-link" onclick="anuProcurarAud(this)">procurar pagamentos agora</button></div>';
-  }
+  // a linha "Vendas lidas em… · conferência automática…" saiu daqui (06/10/2026): vale para todas as campanhas e
+  // fica uma vez só, no topo (anuQualidade)
 
   // fechamento do lote (provisório na sexta 23h55, definitivo no domingo 18h)
   if (c.teste && final) {
@@ -2723,7 +2723,7 @@ function anuCardV4(i, c, d) {
     tile('gancho', g.nota, g.num != null ? anuPct(g.num, 0) : '—', '', 'sec') +
     tile('interesse', it.nota, it.num != null ? anuPct(it.num, 2) : '—', '', 'sec') +
     tile('conversa', cv.nota, String(cv.n || 0), cv.custo != null ? anuR(cv.custo) + ' por conversa' : 'nenhuma ainda') +
-    tile('venda', false, String(vd.n || 0), vd.n ? anuR(vd.val) : 'nenhuma ainda') +
+    tile('venda', false, String(vd.n || 0), vd.n ? anuR(vd.val) + (vd.auto ? ' · ' + vd.auto + (vd.autoComprovante === vd.auto ? ' pelo comprovante' : ' pela conferência') : '') : 'nenhuma ainda') +
     tile('retorno', r.roasReal != null ? r.nota : null, r.roasReal != null ? 'ROAS ' + anuD(r.roasReal) : '—', r.roasReal == null ? 'sem venda ainda' : '', 'ret') +
     '</div>';
 
@@ -2734,20 +2734,72 @@ function anuCardV4(i, c, d) {
     '<div class="anu-motivo">' + escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1)) + '.</div></div>' + dir + '</div>' +
     funil + '</div>';
   if (anuAberto === i.ad) {
-    // conferência (não entra na decisão): o que a Meta atribui e a estimativa com as conversas ainda abertas
-    const confere = '<div class="anu-confere">Conferência, fora da decisão: a Meta atribui ' + anuPlural(vd.metaClique || 0, 'compra', 'compras') + ' por clique e ' + (vd.metaView || 0) + ' só por visualização a este anúncio. ' +
-      (r.roasEst != null ? 'Contando as conversas ainda abertas, o ROAS pode chegar a ' + anuD(r.roasEst) + '.' : '') + '</div>';
+    // conferência (não entra na decisão): a diferença com a Meta explicada, as vendas achadas pela conferência
+    // automática e a estimativa com as conversas ainda abertas
+    const confere = '<div class="anu-confere">' + anuConciliacao(vd) + anuConferidas(i) +
+      (r.roasEst != null ? '<br/>Contando as conversas ainda abertas, o ROAS pode chegar a ' + anuD(r.roasEst) + '.' : '') + '</div>';
     html += '<div class="anu-det" id="anuDet">' + confere + anuDetTopo(i) + '<div id="anuDetDias"><h5>Dia a dia</h5>Carregando…</div></div>';
   }
   return html;
 }
 
-// ── Pagamentos do teste a confirmar (venda paga sem a mensagem "Pagamento confirmado") ──
+// Meta × nós, explicado pelo NOSSO rastreio (06/10/2026). A Meta conta cada confirmação e dá ao último clique antes
+// de PAGAR (e também a quem só viu o anúncio); nós contamos 1 venda por cliente, para o anúncio que TROUXE o cliente.
+function anuConciliacao(vd) {
+  const c = vd.conc || {}, mc = vd.metaClique || 0, mv = vd.metaView || 0, meta = mc + mv;
+  const p = function (n, s, pl) { return n + ' ' + (n === 1 ? s : pl); };
+  const t = 'Meta × nós: a Meta conta ' + anuPlural(meta, 'compra', 'compras') + (meta ? ' (' + mc + ' por clique, ' + mv + ' só por visualização)' : '') +
+    '; nós contamos ' + anuPlural(vd.n || 0, 'venda', 'vendas') + '.';
+  const partes = [];
+  if (c.mi) partes.push(p(c.mi, 'é a mesma venda nos dois', 'são as mesmas vendas nos dois'));
+  if (c.mo) partes.push(p(c.mo, 'cliente veio por outro anúncio e abriu este antes de pagar', 'clientes vieram por outro anúncio e abriram este antes de pagar'));
+  if (c.md) partes.push(p(c.md, 'pedido foi confirmado em 2 mensagens (a Meta conta as duas)', 'pedidos foram confirmados em mais de 1 mensagem (a Meta conta cada uma)'));
+  if (c.mr) partes.push(p(c.mr, 'recompra (a Meta conta, nós não)', 'recompras (a Meta conta, nós não)'));
+  const resto = meta - (c.mi || 0) - (c.mo || 0) - (c.md || 0) - (c.mr || 0);
+  if (resto > 0) partes.push(p(resto, 'compra de quem só viu o anúncio ou clicou sem chegar ao nosso rastreio', 'compras de quem só viu o anúncio ou clicou sem chegar ao nosso rastreio'));
+  if (resto < 0) partes.push(p(-resto, 'compra que esperávamos a Meta não contou', 'compras que esperávamos a Meta não contou'));
+  if (c.mx) partes.push(p(c.mx, 'venda nossa a Meta deu a outro anúncio (o cliente clicou em outro antes de pagar)', 'vendas nossas a Meta deu a outros anúncios (o cliente clicou em outro antes de pagar)'));
+  if (c.mn) partes.push(p(c.mn, 'venda não foi enviada à Meta (sem e-mail)', 'vendas não foram enviadas à Meta (sem e-mail)'));
+  if (vd.auto) partes.push(p(vd.auto, 'venda foi achada pela conferência automática (a Meta não vê)', 'vendas foram achadas pela conferência automática (a Meta não vê)'));
+  if (vd.manual) partes.push(p(vd.manual, 'venda foi confirmada por você na fila (a Meta não vê)', 'vendas foram confirmadas por você na fila (a Meta não vê)'));
+  return t + (partes.length ? ' Pelo nosso rastreio: ' + partes.join('; ') + '.' : '');
+}
+const ANU_EVID_CURTA = { confirmou: 'confirmação que não entrou no rastreio', comprovante: 'comprovante conferido no Sicredi', reacao: 'comprovante marcado pela atendente', 'comprovante-sem-banco': 'comprovante sem o Pix no Sicredi' };
+function anuConferidas(i) {
+  const l = i.conferidas || [];
+  if (!l.length) return '';
+  return '<br/>Entraram pela conferência: ' + l.map(function (x) {
+    return anuR(x.valor) + ' (' + (x.origem === 'auto' ? 'automática, ' : 'confirmada por você, ') + escapeHtml(ANU_EVID_CURTA[x.evidencia] || x.evidencia || 'manual') +
+      (x.atendente ? ', ' + escapeHtml(x.atendente) : '') + (x.pagoEm ? ', ' + anuHora(x.pagoEm) : '') + ')';
+  }).join(' · ') + '.';
+}
+
+// Qualidade dos dados, no topo (06/10/2026): última leitura de vendas, a conferência automática, a fila e o
+// alarme do rastreio (conversas novas sem o clique do anúncio — na falha de 02/10 foram 19%).
+function anuQualidade(d) {
+  const q = d.qualidade;
+  if (!q) return '';
+  const cf = q.conferencia;
+  let h = '';
+  if (q.saude) h += '<div class="anu-alarme"><b>Rastreio com falha:</b> ' + q.saude.pct + '% das conversas novas de ' + (q.saude.dia === anuHojeBR() ? 'hoje' : anuDia(q.saude.dia)) +
+    ' chegaram sem o clique do anúncio (' + q.saude.semClique + ' de ' + q.saude.conversas + '; o normal é 1 a 3%). As vendas delas ficam sem criativo: avise o Anderson.</div>';
+  h += '<div class="anu-qual">Vendas lidas em <b>' + anuHora(q.vendasEm) + '</b>' + (q.vendasOk ? '' : ' <span class="ruim">(a última leitura falhou)</span>') +
+    (cf ? ' · conferência automática em <b>' + anuHora(cf.em) + '</b>' +
+      (cf.ok ? ' (' + anuPlural(cf.abertas || 0, 'conversa aberta', 'conversas abertas') + (cf.autoHoje ? ', <b class="ok">' + anuPlural(cf.autoHoje, 'venda achada hoje', 'vendas achadas hoje') + '</b>' : '') + ')' : ' <span class="ruim">(falhou: ' + escapeHtml(cf.erro || '') + ')</span>') +
+      (cf.ia === false ? ' · <span class="at">leitura de comprovante desligada</span>' : '') : '') +
+    ' · ' + (q.pendentes ? '<b class="at">' + anuPlural(q.pendentes, 'pagamento a confirmar', 'pagamentos a confirmar') + '</b> (no topo da página)' : 'nenhum pagamento a confirmar') +
+    ' · <button type="button" class="anu-link" onclick="anuProcurarAud(this)">procurar pagamentos agora</button></div>';
+  return h;
+}
+
+// ── Pagamentos a confirmar (venda paga sem a mensagem "Pagamento confirmado") ──
+// Desde 06/10/2026 a conferência automática já conta sozinha o que tem prova; aqui fica só o que está em dúvida.
 let anuAud = null;
 const ANU_EVID = {
-  reacao: 'a atendente marcou o comprovante, mas não mandou a mensagem de confirmação',
+  reacao: 'a atendente marcou o comprovante (reação de confirmado), mas não mandou a mensagem de confirmação',
   comprovante: 'o cliente mandou comprovante e disse que pagou; não houve mensagem de confirmação',
   confirmou: 'a mensagem de confirmação foi enviada, mas a venda não entrou no rastreio',
+  'comprovante-sem-banco': 'o cliente mandou comprovante, mas o Pix não apareceu no Sicredi (pode ser cartão, outro banco ou comprovante errado)',
 };
 async function anuCarregarAud() {
   const box = document.getElementById('anuAud'); if (!box) return;
@@ -2761,10 +2813,12 @@ function anuDesenharAud() {
   const box = document.getElementById('anuAud');
   const pend = ((anuAud && anuAud.itens) || []).filter(function (x) { return x.estado === 'pendente'; });
   if (!pend.length) { box.hidden = true; return; }
-  let h = '<div class="anu-aud-cab"><h4>' + anuPlural(pend.length, 'pagamento do teste a confirmar', 'pagamentos do teste a confirmar') + '</h4><span>Confirme só o que for venda de verdade: a venda passa a contar para o anúncio na hora.</span></div>';
+  let h = '<div class="anu-aud-cab"><h4>' + anuPlural(pend.length, 'pagamento a confirmar', 'pagamentos a confirmar') + '</h4><span>A conferência automática já contou o que tinha prova. Confirme só o que for venda de verdade: ela passa a contar para o anúncio na hora.</span></div>';
   pend.forEach(function (x) {
-    h += '<div class="anu-aud-it"><div class="txt"><b>' + escapeHtml(x.anuncio) + '</b> · ' + escapeHtml(x.atendente) + ' · ' + escapeHtml(x.cliente || 'cliente') + ' (final ' + escapeHtml(x.fone4 || '') + ') · ' + anuHora(x.pagoEm) +
-      '<br/>' + (ANU_EVID[x.evidencia] || escapeHtml(x.evidencia)) + '</div>' +
+    const l = x.lido;
+    const leu = l ? '<br/>A IA leu no comprovante: ' + [l.v ? anuR(l.v) : '', l.rec ? 'para ' + escapeHtml(l.rec) : '', l.d ? 'em ' + anuDia(l.d) + (l.h ? ' ' + escapeHtml(l.h) : '') : ''].filter(Boolean).join(' ') + '.' : '';
+    h += '<div class="anu-aud-it"><div class="txt"><b>' + escapeHtml(x.anuncio) + '</b>' + (x.campanha ? ' <span class="camp">(' + escapeHtml(x.campanha) + ')</span>' : '') + ' · ' + escapeHtml(x.atendente) + ' · ' + escapeHtml(x.cliente || 'cliente') + ' (final ' + escapeHtml(x.fone4 || '') + ') · ' + anuHora(x.pagoEm) +
+      '<br/>' + (ANU_EVID[x.evidencia] || escapeHtml(x.evidencia)) + leu + '</div>' +
       '<label class="anu-aud-val">R$ <input id="audv_' + x.codigo + '" inputmode="decimal" value="' + (x.valor != null ? String(x.valor).replace('.', ',') : '') + '"/></label>' +
       '<button type="button" class="anu-bt okb" onclick="anuDecidirAud(\'' + x.codigo + '\',\'confirmar\',this)">Confirmar venda</button>' +
       '<button type="button" class="anu-bt" onclick="anuDecidirAud(\'' + x.codigo + '\',\'descartar\',this)">Não foi venda</button></div>';
@@ -2790,7 +2844,7 @@ async function anuProcurarAud(btn) {
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/auditoria', { method: 'POST', body: JSON.stringify({ acao: 'procurar' }) });
     const d = await r.json(); if (!d.ok) throw new Error(d.error || 'Falha');
     const a = d.auditoria || {};
-    toast(a.ok ? 'Conferi ' + anuPlural(a.olhados || 0, 'conversa', 'conversas') + ' do teste: ' + anuPlural(a.novos || 0, 'pagamento novo', 'pagamentos novos') + ' a confirmar' : (a.erro || 'Falhou'), a.ok ? 'success' : 'error');
+    toast(a.ok ? 'Conferi ' + anuPlural(a.abertas || 0, 'conversa', 'conversas') + ': ' + anuPlural(a.novasAuto || 0, 'venda achada', 'vendas achadas') + ' e ' + anuPlural(a.novasFila || 0, 'pagamento novo', 'pagamentos novos') + ' a confirmar' : (a.erro || 'Falhou'), a.ok ? 'success' : 'error');
     anuCarregar();
   } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; btn.textContent = t; }
 }
