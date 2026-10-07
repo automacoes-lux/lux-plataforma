@@ -3531,6 +3531,8 @@ function pintarResultados() {
     // 2) VITRINE — prontos de toda a equipe (o servidor já filtrou e ordenou)
     const custoDe = {};
     for (const o of _meusOrders) { if (o.costBRL != null) custoDe[o.orderId] = o.costBRL; }
+    const luxDe = {};   // (06/10) custo do "Refazer na reserva", pago pela Lux — só o admin vê
+    for (const o of _meusOrders) { if (o.custoLuxBRL != null) luxDe[o.orderId] = o.custoLuxBRL; }
     let prontos = _vitrine.slice();
     // Rede de segurança: vídeo MEU que ainda não entrou na vitrine (índice sendo preenchido,
     // ou uma falha de gravação) NUNCA pode sumir da minha tela — entra aqui pelo próprio pedido.
@@ -3542,14 +3544,15 @@ function pintarResultados() {
           prontos.push({
             orderId: o.orderId, cliente: o.clientName || '', categoria: o.categoria || '',
             atendente: o.attendantName || '', quando: o.finishedAt || o.createdAt || '',
-            segundos: 0, videoUrl: o.videoUrl, meu: true
+            segundos: 0, videoUrl: o.videoUrl, meu: true,
+            refeito: !!o.refeitoDe, jaRefeito: !!o.refeitoReservaId
           });
         }
       }
       const tsDe = (id) => Number(String(id).split('_').pop()) || 0;
       prontos.sort((a, b) => tsDe(b.orderId) - tsDe(a.orderId));
     }
-    for (const v of prontos) html += cardVitrine(v, custoDe[v.orderId]);
+    for (const v of prontos) html += cardVitrine(v, custoDe[v.orderId], luxDe[v.orderId]);
 
     const cont = document.getElementById('buscaCont');
     if (cont) cont.textContent = !_vitTotal ? ''
@@ -3595,11 +3598,18 @@ function cardPedido(o) {
 }
 
 // Vídeo PRONTO na vitrine. O custo só aparece nos MEUS (o servidor não manda o dos outros).
-function cardVitrine(v, custoBRL) {
+function cardVitrine(v, custoBRL, luxBRL) {
   const podeEditar = !!v.meu || _ehAdmin;
   const cat   = v.categoria ? '<div class="order-cat">' + escapeHtml(v.categoria) + '</div>' : '';
   const dur   = v.segundos ? ' · ' + Math.round(v.segundos) + 's' : '';
   const custo = (custoBRL != null) ? ' · R$ ' + Number(custoBRL).toFixed(2).replace('.', ',') : '';
+  // (06/10) "Refazer na reserva": marca o vídeo refeito; o custo pago pela Lux só aparece pro admin
+  const refeito = v.refeito ? ' · refeito na reserva' + ((_ehAdmin && luxBRL != null) ? ' (Lux R$ ' + Number(luxBRL).toFixed(2).replace('.', ',') + ')' : '') : '';
+  const meuPedido = _meusOrders.find(o => o.orderId === v.orderId);
+  const jaRefeito = v.jaRefeito || !!(meuPedido && meuPedido.refeitoReservaId);
+  const refazer = (podeEditar && !v.refeito && !jaRefeito)
+    ? '<button class="btn-mini" onclick="refazerNaReserva(\'' + (v.orderId || '') + '\', this)">↻ Refazer na reserva</button>'
+    : '';
   const quem  = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
   const editar = podeEditar
     ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>'
@@ -3611,10 +3621,27 @@ function cardVitrine(v, custoBRL) {
   return '<div class="order-item">' +
     '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' +
     quem +
-    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
+    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + refeito + '</div></div>' +
     '<div class="order-side">' + estrela + '<span class="st-chip st-ok">Pronto</span>' +
-    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar +
+    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + refazer +
     '</div></div>';
+}
+
+// (06/10) "Refazer na reserva": refaz o canto em outro motor como um vídeo NOVO (o atual fica). Sem custo pro atendente.
+async function refazerNaReserva(orderId, bt) {
+  if (!orderId) return;
+  if (!confirm('Refazer este vídeo no motor reserva?\n\n• Sai como um vídeo NOVO (este continua aqui)\n• Sem custo pra você\n• Leva de 20 a 30 minutos\n• Só dá pra refazer 1 vez')) return;
+  if (bt) { bt.disabled = true; bt.textContent = 'Enviando…'; }
+  try {
+    const r = await api('/refazReserva97', { method: 'POST', body: JSON.stringify({ orderId: orderId }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'não deu certo');
+    toast('✅ Refazendo no motor reserva — o vídeo novo aparece aqui em produção.');
+    if (typeof loadOrders === 'function') loadOrders();
+  } catch (e) {
+    toast('⚠️ ' + e.message);
+    if (bt) { bt.disabled = false; bt.textContent = '↻ Refazer na reserva'; }
+  }
 }
 
 // (01/10) Estrela "Postar?": acende na hora e grava no servidor; se falhar, volta como estava.
