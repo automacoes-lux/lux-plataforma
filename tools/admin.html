@@ -2761,15 +2761,17 @@ function anuConciliacao(vd) {
   if (c.mx) partes.push(p(c.mx, 'venda nossa a Meta deu a outro anúncio (o cliente clicou em outro antes de pagar)', 'vendas nossas a Meta deu a outros anúncios (o cliente clicou em outro antes de pagar)'));
   if (c.mn) partes.push(p(c.mn, 'venda não foi enviada à Meta (sem e-mail)', 'vendas não foram enviadas à Meta (sem e-mail)'));
   if (vd.auto) partes.push(p(vd.auto, 'venda foi achada pela conferência automática (a Meta não vê)', 'vendas foram achadas pela conferência automática (a Meta não vê)'));
+  if (vd.ajustadas) partes.push(p(vd.ajustadas, 'venda conta a 1ª compra da conversa, que a atendente não confirmou (a confirmação que chegou era de recompra)', 'vendas contam a 1ª compra da conversa, que a atendente não confirmou (a confirmação que chegou era de recompra)'));
   if (vd.manual) partes.push(p(vd.manual, 'venda foi confirmada por você na fila (a Meta não vê)', 'vendas foram confirmadas por você na fila (a Meta não vê)'));
   return t + (partes.length ? ' Pelo nosso rastreio: ' + partes.join('; ') + '.' : '');
 }
-const ANU_EVID_CURTA = { confirmou: 'confirmação que não entrou no rastreio', comprovante: 'comprovante conferido no Sicredi', reacao: 'comprovante marcado pela atendente', 'comprovante-sem-banco': 'comprovante sem o Pix no Sicredi' };
+const ANU_EVID_CURTA = { confirmou: 'confirmação que não entrou no rastreio', comprovante: 'comprovante conferido no Sicredi', reacao: 'comprovante marcado pela atendente', marcado: 'comprovante marcado pela atendente (cartão ou outro banco)', 'comprovante-sem-banco': 'comprovante sem o Pix no Sicredi' };
+const ANU_ORIGEM = { auto: 'automática, ', ajuste: '1ª compra da conversa, ', manual: 'confirmada por você, ' };
 function anuConferidas(i) {
   const l = i.conferidas || [];
   if (!l.length) return '';
   return '<br/>Entraram pela conferência: ' + l.map(function (x) {
-    return anuR(x.valor) + ' (' + (x.origem === 'auto' ? 'automática, ' : 'confirmada por você, ') + escapeHtml(ANU_EVID_CURTA[x.evidencia] || x.evidencia || 'manual') +
+    return anuR(x.valor) + ' (' + (ANU_ORIGEM[x.origem] || '') + escapeHtml(ANU_EVID_CURTA[x.evidencia] || x.evidencia || 'manual') +
       (x.atendente ? ', ' + escapeHtml(x.atendente) : '') + (x.pagoEm ? ', ' + anuHora(x.pagoEm) : '') + ')';
   }).join(' · ') + '.';
 }
@@ -2783,12 +2785,12 @@ function anuQualidade(d) {
   let h = '';
   if (q.saude) h += '<div class="anu-alarme"><b>Rastreio com falha:</b> ' + q.saude.pct + '% das conversas novas de ' + (q.saude.dia === anuHojeBR() ? 'hoje' : anuDia(q.saude.dia)) +
     ' chegaram sem o clique do anúncio (' + q.saude.semClique + ' de ' + q.saude.conversas + '; o normal é 1 a 3%). As vendas delas ficam sem criativo: avise o Anderson.</div>';
+  // sem fila de 1 clique (pedido do Thiago, 06/10 23h30): a conferência decide sozinha; aqui só o resumo dela
   h += '<div class="anu-qual">Vendas lidas em <b>' + anuHora(q.vendasEm) + '</b>' + (q.vendasOk ? '' : ' <span class="ruim">(a última leitura falhou)</span>') +
     (cf ? ' · conferência automática em <b>' + anuHora(cf.em) + '</b>' +
       (cf.ok ? ' (' + anuPlural(cf.abertas || 0, 'conversa aberta', 'conversas abertas') + (cf.autoHoje ? ', <b class="ok">' + anuPlural(cf.autoHoje, 'venda achada hoje', 'vendas achadas hoje') + '</b>' : '') + ')' : ' <span class="ruim">(falhou: ' + escapeHtml(cf.erro || '') + ')</span>') +
       (cf.ia === false ? ' · <span class="at">leitura de comprovante desligada</span>' : '') : '') +
-    ' · ' + (q.pendentes ? '<b class="at">' + anuPlural(q.pendentes, 'pagamento a confirmar', 'pagamentos a confirmar') + '</b> (no topo da página)' : 'nenhum pagamento a confirmar') +
-    ' · <button type="button" class="anu-link" onclick="anuProcurarAud(this)">procurar pagamentos agora</button></div>';
+    ' · <button type="button" class="anu-link" onclick="anuProcurarAud(this)">conferir agora</button></div>';
   return h;
 }
 
@@ -2844,7 +2846,7 @@ async function anuProcurarAud(btn) {
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/auditoria', { method: 'POST', body: JSON.stringify({ acao: 'procurar' }) });
     const d = await r.json(); if (!d.ok) throw new Error(d.error || 'Falha');
     const a = d.auditoria || {};
-    toast(a.ok ? 'Conferi ' + anuPlural(a.abertas || 0, 'conversa', 'conversas') + ': ' + anuPlural(a.novasAuto || 0, 'venda achada', 'vendas achadas') + ' e ' + anuPlural(a.novasFila || 0, 'pagamento novo', 'pagamentos novos') + ' a confirmar' : (a.erro || 'Falhou'), a.ok ? 'success' : 'error');
+    toast(a.ok ? 'Conferi ' + anuPlural(a.abertas || 0, 'conversa', 'conversas') + ': ' + anuPlural(a.novasAuto || 0, 'venda achada', 'vendas achadas') + (a.ajustes ? ' e ' + anuPlural(a.ajustes, 'venda corrigida para a 1ª compra', 'vendas corrigidas para a 1ª compra') : '') : (a.erro || 'Falhou'), a.ok ? 'success' : 'error');
     anuCarregar();
   } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; btn.textContent = t; }
 }
