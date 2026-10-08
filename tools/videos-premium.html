@@ -452,6 +452,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
            pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
 
       <div class="card-hint" id="avatarHint">Um botão só: envie <b style="color:var(--text-mid)">até 2 imagens</b> — <b style="color:var(--text-mid)">1 imagem</b> = um avatar; <b style="color:var(--text-mid)">2 imagens</b> = dupla (um cantor de cada imagem; ou mande 1 foto com os dois juntos). Vale pessoa, personagem, produto ou animal — se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra. A IA preserva rosto, roupa, logo e cores. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
+      <!-- (08/10) CATEGORIA = o nicho do cliente (padaria, pizzaria, oficina…). É por ela que a equipe acha o vídeo na vitrine. -->
+      <div class="field">
+        <label for="fCategoria">Categoria <span style="color:var(--gold)">*</span></label>
+        <input type="text" id="fCategoria" maxlength="60" placeholder="Ex: Padaria · Pizzaria · Oficina mecânica · Clínica"/>
+      </div>
       <div class="field">
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
@@ -601,6 +606,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Clipes</div>
+      <!-- (08/10) VITRINE DA EQUIPE: acha o clipe de qualquer colega pela categoria, cliente ou atendente (6 meses) -->
+      <div class="busca" style="display:flex;align-items:center;gap:8px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:2px 12px;margin:2px 0 10px">
+        <span style="font-size:14px;opacity:.7">🔎</span>
+        <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off" style="border:none;background:transparent;padding:11px 0;flex:1;min-width:0;color:var(--text);font-size:14px;outline:none"/>
+        <button type="button" id="buscaLimpa" title="Limpar" style="display:none;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div id="buscaCont" style="font-size:11.5px;color:var(--text-dim);margin:-4px 0 12px"></div>
       <div id="ordersList"><div class="empty-state">Carregando…</div></div>
     </div>
 
@@ -954,7 +966,7 @@ async function rascSalvarAgora() {
         rascKey: s._rascKey || '', mimeType: s.mimeType || 'image/jpeg' };
     });
     const estado = {
-      clientName: nome, avatarTipo: avatarTipo, agitado: !!agitado, transicoes: !!transicoes,
+      clientName: nome, categoria: ((document.getElementById('fCategoria') || {}).value || '').trim(), avatarTipo: avatarTipo, agitado: !!agitado, transicoes: !!transicoes,
       avatarCalib: avatarCalib, avScale: avScale,
       musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
       arquivos: _rascArq, cartoonKey: (_rascArq.cartoon || {}).key || '',
@@ -1067,6 +1079,7 @@ async function continuarProjeto(pid) {
     rascId = pid; _rascArq = arq;   // continua salvando NESTE projeto, sem re-subir o que não mudou
     editState = null;               // continuar = criar do zero (não é edição de vídeo pronto)
     document.getElementById('clientName').value = e.clientName || '';
+    { const fc = document.getElementById('fCategoria'); if (fc) fc.value = e.categoria || ''; }
     clientPhoto = f1; clientPhoto2 = f2;
     if (cartoonB64) {
       avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi gerado no rascunho
@@ -1112,7 +1125,7 @@ async function apagarProjeto(pid) {
 }
 
 // digitar o nome do cliente também salva (debounced)
-(function () { const cn = document.getElementById('clientName'); if (cn) cn.addEventListener('input', rascSalvar); })();
+(function () { const cn = document.getElementById('clientName'); if (cn) cn.addEventListener('input', rascSalvar); const fc = document.getElementById('fCategoria'); if (fc) fc.addEventListener('input', rascSalvar); })();
 
 function fmtTime(s) {
   s = Math.max(0, Math.round(s));
@@ -3101,6 +3114,7 @@ function renderStoryboard() {
 function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
+  if (!((document.getElementById('fCategoria') || {}).value || '').trim()) return 'Preencha a categoria do cliente (Passo 1).';
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
@@ -3166,7 +3180,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, agitado: agitado, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: ((document.getElementById('fCategoria') || {}).value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, agitado: agitado, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -3190,6 +3204,7 @@ async function gerarClipe() {
     }
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
+      categoria: ((document.getElementById('fCategoria') || {}).value || '').trim(),
       clientPhoto: { base64: clientPhoto.base64, name: clientPhoto.name, mimeType: clientPhoto.mimeType },
       cartoonApproved: { base64: avatarPreview.cartoonBase64 },
       tipo: avatarTipo,   // dupla/personagemDupla → o canto roda no InfiniteTalk (membros estáveis)
@@ -3311,13 +3326,14 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
+// (08/10) VITRINE DA EQUIPE: no topo, os MEUS em produção ou que falharam; embaixo, os PRONTOS de toda a equipe
+// (6 meses), com busca por categoria, cliente ou atendente. O custo só aparece nos meus.
+let _vit150 = [], _meus150 = [], _admin150 = false;
 async function loadOrders() {
   const el = document.getElementById('ordersList');
   try {
-    const resp = await api('/listOrders');
+    const [resp, rv] = await Promise.all([api('/listOrders'), api('/vitrine150').catch(() => null)]);
     const d = await resp.json();
-    // (03/09) ERRO do servidor NÃO é "lista vazia": antes, um 401/403 (sessão expirada) caía no mesmo
-    // "Nenhum clipe ainda" e escondia a causa — o admin achava que os pedidos tinham sumido.
     if (!d.ok) {
       const expirou = (resp.status === 401 || resp.status === 403);
       el.innerHTML = '<div class="empty-state">⚠️ ' +
@@ -3327,47 +3343,82 @@ async function loadOrders() {
         '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Tentar de novo</button></div>';
       return;
     }
-    const ehAdmin = (d.viewMode === 'admin');   // admin vê o atendente de cada pedido; atendente vê só os seus
-    const orders = (d.orders || []).filter(o => o.kind === 'avatar');
-    if (!orders.length) {
-      el.innerHTML = '<div class="empty-state">Nenhum clipe ainda' + (ehAdmin ? ' (visão de admin)' : '') + '.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤' +
-        '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
-      return;
-    }
-    orders.sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
-    let html = '';
-    for (const o of orders) {
-      const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
-      let chip, side = '';
-      if (o.status === 'COMPLETED' && o.videoUrl) {
-        chip = '<span class="st-chip st-ok">Pronto</span>';
-        side = '<a class="btn-baixar" href="' + o.videoUrl + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' +
-          '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (o.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>';
-      } else if (o.status === 'ERROR' || o.status === 'CANCELLED') {
-        chip = '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>';
-      } else {
-        chip = '<span class="st-chip st-run">Em produção</span>';
-      }
-      // (05/09) EM QUE PÉ está o pedido, do lado do nome (vem do servidor em order.statusMsg).
-      // Texto curto e objetivo — nunca cita o nome da ferramenta usada.
-      const etapa = (o.status !== 'COMPLETED' && o.status !== 'ERROR' && o.status !== 'CANCELLED' && o.statusMsg)
-        ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
-      const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
-      const linhaAtend = (ehAdmin && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
-      const fim = o.finishedAt ? ' · Fim ' + o.finishedAt : '';
-      html += '<div class="order-item">' +
-        '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' +
-        linhaAtend +
-        '<div class="order-meta">Início ' + (o.createdAt || '—') + fim + ' · ' + numCenas + ' cena(s)' + custo +
-        (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') +
-        '</div></div>' +
-        '<div class="order-side">' + chip + side + '</div></div>';
-    }
-    el.innerHTML = html;
+    _admin150 = (d.viewMode === 'admin');
+    _meus150 = (d.orders || []).filter(o => o.kind === 'avatar');
+    try { const dv = rv ? await rv.json() : null; _vit150 = (dv && dv.ok) ? (dv.videos || []) : []; } catch (e) { _vit150 = []; }
+    pintar150();
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
 }
+function semAcento150(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function pintar150() {
+  const el = document.getElementById('ordersList');
+  if (!el) return;
+  const cx = document.getElementById('buscaRes');
+  const termo = semAcento150((cx && cx.value) || '').trim();
+  const btL = document.getElementById('buscaLimpa'); if (btL) btL.style.display = termo ? '' : 'none';
+  let html = '';
+  // 1) os MEUS em produção ou que falharam (só sem busca)
+  if (!termo) {
+    const pend = _meus150.filter(o => !(o.status === 'COMPLETED' && o.videoUrl)).sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0));
+    for (const o of pend) html += card150Pedido(o);
+  }
+  // 2) PRONTOS da equipe (+ rede de segurança: um pronto MEU que ainda não entrou na vitrine)
+  const custo = {}; for (const o of _meus150) if (o.costBRL != null) custo[o.orderId] = o.costBRL;
+  let prontos = _vit150.slice();
+  const naVit = {}; for (const v of prontos) naVit[v.orderId] = true;
+  for (const o of _meus150) if (o.status === 'COMPLETED' && o.videoUrl && !naVit[o.orderId])
+    prontos.push({ orderId: o.orderId, cliente: o.clientName || '', categoria: o.categoria || '', atendente: o.attendantName || '',
+                   quando: o.finishedAt || o.createdAt || '', segundos: 0, videoUrl: o.videoUrl, meu: true });
+  const tsDe = (id) => Number(String(id).split('_').pop()) || 0;
+  prontos.sort((a, b) => tsDe(b.orderId) - tsDe(a.orderId));
+  const palavras = termo.split(/\s+/).filter(Boolean);
+  const achados = palavras.length ? prontos.filter(v => { const alvo = semAcento150(v.categoria + ' ' + v.cliente + ' ' + v.atendente); return palavras.every(p => alvo.indexOf(p) >= 0); }) : prontos;
+  for (const v of achados) html += card150Vitrine(v, custo[v.orderId]);
+  const cont = document.getElementById('buscaCont');
+  if (cont) cont.textContent = !prontos.length ? '' : (termo ? (achados.length + ' de ' + prontos.length + ' clipes') : (prontos.length + ' clipes de toda a equipe'));
+  if (!html) html = termo
+    ? '<div class="empty-state">Nada encontrado para <b>' + escapeHtml(cx.value) + '</b>.<br/>Tente o ramo do cliente (ex.: <b>padaria</b>, <b>oficina</b>) ou o nome do atendente.</div>'
+    : '<div class="empty-state">Nenhum clipe ainda.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
+  el.innerHTML = html;
+}
+// MEU pedido em produção ou que falhou (igual era antes)
+function card150Pedido(o) {
+  const numCenas = o.numScenes || o.photoCount || o.bgCount || '—';
+  const chip = (o.status === 'ERROR' || o.status === 'CANCELLED')
+    ? '<span class="st-chip st-err" title="' + escapeHtml(o.genError || '') + '">Falhou</span>'
+    : '<span class="st-chip st-run">Em produção</span>';
+  // texto curto e objetivo — nunca cita o nome da ferramenta usada
+  const etapa = (o.status !== 'ERROR' && o.status !== 'CANCELLED' && o.statusMsg) ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
+  const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
+  const linhaAtend = (_admin150 && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
+  return '<div class="order-item"><div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' + linhaAtend +
+    '<div class="order-meta">Início ' + (o.createdAt || '—') + ' · ' + numCenas + ' cena(s)' + custo +
+    (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') + '</div></div>' +
+    '<div class="order-side">' + chip + '</div></div>';
+}
+// clipe PRONTO na vitrine (de qualquer atendente). Editar e custo: só o dono ou o admin.
+function card150Vitrine(v, custoBRL) {
+  const podeEditar = !!v.meu || _admin150;
+  const cat = v.categoria ? '<div style="display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);border-radius:999px;padding:2px 9px;margin-bottom:4px">' + escapeHtml(v.categoria) + '</div>' : '';
+  const dur = v.segundos ? ' · ' + Math.round(v.segundos) + 's' : '';
+  const custo = (podeEditar && custoBRL != null) ? ' · R$ ' + Number(custoBRL).toFixed(2).replace('.', ',') : '';
+  const quem = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
+  const editar = podeEditar ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>' : '';
+  return '<div class="order-item"><div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' + quem +
+    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
+    '<div class="order-side"><span class="st-chip st-ok">Pronto</span>' +
+    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + '</div></div>';
+}
+(function ligaBusca150() {
+  const liga = function () {
+    const cx = document.getElementById('buscaRes'), btL = document.getElementById('buscaLimpa');
+    if (cx) cx.addEventListener('input', pintar150);
+    if (btL) btL.addEventListener('click', function () { if (cx) { cx.value = ''; pintar150(); cx.focus(); } });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();
 
 // ───────────────────────────────────────────────
 // EDITAR um vídeo pronto — reaproveita o avatar, troca só música/fotos
@@ -3381,6 +3432,7 @@ async function editarClipe(orderId) {
     editState = { sourceOrderId: orderId, musicChanged: false };
     editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false;   // toda edição começa com avatar e música TRAVADOS
     document.getElementById('clientName').value = d.clientName || '';
+    { const fc = document.getElementById('fCategoria'); if (fc) fc.value = d.categoria || ''; }
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
     avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
@@ -3531,6 +3583,7 @@ function resetCreateForm() {
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
+  { const fc = document.getElementById('fCategoria'); if (fc) fc.value = ''; }
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
   const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
   const cut = document.getElementById('cutEditor'); if (cut) cut.classList.remove('show');
@@ -3552,6 +3605,7 @@ function sairEdicao() {
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
+  { const fc = document.getElementById('fCategoria'); if (fc) fc.value = ''; }
   aplicarModoEdicao(null);
   if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');

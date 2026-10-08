@@ -623,7 +623,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <!-- ══ ABA RESULTADOS ══ -->
   <div id="abaResultados" class="hide">
     <div class="sec-title">🎬 Resultados</div>
-    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 7 dias. Em "Editar" você corrige o texto e refaz o vídeo.</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos dos últimos 6 meses. Em "Editar" você corrige o texto e refaz o vídeo.</div>
     <div class="busca">
       <span class="lupa">🔎</span>
       <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
@@ -990,7 +990,7 @@ function pjCard(p, tipo){
   // A aba Resultados é uma VITRINE compartilhada: todo atendente vê o vídeo pronto de todo mundo
   // pra mandar como prova social pro lead. Mas mexer no projeto do colega atrapalharia o trabalho
   // dele — então quem não é dono (nem admin) só ganha o botão de baixar.
-  const podeMexer = (p.meu !== false) || souAdmin;
+  const podeMexer = !p.arquivo && ((p.meu !== false) || souAdmin);   // (08/10) arquivo (vídeo antigo recuperado): só baixar
   const sub = tipo==='res'
     ? ('🎬 vídeo pronto · '+esc(p.atualizadoEm||'')+((podeMexer && p.custoBRL)?(' · ~R$'+p.custoBRL.toFixed(2)):''))
     : ('parou no passo '+p.passoMax+' de 3 · '+esc(p.atualizadoEm||''));
@@ -1007,11 +1007,11 @@ function pjCard(p, tipo){
   const quem = ((tipo==='res' || souAdmin) && p.atendente)
     ? '<div class="pj-at">👤 '+esc(p.atendente)+(p.meu===false?'':' · seu')+'</div>' : '';
   // Atribuir: só o admin. É como ele devolve o projeto pro atendente depois de ajudar.
-  const atr = souAdmin ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
+  const atr = (souAdmin && !p.arquivo) ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
   const lixo = podeMexer ? '<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button>' : '';
   const cat = p.categoria ? '<div class="pj-cat">'+esc(p.categoria)+'</div>' : '';
   // (01/10) estrela "Postar?" só nos vídeos prontos
-  const estrela = tipo==='res'
+  const estrela = (tipo==='res' && !p.arquivo)
     ? ('<button class="estrela'+(p.estrela?' on':'')+'" data-id="'+escA(p.projectId)+'" onclick="alternaEstrela(this)">'+
        '<span class="est-lbl">Postar?</span>'+
        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></button>')
@@ -1131,7 +1131,7 @@ function pintarResultados(){
     : (termo ? (lista.length+' de '+_resultados.length+' vídeos') : (_resultados.length+' vídeos de toda a equipe'));
   lr.innerHTML = lista.length ? lista.map(p=>pjCard(p,'res')).join('')
     : (termo ? '<div class="pj-vazio">Nada encontrado para <b>'+esc(cx.value)+'</b>.</div>'
-             : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 7 dias.</div>');
+             : '<div class="pj-vazio">Nenhum vídeo pronto nos últimos 6 meses.</div>');
 }
 document.addEventListener('DOMContentLoaded', function(){
   const cx=document.getElementById('buscaRes'), btL=document.getElementById('buscaLimpa');
@@ -1841,7 +1841,7 @@ async function acompanharVs(i, videoId){
         toast('✅ Vídeo pronto!');
         return;
       }
-      if(d.status==='failed'){ falharCena(i, d.error||'a VisionStory recusou este vídeo'); return; }
+      if(d.status==='failed'){ falharCena(i, d.error||'este vídeo não pôde ser gerado'); return; }
     }catch(e){
       if(++semContato >= 15){
         falharCena(i, 'sem contato com o servidor há dois minutos e meio — o vídeo pode ter ficado pronto; reabra o projeto antes de refazer');
@@ -1849,7 +1849,7 @@ async function acompanharVs(i, videoId){
       }
     }
   }
-  falharCena(i, 'passou de 25 minutos sem resposta da VisionStory');
+  falharCena(i, 'passou de 25 minutos sem resposta');
 }
 function falharCena(i, msg){
   const s=cenas[i]; if(!s) return;
@@ -1897,7 +1897,7 @@ function avisarLento(i, mostrar){
 // acompanhamento da própria cena, na volta seguinte do laço (evita duas tentativas correndo juntas).
 function tentarDeNovoCena(i){
   const s=cenas[i]; if(!s || s.video_status!=='gerando' || s._pedeDeNovo) return;
-  if(!confirm('O vídeo está demorando mais que o normal.\n\nPedir de novo à VisionStory?\n\n'+
+  if(!confirm('O vídeo está demorando mais que o normal.\n\nPedir de novo?\n\n'+
      'Custa '+custoVideoTxt(contarPalavras(s.fala))+'. O pedido travado também pode ser cobrado, se ele voltar depois.')) return;
   s._pedeDeNovo = true;
   const av = document.querySelector('#boxCortes [data-lento="'+i+'"]');
