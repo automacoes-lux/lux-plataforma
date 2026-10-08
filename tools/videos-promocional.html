@@ -2927,7 +2927,7 @@ function renderCortes(){
       // (05/10) a linha de corte é só do motor antigo (4 cenas do Veo, que alucinavam no fim). O vídeo
       // da VisionStory é uma tomada só, com respiro no começo e no fim: não tem o que aparar.
       (!L ? ('<div class="soon-note" style="margin-top:.5rem">✅ <b>O vídeo já está pronto</b>, com a voz. '+
-             'Pode baixar direto. Quer <b>legenda</b> ou <b>música</b>? Use o <b>MONTAR COM LEGENDA</b> lá embaixo.</div>') : '')+
+             'Pode baixar direto, sem música e sem legenda. Quer <b>música</b> ou <b>legenda</b>? Escolha lá embaixo e use o <b>MONTAR COM MÚSICA E LEGENDA</b>.</div>') : '')+
       (L ? ('<div class="trim">'+
         '<div class="trim-bar" data-bar="'+i+'">'+
           '<canvas class="trim-onda" data-onda="'+i+'"></canvas>'+
@@ -2961,7 +2961,7 @@ function renderCortes(){
       '<div class="btn-row" style="margin-top:.4rem">'+
         // (05/10) VisionStory: baixar o vídeo pronto LANÇA o custo (antes só a montagem lançava)
         (L ? ('<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>')
-           : ('<button class="btn-refaz" data-entrega="'+i+'" onclick="entregarEBaixar('+i+')">⬇️ Baixar vídeo pronto</button>'))+
+           : ('<button class="btn-refaz" data-entrega="'+i+'" onclick="entregarEBaixar('+i+')">⬇️ Baixar sem música e sem legenda</button>'))+
         // data-refaz: sem isso o querySelector(".btn-refaz") do refazerCena pegava o botão de
         // BAIXAR (é o primeiro da linha) e era ELE que virava "Refazendo…"
         (L ? '' : '<button class="btn-refaz" data-refaz="'+i+'" onclick="refazerCena('+i+')">🔄 Refazer ('+custoRefaz(s)+')</button>')+
@@ -3269,7 +3269,23 @@ async function iniciarCenasSeNecessario(){
 let entregando = false;
 async function entregarEBaixar(i){
   const s = cenas[i]; if(!s || !s.video_url) return;
-  if(entregando) return;
+  if(entregando || montando) return;
+  // (08/10) caso FIFI E DUDU (Núbia): escolheu a trilha "Kids" e clicou aqui achando que era o vídeo
+  // final — saiu sem música, e o projeto ficou marcado como pronto. Com música escolhida, pergunta:
+  // OK monta com ela (e com a legenda, se ligada) e baixa o montado; Cancelar baixa sem, como antes.
+  if(trilhaSel || musica){
+    const nomeM = (trilhaSel && trilhaSel.title) || 'escolhida';
+    const montar = confirm('Você escolheu a música de fundo "'+nomeM+'".\n\n'+
+      'Este botão baixa o vídeo SEM música e SEM legenda.\n\n'+
+      'OK = montar o vídeo COM a música'+(legendas ? ' e a legenda' : '')+' e baixar\n'+
+      'Cancelar = baixar assim mesmo, sem música');
+    if(montar){
+      const antes = videoFinalUrl;
+      await finalizar();
+      if(videoFinalUrl && videoFinalUrl !== antes && /video-final-/.test(videoFinalUrl)){ baixarFinal(); toast('⬇️ Baixando o vídeo com a música…'); }
+      return;
+    }
+  }
   entregando = true;
   const bt = document.querySelector('#boxCortes [data-entrega="'+i+'"]'); const old = bt ? bt.innerHTML : '';
   if(bt){ bt.disabled = true; bt.innerHTML = '<span class="spin"></span>Preparando…'; }
@@ -3295,7 +3311,7 @@ async function entregarEBaixar(i){
 }
 
 const TXT_BTN_MONTAR = '🎬 MONTAR O VÍDEO';
-const TXT_BTN_MONTAR_LEG = '🎬 MONTAR COM LEGENDA';   // (05/10) vídeo único: a montagem só põe legenda/música
+const TXT_BTN_MONTAR_LEG = '🎬 MONTAR COM MÚSICA E LEGENDA';   // (08/10) o nome diz que é aqui que entra a música   // (05/10) vídeo único: a montagem só põe legenda/música
 async function finalizar(){
   // ⚠️ (10/09) A trava existia como variável (`montando`) mas nunca era LIDA: só o botão
   // desabilitado segurava o segundo clique. Qualquer caminho que reabilite o botão no meio
