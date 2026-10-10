@@ -254,6 +254,104 @@ body{
 .rmk-regra{font-size:13px;line-height:1.55;color:var(--text-mid);padding:11px 14px;border-radius:var(--radius);border:.5px solid var(--border);background:rgba(255,255,255,.02);margin-bottom:14px}
 .rmk-regra b{color:var(--text)}
 .rmk-thumb video{width:100%;height:100%;object-fit:cover}
+
+/* ═══ REMARKETING v2 (09/10/2026) — mesmo padrão neutro da aba Anúncios ═══ */
+#secRemarketing{
+  --r-card:#191A1D;--r-campo:#212226;--r-sup:#2A2B30;--r-sup-h:#35363C;--r-line:#2E2F35;
+  --r-txt:#F2F2F3;--r-txt2:#9B9BA3;--r-txt3:#6B6C74;--r-ok:#4ADE80;--r-at:#E8B86B;--r-ruim:#F26D6D;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--r-txt);line-height:1.45;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+}
+#secRemarketing button,#secRemarketing textarea{font-family:inherit}
+#secRemarketing h2,#secRemarketing h3,#secRemarketing h4{font-family:inherit;text-transform:none;letter-spacing:normal;margin:0}
+#secRemarketing :focus-visible{outline:2px solid var(--r-txt2);outline-offset:2px}
+.rmk2-cab{margin:6px 0 18px}
+.rmk2-cab h2{font-size:21px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+.rmk2-cab p{font-size:13px;color:var(--r-txt2);margin:4px 0 0;max-width:720px}
+.rmk2-bloco{background:var(--r-card);border-radius:16px;padding:6px 18px;margin-bottom:14px}
+.rmk2-lin{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;padding:14px 0}
+.rmk2-lin+.rmk2-lin{border-top:1px solid var(--r-line)}
+.rmk2-lin-txt{min-width:0;flex:1 1 260px}
+.rmk2-lin-txt b{display:block;font-size:15px;font-weight:600}
+.rmk2-lin-txt span{display:block;font-size:13px;color:var(--r-txt2);margin-top:2px}
+/* chave liga/desliga */
+.rmk2-sw{display:inline-flex;align-items:center;gap:10px;border:none;background:transparent;color:var(--r-txt2);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0}
+.rmk2-sw i{position:relative;width:46px;height:26px;border-radius:999px;background:var(--r-sup-h);transition:background .15s;flex-shrink:0}
+.rmk2-sw i::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#C8C8CC;transition:transform .15s,background .15s}
+.rmk2-sw[aria-checked="true"]{color:var(--r-ok)}
+.rmk2-sw[aria-checked="true"] i{background:rgba(74,222,128,.35)}
+.rmk2-sw[aria-checked="true"] i::after{transform:translateX(20px);background:var(--r-ok)}
+.rmk2-sw:disabled{opacity:.5;cursor:wait}
+.rmk2-sw span{min-width:70px;text-align:left}
+/* seletor de dias */
+.rmk2-seg{display:inline-flex;gap:2px;padding:4px;border-radius:999px;background:var(--r-campo);flex-wrap:wrap}
+.rmk2-seg button{border:none;background:transparent;color:var(--r-txt2);font-size:13px;font-weight:500;padding:7px 14px;border-radius:999px;cursor:pointer}
+.rmk2-seg button:hover{color:var(--r-txt)}
+.rmk2-seg button.on{background:var(--r-sup-h);color:var(--r-txt)}
+/* hoje */
+.rmk2-hoje-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 10px}
+.rmk2-hoje-cab h3{font-size:15px;font-weight:600}
+.rmk2-hoje-cab small{font-size:12px;color:var(--r-txt3)}
+.rmk2-modo{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--r-sup);color:var(--r-txt2)}
+.rmk2-modo i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.rmk2-modo.ligado{background:rgba(74,222,128,.12);color:var(--r-ok)}
+.rmk2-modo.ensaio{background:rgba(232,184,107,.12);color:var(--r-at)}
+.rmk2-modo.desligado{background:rgba(242,109,109,.12);color:var(--r-ruim)}
+.rmk2-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--r-card);border-radius:16px}
+.rmk2-kpi{padding:14px 18px;border-left:1px solid var(--r-line);min-width:0}
+.rmk2-kpi:first-child{border-left:none}
+.rmk2-kpi span{display:block;font-size:12px;color:var(--r-txt2)}
+.rmk2-kpi b{display:block;font-size:22px;font-weight:600;margin-top:2px}
+.rmk2-kpi b.ok{color:var(--r-ok)}
+.rmk2-aviso{margin-top:10px;padding:10px 14px;border-radius:12px;background:rgba(232,184,107,.10);color:#F2D29B;font-size:13px}
+.rmk2-vazio{background:var(--r-card);border-radius:16px;padding:22px;text-align:center;color:var(--r-txt2);font-size:13px}
+.rmk2-dobra{margin-top:10px;background:var(--r-card);border-radius:12px}
+.rmk2-dobra>summary{list-style:none;cursor:pointer;padding:11px 16px;font-size:13px;color:var(--r-txt2);display:flex;align-items:center;gap:8px}
+.rmk2-dobra>summary::-webkit-details-marker{display:none}
+.rmk2-dobra>summary::after{content:'›';margin-left:auto;transition:transform .15s}
+.rmk2-dobra[open]>summary::after{transform:rotate(90deg)}
+.rmk2-dobra-corpo{padding:0 16px 14px;font-size:13px;color:var(--r-txt2);line-height:1.6}
+.rmk2-dobra-corpo b{color:var(--r-txt)}
+.rmk2-ult{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:4px 12px;font-size:12.5px}
+.rmk2-ult .h{color:var(--r-txt)}
+.rmk2-ult .m{color:var(--r-txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rmk2-ult .e{font-weight:600}
+.rmk2-ult .e.enviado{color:var(--r-ok)}.rmk2-ult .e.fora,.rmk2-ult .e.perdido{color:var(--r-txt3)}.rmk2-ult .e.bloqueado,.rmk2-ult .e.falhou{color:var(--r-at)}.rmk2-ult .e.simulado{color:#7FB2FF}
+/* produtos */
+.rmk2-tit{font-size:15px;font-weight:600;margin:24px 0 10px}
+.rmk2-prods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rmk2-prod{background:var(--r-card);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;transition:opacity .15s}
+.rmk2-prod.off .rmk2-prod-corpo{opacity:.45}
+.rmk2-prod-cab{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rmk2-prod-cab h4{font-size:15px;font-weight:600}
+.rmk2-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rmk2-chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--r-sup);color:var(--r-txt2)}
+.rmk2-chip.ok{background:rgba(74,222,128,.12);color:var(--r-ok)}
+.rmk2-chip.at{background:rgba(232,184,107,.12);color:var(--r-at)}
+.rmk2-prod-corpo{display:flex;flex-direction:column;gap:12px}
+.rmk2-midia{position:relative;aspect-ratio:9/16;max-height:300px;width:100%;border-radius:12px;background:var(--r-campo);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--r-txt3);font-size:12px;text-align:center}
+.rmk2-midia video,.rmk2-midia img{width:100%;height:100%;object-fit:contain;background:#000}
+.rmk2-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rmk2-bt{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--r-sup);color:var(--r-txt);font-size:13px;font-weight:500;padding:8px 14px;cursor:pointer}
+.rmk2-bt:hover{background:var(--r-sup-h)}
+.rmk2-bt.claro{background:#F2F2F3;color:#111;font-weight:600}
+.rmk2-bt.claro:hover{background:#fff}
+.rmk2-bt:disabled{opacity:.55;cursor:wait}
+.rmk2-dica{font-size:11.5px;color:var(--r-txt3)}
+.rmk2-prod textarea{width:100%;min-height:140px;resize:vertical;border:1px solid transparent;border-radius:12px;background:var(--r-campo);color:var(--r-txt);font-size:13.5px;line-height:1.5;padding:11px 13px;box-sizing:border-box}
+.rmk2-prod textarea:focus{outline:none;border-color:var(--r-line)}
+.rmk2-rod{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rmk2-ok{font-size:12.5px;color:var(--r-ok)}
+@media (max-width:900px){
+  .rmk2-prods{grid-template-columns:1fr}
+  .rmk2-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rmk2-kpi{border-left:none;border-top:1px solid var(--r-line)}
+  .rmk2-kpi:nth-child(-n+2){border-top:none}
+  .rmk2-kpi:last-child{grid-column:1 / -1}
+  .rmk2-bloco{padding:4px 14px}
+  .rmk2-midia{max-height:260px}
+}
+
 .rmk-ok{margin-top:12px;padding:11px 14px;border-radius:var(--radius);border:.5px solid #5EAD7E;background:rgba(94,173,126,.08);color:#A9D9BD;font-size:13px;line-height:1.55}
 .rmk-ok b{color:#CFEBDA}
 @media(max-width:560px){
@@ -902,41 +1000,37 @@ body.anu-larga .container{max-width:1180px}
   </div>
 
   <div id="secRemarketing" style="display:none">
-    <div class="card">
-      <div class="card-title">Remarketing Automático</div>
-      <div class="rmk-envio" id="rmkEnvioLinha">
-        <div class="rmk-envio-txt">
-          <b>Envio automático</b>
-          <span id="rmkEnvioInfo">Carregando…</span>
-        </div>
-        <button type="button" class="rmk-sw" id="rmkEnvioBtn" role="switch" aria-checked="false" onclick="rmkAlternarEnvio()" disabled>
-          <span class="rmk-sw-bola"></span><span id="rmkEnvioTxt">…</span>
-        </button>
-      </div>
-      <div id="rmkStatus" class="rmk-status">Carregando…</div>
-
-      <div class="rmk-regra"><b>Quem recebe:</b> no dia útil seguinte ao 1º contato, no mesmo horário em que o cliente chamou (quem chamou na sexta recebe na segunda). Só quem ainda está na jornada: o <b>lead mudo</b> e quem <b>recebeu os dados do Pix</b> e sumiu ou disse que pagaria depois. Nunca quem disse que não tem interesse ou achou caro. A mensagem é a do <b>produto do anúncio</b> que trouxe o cliente (sai do nome da campanha); cliente que não veio de anúncio recebe a de Música Personalizada.</div>
-      <div class="rmk-prods" id="rmkProds" role="tablist" aria-label="Produto"></div>
-
-      <div class="field">
-        <label for="rmkArquivo">1 · Vídeo — é o primeiro envio</label>
-        <div class="rmk-img">
-          <label class="btn-secondary" for="rmkArquivo" style="cursor:pointer">Enviar vídeo</label>
-          <input type="file" id="rmkArquivo" accept="video/mp4,image/jpeg,image/png,image/webp" style="display:none" onchange="rmkEscolheu(this)"/>
-          <div class="rmk-thumb" id="rmkThumb">sem vídeo</div>
-        </div>
-        <div class="rmk-hint" id="rmkMidiaDica">Chega como vídeo aberto no WhatsApp, não como arquivo. MP4 até 16 MB (também aceita imagem JPG ou PNG).</div>
-      </div>
-
-      <div class="field">
-        <label for="rmkTexto">2 · Mensagem — vai logo depois do vídeo</label>
-        <textarea id="rmkTexto" maxlength="4096" placeholder="Escreva a mensagem que o cliente vai receber…" oninput="rmkContar()"></textarea>
-        <div class="rmk-hint"><span id="rmkConta">0</span> de 4.096 caracteres</div>
-      </div>
-
-      <button class="btn-primary" id="rmkSalvar" onclick="rmkSalvar()">Salvar</button>
-      <div class="rmk-ok" id="rmkOk" hidden></div>
+    <div class="rmk2-cab">
+      <h2>Remarketing automático</h2>
+      <p>Um lembrete pelo WhatsApp da própria atendente para quem ainda está na jornada: o lead mudo e quem recebeu o Pix e não pagou. Sai no mesmo horário em que o cliente chamou, com o vídeo e o texto do produto do anúncio que trouxe ele.</p>
     </div>
+
+    <section class="rmk2-bloco" aria-label="Controle geral">
+      <div class="rmk2-lin">
+        <div class="rmk2-lin-txt"><b>Envio automático</b><span id="rmkEnvioInfo">Carregando…</span></div>
+        <button type="button" class="rmk2-sw" id="rmkEnvioBtn" role="switch" aria-checked="false" aria-label="Envio automático" onclick="rmkAlternarEnvio()" disabled><i></i><span id="rmkEnvioTxt">…</span></button>
+      </div>
+      <div class="rmk2-lin">
+        <div class="rmk2-lin-txt"><b>Quando o lembrete sai</b><span id="rmkDiasTxt">…</span></div>
+        <div class="rmk2-seg" id="rmkDiasSeg" role="radiogroup" aria-label="Dias úteis depois do contato"></div>
+      </div>
+    </section>
+
+    <div class="rmk2-hoje-cab"><h3>Hoje</h3><span class="rmk2-modo" id="rmkModo"><i></i>…</span><small id="rmkHojeSub"></small></div>
+    <div id="rmkStatus"><div class="rmk2-vazio">Carregando…</div></div>
+
+    <details class="rmk2-dobra">
+      <summary>Quem recebe e quem nunca recebe</summary>
+      <div class="rmk2-dobra-corpo">
+        <b>Recebe:</b> o <b>lead mudo</b> (mandou a primeira mensagem e não respondeu mais) e quem <b>recebeu os dados do Pix</b> e sumiu ou disse que pagaria depois.<br>
+        <b>Nunca recebe:</b> quem disse que não tem interesse, achou caro, reclamou, já pagou, ou parou antes de receber o Pix. Antes de enviar, a IA lê a conversa inteira, inclusive imagens e áudios.<br>
+        <b>Quando:</b> no horário em que o cliente chamou, só com a equipe trabalhando (até as 16h). Sábado e domingo não contam: quem chamou na sexta recebe na segunda.<br>
+        <b>Qual mensagem:</b> a do produto do anúncio que trouxe o cliente (sai do nome da campanha). Quem não veio de anúncio recebe a de Música Personalizada.
+      </div>
+    </details>
+
+    <h3 class="rmk2-tit">Mensagens por produto</h3>
+    <div class="rmk2-prods" id="rmkProds"></div>
   </div>
 
   <div id="secAnuncios" style="display:none">
@@ -959,7 +1053,7 @@ body.anu-larga .container{max-width:1180px}
           <button type="button" data-j="30" onclick="anuTrocarJanela(30)">30 dias</button>
         </div>
         <input type="date" class="anu-data" id="anuData" aria-label="Escolher um dia" title="Ver um dia só" onchange="anuEscolherDia(this.value)"/>
-        <select class="anu-sel" id="anuCampanha" onchange="anuCarregar()" aria-label="Campanha">
+        <select class="anu-sel" id="anuCampanha" onchange="anuEscolheuCampanha()" aria-label="Campanha">
           <option value="">Todas as campanhas</option>
         </select>
         <button type="button" class="anu-bt" id="anuAtualizar" onclick="anuAtualizarDados()"></button>
@@ -1897,147 +1991,227 @@ async function salvarAjuste(body, msgOk) {
 // A tela só guarda imagem, texto e dias. Quem monta a lista, julga cada cliente
 // e envia pelo WhatsApp de cada atendente é o lux-agente.
 // ═══════════════════════════════════════════════════════════════
-let rmkNovaImagem = null, rmkThumbUrl = null, rmkCfg = null, rmkEnvio = null;
-// por produto (regras de 07/10/2026): a tela edita UM produto por vez
+// REMARKETING v2 (Thiago, 09/10/2026): chave geral (liga/desliga TODOS os envios), seletor de dias (padrão 1 dia útil,
+// mesmo horário do contato) e 3 produtos, cada um com a SUA chave, vídeo e texto. Backend: lux-figurinhas
+// (/admin/remarketing, /produto, /produto/ativo, /midia, /dias); quem envia é o lux-agente.
 const RMK_PRODUTOS = [['musica', 'Música Personalizada'], ['avatar', 'Avatar Cantando'], ['personagem', 'Personagem Falando']];
-let rmkProduto = 'musica', rmkProdutos = {};
+const RMK_ESTADO = { enviado: 'enviado', simulado: 'receberia', fora: 'fora', perdido: 'horário passou', bloqueado: 'sem mensagem', falhou: 'falhou', agendado: 'aguardando' };
+let rmkCfg = null, rmkEnvio = null, rmkProdutos = {}, rmkDiasCfg = { dias: 1 }, rmkUltStatus = null;
+const rmkNovas = {}, rmkUrls = {};
 
 // a Música que ainda não foi salva na aba nova usa a imagem e o texto antigos
 function rmkDoProduto(p) {
   const x = rmkProdutos[p] || {};
-  if (p === 'musica' && !x.midia && rmkCfg && rmkCfg.imagem) return { texto: x.texto || rmkCfg.texto || '', midia: { tipo: rmkCfg.imagem.tipo, video: false, legado: true }, legado: true };
+  if (p === 'musica' && !x.midia && rmkCfg && rmkCfg.imagem) return Object.assign({}, x, { texto: x.texto || rmkCfg.texto || '', midia: { tipo: rmkCfg.imagem.tipo, video: false, legado: true }, legado: true });
   return x;
 }
-
-function rmkPintarProdutos() {
-  document.getElementById('rmkProds').innerHTML = RMK_PRODUTOS.map(function (pp) {
-    const x = rmkDoProduto(pp[0]), pronto = !!(x.midia && x.texto);
-    return '<button type="button" role="tab" aria-selected="' + (pp[0] === rmkProduto) + '" class="' + (pp[0] === rmkProduto ? 'on' : '') + '" onclick="rmkTrocarProduto(\'' + pp[0] + '\')">' + pp[1] + '<i>' + (pronto ? (x.midia.video ? 'vídeo' : 'imagem') : 'vazio') + '</i></button>';
-  }).join('');
-}
-
-function rmkMostrarProduto() {
-  const x = rmkDoProduto(rmkProduto);
-  document.getElementById('rmkTexto').value = x.texto || '';
-  rmkNovaImagem = null;
-  const t = document.getElementById('rmkThumb');
-  if (rmkThumbUrl) { URL.revokeObjectURL(rmkThumbUrl); rmkThumbUrl = null; }
-  t.classList.remove('cheio'); t.textContent = 'sem vídeo';
-  if (x.midia) rmkMostrarImagemServidor(x.legado);
-  document.getElementById('rmkOk').hidden = true;
-  rmkContar();
-  rmkPintarProdutos();
-}
-
-function rmkTrocarProduto(p) { rmkProduto = p; rmkMostrarProduto(); }
+function rmkNomeDe(p) { return (RMK_PRODUTOS.find(function (x) { return x[0] === p; }) || [p, p])[1]; }
 
 async function carregarRemarketing() {
   try {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
     const d = await resp.json();
     if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
-    rmkCfg = d.config; rmkProdutos = d.produtos || {};
+    rmkCfg = d.config; rmkProdutos = d.produtos || {}; rmkDiasCfg = d.dias || { dias: 1 };
     rmkPintarEnvio(d.envio);
-    rmkMostrarProduto();
-    rmkStatus(d.status, d.config);
+    rmkPintarDias();
+    rmkPintarProdutos();
+    rmkStatus(d.status);
   } catch (err) {
-    document.getElementById('rmkStatus').innerHTML = '⚠️ ' + escapeHtml(err.message);
+    document.getElementById('rmkStatus').innerHTML = '<div class="rmk2-vazio">' + escapeHtml(err.message) + '</div>';
   }
 }
 
+// a cada minuto: só o que muda sozinho (status, chaves e selos); nunca apaga um texto que está sendo digitado
 async function rmkRecarregarStatus() {
   try {
     const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
     const d = await r.json();
-    if (d.ok) { rmkCfg = d.config; rmkProdutos = d.produtos || rmkProdutos; rmkPintarEnvio(d.envio); rmkPintarProdutos(); rmkStatus(d.status, d.config); }
+    if (!d.ok) return;
+    rmkCfg = d.config; rmkProdutos = d.produtos || rmkProdutos; rmkDiasCfg = d.dias || rmkDiasCfg;
+    rmkPintarEnvio(d.envio); rmkPintarDias(); rmkStatus(d.status); rmkAtualizarSelos();
   } catch (e) {}
 }
 
-// Botão LIGA/DESLIGA do envio automático (Thiago, 14/09/2026). Grava no KV remarketing:envio e o
-// lux-agente lê a cada passada de 5 min. Religar = só recebem os clientes com horário daqui pra frente.
+// ── chave geral ──
 function rmkPintarEnvio(envio) {
   rmkEnvio = envio || { ligado: true, padrao: true };
   const on = rmkEnvio.ligado !== false;
   const btn = document.getElementById('rmkEnvioBtn');
   btn.setAttribute('aria-checked', on ? 'true' : 'false');
   btn.disabled = false;
-  document.getElementById('rmkEnvioTxt').textContent = on ? 'LIGADO' : 'DESLIGADO';
-  const quando = rmkEnvio.em ? new Date(rmkEnvio.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-  const quem = rmkEnvio.por ? ' por ' + rmkEnvio.por : '';
+  document.getElementById('rmkEnvioTxt').textContent = on ? 'Ligado' : 'Desligado';
+  const quando = rmkEnvio.em ? new Date(rmkEnvio.em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   document.getElementById('rmkEnvioInfo').textContent = on
-    ? (rmkEnvio.padrao ? 'Envia sozinho, no horário de cada cliente. Desligue para parar na hora.'
-                       : 'Ligado em ' + quando + quem + '. Envia sozinho, no horário de cada cliente.')
-    : 'Desligado em ' + quando + quem + '. Nenhuma mensagem sai até ligar de novo.';
+    ? 'Liga e desliga todos os envios. Ligado' + (quando ? ' em ' + quando : '') + '.'
+    : 'Nenhum lembrete sai, de nenhum produto, até você ligar.' + (quando ? ' Desligado em ' + quando + '.' : '');
 }
-
 async function rmkAlternarEnvio() {
   const on = !rmkEnvio || rmkEnvio.ligado !== false;
-  const pergunta = on
-    ? 'Desligar o envio automático?\n\nNenhuma mensagem de remarketing sai até você ligar de novo (vale em até 5 minutos).'
-    : 'Ligar o envio automático?\n\nSó recebem os clientes com horário daqui pra frente. Quem teve o horário enquanto estava desligado NÃO recebe atrasado.';
-  if (!confirm(pergunta)) return;
+  if (!confirm(on ? 'Desligar o envio automático?\n\nNenhum lembrete sai, de nenhum produto, até você ligar de novo.'
+    : 'Ligar o envio automático?\n\nSó recebem os clientes com horário daqui pra frente. Quem teve o horário enquanto estava desligado NÃO recebe atrasado.')) return;
   const btn = document.getElementById('rmkEnvioBtn');
   btn.disabled = true;
   try {
-    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/envio', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ligado: !on })
-    });
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/envio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ligado: !on }) });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Não consegui mudar o envio');
     rmkPintarEnvio(d.envio);
     toast(on ? 'Envio automático desligado' : 'Envio automático ligado', 'success');
     rmkRecarregarStatus();
-  } catch (err) {
-    btn.disabled = false;
-    toast(err.message, 'error');
+  } catch (err) { btn.disabled = false; toast(err.message, 'error'); }
+}
+
+// ── seletor de dias ──
+function rmkPintarDias() {
+  const n = (rmkDiasCfg && rmkDiasCfg.dias) || 1;
+  document.getElementById('rmkDiasSeg').innerHTML = [1, 2, 3, 4, 5].map(function (k) {
+    return '<button type="button" role="radio" aria-checked="' + (k === n) + '" class="' + (k === n ? 'on' : '') + '" onclick="rmkMudarDias(' + k + ')">' + k + (k === 1 ? ' dia' : ' dias') + '</button>';
+  }).join('');
+  const CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const ex = ((1 - 1 + n) % 5) + 1, ex5 = ((5 - 1 + n) % 5) + 1;
+  document.getElementById('rmkDiasTxt').textContent = n + (n === 1 ? ' dia útil' : ' dias úteis') + ' depois do 1º contato, no mesmo horário. Ex.: quem chamou na seg recebe na ' + CURTO[ex] + '; quem chamou na sex recebe na ' + CURTO[ex5] + '.';
+}
+async function rmkMudarDias(n) {
+  if (rmkDiasCfg && rmkDiasCfg.dias === n) return;
+  if (!confirm('Mudar para ' + n + (n === 1 ? ' dia útil' : ' dias úteis') + ' depois do contato?\n\nA lista de hoje é refeita em até 5 minutos. Quem já recebeu hoje não recebe de novo.')) return;
+  try {
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/dias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dias: n }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Não salvou');
+    rmkDiasCfg = d.dias;
+    rmkPintarDias();
+    toast('Agora: ' + n + (n === 1 ? ' dia útil' : ' dias úteis') + ' depois do contato', 'success');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ── hoje ──
+function rmkStatus(st) {
+  rmkUltStatus = st;
+  const box = document.getElementById('rmkStatus'), modo = document.getElementById('rmkModo'), sub = document.getElementById('rmkHojeSub');
+  const algum = RMK_PRODUTOS.some(function (pp) { const x = rmkDoProduto(pp[0]); return x.midia && x.texto; });
+  const m = !algum ? ['ensaio', 'Sem mensagem salva'] : !st ? ['', 'Aguardando a 1ª rodada'] : st.modo === 'ligado' ? ['ligado', 'Enviando'] : st.modo === 'desligado' ? ['desligado', 'Desligado'] : ['ensaio', 'Ensaio: julga, mas não envia'];
+  modo.className = 'rmk2-modo ' + m[0];
+  modo.innerHTML = '<i></i>' + m[1];
+  const h = st && st.hoje;
+  sub.textContent = h ? 'clientes de ' + (h.diasDeContato || []).join(', ') + (st.atualizadoEm ? ' · atualizado ' + new Date(st.atualizadoEm).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '') : '';
+  if (!h) { box.innerHTML = '<div class="rmk2-vazio">' + (st && st.erro ? escapeHtml(st.erro) : 'A lista do dia é montada a partir das 7h, de segunda a sexta.') + '</div>'; rmkAtualizarSelos(); return; }
+  const e = h.estados || {};
+  const kpi = function (rot, v, cls) { return '<div class="rmk2-kpi"><span>' + rot + '</span><b' + (cls ? ' class="' + cls + '"' : '') + '>' + (v || 0) + '</b></div>'; };
+  let html = '<div class="rmk2-kpis">' + kpi('Na lista', h.total) + kpi(st.modo === 'ligado' ? 'Enviados' : 'Receberiam', st.modo === 'ligado' ? e.enviado : e.simulado, 'ok') +
+    kpi('Aguardando o horário', e.agendado) + kpi('Fora pelas regras', (e.fora || 0) + (e.perdido || 0)) + kpi('Sem mensagem do produto', e.bloqueado) + '</div>';
+  if (st.aviso) html += '<div class="rmk2-aviso">' + escapeHtml(st.aviso) + '</div>';
+  if (st.erro) html += '<div class="rmk2-aviso">' + escapeHtml(st.erro) + '</div>';
+  if ((h.ultimos || []).length) {
+    html += '<details class="rmk2-dobra"><summary>Últimas decisões (' + h.ultimos.length + ')</summary><div class="rmk2-dobra-corpo"><div class="rmk2-ult">' +
+      h.ultimos.map(function (u) {
+        return '<span class="h">' + escapeHtml(u.hora) + '</span><span class="m">' + escapeHtml(u.equipe) + (u.produto ? ' · ' + escapeHtml(rmkNomeDe(u.produto)) : '') + (u.motivo ? ' — ' + escapeHtml(u.motivo) : '') + '</span>' +
+          '<span class="e ' + escapeHtml(u.estado) + '">' + escapeHtml(RMK_ESTADO[u.estado] || u.estado) + '</span>';
+      }).join('') + '</div></div></details>';
   }
+  box.innerHTML = html;
+  rmkAtualizarSelos();
+}
+
+// ── produtos ──
+function rmkSelos(p) {
+  const x = rmkDoProduto(p), ativo = (rmkProdutos[p] || {}).ativo !== false;
+  const sel = [];
+  if (!ativo) sel.push('<span class="rmk2-chip">Desligado</span>');
+  else if (x.midia && x.texto) sel.push('<span class="rmk2-chip ok">Pronto para enviar</span>');
+  else sel.push('<span class="rmk2-chip at">' + (!x.midia && !x.texto ? 'Falta o vídeo e o texto' : !x.midia ? 'Falta o vídeo' : 'Falta o texto') + '</span>');
+  if (x.legado) sel.push('<span class="rmk2-chip">usando a imagem antiga</span>');
+  const h = rmkUltStatus && rmkUltStatus.hoje && rmkUltStatus.hoje.porProduto && rmkUltStatus.hoje.porProduto[p];
+  if (h) sel.push('<span class="rmk2-chip">hoje: ' + h.total + ' na lista · ' + (h.enviado || h.simulado || 0) + (rmkUltStatus.modo === 'ligado' ? ' enviados' : ' receberiam') + '</span>');
+  return sel.join('');
+}
+function rmkAtualizarSelos() {
+  RMK_PRODUTOS.forEach(function (pp) {
+    const p = pp[0], el = document.getElementById('rmkSelos_' + p), card = document.getElementById('rmkProd_' + p), sw = document.getElementById('rmkSw_' + p);
+    if (!el) return;
+    const ativo = (rmkProdutos[p] || {}).ativo !== false;
+    el.innerHTML = rmkSelos(p);
+    card.classList.toggle('off', !ativo);
+    sw.setAttribute('aria-checked', ativo ? 'true' : 'false');
+    sw.querySelector('span').textContent = ativo ? 'Ligado' : 'Desligado';
+  });
+}
+function rmkPintarProdutos() {
+  document.getElementById('rmkProds').innerHTML = RMK_PRODUTOS.map(function (pp) {
+    const p = pp[0], x = rmkDoProduto(p), ativo = (rmkProdutos[p] || {}).ativo !== false;
+    return '<article class="rmk2-prod' + (ativo ? '' : ' off') + '" id="rmkProd_' + p + '" aria-label="' + pp[1] + '">' +
+      '<div class="rmk2-prod-cab"><h4>' + pp[1] + '</h4>' +
+      '<button type="button" class="rmk2-sw" id="rmkSw_' + p + '" role="switch" aria-checked="' + ativo + '" aria-label="' + pp[1] + ' ligado" onclick="rmkAlternarProduto(\'' + p + '\')"><i></i><span>' + (ativo ? 'Ligado' : 'Desligado') + '</span></button></div>' +
+      '<div class="rmk2-chips" id="rmkSelos_' + p + '">' + rmkSelos(p) + '</div>' +
+      '<div class="rmk2-prod-corpo">' +
+        '<div class="rmk2-midia" id="rmkMidia_' + p + '">' + (x.midia ? 'carregando…' : 'sem vídeo') + '</div>' +
+        '<div class="rmk2-acoes"><label class="rmk2-bt" for="rmkArq_' + p + '">' + (x.midia ? 'Trocar vídeo' : 'Enviar vídeo') + '</label>' +
+        '<input type="file" id="rmkArq_' + p + '" accept="video/mp4,image/jpeg,image/png,image/webp" style="display:none" onchange="rmkEscolheu(this,\'' + p + '\')"/>' +
+        '<span class="rmk2-dica">MP4 até 16 MB · vai aberto no WhatsApp</span></div>' +
+        '<textarea id="rmkTexto_' + p + '" maxlength="4096" placeholder="Texto que vai logo depois do vídeo…" oninput="rmkContar(\'' + p + '\')">' + escapeHtml(x.texto || '') + '</textarea>' +
+        '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkConta_' + p + '">' + (x.texto || '').length + '</span> de 4.096</span>' +
+        '<button type="button" class="rmk2-bt claro" id="rmkSalvar_' + p + '" onclick="rmkSalvar(\'' + p + '\')">Salvar</button></div>' +
+        '<div class="rmk2-ok" id="rmkOk_' + p + '" hidden></div>' +
+      '</div></article>';
+  }).join('');
+  RMK_PRODUTOS.forEach(function (pp) { const x = rmkDoProduto(pp[0]); if (x.midia) rmkMostrarMidia(pp[0], x.legado); });
+}
+async function rmkAlternarProduto(p) {
+  const ativo = (rmkProdutos[p] || {}).ativo !== false, nome = rmkNomeDe(p);
+  if (ativo && !confirm('Desligar ' + nome + '?\n\nOs clientes desse produto deixam de receber o lembrete. Os outros produtos continuam.')) return;
+  const sw = document.getElementById('rmkSw_' + p);
+  sw.disabled = true;
+  try {
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/produto/ativo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: p, ativo: !ativo }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Não consegui mudar');
+    rmkProdutos[p] = Object.assign({}, rmkProdutos[p] || {}, { ativo: d.ativo });
+    rmkAtualizarSelos();
+    toast(nome + (d.ativo ? ' ligado' : ' desligado'), 'success');
+  } catch (err) { toast(err.message, 'error'); } finally { sw.disabled = false; }
 }
 
 // <img>/<video> não mandam o token de login: a prévia vem por __luxFetch e vira URL local
-async function rmkMostrarImagemServidor(legado) {
-  const p = rmkProduto;
+async function rmkMostrarMidia(p, legado) {
   try {
     const r = await window.__luxFetch(WORKER_URL + (legado ? '/admin/remarketing/imagem' : '/admin/remarketing/midia?produto=' + p));
-    if (!r.ok || p !== rmkProduto) return;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const b = await r.blob();
-    rmkPorMiniatura(URL.createObjectURL(b), /^video\//.test(b.type));
-  } catch (e) {}
+    rmkPorMiniatura(p, URL.createObjectURL(b), /^video\//.test(b.type));
+  } catch (e) {
+    const t = document.getElementById('rmkMidia_' + p);
+    if (t) t.textContent = 'não consegui mostrar a prévia (o arquivo salvo continua valendo)';
+  }
 }
-
-function rmkPorMiniatura(url, video) {
-  if (rmkThumbUrl) URL.revokeObjectURL(rmkThumbUrl);
-  rmkThumbUrl = url;
-  const t = document.getElementById('rmkThumb');
-  t.classList.add('cheio');
-  t.innerHTML = video ? '<video src="' + url + '" muted playsinline controls preload="metadata" aria-label="Prévia do vídeo do remarketing"></video>'
-    : '<img alt="Miniatura da imagem do remarketing" src="' + url + '">';
+function rmkPorMiniatura(p, url, video) {
+  if (rmkUrls[p]) URL.revokeObjectURL(rmkUrls[p]);
+  rmkUrls[p] = url;
+  const t = document.getElementById('rmkMidia_' + p);
+  if (!t) return;
+  t.innerHTML = video ? '<video src="' + url + '" muted playsinline controls preload="metadata" aria-label="Prévia do vídeo"></video>' : '<img alt="Prévia da imagem" src="' + url + '">';
 }
-
-async function rmkEscolheu(input) {
+async function rmkEscolheu(input, p) {
   const f = input.files && input.files[0];
   input.value = '';
   if (!f) return;
   if (f.type === 'video/mp4') {
     if (f.size > 16 * 1024 * 1024) { toast('O vídeo passa de 16 MB (limite do WhatsApp).', 'error'); return; }
-    rmkNovaImagem = f;
-    rmkPorMiniatura(URL.createObjectURL(f), true);
-    document.getElementById('rmkOk').hidden = true;
-    toast('Vídeo pronto — clique em Salvar para aplicar', 'info');
+    rmkNovas[p] = f;
+    rmkPorMiniatura(p, URL.createObjectURL(f), true);
+    document.getElementById('rmkOk_' + p).hidden = true;
+    toast('Vídeo pronto — clique em Salvar', 'info');
     return;
   }
-  if (['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) < 0) { toast('Use um vídeo MP4 ou uma imagem JPG/PNG.', 'error'); return; }
+  if (['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) < 0) { toast('Use um vídeo MP4 (ou imagem JPG/PNG).', 'error'); return; }
   try {
     const blob = await rmkPreparar(f);
     if (!blob || blob.size > 5 * 1024 * 1024) { toast('A imagem continua acima de 5 MB.', 'error'); return; }
-    rmkNovaImagem = blob;
-    rmkPorMiniatura(URL.createObjectURL(blob), false);
-    document.getElementById('rmkOk').hidden = true;
-    toast('Imagem pronta — clique em Salvar para aplicar', 'info');
-  } catch (e) {
-    toast('Não consegui ler essa imagem.', 'error');
-  }
+    rmkNovas[p] = blob;
+    rmkPorMiniatura(p, URL.createObjectURL(blob), false);
+    document.getElementById('rmkOk_' + p).hidden = true;
+    toast('Imagem pronta — clique em Salvar', 'info');
+  } catch (e) { toast('Não consegui ler essa imagem.', 'error'); }
 }
-
 // Imagem leve sobe como veio (sem perder qualidade). Pesada é reduzida aqui no
 // navegador — o WhatsApp comprime de qualquer jeito, e o upload fica rápido.
 async function rmkPreparar(f) {
@@ -2060,85 +2234,36 @@ async function rmkPreparar(f) {
   }
 }
 
-function rmkContar() {
-  document.getElementById('rmkConta').textContent =
-    document.getElementById('rmkTexto').value.length.toLocaleString('pt-BR');
+function rmkContar(p) {
+  const t = document.getElementById('rmkTexto_' + p);
+  if (t) document.getElementById('rmkConta_' + p).textContent = t.value.length.toLocaleString('pt-BR');
 }
-
-// 07/10/2026: os dias de espera saíram da tela (é sempre o dia útil seguinte). Fica vazia para chamadas antigas.
 function rmkExplicar() {}
 
-function rmkStatus(st, cfg) {
-  const box = document.getElementById('rmkStatus');
-  if (!RMK_PRODUTOS.some(function (pp) { const x = rmkDoProduto(pp[0]); return x.midia && x.texto; })) {
-    box.innerHTML = '<div><span class="rmk-modo ensaio">NÃO CONFIGURADO</span>Envie o vídeo, escreva a mensagem e salve, em cada produto.</div>';
-    return;
-  }
-  if (!st) {
-    box.innerHTML = '<div><span class="rmk-modo ensaio">AGUARDANDO</span>Configurado. O robô confere a cada 5 minutos, de segunda a sexta, das 7h às 16h (cada equipe só a partir da hora em que entra).</div>';
-    return;
-  }
-  const ligado = st.modo === 'ligado', desligado = st.modo === 'desligado';
-  let h = '<div><span class="rmk-modo ' + (ligado ? 'ligado' : desligado ? 'desligado' : 'ensaio') + '">' + (ligado ? 'LIGADO' : desligado ? 'DESLIGADO' : 'ENSAIO') + '</span>' +
-    (ligado ? 'Enviando de verdade, pelo WhatsApp de cada atendente, no horário de cada cliente.'
-            : desligado ? 'O envio automático está desligado no botão: <b>nada é enviado</b>.'
-            : 'Segue o calendário e julga cada cliente, mas <b>não envia nada</b>.') + '</div>';
-  if (st.aviso) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.aviso) + '</div>';
-  if (st.erro) h += '<div class="rmk-aviso">⚠ ' + escapeHtml(st.erro) + '</div>';
-  if (st.hoje) {
-    const e = st.hoje.estados || {};
-    h += '<div>Hoje: <b>' + st.hoje.total + '</b> na lista (clientes de ' + escapeHtml((st.hoje.diasDeContato || []).join(', ')) + ')' +
-      ' · <b>' + (e.enviado || 0) + '</b> enviados · <b>' + (e.simulado || 0) + '</b> receberiam · <b>' + (e.fora || 0) + '</b> barrados no filtro' +
-      ' · <b>' + (e.agendado || 0) + '</b> aguardando o horário' + (e.perdido ? ' · <b>' + e.perdido + '</b> com o horário já passado (não recebem)' : '') + (e.bloqueado ? ' · <b>' + e.bloqueado + '</b> sem mensagem do produto' : '') + '</div>';
-    if ((st.hoje.ultimos || []).length) {
-      h += '<div class="rmk-ultimos">' + st.hoje.ultimos.slice(0, 6).map(function (u) {
-        return '<span>' + escapeHtml(u.hora) + ' · ' + escapeHtml(u.equipe) + ' · <b>' + escapeHtml(u.estado) + '</b>' +
-          (u.motivo ? ' — ' + escapeHtml(u.motivo) : '') + '</span>';
-      }).join('') + '</div>';
-    }
-  }
-  if (st.atualizadoEm) h += '<div style="font-size:11px;opacity:.7">Verificado ' + new Date(st.atualizadoEm).toLocaleString('pt-BR') + '</div>';
-  box.innerHTML = h;
-}
-
-async function rmkSalvar() {
-  const btn = document.getElementById('rmkSalvar');
-  const texto = document.getElementById('rmkTexto').value.trim();
-  const p = rmkProduto, nome = (RMK_PRODUTOS.find(function (x) { return x[0] === p; }) || [p, p])[1];
-  const atual = rmkProdutos[p] || {};
-  if (!rmkNovaImagem && !atual.midia) { toast('Envie o vídeo primeiro — ele é o primeiro envio.', 'error'); return; }
-  if (!texto) { toast('Escreva a mensagem.', 'error'); return; }
-  btn.disabled = true;
-  btn.textContent = 'Salvando…';
+async function rmkSalvar(p) {
+  const btn = document.getElementById('rmkSalvar_' + p);
+  const texto = document.getElementById('rmkTexto_' + p).value.trim();
+  const nome = rmkNomeDe(p), atual = rmkProdutos[p] || {};
+  if (!rmkNovas[p] && !atual.midia) { toast('Envie o vídeo primeiro — ele é o primeiro envio.', 'error'); return; }
+  if (!texto) { toast('Escreva o texto.', 'error'); return; }
+  btn.disabled = true; btn.textContent = 'Salvando…';
   try {
-    if (rmkNovaImagem) {
-      const ri = await window.__luxFetch(WORKER_URL + '/admin/remarketing/midia?produto=' + p, {
-        method: 'POST', headers: { 'Content-Type': rmkNovaImagem.type || 'image/jpeg' }, body: rmkNovaImagem
-      });
+    if (rmkNovas[p]) {
+      const ri = await window.__luxFetch(WORKER_URL + '/admin/remarketing/midia?produto=' + p, { method: 'POST', headers: { 'Content-Type': rmkNovas[p].type || 'video/mp4' }, body: rmkNovas[p] });
       const di = await ri.json();
       if (!di.ok) throw new Error(di.error || 'O arquivo não subiu');
-      rmkNovaImagem = null;
+      delete rmkNovas[p];
     }
-    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/produto', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: p, texto: texto })
-    });
+    const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/produto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: p, texto: texto }) });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Não salvou');
     rmkProdutos[p] = Object.assign({ nome: nome }, d.config);
-    const ok = document.getElementById('rmkOk');
+    const ok = document.getElementById('rmkOk_' + p);
     ok.hidden = false;
-    ok.innerHTML = '✓ <b>' + escapeHtml(nome) + ' salvo</b> às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
-      '. ' + (d.config.midia && d.config.midia.video ? 'Vídeo' : 'Imagem') + ' primeiro, mensagem em seguida, no dia útil seguinte ao contato.' +
-      (d.config.midia && d.config.midia.video ? '<br>O vídeo só começa a sair quando a API do WhatsApp liberar o envio de vídeo (o Anderson precisa criar a rota). Até lá esses clientes não recebem.' : '');
+    ok.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) + '.';
     toast(nome + ' salvo', 'success');
-    rmkPintarProdutos();
-    rmkRecarregarStatus();
-  } catch (err) {
-    toast(err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Salvar';
-  }
+    rmkAtualizarSelos();
+  } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Salvar'; }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2276,11 +2401,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function anuRender(d) {
   // campanhas no seletor (mantém a escolhida)
+  // 09/10/2026 (Thiago): o seletor mostra TODAS as campanhas (teste e escala, em grupos) para ver qualquer uma pela
+  // UTM; a aba abre na campanha de teste principal (o lote mais recente com criativo rodando)
   const sel = document.getElementById('anuCampanha');
   const atual = sel.value;
-  sel.innerHTML = '<option value="">' + (anuTipo === 'teste' ? 'Todas as campanhas de teste' : anuTipo === 'escala' ? 'Todas as campanhas de escala' : 'Todas as campanhas') + '</option>' + d.campanhas.filter(function (c) { return anuNoFiltro(anuTipoDe(c.nome)); }).map(function (c) {
-    return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atual ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>';
-  }).join('');
+  const grupo = function (tipo, rot) {
+    const l = d.campanhas.filter(function (c) { return anuTipoDe(c.nome) === tipo; });
+    return l.length ? '<optgroup label="' + rot + '">' + l.map(function (c) { return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atual ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>'; }).join('') + '</optgroup>' : '';
+  };
+  sel.innerHTML = '<option value="">' + (anuTipo === 'teste' ? 'Todas as campanhas de teste' : anuTipo === 'escala' ? 'Todas as campanhas de escala' : 'Todas as campanhas') + '</option>' +
+    grupo('teste', 'Teste') + grupo('escala', 'Escala') + grupo('outro', 'Sem etiqueta');
+  if (!anuCampInicial) {
+    anuCampInicial = true;
+    const principal = (d.campanhasDec || []).find(function (c) { return c.teste && c.ativos > 0; });
+    if (!atual && principal) { sel.value = principal.id; anuCarregar(); return; }
+  }
 
   const a = d.ancoras;
   const per = anuPeriodo();
@@ -2612,6 +2747,7 @@ ANU_IC.estrela = ANU_SVG('M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9
 ANU_IC.editar = ANU_SVG('M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z');
 let anuEditEcon = null; // campanha com o formulário de metas aberto
 let anuTipo = 'teste';  // a aba sempre abre nas campanhas de TESTE (pedido do Thiago, 02/10)
+let anuCampInicial = false; // 09/10: na 1ª carga a aba já escolhe a campanha de teste principal
 
 function anuR(x) { return x == null ? '—' : 'R$ ' + Math.round(x).toLocaleString('pt-BR'); }
 function anuD(x, c = 2) { return x == null ? '—' : Number(x).toFixed(c).replace('.', ','); }
@@ -2621,16 +2757,32 @@ function anuCorRoas(r, E) { return r == null ? '' : r >= E.saudavel ? 'ok' : r >
 function anuEhAtivo(i) { return !i.status || i.status === 'ACTIVE'; }
 function anuTipoDe(nome) { return /\[\s*teste\s*\]/i.test(nome || '') ? 'teste' : /\[\s*escala\s*\]/i.test(nome || '') ? 'escala' : 'outro'; }
 // "Escala" mostra as de escala e as sem etiqueta (tudo que não é teste)
-function anuNoFiltro(tipo) { return anuTipo === 'todas' || (anuTipo === 'teste' ? tipo === 'teste' : tipo !== 'teste'); }
+// com UMA campanha escolhida no seletor, ela aparece qualquer que seja o filtro Teste/Escala (o Worker já filtrou)
+function anuNoFiltro(tipo) {
+  const sel = document.getElementById('anuCampanha');
+  if (sel && sel.value) return true;
+  return anuTipo === 'todas' || (anuTipo === 'teste' ? tipo === 'teste' : tipo !== 'teste');
+}
 function anuNotaChip(n) { return n ? '<span class="anu-nt n' + n.nivel + '">' + n.txt + '</span>' : '<span class="anu-nt nx">pouca amostra</span>'; }
 function anuHora(iso) { return iso ? new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
 
 function anuTrocarTipo(t) {
   anuTipo = t;
   document.querySelectorAll('#anuTipo button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
+  // clicar em Teste/Escala/Todas mostra o GRUPO inteiro: sai da campanha escolhida
   const sel = document.getElementById('anuCampanha');
-  if (sel.value && !anuNoFiltro(anuTipoDe(sel.options[sel.selectedIndex].text))) { sel.value = ''; anuCarregar(); return; }
+  if (sel.value) { sel.value = ''; anuCarregar(); return; }
   if (anuDados) anuRender(anuDados);
+}
+// escolher uma campanha no seletor acende o botão do tipo dela (Teste ou Escala)
+function anuEscolheuCampanha() {
+  const sel = document.getElementById('anuCampanha');
+  if (sel.value) {
+    const t = anuTipoDe(sel.options[sel.selectedIndex].text);
+    anuTipo = t === 'teste' ? 'teste' : 'escala';
+    document.querySelectorAll('#anuTipo button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === anuTipo); });
+  }
+  anuCarregar();
 }
 
 // Números do topo: o que aconteceu no PERÍODO, só nas campanhas do filtro. Gasto da Meta; o resto da UTM.
