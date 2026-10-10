@@ -757,6 +757,7 @@ body.anu-larga .container{max-width:1180px}
 .anu-jor-l{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.025)}
 .anu-jor-l b{color:var(--text);font-weight:600;min-width:64px}
 .anu-jor-l .seta{opacity:.45}
+.anu-jor-l .anu-jor-gasto{min-width:62px;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--text);font-size:11px;font-variant-numeric:tabular-nums;text-align:center}
 .anu-jor-l .ok{color:#4ADE80}.anu-jor-l .at{color:#E8B86B}.anu-jor-l .azul{color:#7FB2FF}.anu-jor-l .cinza{opacity:.6}
 .anu-jor-d>summary{list-style:none;cursor:pointer}
 .anu-jor-d>summary::-webkit-details-marker{display:none}
@@ -2765,7 +2766,7 @@ function anuJornada(i) {
     // O clique não pode abrir o card inteiro (stopPropagation) e o que estava aberto continua aberto ao atualizar.
     const chave = i.ad + '|' + z.d, tem = z.leads && z.leads.length;
     return (tem ? '<details class="anu-jor-d"' + (anuJorAbertos.has(chave) ? ' open' : '') + ' onclick="event.stopPropagation()" ontoggle="anuJorToggle(this,\'' + chave + '\')"><summary class="anu-jor-l">' : '<div class="anu-jor-l">') +
-      '<b>' + sem + ' ' + anuDia(z.d) + '</b>' +
+      '<b>' + sem + ' ' + anuDia(z.d) + '</b>' + (z.gastoUS != null ? '<span class="anu-jor-gasto" title="gasto do dia na Meta">' + anuUS(z.gastoUS) + '</span>' : '') +
       '<span>' + anuPlural(z.conversas, 'conversa', 'conversas') + '</span><span class="seta">→</span>' +
       '<span>' + pix + ' Pix enviado' + (pix === 1 ? '' : 's') + '</span><span class="seta">→</span>' +
       '<span class="ok">' + z.pagos + ' pago' + (z.pagos === 1 ? '' : 's') + '</span>' +
