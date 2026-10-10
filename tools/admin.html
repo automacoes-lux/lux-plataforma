@@ -584,6 +584,11 @@ body.anu-larga .container{max-width:1180px}
 .anu-sel option{background:#191A1D;color:#F2F2F3}
 .anu-data{border:none;border-radius:999px;background:var(--a-card);color:var(--a-txt2);font:500 13px/1 inherit;padding:9px 13px;color-scheme:dark;cursor:pointer}
 .anu-data.on{background:var(--a-sup);color:var(--a-txt)}
+.anu-periodo{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 12px;border-radius:999px;background:var(--a-card)}
+.anu-periodo label{font-size:12.5px;color:var(--a-txt2)}
+.anu-periodo .anu-data{padding:6px 10px;background:transparent}
+.anu-periodo.on{background:var(--a-sup)}
+.anu-periodo.on .anu-data{color:var(--a-txt)}
 .anu-lux{margin-top:6px;font-size:12px;color:var(--a-txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .anu-lux b{color:var(--a-txt);font-weight:600}
 .anu-lux .ok{color:var(--a-ok)} .anu-lux .ruim{color:var(--a-ruim)}
@@ -1040,19 +1045,14 @@ body.anu-larga .container{max-width:1180px}
         <div class="anu-sub" id="anuInfo">Carregando…</div>
       </div>
       <div class="anu-ferr">
-        <div class="anu-seg" id="anuTipo" role="group" aria-label="Tipo de campanha">
-          <button type="button" data-t="teste" class="on" onclick="anuTrocarTipo('teste')">Teste</button>
-          <button type="button" data-t="escala" onclick="anuTrocarTipo('escala')">Escala</button>
-          <button type="button" data-t="todas" onclick="anuTrocarTipo('todas')">Todas</button>
-        </div>
         <div class="anu-seg" id="anuJanela" role="group" aria-label="Período">
           <button type="button" data-j="hoje" onclick="anuTrocarJanela('hoje')">Hoje</button>
-          <button type="button" data-j="semana" onclick="anuTrocarJanela('semana')" title="Segunda a sexta da semana do dia escolhido no calendário. Na segunda-feira, mostra a semana passada.">Semana</button>
-          <button type="button" data-j="7" class="on" onclick="anuTrocarJanela(7)">7 dias</button>
-          <button type="button" data-j="14" onclick="anuTrocarJanela(14)">14 dias</button>
-          <button type="button" data-j="30" onclick="anuTrocarJanela(30)">30 dias</button>
+          <button type="button" data-j="semana" onclick="anuTrocarJanela('semana')" class="on" title="Segunda a sexta desta semana. Na segunda-feira, mostra a semana passada.">Semana</button>
         </div>
-        <input type="date" class="anu-data" id="anuData" aria-label="Escolher um dia" title="Ver um dia só" onchange="anuEscolherDia(this.value)"/>
+        <div class="anu-periodo" id="anuPeriodoBox" role="group" aria-label="Período de datas">
+          <label for="anuDe">De</label><input type="date" class="anu-data" id="anuDe" onchange="anuEscolherPeriodo()"/>
+          <label for="anuAte">até</label><input type="date" class="anu-data" id="anuAte" onchange="anuEscolherPeriodo()"/>
+        </div>
         <select class="anu-sel" id="anuCampanha" onchange="anuEscolheuCampanha()" aria-label="Campanha">
           <option value="">Todas as campanhas</option>
         </select>
@@ -1650,7 +1650,7 @@ function abrirAba(qual) {
     if (!rmkCarregado) { rmkCarregado = true; carregarRemarketing(); } else rmkRecarregarStatus();
     rmkTimer = setInterval(rmkRecarregarStatus, 60000);
   }
-  if (qual === 'anuncios' && !anuCarregado) { anuCarregado = true; anuCarregar(); }
+  if (qual === 'anuncios' && !anuCarregado) { anuCarregado = true; anuMarcarPeriodo(); anuCarregar(); }
 }
 
 async function carregarBalanceador() {
@@ -2272,7 +2272,7 @@ async function rmkSalvar(p) {
 // esta tela só desenha. Sem semáforo de escalar/cortar na fase 0 — só o alerta de desastre.
 // ════════════════════════════════════════════════════════════
 const ANUNCIOS_URL = 'https://lux-anuncios.plataformalux.workers.dev';
-let anuCarregado = false, anuJanela = 7, anuDados = null, anuAberto = null, anuAutoColetou = false;
+let anuCarregado = false, anuJanela = 'semana', anuDados = null, anuAberto = null, anuAutoColetou = false;
 
 const ANU_GRUPOS = {
   A: ['Julgáveis por venda', '25 compras ou mais'],
@@ -2303,45 +2303,42 @@ function anuCopiar(txt, btn) {
   else antigo();
 }
 
-// Período: 7/14/30 dias (janela móvel), 'hoje', 'semana' (segunda a sexta) ou 'dia' (o dia do calendário).
+// Período (09/10/2026, Thiago): Hoje, Semana (segunda a sexta) ou um PERÍODO livre (De … até …, no máximo 62 dias).
 // As datas são as do Brasil, nunca as de UTC (que troca o dia depois das 21h).
 function anuHojeBR() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); }
 function anuSomaDias(d, n) { const p = d.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n, 12)).toISOString().slice(0, 10); }
 function anuDiaSemana(d) { return new Date(d + 'T12:00:00Z').getUTCDay(); }
-let anuDiaRef = null; // dia escolhido no calendário (null = hoje)
+let anuDe = null, anuAte = null; // período escolhido no calendário
 function anuPeriodo() {
   const hoje = anuHojeBR();
   if (anuJanela === 'hoje') return { de: hoje, ate: hoje, rot: 'Hoje' };
-  if (anuJanela === 'dia') return { de: anuDiaRef, ate: anuDiaRef, rot: 'Dia ' + anuDia(anuDiaRef) };
-  if (anuJanela === 'semana') {
-    let ref = anuDiaRef || hoje;
-    // na segunda-feira, sem dia escolhido, a semana útil ainda não aconteceu: mostra a passada
-    if (!anuDiaRef && anuDiaSemana(hoje) === 1) ref = anuSomaDias(hoje, -3);
-    const seg = anuSomaDias(ref, -((anuDiaSemana(ref) + 6) % 7));
-    const sex = anuSomaDias(seg, 4);
-    return { de: seg, ate: sex > hoje ? hoje : sex, rot: 'Semana de ' + anuDia(seg) + ' a ' + anuDia(sex) };
-  }
-  return null;
+  if (anuJanela === 'periodo' && anuDe && anuAte) return { de: anuDe, ate: anuAte, rot: anuDe === anuAte ? 'Dia ' + anuDia(anuDe) : 'De ' + anuDia(anuDe) + ' a ' + anuDia(anuAte) };
+  // semana: segunda a sexta desta semana; na segunda-feira a semana útil ainda não aconteceu, mostra a passada
+  const ref = anuDiaSemana(hoje) === 1 ? anuSomaDias(hoje, -3) : hoje;
+  const seg = anuSomaDias(ref, -((anuDiaSemana(ref) + 6) % 7));
+  const sex = anuSomaDias(seg, 4);
+  return { de: seg, ate: sex > hoje ? hoje : sex, rot: 'Semana de ' + anuDia(seg) + ' a ' + anuDia(sex) };
 }
 function anuMarcarPeriodo() {
   document.querySelectorAll('#anuJanela button').forEach(function (b) { b.classList.toggle('on', b.dataset.j === String(anuJanela)); });
-  const inp = document.getElementById('anuData');
-  inp.classList.toggle('on', anuJanela === 'dia');
-  inp.max = anuHojeBR();
-  if (anuJanela !== 'dia' && anuJanela !== 'semana') inp.value = '';
+  const per = anuPeriodo(), de = document.getElementById('anuDe'), ate = document.getElementById('anuAte'), hoje = anuHojeBR();
+  de.max = hoje; ate.max = hoje;
+  de.value = per.de; ate.value = per.ate; // o calendário sempre mostra o período que está na tela
+  document.getElementById('anuPeriodoBox').classList.toggle('on', anuJanela === 'periodo');
 }
-// Semana usa o dia escolhido no calendário (escolha um dia da semana passada e clique em Semana).
-// Hoje e as janelas de 7/14/30 dias esquecem o dia escolhido.
 function anuTrocarJanela(j) {
-  if (j !== 'semana') anuDiaRef = null;
   anuJanela = j;
   anuMarcarPeriodo();
   anuCarregar();
 }
-function anuEscolherDia(v) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) return;
-  anuDiaRef = v > anuHojeBR() ? anuHojeBR() : v;
-  anuJanela = 'dia';
+function anuEscolherPeriodo() {
+  const re = /^\d{4}-\d{2}-\d{2}$/, hoje = anuHojeBR();
+  let de = document.getElementById('anuDe').value, ate = document.getElementById('anuAte').value;
+  if (!re.test(de || '') || !re.test(ate || '')) return;
+  if (ate > hoje) ate = hoje;
+  if (de > ate) { const t = de; de = ate; ate = t; }
+  if (de < anuSomaDias(ate, -61)) { de = anuSomaDias(ate, -61); toast('O período vai até 62 dias: ajustei o início para ' + anuDia(de), 'info'); }
+  anuDe = de; anuAte = ate; anuJanela = 'periodo';
   anuMarcarPeriodo();
   anuCarregar();
 }
@@ -2746,7 +2743,9 @@ const ANU_ET = {
 ANU_IC.estrela = ANU_SVG('M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z');
 ANU_IC.editar = ANU_SVG('M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z');
 let anuEditEcon = null; // campanha com o formulário de metas aberto
-let anuTipo = 'teste';  // a aba sempre abre nas campanhas de TESTE (pedido do Thiago, 02/10)
+// 09/10/2026 (Thiago): saíram os botões Teste/Escala/Todas — o seletor de campanhas já escolhe (em grupos) e a aba
+// abre na campanha de teste principal. "Todas as campanhas" no seletor = todas.
+let anuTipo = 'todas';
 let anuCampInicial = false; // 09/10: na 1ª carga a aba já escolhe a campanha de teste principal
 
 function anuR(x) { return x == null ? '—' : 'R$ ' + Math.round(x).toLocaleString('pt-BR'); }
