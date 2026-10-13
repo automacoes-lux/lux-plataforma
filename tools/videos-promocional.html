@@ -368,15 +368,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
     <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
 
-    <!-- Caminho alternativo: o cliente já mandou a arte pronta. Sem IA no meio. -->
-    <div class="cx-montado">
-      <div class="tit">🎨 Já tem o personagem pronto?</div>
-      <div class="sub">Use aqui quando o cliente <b>já mandou a arte do personagem com o cenário</b>. A imagem vai
-        direto para os vídeos, <b>sem a IA redesenhar nada</b> — nem o personagem, nem o fundo.<br>
-        Usando este campo, você <b>não precisa</b> preencher a foto do personagem acima.</div>
-      <div class="thumbs" id="thMontado"></div>
-      <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onPick(event,'montado')"/></label>
-    </div>
+    <!-- (12/10) "Personagem montado" REMOVIDO por ordem do Thiago: a arte pronta fugia do padrão visual (fundo desfocado,
+         menos saturação) e o personagem saía mudo. A imagem é SEMPRE criada aqui na plataforma. -->
 
   </div>
 
@@ -422,13 +415,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="mini" id="rotAjustePers" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
       <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
 
-      <!-- trocar pela arte pronta do cliente, sem voltar ao passo 1 -->
-      <div class="cx-montado">
-        <div class="tit">🎨 Prefere usar a arte pronta do cliente?</div>
-        <div class="sub">Suba aqui e ela <b>substitui a imagem acima</b>, indo direto para os vídeos,
-          <b>sem a IA redesenhar nada</b>. O texto continua o mesmo.</div>
-        <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onMontadoPasso2(event)"/></label>
-      </div>
+      <!-- (12/10) troca pela arte pronta REMOVIDA (ver o comentário do passo 1) -->
     </div>
 
     <div id="boxRoteiro"></div>
@@ -1233,7 +1220,7 @@ function faltaNoBriefing(){
   if(!clienteNome())        return { msg:'✍️ Escreva o nome do cliente ou empresa.', el:'fCliente' };
   // dois caminhos válidos: foto pra IA desenhar, OU a arte pronta do cliente
   if(!refs.product.length && !refs.montado.length)
-    return { msg:'📸 Suba a foto do personagem — ou a arte pronta em "Personagem montado".', el:null };
+    return { msg:'📸 Suba a foto do personagem.', el:null };
   if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
   if(briefingExcedeu())     return { msg: briefingExcedeu(), el:'fBriefing' };
   if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };

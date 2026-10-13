@@ -533,7 +533,7 @@ button.btn-baixar{cursor:pointer}
         <!-- (16/09) IMAGEM REAL — desligado = desenho; ligado = a pessoa sai como FOTO, igual à foto enviada -->
         <!-- (29/09) Mascote ESCONDIDO (não apagado): o canto passou para a VisionStory, que mantém o mascote como
              mascote sem precisar de motor separado. Volta a aparecer tirando o display:none, se um dia precisar. -->
-        <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;justify-content:flex-end">
           <div style="display:none;align-items:center;gap:8px">
             <span class="sw-label" id="mascoteLbl">Mascote<br/>ativado</span>
             <button type="button" class="sw" id="btnMascote" role="switch" aria-checked="false" onclick="toggleMascote()"
@@ -542,7 +542,7 @@ button.btn-baixar{cursor:pointer}
             </button>
           </div>
           <!-- (03/10) CORPO INTEIRO — desligado (padrão) = meio corpo, dos joelhos pra cima (rosto grande, regras da
-               VisionStory); ligado = o enquadramento antigo, da cabeça aos pés -->
+               motor do canto); ligado = o enquadramento antigo, da cabeça aos pés -->
           <div style="display:flex;align-items:center;gap:8px">
             <span class="sw-label" id="inteiroLbl">Corpo<br/>inteiro</span>
             <button type="button" class="sw" id="btnInteiro" role="switch" aria-checked="false" onclick="toggleInteiro()"
@@ -555,6 +555,14 @@ button.btn-baixar{cursor:pointer}
             <button type="button" class="sw" id="btnReal" role="switch" aria-checked="false" onclick="toggleReal()"
                     title="Ligue para a imagem sair como FOTO real, preservando a pessoa como ela é. Desligado: desenho.">
               <span class="sw-knob"></span><span class="sw-txt" id="realState">Off</span>
+            </button>
+          </div>
+          <!-- (12/10) IA DO VÍDEO — desligada (padrão) = IA nova; ligada = IA antiga (o canto vai pelo motor antigo) -->
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="motorLbl">IA<br/>antiga</span>
+            <button type="button" class="sw" id="btnMotor" role="switch" aria-checked="false" onclick="toggleMotor()"
+                    title="Desligada: o vídeo é feito na IA nova (padrão). Ligue para fazer na IA antiga.">
+              <span class="sw-knob"></span><span class="sw-txt" id="motorState">Off</span>
             </button>
           </div>
         </div>
@@ -573,10 +581,8 @@ button.btn-baixar{cursor:pointer}
       <!-- (29/09) IMAGEM PRONTA 9:16 (pedido do Thiago): quem já tem a imagem final — personagem no cenário, em pé,
            no formato do celular — sobe aqui e pula a geração da imagem: não gasta IA de imagem, só o vídeo.
            Trava: só aceita 9:16; qualquer outra proporção é recusada com aviso. -->
-      <div class="pronta-box" id="prontaBox">
-        <div class="pronta-txt"><b>Já tem uma imagem pronta em 9:16?</b> Suba aqui — ela vai direto para o vídeo, <b>sem custo de geração de imagem</b>.</div>
-        <button type="button" class="btn-pronta" onclick="document.getElementById('prontaInput').click()">📲 Subir imagem pronta (9:16)</button>
-      </div>
+      <!-- (12/10) caixa "Subir imagem pronta" REMOVIDA por ordem do Thiago: a imagem pronta fugia do padrão visual e o
+           avatar saía mudo/parado. Agora a imagem é SEMPRE criada aqui na plataforma. -->
       <input type="file" id="prontaInput" accept="image/*,.heic,.heif" hidden/>
 
       <!-- Gerar o avatar (preview) -->
@@ -956,6 +962,7 @@ let transicoes = true;             // Passo 3: transições entre cenas LIGADAS 
 let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let imagemReal = false;            // (16/09) Passo 1: 'Imagem real' — DESLIGADO por padrão (desenho)
+let motorAntigo = false;           // (12/10) Passo 1: 'IA antiga' — DESLIGADA por padrão (IA nova)
 let corpoInteiro = false;          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
@@ -2569,6 +2576,22 @@ function setInteiroBtn() {
   if (l) l.classList.toggle('on', corpoInteiro);
   renderChecklist();
 }
+// (12/10) IA DO VÍDEO — desligada (padrão) = IA nova; ligada = IA antiga. Não muda a imagem, só quem faz o canto.
+function toggleMotor() {
+  motorAntigo = !motorAntigo;
+  setMotorBtn();
+  toast(motorAntigo ? 'IA antiga ligada para este vídeo.' : 'IA nova (padrão) para este vídeo.');
+  rascSalvar();
+}
+function setMotorBtn() {
+  const b = document.getElementById('btnMotor');
+  const e = document.getElementById('motorState');
+  const l = document.getElementById('motorLbl');
+  if (b) { b.classList.toggle('on', motorAntigo); b.setAttribute('aria-checked', motorAntigo ? 'true' : 'false'); }
+  if (e) e.textContent = motorAntigo ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', motorAntigo);
+  renderChecklist();
+}
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
 function renderChecklist() {
   const ul = document.getElementById('checklist');
@@ -2588,7 +2611,7 @@ function renderChecklist() {
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
     // (29/09) sem a chave Mascote (o motor novo serve pessoa e mascote), a linha mostra só o estilo da imagem
     '<li class="modo"><span class="ck-ico">' + (imagemReal ? '📸' : '🎨') + '</span><span>' +
-      (imagemReal ? 'Imagem real (foto)' : 'Imagem em desenho') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + '</span></li>';
+      (imagemReal ? 'Imagem real (foto)' : 'Imagem em desenho') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (motorAntigo ? 'IA antiga' : 'IA nova') + '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
@@ -3276,7 +3299,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, mascote: mascote, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, mascote: mascote, motor: motorAntigo ? 'wavespeed' : 'visionstory', cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -3312,13 +3335,14 @@ async function gerarClipe() {
       mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
       real: imagemReal,                      // (16/09) chave "Imagem real" do Passo 1: fica guardada para o Editar
       corpoInteiro: corpoInteiro,            // (03/10) chave "Corpo inteiro" do Passo 1: fica guardada para o Editar
+      motor: motorAntigo ? 'wavespeed' : 'visionstory',   // (12/10) chave "IA antiga" do Passo 1
       // (13/09) o resto do que a atendente preencheu, guardado para o botão Editar trazer de volta
       clientPhoto2: clientPhoto2 ? { base64: clientPhoto2.base64, name: clientPhoto2.name, mimeType: clientPhoto2.mimeType } : null,
       clientPhoto3: clientPhoto3 ? { base64: clientPhoto3.base64, name: clientPhoto3.name, mimeType: clientPhoto3.mimeType } : null,
       corte: corteUsado,
       avatarNote: ((document.getElementById('avatarNote') || {}).value || '').trim(),
       imagemReaproveitada: !!(avatarPreview && avatarPreview.reaproveitada),   // imagem trazida pelo Editar e não gerada de novo: não cobra
-      montado: !!(avatarPreview && avatarPreview.pronta),   // (29/09) imagem pronta 9:16 enviada pelo atendente: o servidor não cobra o desenho
+      montado: false,   // (12/10) imagem pronta desativada: a imagem é sempre criada na plataforma
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
@@ -3607,9 +3631,7 @@ function cardVitrine(v, custoBRL, luxBRL) {
   const refeito = v.refeito ? ' · refeito na reserva' + ((_ehAdmin && luxBRL != null) ? ' (Lux R$ ' + Number(luxBRL).toFixed(2).replace('.', ',') + ')' : '') : '';
   const meuPedido = _meusOrders.find(o => o.orderId === v.orderId);
   const jaRefeito = v.jaRefeito || !!(meuPedido && meuPedido.refeitoReservaId);
-  const refazer = (podeEditar && !v.refeito && !jaRefeito)
-    ? '<button class="btn-mini" onclick="refazerNaReserva(\'' + (v.orderId || '') + '\', this)">↻ Refazer na reserva</button>'
-    : '';
+  const refazer = '';   // (12/10) "Refazer na reserva" DESATIVADO por ordem do Thiago (não existe mais refazer de graça)
   const quem  = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
   const editar = podeEditar
     ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar vídeo (fotos, imagem, música e ajustes)">✏️ Editar</button>'
@@ -3738,6 +3760,7 @@ async function editarClipe(orderId) {
     mascote = !!d.mascote; setMascoteBtn();
     imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
     corpoInteiro = !!d.corpoInteiro; setInteiroBtn();   // (03/10) volta a chave "Corpo inteiro" do jeito que estava
+    motorAntigo = (d.motorPedido === 'wavespeed'); setMotorBtn();   // (12/10) volta a chave "IA antiga"
     renderClientPhoto(); refreshAvatarUI();
 
     rawAudioBuffer = audioBuf;
@@ -3850,13 +3873,13 @@ async function rascSalvarAgora() {
     await rascSincroniza();
     const estado = {
       clientName: campo('clientName'), categoria: campo('fCategoria'), avatarNote: campo('avatarNote'),
-      mascote: !!mascote, real: !!imagemReal, corpoInteiro: !!corpoInteiro, trechoLivre: !!trechoLivre,
+      mascote: !!mascote, real: !!imagemReal, corpoInteiro: !!corpoInteiro, motorAntigo: !!motorAntigo, trechoLivre: !!trechoLivre,
       corte: corteUsado || null,
       musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
       origName: rawAudioName || '',
       arquivos: _rascArquivos,
       cartoonKey: (_rascArquivos.cartoon || {}).key || '',
-      imagemPronta: !!(avatarPreview && avatarPreview.pronta),   // (29/09) imagem pronta 9:16 (sem custo de geração)
+      imagemPronta: false,   // (12/10) imagem pronta desativada
       passo: rascPasso(), passoMax: 3
     };
     const r = await api('/a97RascunhoSalvar', { method: 'POST', body: JSON.stringify({ projectId: rascunhoId, estado }) });
@@ -3944,14 +3967,15 @@ async function continuarProjeto(pid) {
     document.getElementById('fCategoria').value = e.categoria || '';
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = e.avatarNote || ''; }
     clientPhoto = f1; clientPhoto2 = f2; clientPhoto3 = f3;
-    if (cartoonB64) {
-      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true, pronta: !!e.imagemPronta };   // já foi paga (ou é imagem pronta)
+    if (cartoonB64 && !e.imagemPronta) {   // (12/10) rascunho com imagem PRONTA (antiga) não volta: gera de novo na plataforma
+      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true, pronta: false };   // já foi paga (ou é imagem pronta)
       cartoonGens = 0; cartoonGensRes = 0;
       const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
     }
     mascote = !!e.mascote; setMascoteBtn();
     imagemReal = !!e.real; setRealBtn();
     corpoInteiro = !!e.corpoInteiro; setInteiroBtn();
+    motorAntigo = !!e.motorAntigo; setMotorBtn();
     renderClientPhoto(); refreshAvatarUI();
 
     if (bTrecho) {
@@ -4166,6 +4190,7 @@ function resetCreateForm() {
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
+  motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -4193,6 +4218,7 @@ function sairEdicao() {
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
+  motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
