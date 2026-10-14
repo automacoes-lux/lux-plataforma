@@ -543,13 +543,7 @@ button.btn-baixar{cursor:pointer}
           </div>
           <!-- (03/10) CORPO INTEIRO — desligado (padrão) = meio corpo, dos joelhos pra cima (rosto grande, regras da
                motor do canto); ligado = o enquadramento antigo, da cabeça aos pés -->
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="sw-label" id="inteiroLbl">Corpo<br/>inteiro</span>
-            <button type="button" class="sw" id="btnInteiro" role="switch" aria-checked="false" onclick="toggleInteiro()"
-                    title="Ligue para a imagem mostrar o personagem da cabeça aos pés. Desligado: dos joelhos pra cima, com o rosto grande.">
-              <span class="sw-knob"></span><span class="sw-txt" id="inteiroState">Off</span>
-            </button>
-          </div>
+          <!-- (14/10) chave "Corpo inteiro" REMOVIDA por ordem do Thiago: toda imagem agora é de corpo inteiro -->
           <div style="display:flex;align-items:center;gap:8px">
             <span class="sw-label" id="realLbl">Imagem<br/>real</span>
             <button type="button" class="sw" id="btnReal" role="switch" aria-checked="false" onclick="toggleReal()"
@@ -963,7 +957,7 @@ let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DES
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let imagemReal = false;            // (16/09) Passo 1: 'Imagem real' — DESLIGADO por padrão (desenho)
 let motorAntigo = false;           // (12/10) Passo 1: 'IA antiga' — DESLIGADA por padrão (IA nova)
-let corpoInteiro = false;          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
+let corpoInteiro = true;   // (14/10) SEMPRE corpo inteiro (a chave saiu da tela)          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
 let pollTimer = null;
@@ -3759,7 +3753,7 @@ async function editarClipe(orderId) {
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = d.avatarNote || ''; }
     mascote = !!d.mascote; setMascoteBtn();
     imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
-    corpoInteiro = !!d.corpoInteiro; setInteiroBtn();   // (03/10) volta a chave "Corpo inteiro" do jeito que estava
+    corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     motorAntigo = (d.motorPedido === 'wavespeed'); setMotorBtn();   // (12/10) volta a chave "IA antiga"
     renderClientPhoto(); refreshAvatarUI();
 
@@ -3974,7 +3968,7 @@ async function continuarProjeto(pid) {
     }
     mascote = !!e.mascote; setMascoteBtn();
     imagemReal = !!e.real; setRealBtn();
-    corpoInteiro = !!e.corpoInteiro; setInteiroBtn();
+    corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     motorAntigo = !!e.motorAntigo; setMotorBtn();
     renderClientPhoto(); refreshAvatarUI();
 
@@ -4189,7 +4183,7 @@ function resetCreateForm() {
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
-  corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
+  corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
@@ -4217,7 +4211,7 @@ function sairEdicao() {
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
-  corpoInteiro = false; setInteiroBtn();   // (03/10) volta ao padrão (meio corpo)
+  corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
   trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
