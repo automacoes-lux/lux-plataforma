@@ -342,6 +342,11 @@ body{
 .rmk2-prod textarea:focus{outline:none;border-color:var(--r-line)}
 .rmk2-rod{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .rmk2-ok{font-size:12.5px;color:var(--r-ok)}
+.rmk2-bv{border-top:1px solid var(--r-line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.rmk2-bv-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.rmk2-bv-cab b{display:block;font-size:14px;font-weight:600}
+.rmk2-bv-cab .d{display:block;font-size:12px;color:var(--r-txt2);margin-top:2px;line-height:1.45}
+.rmk2-prod .rmk2-bv textarea{min-height:110px}
 @media (max-width:900px){
   .rmk2-prods{grid-template-columns:1fr}
   .rmk2-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2013,7 +2018,7 @@ async function carregarRemarketing() {
     const resp = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
     const d = await resp.json();
     if (!d.ok) throw new Error(d.error || 'Falha ao carregar');
-    rmkCfg = d.config; rmkProdutos = d.produtos || {}; rmkDiasCfg = d.dias || { dias: 1 };
+    rmkCfg = d.config; rmkProdutos = d.produtos || {}; rmkDiasCfg = d.dias || { dias: 1 }; rmkBvResumo = d.boasVindasHoje || null;
     rmkPintarEnvio(d.envio);
     rmkPintarDias();
     rmkPintarProdutos();
@@ -2029,8 +2034,8 @@ async function rmkRecarregarStatus() {
     const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing');
     const d = await r.json();
     if (!d.ok) return;
-    rmkCfg = d.config; rmkProdutos = d.produtos || rmkProdutos; rmkDiasCfg = d.dias || rmkDiasCfg;
-    rmkPintarEnvio(d.envio); rmkPintarDias(); rmkStatus(d.status); rmkAtualizarSelos();
+    rmkCfg = d.config; rmkProdutos = d.produtos || rmkProdutos; rmkDiasCfg = d.dias || rmkDiasCfg; rmkBvResumo = d.boasVindasHoje || rmkBvResumo;
+    rmkPintarEnvio(d.envio); rmkPintarDias(); rmkStatus(d.status); rmkAtualizarSelos(); rmkBvPintarHoje();
   } catch (e) {}
 }
 
@@ -2153,10 +2158,62 @@ function rmkPintarProdutos() {
         '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkConta_' + p + '">' + (x.texto || '').length + '</span> de 4.096</span>' +
         '<button type="button" class="rmk2-bt claro" id="rmkSalvar_' + p + '" onclick="rmkSalvar(\'' + p + '\')">Salvar</button></div>' +
         '<div class="rmk2-ok" id="rmkOk_' + p + '" hidden></div>' +
-      '</div></article>';
+      '</div>' + (p === 'avatar' ? rmkBlocoBv(x) : '') + '</article>';
   }).join('');
   RMK_PRODUTOS.forEach(function (pp) { const x = rmkDoProduto(pp[0]); if (x.midia) rmkMostrarMidia(pp[0], x.legado); });
 }
+// ── boas-vindas do lead novo (14/10/2026): logo depois da saudação do WhatsApp Business, o vídeo deste card
+//    (Avatar) e em seguida o texto daqui — para todo lead novo, em todos os atendentes. Quem envia é o lux-agente. ──
+function rmkBlocoBv(x) {
+  const bv = x.boasVindas || {}, on = !!bv.ativo;
+  return '<div class="rmk2-bv">' +
+    '<div class="rmk2-bv-cab"><div><b>Boas-vindas do lead novo</b><span class="d">Logo depois da saudação automática, todo lead novo recebe o vídeo acima e, em seguida, este texto. Todos os atendentes, uma vez por cliente.</span></div>' +
+    '<button type="button" class="rmk2-sw" id="rmkBvSw" role="switch" aria-checked="' + on + '" aria-label="Boas-vindas ligada" onclick="rmkBvAlternar()"><i></i><span>' + (on ? 'Ligado' : 'Desligado') + '</span></button></div>' +
+    '<textarea id="rmkBvTexto" maxlength="4096" placeholder="Texto que vai logo depois do vídeo de boas-vindas…" oninput="rmkBvContar()">' + escapeHtml(bv.texto || '') + '</textarea>' +
+    '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkBvConta">' + (bv.texto || '').length + '</span> de 4.096 · <span id="rmkBvHoje">' + rmkBvHojeTxt() + '</span></span>' +
+    '<button type="button" class="rmk2-bt claro" id="rmkBvSalvar" onclick="rmkBvSalvar()">Salvar</button></div>' +
+    '</div>';
+}
+let rmkBvResumo = null;
+function rmkBvHojeTxt() {
+  const h = rmkBvResumo;
+  if (!h) return 'hoje: nenhum enviado';
+  return 'hoje: ' + (h.enviados || 0) + (h.enviados === 1 ? ' enviado' : ' enviados') + (h.falhas ? ' · ' + h.falhas + (h.falhas === 1 ? ' falha' : ' falhas') : '');
+}
+function rmkBvPintarHoje() { const el = document.getElementById('rmkBvHoje'); if (el) el.textContent = rmkBvHojeTxt(); }
+function rmkBvContar() { const t = document.getElementById('rmkBvTexto'); if (t) document.getElementById('rmkBvConta').textContent = t.value.length.toLocaleString('pt-BR'); }
+async function rmkBvGravar(ativo) {
+  const texto = document.getElementById('rmkBvTexto').value.trim();
+  const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/boasvindas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: 'avatar', ativo: ativo, texto: texto }) });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'Não consegui salvar');
+  rmkProdutos.avatar = Object.assign({}, rmkProdutos.avatar || {}, { boasVindas: d.boasVindas });
+  const sw = document.getElementById('rmkBvSw');
+  sw.setAttribute('aria-checked', d.boasVindas.ativo ? 'true' : 'false');
+  sw.querySelector('span').textContent = d.boasVindas.ativo ? 'Ligado' : 'Desligado';
+  return d.boasVindas;
+}
+async function rmkBvAlternar() {
+  const atual = ((rmkProdutos.avatar || {}).boasVindas || {}).ativo === true;
+  if (atual && !confirm('Desligar a boas-vindas com vídeo?\n\nOs leads novos deixam de receber o vídeo e o texto.')) return;
+  if (!atual && !confirm('Ligar a boas-vindas com vídeo?\n\nA partir de agora TODO lead novo, em todos os atendentes, recebe o vídeo do Avatar e o texto logo depois da saudação.')) return;
+  const sw = document.getElementById('rmkBvSw');
+  sw.disabled = true;
+  try {
+    const bv = await rmkBvGravar(!atual);
+    toast(bv.ativo ? 'Boas-vindas ligada' : 'Boas-vindas desligada', 'success');
+  } catch (err) { toast(err.message, 'error'); } finally { sw.disabled = false; }
+}
+async function rmkBvSalvar() {
+  const btn = document.getElementById('rmkBvSalvar');
+  const ativo = ((rmkProdutos.avatar || {}).boasVindas || {}).ativo === true;
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    await rmkBvGravar(ativo);
+    toast('Texto de boas-vindas salvo' + (ativo ? '' : ' (a boas-vindas está desligada)'), 'success');
+  } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+}
+
 async function rmkAlternarProduto(p) {
   const ativo = (rmkProdutos[p] || {}).ativo !== false, nome = rmkNomeDe(p);
   if (ativo && !confirm('Desligar ' + nome + '?\n\nOs clientes desse produto deixam de receber o lembrete. Os outros produtos continuam.')) return;
