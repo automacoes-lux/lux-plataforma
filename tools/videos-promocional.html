@@ -1721,6 +1721,8 @@ async function irParaVideo(){
   catch(e){ /* sem servidor: segue com o que está — melhor entrar no editor do que travar */ }
   finally{ if(bt){ bt.disabled = false; bt.innerHTML = txtBt; } }
 
+  // (15/10) GERAR VÍDEO é pedido explícito: tira a marca de falha pra o vídeo que falhou ser pedido de novo
+  cenas.forEach(function(s){ if(!s.video_url && s.video_status === 'erro'){ s.video_status = ''; s.video_error = ''; } });
   liberar(3);            // entrar no passo 3 dispara a geração do que estiver faltando
   await autoSalvar();
 }
@@ -1766,12 +1768,13 @@ async function gerarVideo(i){
 // O pedidoId nasce aqui, UM por clique. Se a rede cair e o apiRetry repetir, vai o MESMO id e a
 // VisionStory devolve o pedido já feito (não cobra 2x). Refazer/pedir de novo = id novo.
 // O custo NÃO entra aqui: a VisionStory só cobra o que entrega (cost_credit), e ele chega no fim.
-async function dispararVs(i){
+async function dispararVs(i, comZoom){
   const s=cenas[i];
   const img = await subirPersonagem();
   s._pedidoVs = projectId.replace(/[^A-Za-z0-9_-]/g,'').slice(-30) + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  if(!comZoom) s._tentouZoom = false;   // pedido novo do atendente: a 2ª tentativa com zoom volta a valer
   const r = await apiRetry('/pvsVideoStart', { method:'POST', body: JSON.stringify({
-    projectId, imagem: img, texto: String(s.fala||'').trim(), vozId: vozAtual(), pedidoId: s._pedidoVs }) });
+    projectId, imagem: img, texto: String(s.fala||'').trim(), vozId: vozAtual(), pedidoId: s._pedidoVs, zoom: !!comZoom }) });
   const d = await r.json();
   if(!d.ok) throw new Error(d.error||'Falha ao pedir o vídeo');
   s._vozUsada = vozAtual();
@@ -1828,7 +1831,24 @@ async function acompanharVs(i, videoId){
         toast('✅ Vídeo pronto!');
         return;
       }
-      if(d.status==='failed'){ falharCena(i, d.error||'este vídeo não pôde ser gerado'); return; }
+      if(d.status==='failed'){
+        // (15/10) caso "skineve" (Rayane): a VisionStory recusava TODO vídeo daquele personagem (rosto
+        // pequeno no meio da imagem) e a atendente ficava presa refazendo. Na 1ª falha, pede de novo
+        // SOZINHA com o personagem aproximado (zoom no enquadramento, mesma imagem). Falha não é cobrada.
+        if(!s._tentouZoom){
+          s._tentouZoom = true;
+          try{
+            idAtual = await dispararVs(i, true);
+            s._tentouZoom = true;
+            s._videoId = idAtual; s._desde = Date.now();
+            t = -1; semContato = 0; erroServidor = 0;
+            avisarLento(i, false); renderVideos();
+            toast('🔄 Ajustando o enquadramento do personagem e tentando de novo…');
+            continue;
+          }catch(e){ /* não deu nem pra pedir de novo: cai na falha abaixo */ }
+        }
+        falharCena(i, d.error||'este vídeo não pôde ser gerado'); return;
+      }
     }catch(e){
       if(++semContato >= 15){
         falharCena(i, 'sem contato com o servidor há dois minutos e meio — o vídeo pode ter ficado pronto; reabra o projeto antes de refazer');
@@ -3238,6 +3258,10 @@ async function iniciarCenasSeNecessario(){
     toast('⚠️ Este vídeo é do personagem anterior. Use "Refazer" no editor pra atualizar.');
   }
   if(cenas.every(function(s){ return !!s.video_url; })) return;   // todas já prontas
+  // (15/10) vídeo que FALHOU não é pedido de novo só por abrir o projeto (o admin abriu o "skineve" e
+  // a tela disparou mais um pedido sozinha). O cartão mostra a falha e o Refazer; o GERAR VÍDEO do
+  // passo 2 limpa a marca de falha antes de chegar aqui, então ele continua pedindo.
+  if(!ehLegado() && cenas.every(function(s){ return !!s.video_url || s.video_status === 'erro'; })) return;
   gerandoCenas = true;
   try{
     await gerarCenas();          // dispara as que faltam e vai renderizando cada uma que chega
