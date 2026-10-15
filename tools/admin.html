@@ -319,7 +319,7 @@ body{
 .rmk2-ult .e.enviado{color:var(--r-ok)}.rmk2-ult .e.fora,.rmk2-ult .e.perdido{color:var(--r-txt3)}.rmk2-ult .e.bloqueado,.rmk2-ult .e.falhou{color:var(--r-at)}.rmk2-ult .e.simulado{color:#7FB2FF}
 /* produtos */
 .rmk2-tit{font-size:15px;font-weight:600;margin:24px 0 10px}
-.rmk2-prods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rmk2-prods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:820px}
 .rmk2-prod{background:var(--r-card);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;transition:opacity .15s}
 .rmk2-prod.off .rmk2-prod-corpo{opacity:.45}
 .rmk2-prod-cab{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -329,7 +329,8 @@ body{
 .rmk2-chip.ok{background:rgba(74,222,128,.12);color:var(--r-ok)}
 .rmk2-chip.at{background:rgba(232,184,107,.12);color:var(--r-at)}
 .rmk2-prod-corpo{display:flex;flex-direction:column;gap:12px}
-.rmk2-midia{position:relative;aspect-ratio:9/16;max-height:300px;width:100%;border-radius:12px;background:var(--r-campo);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--r-txt3);font-size:12px;text-align:center}
+.rmk2-descr{font-size:12.5px;color:var(--r-txt2);line-height:1.45;margin:-4px 0 0}
+.rmk2-midia{position:relative;aspect-ratio:9/16;height:340px;width:auto;max-width:100%;margin:0 auto;border-radius:12px;background:var(--r-campo);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--r-txt3);font-size:12px;text-align:center}
 .rmk2-midia video,.rmk2-midia img{width:100%;height:100%;object-fit:contain;background:#000}
 .rmk2-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rmk2-bt{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--r-sup);color:var(--r-txt);font-size:13px;font-weight:500;padding:8px 14px;cursor:pointer}
@@ -354,7 +355,7 @@ body{
   .rmk2-kpi:nth-child(-n+2){border-top:none}
   .rmk2-kpi:last-child{grid-column:1 / -1}
   .rmk2-bloco{padding:4px 14px}
-  .rmk2-midia{max-height:260px}
+  .rmk2-midia{height:300px}
 }
 
 .rmk-ok{margin-top:12px;padding:11px 14px;border-radius:var(--radius);border:.5px solid #5EAD7E;background:rgba(94,173,126,.08);color:#A9D9BD;font-size:13px;line-height:1.55}
@@ -1036,11 +1037,11 @@ body.anu-larga .container{max-width:1180px}
         <b>Recebe:</b> o <b>lead mudo</b> (mandou a primeira mensagem e não respondeu mais) e quem <b>recebeu os dados do Pix</b> e sumiu ou disse que pagaria depois.<br>
         <b>Nunca recebe:</b> quem disse que não tem interesse, achou caro, reclamou, já pagou, ou parou antes de receber o Pix. Antes de enviar, a IA lê a conversa inteira, inclusive imagens e áudios.<br>
         <b>Quando:</b> no horário em que o cliente chamou, só com a equipe trabalhando (até as 16h). Sábado e domingo não contam: quem chamou na sexta recebe na segunda.<br>
-        <b>Qual mensagem:</b> a do produto do anúncio que trouxe o cliente (sai do nome da campanha). Quem não veio de anúncio recebe a de Música Personalizada.
+        <b>Qual mensagem:</b> a do card "Remarketing (todos os produtos)", para quem veio de qualquer produto.
       </div>
     </details>
 
-    <h3 class="rmk2-tit">Mensagens por produto</h3>
+    <h3 class="rmk2-tit">Mensagens automáticas</h3>
     <div class="rmk2-prods" id="rmkProds"></div>
   </div>
 
@@ -2000,7 +2001,9 @@ async function salvarAjuste(body, msgOk) {
 // REMARKETING v2 (Thiago, 09/10/2026): chave geral (liga/desliga TODOS os envios), seletor de dias (padrão 1 dia útil,
 // mesmo horário do contato) e 3 produtos, cada um com a SUA chave, vídeo e texto. Backend: lux-figurinhas
 // (/admin/remarketing, /produto, /produto/ativo, /midia, /dias); quem envia é o lux-agente.
-const RMK_PRODUTOS = [['musica', 'Música Personalizada'], ['avatar', 'Avatar Cantando'], ['personagem', 'Personagem Falando']];
+// 15/10/2026: dois cards — o remarketing de todos os produtos (id musica) e a boas-vindas do lead novo (id avatar)
+const RMK_PRODUTOS = [['musica', 'Remarketing (todos os produtos)'], ['avatar', 'Boas-vindas do lead novo']];
+const RMK_NOMES = { musica: 'Música Personalizada', avatar: 'Avatar Cantando', personagem: 'Personagem Falando' };
 const RMK_ESTADO = { enviado: 'enviado', simulado: 'receberia', fora: 'fora', perdido: 'horário passou', bloqueado: 'sem mensagem', falhou: 'falhou', agendado: 'aguardando' };
 let rmkCfg = null, rmkEnvio = null, rmkProdutos = {}, rmkDiasCfg = { dias: 1 }, rmkUltStatus = null;
 const rmkNovas = {}, rmkUrls = {};
@@ -2011,7 +2014,8 @@ function rmkDoProduto(p) {
   if (p === 'musica' && !x.midia && rmkCfg && rmkCfg.imagem) return Object.assign({}, x, { texto: x.texto || rmkCfg.texto || '', midia: { tipo: rmkCfg.imagem.tipo, video: false, legado: true }, legado: true });
   return x;
 }
-function rmkNomeDe(p) { return (RMK_PRODUTOS.find(function (x) { return x[0] === p; }) || [p, p])[1]; }
+function rmkNomeDe(p) { return RMK_NOMES[p] || p; }
+function rmkTituloDe(p) { return (RMK_PRODUTOS.find(function (x) { return x[0] === p; }) || [p, p])[1]; }
 
 async function carregarRemarketing() {
   try {
@@ -2095,7 +2099,7 @@ async function rmkMudarDias(n) {
 function rmkStatus(st) {
   rmkUltStatus = st;
   const box = document.getElementById('rmkStatus'), modo = document.getElementById('rmkModo'), sub = document.getElementById('rmkHojeSub');
-  const algum = RMK_PRODUTOS.some(function (pp) { const x = rmkDoProduto(pp[0]); return x.midia && x.texto; });
+  const xr = rmkDoProduto('musica'), algum = !!(xr.midia && xr.texto);
   const m = !algum ? ['ensaio', 'Sem mensagem salva'] : !st ? ['', 'Aguardando a 1ª rodada'] : st.modo === 'ligado' ? ['ligado', 'Enviando'] : st.modo === 'desligado' ? ['desligado', 'Desligado'] : ['ensaio', 'Ensaio: julga, mas não envia'];
   modo.className = 'rmk2-modo ' + m[0];
   modo.innerHTML = '<i></i>' + m[1];
@@ -2119,85 +2123,94 @@ function rmkStatus(st) {
   rmkAtualizarSelos();
 }
 
-// ── produtos ──
+// ── cards (15/10/2026, Thiago): DOIS cards ──
+//   • musica → "Remarketing (todos os produtos)": a oferta do dia seguinte para qualquer cliente (Música, Avatar ou
+//     Personagem). O botão liga/desliga o remarketing inteiro.
+//   • avatar → "Boas-vindas do lead novo": o vídeo + o texto que vão logo depois da saudação do WhatsApp Business, para
+//     todo lead novo, em todos os atendentes (quem envia é o lux-agente). O botão liga/desliga a boas-vindas.
+//   Os ids internos (musica/avatar) não mudaram: a mídia continua em remarketing:produto:<id>.
 function rmkSelos(p) {
-  const x = rmkDoProduto(p), ativo = (rmkProdutos[p] || {}).ativo !== false;
   const sel = [];
+  if (p === 'avatar') {
+    const x = rmkProdutos.avatar || {}, bv = x.boasVindas || {};
+    if (!bv.ativo) sel.push('<span class="rmk2-chip">Desligado</span>');
+    else if (x.midia && bv.texto) sel.push('<span class="rmk2-chip ok">Enviando para todo lead novo</span>');
+    else sel.push('<span class="rmk2-chip at">' + (!x.midia && !bv.texto ? 'Falta o vídeo e o texto' : !x.midia ? 'Falta o vídeo' : 'Falta o texto') + '</span>');
+    sel.push('<span class="rmk2-chip">' + rmkBvHojeTxt() + '</span>');
+    return sel.join('');
+  }
+  const x = rmkDoProduto(p), ativo = (rmkProdutos[p] || {}).ativo !== false;
   if (!ativo) sel.push('<span class="rmk2-chip">Desligado</span>');
   else if (x.midia && x.texto) sel.push('<span class="rmk2-chip ok">Pronto para enviar</span>');
   else sel.push('<span class="rmk2-chip at">' + (!x.midia && !x.texto ? 'Falta o vídeo e o texto' : !x.midia ? 'Falta o vídeo' : 'Falta o texto') + '</span>');
   if (x.legado) sel.push('<span class="rmk2-chip">usando a imagem antiga</span>');
-  const h = rmkUltStatus && rmkUltStatus.hoje && rmkUltStatus.hoje.porProduto && rmkUltStatus.hoje.porProduto[p];
-  if (h) sel.push('<span class="rmk2-chip">hoje: ' + h.total + ' na lista · ' + (h.enviado || h.simulado || 0) + (rmkUltStatus.modo === 'ligado' ? ' enviados' : ' receberiam') + '</span>');
+  const h = rmkUltStatus && rmkUltStatus.hoje, e = (h && h.estados) || {};
+  if (h) sel.push('<span class="rmk2-chip">hoje: ' + (h.total || 0) + ' na lista · ' + (rmkUltStatus.modo === 'ligado' ? (e.enviado || 0) + ' enviados' : (e.simulado || 0) + ' receberiam') + '</span>');
   return sel.join('');
+}
+function rmkCardLigado(p) {
+  return p === 'avatar' ? (((rmkProdutos.avatar || {}).boasVindas || {}).ativo === true) : (rmkProdutos[p] || {}).ativo !== false;
 }
 function rmkAtualizarSelos() {
   RMK_PRODUTOS.forEach(function (pp) {
     const p = pp[0], el = document.getElementById('rmkSelos_' + p), card = document.getElementById('rmkProd_' + p), sw = document.getElementById('rmkSw_' + p);
     if (!el) return;
-    const ativo = (rmkProdutos[p] || {}).ativo !== false;
+    const ativo = rmkCardLigado(p);
     el.innerHTML = rmkSelos(p);
     card.classList.toggle('off', !ativo);
     sw.setAttribute('aria-checked', ativo ? 'true' : 'false');
     sw.querySelector('span').textContent = ativo ? 'Ligado' : 'Desligado';
   });
 }
+const RMK_DESCR = {
+  musica: 'Oferta no dia útil seguinte para o cliente que não fechou — vale para quem veio de qualquer produto (Música, Avatar ou Personagem).',
+  avatar: 'Logo depois da saudação automática, todo lead novo recebe este vídeo e, em seguida, o texto. Todos os atendentes, uma vez por cliente.',
+};
 function rmkPintarProdutos() {
   document.getElementById('rmkProds').innerHTML = RMK_PRODUTOS.map(function (pp) {
-    const p = pp[0], x = rmkDoProduto(p), ativo = (rmkProdutos[p] || {}).ativo !== false;
+    const p = pp[0], bv = p === 'avatar', x = bv ? (rmkProdutos.avatar || {}) : rmkDoProduto(p), ativo = rmkCardLigado(p);
+    const texto = bv ? ((x.boasVindas || {}).texto || '') : (x.texto || '');
     return '<article class="rmk2-prod' + (ativo ? '' : ' off') + '" id="rmkProd_' + p + '" aria-label="' + pp[1] + '">' +
       '<div class="rmk2-prod-cab"><h4>' + pp[1] + '</h4>' +
-      '<button type="button" class="rmk2-sw" id="rmkSw_' + p + '" role="switch" aria-checked="' + ativo + '" aria-label="' + pp[1] + ' ligado" onclick="rmkAlternarProduto(\'' + p + '\')"><i></i><span>' + (ativo ? 'Ligado' : 'Desligado') + '</span></button></div>' +
+      '<button type="button" class="rmk2-sw" id="rmkSw_' + p + '" role="switch" aria-checked="' + ativo + '" aria-label="' + pp[1] + ' ligado" onclick="' + (bv ? 'rmkBvAlternar()' : 'rmkAlternarProduto(\'' + p + '\')') + '"><i></i><span>' + (ativo ? 'Ligado' : 'Desligado') + '</span></button></div>' +
+      '<p class="rmk2-descr">' + RMK_DESCR[p] + '</p>' +
       '<div class="rmk2-chips" id="rmkSelos_' + p + '">' + rmkSelos(p) + '</div>' +
       '<div class="rmk2-prod-corpo">' +
         '<div class="rmk2-midia" id="rmkMidia_' + p + '">' + (x.midia ? 'carregando…' : 'sem vídeo') + '</div>' +
         '<div class="rmk2-acoes"><label class="rmk2-bt" for="rmkArq_' + p + '">' + (x.midia ? 'Trocar vídeo' : 'Enviar vídeo') + '</label>' +
-        '<input type="file" id="rmkArq_' + p + '" accept="video/mp4,image/jpeg,image/png,image/webp" style="display:none" onchange="rmkEscolheu(this,\'' + p + '\')"/>' +
+        '<input type="file" id="rmkArq_' + p + '" accept="' + (bv ? 'video/mp4' : 'video/mp4,image/jpeg,image/png,image/webp') + '" style="display:none" onchange="rmkEscolheu(this,\'' + p + '\')"/>' +
         '<span class="rmk2-dica">MP4 até 16 MB · vai aberto no WhatsApp</span></div>' +
-        '<textarea id="rmkTexto_' + p + '" maxlength="4096" placeholder="Texto que vai logo depois do vídeo…" oninput="rmkContar(\'' + p + '\')">' + escapeHtml(x.texto || '') + '</textarea>' +
-        '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkConta_' + p + '">' + (x.texto || '').length + '</span> de 4.096</span>' +
-        '<button type="button" class="rmk2-bt claro" id="rmkSalvar_' + p + '" onclick="rmkSalvar(\'' + p + '\')">Salvar</button></div>' +
+        '<textarea id="rmkTexto_' + p + '" maxlength="4096" placeholder="Texto que vai logo depois do vídeo…" oninput="rmkContar(\'' + p + '\')">' + escapeHtml(texto) + '</textarea>' +
+        '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkConta_' + p + '">' + texto.length + '</span> de 4.096</span>' +
+        '<button type="button" class="rmk2-bt claro" id="rmkSalvar_' + p + '" onclick="' + (bv ? 'rmkBvSalvar()' : 'rmkSalvar(\'' + p + '\')') + '">Salvar</button></div>' +
         '<div class="rmk2-ok" id="rmkOk_' + p + '" hidden></div>' +
-      '</div>' + (p === 'avatar' ? rmkBlocoBv(x) : '') + '</article>';
+      '</div></article>';
   }).join('');
-  RMK_PRODUTOS.forEach(function (pp) { const x = rmkDoProduto(pp[0]); if (x.midia) rmkMostrarMidia(pp[0], x.legado); });
+  RMK_PRODUTOS.forEach(function (pp) { const x = pp[0] === 'avatar' ? (rmkProdutos.avatar || {}) : rmkDoProduto(pp[0]); if (x.midia) rmkMostrarMidia(pp[0], x.legado); });
 }
-// ── boas-vindas do lead novo (14/10/2026): logo depois da saudação do WhatsApp Business, o vídeo deste card
-//    (Avatar) e em seguida o texto daqui — para todo lead novo, em todos os atendentes. Quem envia é o lux-agente. ──
-function rmkBlocoBv(x) {
-  const bv = x.boasVindas || {}, on = !!bv.ativo;
-  return '<div class="rmk2-bv">' +
-    '<div class="rmk2-bv-cab"><div><b>Boas-vindas do lead novo</b><span class="d">Logo depois da saudação automática, todo lead novo recebe o vídeo acima e, em seguida, este texto. Todos os atendentes, uma vez por cliente.</span></div>' +
-    '<button type="button" class="rmk2-sw" id="rmkBvSw" role="switch" aria-checked="' + on + '" aria-label="Boas-vindas ligada" onclick="rmkBvAlternar()"><i></i><span>' + (on ? 'Ligado' : 'Desligado') + '</span></button></div>' +
-    '<textarea id="rmkBvTexto" maxlength="4096" placeholder="Texto que vai logo depois do vídeo de boas-vindas…" oninput="rmkBvContar()">' + escapeHtml(bv.texto || '') + '</textarea>' +
-    '<div class="rmk2-rod"><span class="rmk2-dica"><span id="rmkBvConta">' + (bv.texto || '').length + '</span> de 4.096 · <span id="rmkBvHoje">' + rmkBvHojeTxt() + '</span></span>' +
-    '<button type="button" class="rmk2-bt claro" id="rmkBvSalvar" onclick="rmkBvSalvar()">Salvar</button></div>' +
-    '</div>';
-}
+// ── boas-vindas do lead novo (14/10/2026; card próprio desde 15/10) ──
 let rmkBvResumo = null;
 function rmkBvHojeTxt() {
   const h = rmkBvResumo;
-  if (!h) return 'hoje: nenhum enviado';
+  if (!h || (!h.enviados && !h.falhas)) return 'hoje: nenhum enviado';
   return 'hoje: ' + (h.enviados || 0) + (h.enviados === 1 ? ' enviado' : ' enviados') + (h.falhas ? ' · ' + h.falhas + (h.falhas === 1 ? ' falha' : ' falhas') : '');
 }
-function rmkBvPintarHoje() { const el = document.getElementById('rmkBvHoje'); if (el) el.textContent = rmkBvHojeTxt(); }
-function rmkBvContar() { const t = document.getElementById('rmkBvTexto'); if (t) document.getElementById('rmkBvConta').textContent = t.value.length.toLocaleString('pt-BR'); }
+function rmkBvPintarHoje() { rmkAtualizarSelos(); }
 async function rmkBvGravar(ativo) {
-  const texto = document.getElementById('rmkBvTexto').value.trim();
+  const texto = document.getElementById('rmkTexto_avatar').value.trim();
   const r = await window.__luxFetch(WORKER_URL + '/admin/remarketing/boasvindas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: 'avatar', ativo: ativo, texto: texto }) });
   const d = await r.json();
   if (!d.ok) throw new Error(d.error || 'Não consegui salvar');
   rmkProdutos.avatar = Object.assign({}, rmkProdutos.avatar || {}, { boasVindas: d.boasVindas });
-  const sw = document.getElementById('rmkBvSw');
-  sw.setAttribute('aria-checked', d.boasVindas.ativo ? 'true' : 'false');
-  sw.querySelector('span').textContent = d.boasVindas.ativo ? 'Ligado' : 'Desligado';
+  rmkAtualizarSelos();
   return d.boasVindas;
 }
 async function rmkBvAlternar() {
   const atual = ((rmkProdutos.avatar || {}).boasVindas || {}).ativo === true;
   if (atual && !confirm('Desligar a boas-vindas com vídeo?\n\nOs leads novos deixam de receber o vídeo e o texto.')) return;
-  if (!atual && !confirm('Ligar a boas-vindas com vídeo?\n\nA partir de agora TODO lead novo, em todos os atendentes, recebe o vídeo do Avatar e o texto logo depois da saudação.')) return;
-  const sw = document.getElementById('rmkBvSw');
+  if (!atual && !confirm('Ligar a boas-vindas com vídeo?\n\nA partir de agora TODO lead novo, em todos os atendentes, recebe este vídeo e o texto logo depois da saudação.')) return;
+  if (!atual && rmkNovas.avatar) { toast('Clique em Salvar primeiro para subir o vídeo novo.', 'error'); return; }
+  const sw = document.getElementById('rmkSw_avatar');
   sw.disabled = true;
   try {
     const bv = await rmkBvGravar(!atual);
@@ -2205,18 +2218,29 @@ async function rmkBvAlternar() {
   } catch (err) { toast(err.message, 'error'); } finally { sw.disabled = false; }
 }
 async function rmkBvSalvar() {
-  const btn = document.getElementById('rmkBvSalvar');
-  const ativo = ((rmkProdutos.avatar || {}).boasVindas || {}).ativo === true;
+  const btn = document.getElementById('rmkSalvar_avatar');
+  const atual = rmkProdutos.avatar || {}, ativo = (atual.boasVindas || {}).ativo === true;
+  if (!rmkNovas.avatar && !atual.midia) { toast('Envie o vídeo primeiro — ele é o primeiro envio.', 'error'); return; }
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
+    if (rmkNovas.avatar) {
+      const ri = await window.__luxFetch(WORKER_URL + '/admin/remarketing/midia?produto=avatar', { method: 'POST', headers: { 'Content-Type': 'video/mp4' }, body: rmkNovas.avatar });
+      const di = await ri.json();
+      if (!di.ok) throw new Error(di.error || 'O vídeo não subiu');
+      delete rmkNovas.avatar;
+      rmkProdutos.avatar = Object.assign({}, rmkProdutos.avatar || {}, { midia: di.midia });
+    }
     await rmkBvGravar(ativo);
-    toast('Texto de boas-vindas salvo' + (ativo ? '' : ' (a boas-vindas está desligada)'), 'success');
+    const ok = document.getElementById('rmkOk_avatar');
+    ok.hidden = false;
+    ok.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) + (ativo ? '.' : '. A boas-vindas está desligada: ligue no botão do card.');
+    toast('Boas-vindas salva', 'success');
   } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Salvar'; }
 }
 
 async function rmkAlternarProduto(p) {
-  const ativo = (rmkProdutos[p] || {}).ativo !== false, nome = rmkNomeDe(p);
-  if (ativo && !confirm('Desligar ' + nome + '?\n\nOs clientes desse produto deixam de receber o lembrete. Os outros produtos continuam.')) return;
+  const ativo = (rmkProdutos[p] || {}).ativo !== false, nome = rmkTituloDe(p);
+  if (ativo && !confirm('Desligar o remarketing?\n\nNinguém recebe a oferta do dia seguinte até você ligar de novo.')) return;
   const sw = document.getElementById('rmkSw_' + p);
   sw.disabled = true;
   try {
@@ -2252,6 +2276,7 @@ async function rmkEscolheu(input, p) {
   const f = input.files && input.files[0];
   input.value = '';
   if (!f) return;
+  if (p === 'avatar' && f.type !== 'video/mp4') { toast('A boas-vindas usa vídeo MP4.', 'error'); return; }
   if (f.type === 'video/mp4') {
     if (f.size > 16 * 1024 * 1024) { toast('O vídeo passa de 16 MB (limite do WhatsApp).', 'error'); return; }
     rmkNovas[p] = f;
@@ -2301,7 +2326,7 @@ function rmkExplicar() {}
 async function rmkSalvar(p) {
   const btn = document.getElementById('rmkSalvar_' + p);
   const texto = document.getElementById('rmkTexto_' + p).value.trim();
-  const nome = rmkNomeDe(p), atual = rmkProdutos[p] || {};
+  const nome = rmkTituloDe(p), atual = rmkProdutos[p] || {};
   if (!rmkNovas[p] && !atual.midia) { toast('Envie o vídeo primeiro — ele é o primeiro envio.', 'error'); return; }
   if (!texto) { toast('Escreva o texto.', 'error'); return; }
   btn.disabled = true; btn.textContent = 'Salvando…';
