@@ -921,7 +921,7 @@ const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto
 const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes de 44-91MB somaram 364MB e o render estourou memória)
 
 // Estimativa de custo (números reais no cost.js do Worker)
-const EST_USD_CENA    = 0.038;     // (12/09) imagem no gpt-image-2.5-sunburst medium (medido: 0,035 a 0,038)
+const EST_USD_CENA    = 0.076;     // (15/10) imagem (0,038) + passada de fundo na prévia (0,038), no gpt-image-2.5-sunburst medium
 const EST_USD_LIPSEC  = 0.0243;    // (29/09) canto 1080p: 0,40 crédito/s × US$0,0607 (plano Ultra + IOF) — era 0,03 (MultiTalk)
 const EST_USD_LIPSEC_DUO = 0.0243; // dupla canta no mesmo motor, mesmo preço
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
