@@ -1689,7 +1689,8 @@ function alertaFala(i){
       el.innerHTML = textoLongo
         ? ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). Mesmo com o texto longo ligado, o máximo é <b>'+PVS_LONGO_MAX+'</b> (~2 minutos).')
         : ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'. '+
-           '<b>Se o cliente pediu um vídeo maior, ligue a chave "Texto longo" logo abaixo.</b>');
+           '<b>Se o cliente pediu um vídeo maior, ligue o texto longo:</b>'+
+           (n <= PVS_LONGO_MAX ? ' <button type="button" class="btn-ghost" style="margin-top:.4rem" onclick="ligarTextoLongo()">📏 Ligar texto longo</button>' : ''));
       return;
     }
     if(n < PVS_TRAVA_MIN){ el.className='alerta'; el.innerHTML='⛔ Texto curto demais: <b>'+n+' palavras</b>. O mínimo é <b>'+PVS_TRAVA_MIN+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
@@ -1710,7 +1711,24 @@ function atualizarBotaoVideo(){
   const ruins = falasRuins();
   const btn=document.getElementById('btnIrVideo'); const nota=document.getElementById('notaFalas');
   if(btn) btn.disabled = ruins>0;
-  if(nota) nota.innerHTML = ruins>0 ? '⛔ Ajuste o texto marcado em vermelho pra liberar a produção.' : '';
+  // (16/10) caso Vicentizada (Diogo/Marcela): o texto longo travava aqui embaixo e a atendente não achava a
+  // chave, que fica lá em cima, sob a caixa. Quando o motivo é SÓ o tamanho e a chave resolve, o aviso diz
+  // isso e traz o botão que liga a chave na hora.
+  const n = (!ehLegado() && cenas[0]) ? contarPalavras(cenas[0].fala) : 0;
+  const resolveComChave = !ehLegado() && !textoLongo && n > PVS_TRAVA_MAX && n <= PVS_LONGO_MAX && !pareceRecusa(cenas[0] && cenas[0].fala);
+  if(nota) nota.innerHTML = !(ruins>0) ? ''
+    : resolveComChave
+      ? ('⛔ O texto tem <b>'+n+' palavras</b> (~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s) e passa do limite de '+PVS_TRAVA_MAX+'. '+
+         'Se o cliente pediu um vídeo maior, ligue o texto longo (até 2 minutos): '+
+         '<button type="button" class="btn-ghost" style="margin-top:.4rem" onclick="ligarTextoLongo()">📏 Ligar texto longo</button>')
+      : '⛔ Ajuste o texto marcado em vermelho pra liberar a produção.';
+}
+// liga a chave "Texto longo" de qualquer lugar (aviso de baixo ou alerta vermelho)
+function ligarTextoLongo(){
+  const ck = document.getElementById('chkLongo');
+  if(ck){ ck.checked = true; ck.dispatchEvent(new Event('change')); }
+  else { textoLongo = true; alertaFala(0); atualizarBotaoVideo(); salvarProjeto(true); }
+  toast('📏 Texto longo ligado: até '+PVS_LONGO_MAX+' palavras (~2 minutos).');
 }
 function copiarRoteiro(){
   if(!cenas.length) return;
