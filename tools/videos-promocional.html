@@ -368,6 +368,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
     <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
 
+    <!-- (15/10) mesma chave do Avatar 97: personagem 3D animado (padrão) ou foto realista da pessoa -->
+    <div class="mini" style="margin-top:.9rem">Estilo da imagem</div>
+    <div class="step-hint">Pessoa real deixa a foto com cara de fotografia. Se a foto enviada já for um desenho, ele continua desenho.</div>
+    <div class="chips" id="chipsEstilo">
+      <div class="chip on" data-v="animado">Personagem animado</div>
+      <div class="chip" data-v="real">Pessoa real</div>
+    </div>
+
     <!-- (12/10) "Personagem montado" REMOVIDO por ordem do Thiago: a arte pronta fugia do padrão visual (fundo desfocado,
          menos saturação) e o personagem saía mudo. A imagem é SEMPRE criada aqui na plataforma. -->
 
@@ -670,6 +678,13 @@ const LIMITES = { product: 4, environment: 4, logo: 1, montado: 1 };
 // A versão Veo desta tela está em lux-plataforma/_backup-personagem-veo-2026-10-02/.
 const PVS_MIN = 70, PVS_MAX = 80;
 const PVS_TRAVA_MIN = 40, PVS_TRAVA_MAX = 100;   // fora disso o GERAR VÍDEO não libera (passo 2)
+// (16/10) CHAVE "TEXTO LONGO": cliente que quer vídeo de até 2 minutos (caso Vicentizada, 184 palavras).
+// Ligada, o teto vai de 100 pra 330 palavras (~2 min a 0,37 s/palavra) e a caixa aceita 2.600 caracteres
+// (o Worker aceita o mesmo: PVS_TEXTO_MAX). Fica salva no projeto.
+const PVS_LONGO_MAX = 330, PVS_LONGO_CHARS = 2600, PVS_CURTO_CHARS = 1200;
+let textoLongo = false;
+function tetoPalavras(){ return textoLongo ? PVS_LONGO_MAX : PVS_TRAVA_MAX; }
+function tetoChars(){ return textoLongo ? PVS_LONGO_CHARS : PVS_CURTO_CHARS; }
 const PVS_SEG_POR_PALAVRA = 0.37;
 const PVS_USD_POR_SEG = 0.53 * 0.0607;           // 11 créditos em 20,75s × US$ 0,0607 por crédito
 const PVS_VOZ_PADRAO = { masculina: 'Locução para Propaganda', feminina: 'Raquel - Expressive and Energetic' };
@@ -930,7 +945,8 @@ function estadoAtual(){
     cliente: (document.getElementById('fCliente')||{}).value||'',
     briefing: (document.getElementById('fBriefing')||{}).value||'',
     ambienteTexto: (document.getElementById('fAmbienteTxt')||{}).value||'',
-    sexoVoz: sexoVoz, vozId: vozId,   // (02/10) a voz da VisionStory escolhida no passo 2
+    sexoVoz: sexoVoz, vozId: vozId, textoLongo: textoLongo,   // (16/10) chave do texto longo   // (02/10) a voz da VisionStory escolhida no passo 2
+    imagemReal: imagemReal,           // (15/10) chave "Pessoa real"
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
@@ -1145,7 +1161,10 @@ async function abrirProjeto(id){
     document.querySelectorAll('#chipsVoz .chip').forEach(function(c){
       c.classList.toggle('on', !!sexoVoz && c.dataset.v === sexoVoz);
     });
-    vozId = String(p.vozId || '');   // (02/10) projeto do Veo não tem: fica a padrão do sexo
+    vozId = String(p.vozId || '');
+    textoLongo = !!p.textoLongo;   // (16/10)   // (02/10) projeto do Veo não tem: fica a padrão do sexo
+    imagemReal = !!p.imagemReal;     // (15/10) projeto antigo volta como "Personagem animado"
+    document.querySelectorAll('#chipsEstilo .chip').forEach(function(c){ c.classList.toggle('on', c.dataset.v === (imagemReal ? 'real' : 'animado')); });
     abriuProjeto = true;             // (02/10) em manutenção, deixa terminar o que já começou
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
@@ -1310,6 +1329,7 @@ async function gerarPersonagem(silencioso){
       // (09/09) o desenho precisa saber a voz escolhida: cílio longo num mascote faz o motor de
       // vídeo falar com voz de mulher mesmo quando o prompt pede voz de homem.
       sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz || 'masculina',
+      real: imagemReal,   // (15/10) "Pessoa real" × "Personagem animado" (igual ao Avatar 97)
       // na arte pronta a imagem atual vai SEMPRE: é ela que segura a composição do cliente
       ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
@@ -1560,9 +1580,24 @@ function renderTextoUnico(){
   box.innerHTML =
     '<div class="step"><div class="step-head"><div class="step-title">O texto do personagem</div></div>'+
     '<div class="step-hint">É o que o personagem fala, do começo ao fim, num vídeo só. Ideal: <b>'+PVS_MIN+' a '+PVS_MAX+' palavras</b> (~30 segundos). Pode editar à vontade.</div>'+
-    '<div class="cena-rot"><textarea data-fa="0" maxlength="1200" style="min-height:190px">'+esc(s.fala||'')+'</textarea>'+
+    '<div class="cena-rot"><textarea data-fa="0" maxlength="'+tetoChars()+'" style="min-height:190px">'+esc(s.fala||'')+'</textarea>'+
     '<div class="soon-note" data-cont="0" style="text-align:right;margin-top:.25rem"></div>'+
-    '<div class="alerta hide" data-al="0"></div></div></div>';
+    '<div class="alerta hide" data-al="0"></div>'+
+    // (16/10) chave do texto longo — mesma aparência da chave de transição
+    '<label class="chave" for="chkLongo" style="margin-top:.7rem">'+
+      '<input type="checkbox" id="chkLongo"'+(textoLongo?' checked':'')+'/>'+
+      '<span class="chave-trilho" aria-hidden="true"></span>'+
+      '<span class="chave-texto">Texto longo — vídeo de até 2 minutos</span>'+
+    '</label>'+
+    '<div class="soon-note" style="margin-top:.25rem">Só pra cliente que pediu vídeo maior. Ligada, aceita até <b>'+PVS_LONGO_MAX+' palavras</b>. O custo cresce junto com o tamanho (~US$ 0,03 por segundo).</div>'+
+    '</div></div>';
+  const ck = box.querySelector('#chkLongo');
+  ck.addEventListener('change', function(){
+    textoLongo = ck.checked;
+    document.querySelectorAll('[data-fa],[data-faed]').forEach(function(t){ if(!ehLegado()) t.maxLength = tetoChars(); });
+    alertaFala(0); alertaFalaEditor(0); atualizarBotaoVideo();
+    salvarProjeto(true);
+  });
   const el = box.querySelector('[data-fa="0"]');
   el.addEventListener('input', function(){
     s.fala = el.value; s.palavras = contarPalavras(el.value); s._legendaSuja = true;
@@ -1649,8 +1684,16 @@ function alertaFala(i){
     const seg = Math.round(n * PVS_SEG_POR_PALAVRA);
     if(cont){ cont.textContent = n+' palavras · ~'+seg+'s de vídeo'; cont.style.color = (n>=PVS_MIN && n<=PVS_MAX) ? 'var(--gold)' : ''; }
     if(pareceRecusa(cenas[i].fala)){ el.className='alerta'; el.innerHTML=MSG_TEXTO_RECUSA; return; }
-    if(n > PVS_TRAVA_MAX){ el.className='alerta'; el.innerHTML='⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
+    if(n > tetoPalavras()){
+      el.className='alerta';
+      el.innerHTML = textoLongo
+        ? ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). Mesmo com o texto longo ligado, o máximo é <b>'+PVS_LONGO_MAX+'</b> (~2 minutos).')
+        : ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'. '+
+           '<b>Se o cliente pediu um vídeo maior, ligue a chave "Texto longo" logo abaixo.</b>');
+      return;
+    }
     if(n < PVS_TRAVA_MIN){ el.className='alerta'; el.innerHTML='⛔ Texto curto demais: <b>'+n+' palavras</b>. O mínimo é <b>'+PVS_TRAVA_MIN+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
+    if(textoLongo && n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML='📏 Texto longo ligado: <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s.'; return; }
     if(n > PVS_MAX || n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s. O ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras (~30s). Não impede gerar.'; return; }
     el.className='alerta hide'; el.innerHTML=''; return;
   }
@@ -1660,7 +1703,7 @@ function alertaFala(i){
 }
 // (02/10) texto que impede gerar: no vídeo único só os extremos travam; no Veo, a faixa 13–15
 function falasRuins(){
-  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>PVS_TRAVA_MAX || pareceRecusa(s.fala); }).length;
+  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>tetoPalavras() || pareceRecusa(s.fala); }).length;
   return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
 }
 function atualizarBotaoVideo(){
@@ -2058,6 +2101,8 @@ function ligarChips(id, cb){
 // Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
 // no prompt negativo do Veo (o oposto do escolhido).
 let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
+// (15/10) estilo da imagem, igual ao Avatar 97: false = Personagem animado (padrão), true = Pessoa real
+let imagemReal = false;
 // legenda automática LIGADA por padrão (28/08). Desligar é escolha do atendente.
 let legendas = true;
 // cor da palavra falada. Branco é o padrão — só muda se o atendente escolher na paleta.
@@ -2065,6 +2110,7 @@ let corDestaque = '#ffffff';
 // volume da música de fundo. 0,12 = "Volume padrão" (escolhido pelo Thiago comparando em vídeo).
 let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; vozId = ''; });   // (02/10) trocou o sexo: volta pra voz padrão dele
+ligarChips('chipsEstilo', function(v){ imagemReal = (v === 'real'); });
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 // (21/09) transição entre as cenas: true = fade rápido (padrão, como sempre foi); false = corte seco
@@ -2906,7 +2952,7 @@ function renderCortes(){
         '<div class="mini" style="margin-top:.6rem">💬 '+(L?'Fala desta cena':'Texto do vídeo')+'</div>'+
         (falhou
           ? ('<textarea data-leg="'+i+'" style="min-height:52px;font-size:13px" placeholder="legenda (segue a fala)">'+esc(s.legenda||s.fala||'')+'</textarea>'+
-             '<textarea data-faed="'+i+'" maxlength="'+(L?250:1200)+'" style="min-height:'+(L?52:150)+'px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
+             '<textarea data-faed="'+i+'" maxlength="'+(L?250:tetoChars())+'" style="min-height:'+(L?52:150)+'px;font-size:13px;margin-top:.4rem" placeholder="fala (o que o personagem pronuncia)">'+esc(s.fala||'')+'</textarea>'+
              '<div class="alerta hide" data-aled="'+i+'"></div>'+
              (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz</div><div id="seletorVoz3"></div>')+
              '<div class="btn-row" style="margin-top:.4rem">'+
@@ -2954,7 +3000,7 @@ function renderCortes(){
       '<div class="mini" style="margin-top:.6rem">💬 Legenda '+(L?'desta cena':'do vídeo')+' <span style="color:var(--text-dim)">(o que aparece escrito — segue a fala; você pode ajustar)</span></div>'+
       '<textarea data-leg="'+i+'" style="min-height:'+(L?52:150)+'px;font-size:13px">'+esc(s.legenda||s.fala||'')+'</textarea>'+
       '<div class="mini" style="margin-top:.5rem">🔊 Fala '+(L?'desta cena':'do vídeo')+' <span style="color:var(--text-dim)">(o que o personagem pronuncia)</span></div>'+
-      '<textarea data-faed="'+i+'" maxlength="'+(L?250:1200)+'" style="min-height:'+(L?52:150)+'px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
+      '<textarea data-faed="'+i+'" maxlength="'+(L?250:tetoChars())+'" style="min-height:'+(L?52:150)+'px;font-size:13px">'+esc(s.fala||'')+'</textarea>'+
       '<div class="alerta hide" data-aled="'+i+'"></div>'+
       '<div class="soon-note" data-avisoleg="'+i+'" style="margin-top:.2rem">'+(s._legendaSuja?'A legenda vai acompanhar esta fala.':'')+'</div>'+
       // estado da limpeza do áudio: o motor de vídeo põe uma trilha própria em cada cena e nós a
