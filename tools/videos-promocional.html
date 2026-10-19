@@ -376,8 +376,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="chip" data-v="real">Pessoa real</div>
     </div>
 
-    <!-- (12/10) "Personagem montado" REMOVIDO por ordem do Thiago: a arte pronta fugia do padrão visual (fundo desfocado,
-         menos saturação) e o personagem saía mudo. A imagem é SEMPRE criada aqui na plataforma. -->
+    <!-- (12/10) "Personagem montado" foi REMOVIDO para os atendentes. (19/10) VOLTOU só para ADMIN (correções). -->
+    <div class="cx-montado" id="cxMontado1" style="display:none">
+      <div class="tit">🔒 Só admin — personagem pronto</div>
+      <div class="sub">Para correções: suba a arte do personagem já com o cenário. A imagem vai <b>exatamente como está</b>
+        para os vídeos, sem a IA redesenhar nada. Usando este campo, não precisa da foto do personagem acima.</div>
+      <div class="thumbs" id="thMontado"></div>
+      <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onPick(event,'montado')"/></label>
+    </div>
 
   </div>
 
@@ -423,7 +429,13 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="mini" id="rotAjustePers" style="margin-top:.7rem">✏️ O que mudar no personagem (opcional)</div>
       <input type="text" id="fAjustePers" placeholder="Ex: deixe ele sorrindo, aproxime mais, mostre o corpo inteiro"/>
 
-      <!-- (12/10) troca pela arte pronta REMOVIDA (ver o comentário do passo 1) -->
+      <!-- (19/10) troca pela arte pronta: VOLTOU só para ADMIN (correções) -->
+      <div class="cx-montado" id="cxMontado2" style="display:none">
+        <div class="tit">🔒 Só admin — usar uma arte pronta?</div>
+        <div class="sub">Suba aqui e ela <b>substitui a imagem acima</b>, indo direto para os vídeos,
+          <b>sem a IA redesenhar nada</b>. O texto continua o mesmo.</div>
+        <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onMontadoPasso2(event)"/></label>
+      </div>
     </div>
 
     <div id="boxRoteiro"></div>
@@ -1045,6 +1057,7 @@ async function carregarProjetos(){
     const r=await api('/histProjetos'); const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Erro');
     souAdmin = !!d.isAdmin; if(d.email) meuEmail = String(d.email).toLowerCase();
+    if (typeof mostrarMontadoAdmin === 'function') mostrarMontadoAdmin();   // (19/10) a lista confirmou o papel
     _ultProjetos = d.projetos||[]; _ultResultados = d.resultados||[];
     // ainda não propagou? mostra o projeto atual pela memória, pra ele nunca "sumir" logo após salvar
     if(projetoJaSalvo && projectId && !d.projetos.concat(d.resultados).some(function(p){ return p.projectId===projectId; })){
@@ -1396,6 +1409,7 @@ async function refazerTodasAsCenas(){
 // Não gera nada, não custa nada — só troca a referência que as 4 cenas vão usar.
 async function onMontadoPasso2(ev){
   const f=(ev.target.files||[])[0]; ev.target.value=''; if(!f) return;
+  if(!podeMontado()){ toast('🔒 Só o admin pode subir personagem pronto.'); return; }   // (19/10)
   if(!invalidarCenas()) return;                  // desistiu: não troca nada
   try{
     const img = await fileToOptimizedImage(f);
@@ -2081,6 +2095,7 @@ function miniatura(canvas){
 }
 async function onPick(ev, cat){
   const files = Array.from(ev.target.files||[]); ev.target.value='';
+  if (cat === 'montado' && !podeMontado()) { toast('🔒 Só o admin pode subir personagem pronto.'); return; }   // (19/10)
   for (const f of files){
     if (refs[cat].length >= (LIMITES[cat]||4)){ toast('Limite de '+(LIMITES[cat]||4)+' aqui.'); break; }
     try { refs[cat].push(await fileToOptimizedImage(f)); } catch(e){ toast('⚠️ Não consegui ler a imagem'); }
@@ -2129,6 +2144,10 @@ let corDestaque = '#ffffff';
 let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; vozId = ''; });   // (02/10) trocou o sexo: volta pra voz padrão dele
 ligarChips('chipsEstilo', function(v){ imagemReal = (v === 'real'); });
+// (19/10) "Personagem montado" só para ADMIN. O papel vem da página principal (mesmo site).
+function podeMontado(){ if (souAdmin) return true; try { return !!(window.parent && window.parent.__luxRole === 'admin'); } catch(e){ return false; } }   // souAdmin = o que o servidor disse na lista de projetos
+function mostrarMontadoAdmin(){ ['cxMontado1','cxMontado2'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display = podeMontado() ? '' : 'none'; }); }
+mostrarMontadoAdmin(); setTimeout(mostrarMontadoAdmin, 1500);   // de novo depois, caso o login termine depois da tela
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 // (21/09) transição entre as cenas: true = fade rápido (padrão, como sempre foi); false = corte seco

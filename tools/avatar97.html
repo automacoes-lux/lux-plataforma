@@ -577,6 +577,11 @@ button.btn-baixar{cursor:pointer}
            Trava: só aceita 9:16; qualquer outra proporção é recusada com aviso. -->
       <!-- (12/10) caixa "Subir imagem pronta" REMOVIDA por ordem do Thiago: a imagem pronta fugia do padrão visual e o
            avatar saía mudo/parado. Agora a imagem é SEMPRE criada aqui na plataforma. -->
+      <!-- (19/10) VOLTOU só para ADMIN (correções). Escondida para atendente; o servidor também só aceita de admin. -->
+      <div class="pronta-box" id="prontaBox" style="display:none">
+        <div class="pronta-txt"><b>🔒 Só admin — imagem pronta 9:16.</b> Para correções: a imagem enviada vai <b>exatamente como está</b> para o vídeo, sem passar pela IA de imagem e <b>sem custo de geração</b>.</div>
+        <button type="button" class="btn-pronta" onclick="document.getElementById('prontaInput').click()">📲 Subir imagem pronta (9:16)</button>
+      </div>
       <input type="file" id="prontaInput" accept="image/*,.heic,.heif" hidden/>
 
       <!-- Gerar o avatar (preview) -->
@@ -1158,6 +1163,11 @@ document.getElementById('clientPhotoInput').addEventListener('change', async (e)
 // Deitada, quadrada ou outra proporção → alerta com as medidas e nada é trocado.
 // A mesma imagem também vai como foto do Personagem 1: o servidor exige a foto, e o botão Editar (Resultados)
 // usa essa foto para trazer o pedido de volta. Sai em PNG porque o servidor lê o formato pelo cabeçalho do PNG.
+// (19/10) imagem pronta só para ADMIN. O papel vem da página principal (mesmo site); a lista de pedidos também diz.
+function souAdmin() {
+  try { if (window.parent && window.parent.__luxRole === 'admin') return true; } catch (e) {}
+  try { return !!_ehAdmin; } catch (e) { return false; }   // _ehAdmin pode ainda não existir no começo da página
+}
 const PRONTA_PROPORCAO = 9 / 16;
 const PRONTA_TOLERANCIA = 0.02;
 const PRONTA_MAX_ALTURA = 1920;   // maior que isso, reduz (o vídeo sai em 720p/1080p)
@@ -1167,6 +1177,7 @@ document.getElementById('prontaInput').addEventListener('change', async (e) => {
   if (f) await setImagemProntaFromFile(f);
 });
 async function setImagemProntaFromFile(file) {
+  if (!souAdmin()) { toast('🔒 Só o admin pode subir imagem pronta.'); return; }   // (19/10)
   try {
     const arq = await converterSeHeic(file);   // foto do iPhone (.HEIC) vira JPEG antes
     const dataUrl = await readFileAsDataURL(arq);
@@ -1295,7 +1306,7 @@ function refreshAvatarUI() {
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
-  const pbx = document.getElementById('prontaBox'); if (pbx) pbx.style.display = '';          // (29/09) idem, imagem pronta
+  const pbx = document.getElementById('prontaBox'); if (pbx) pbx.style.display = souAdmin() ? '' : 'none';   // (19/10) só admin   // (29/09) idem, imagem pronta
   const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = '';   // Imagem 2 sempre disponível (UI universal 19/08)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
@@ -3336,7 +3347,7 @@ async function gerarClipe() {
       corte: corteUsado,
       avatarNote: ((document.getElementById('avatarNote') || {}).value || '').trim(),
       imagemReaproveitada: !!(avatarPreview && avatarPreview.reaproveitada),   // imagem trazida pelo Editar e não gerada de novo: não cobra
-      montado: false,   // (12/10) imagem pronta desativada: a imagem é sempre criada na plataforma
+      montado: !!(avatarPreview && avatarPreview.pronta) && souAdmin(),   // (19/10) imagem pronta só ADMIN (o servidor também confere)
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
@@ -3873,7 +3884,7 @@ async function rascSalvarAgora() {
       origName: rawAudioName || '',
       arquivos: _rascArquivos,
       cartoonKey: (_rascArquivos.cartoon || {}).key || '',
-      imagemPronta: false,   // (12/10) imagem pronta desativada
+      imagemPronta: !!(avatarPreview && avatarPreview.pronta),   // (19/10) imagem pronta do admin volta no rascunho
       passo: rascPasso(), passoMax: 3
     };
     const r = await api('/a97RascunhoSalvar', { method: 'POST', body: JSON.stringify({ projectId: rascunhoId, estado }) });
@@ -3961,8 +3972,8 @@ async function continuarProjeto(pid) {
     document.getElementById('fCategoria').value = e.categoria || '';
     { const nt = document.getElementById('avatarNote'); if (nt) nt.value = e.avatarNote || ''; }
     clientPhoto = f1; clientPhoto2 = f2; clientPhoto3 = f3;
-    if (cartoonB64 && !e.imagemPronta) {   // (12/10) rascunho com imagem PRONTA (antiga) não volta: gera de novo na plataforma
-      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true, pronta: false };   // já foi paga (ou é imagem pronta)
+    if (cartoonB64 && (!e.imagemPronta || souAdmin())) {   // (19/10) imagem PRONTA só volta para o admin
+      avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true, pronta: !!e.imagemPronta };   // já foi paga (ou é imagem pronta)
       cartoonGens = 0; cartoonGensRes = 0;
       const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
     }
