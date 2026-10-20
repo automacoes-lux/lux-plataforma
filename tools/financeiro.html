@@ -494,7 +494,7 @@ input[type="file"]{display:none}
         <div class="field">
           <label>Gasto de anúncio do dia (US$)</label>
           <div style="display:flex;gap:8px;align-items:stretch">
-            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="updateAnuncioBRL();salvarRascunho({anuncioUSD:parseNum(this.value)})" style="flex:1;min-width:0"/>
+            <input type="text" id="inAnuncioUSD" inputmode="decimal" placeholder="0.00" oninput="anuncioManual=true;updateAnuncioBRL();salvarRascunho({anuncioUSD:parseNum(this.value)})" style="flex:1;min-width:0"/>
             <button type="button" id="btnAnuncioMeta" onclick="puxarAnuncioMeta(false)" title="Puxar o gasto do Meta Ads deste dia (só-leitura)" style="white-space:nowrap;background:var(--bg-input);color:var(--text);border:.5px solid var(--border-bright);border-radius:8px;padding:0 13px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">↻ Puxar do Meta</button>
           </div>
           <div class="hint" id="cambioHint">Câmbio do dia: carregando…</div>
@@ -677,6 +677,9 @@ input[type="file"]{display:none}
 const WORKER_URL = 'https://lux-figurinhas.plataformalux.workers.dev';
 const IMPOSTO_PCT = 0.06;
 let parsed=null, preview=null, pctState=null, cambio=null, cambioFonte='', atendentesList=[];
+// (20/10/2026) true = o anúncio do dia foi digitado/corrigido pelo admin (rascunho) → a tela NÃO troca pelo da Meta.
+// false = automático → o card das entradas relê o gasto da Meta a cada minuto (ver avoLucroAtualizar).
+let anuncioManual=false;
 
 window.addEventListener('DOMContentLoaded', init);
 async function init(){
@@ -853,7 +856,7 @@ async function puxarAnuncioMeta(silent){
     if(!d.ok) throw new Error(d.error||'Erro');
     document.getElementById('inAnuncioUSD').value=Number(d.spendUSD||0).toFixed(2);
     updateAnuncioBRL();
-    if(!silent){ salvarRascunho({anuncioUSD:null}); toast('✓ Anúncio do Meta: US$ '+Number(d.spendUSD||0).toFixed(2)+' — dia voltou pro automático'); }
+    if(!silent){ anuncioManual=false; salvarRascunho({anuncioUSD:null}); toast('✓ Anúncio do Meta: US$ '+Number(d.spendUSD||0).toFixed(2)+' — dia voltou pro automático'); }
   }catch(e){ if(!silent) toast('Meta: '+e.message,'error'); }
   finally{ if(btn && !silent){ btn.disabled=false; btn.textContent=btn.dataset.txt||'↻ Puxar do Meta'; } }
 }
@@ -1646,6 +1649,7 @@ function aplicarRascunho(st){
     else box.innerHTML='🕚 Este dia fecha <b style="color:var(--text)">sozinho às 23:59</b> com o que estiver aqui (Pix + Mercado Pago + anúncio + %). Pode corrigir à vontade — suas correções ficam salvas e valem no fechamento.';
   }
   adicionais=Array.isArray(r.adicionais)?r.adicionais.slice():[]; renderAddList();
+  anuncioManual = r.anuncioUSD!=null;
   if(r.anuncioUSD!=null){ document.getElementById('inAnuncioUSD').value=Number(r.anuncioUSD).toFixed(2); updateAnuncioBRL(); }
   if(Array.isArray(r.percentuais)&&r.percentuais.length){
     pctState=r.percentuais.slice();
@@ -1855,6 +1859,18 @@ async function avoLucroAtualizar(forcar){
   const sub=document.getElementById('avoLucroSub');
   try{
     const el=document.getElementById('inAnuncioUSD');
+    // (20/10/2026) anúncio AO VIVO: sem correção do admin, relê o gasto da Meta do dia a cada passada (1x/min).
+    // Antes ficava o valor de quando a página abriu (de madrugada = 0) até alguém clicar em "Puxar do Meta".
+    if(!anuncioManual && el){
+      try{
+        const rm=await window.__luxFetch(WORKER_URL+'/financeiro/anuncio-meta?date='+encodeURIComponent(data));
+        const dm=await rm.json();
+        if(dm.ok && !anuncioManual && (avoDate||ymd(new Date()))===data){
+          const novo=Number(dm.spendUSD||0).toFixed(2);
+          if(el.value!==novo){ el.value=novo; updateAnuncioBRL(); }   // muda a coluna de anúncio por atendente também
+        }
+      }catch(_){ /* Meta fora: segue com o valor que já está no campo */ }
+    }
     const body={ data, anuncioUSD: el?parseNum(el.value):0,
       percentuais:(pctState||[]).filter(p=>p.email).map(p=>({email:p.email,percent:p.percent})),
       creditos:[], debitos:[], mercadoPago:coletarMercadoPago(), diversos:coletarDiversos() };
@@ -1867,7 +1883,8 @@ async function avoLucroAtualizar(forcar){
     document.getElementById('avoEntrada').textContent=fmtBRL(ent);
     document.getElementById('avoDesc').textContent='Imposto '+fmtBRL(imp)+' · Anúncio '+fmtBRL(anu)+' · Plataforma '+fmtBRL(pla);
     document.getElementById('avoSocio').textContent=fmtBRL(Math.round(res/4*100)/100);
-    if(sub) sub.textContent=body.anuncioUSD>0 ? 'com o anúncio do dia' : 'ainda sem o anúncio (etapa 2)';
+    if(sub) sub.textContent = anuncioManual ? 'anúncio corrigido à mão (etapa 2)'
+      : body.anuncioUSD>0 ? 'anúncio ao vivo da Meta' : 'Meta ainda sem gasto hoje';
   }catch(e){ if(sub) sub.textContent='não deu para calcular agora'; avoLucroEm=0; }
   finally{ avoLucroRodando=false; }
 }
