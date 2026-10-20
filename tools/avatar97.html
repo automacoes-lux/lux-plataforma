@@ -630,7 +630,7 @@ button.btn-baixar{cursor:pointer}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
           <button class="btn-mini" id="btnTrocarMusica" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
           <button class="btn-mini" id="btnRemoverMusica" onclick="removerMusica()">🗑️ Remover</button>
-          <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">✂ Refazer o corte</button>
+          <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">✂ Cortar a música</button>
         </div>
       </div>
 
@@ -639,7 +639,7 @@ button.btn-baixar{cursor:pointer}
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
           <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro vídeo:</div>
           <!-- (12/09) botão "Trecho livre", no formato do "Personagem agitado": desligado = janela de 1 minuto -->
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div style="display:none;align-items:center;gap:8px;flex-shrink:0">   <!-- (20/10) "Trecho livre" escondido: o editor é sempre livre -->
             <span class="sw-label" id="trechoLivreLbl">Trecho<br/>livre</span>
             <button type="button" class="sw" id="btnTrechoLivre" role="switch" aria-checked="false" onclick="toggleTrechoLivre()"
                     title="Desligado: janela de 1 minuto, como no Avatar 150. Ligado: você escolhe onde o trecho começa e onde termina.">
@@ -2689,7 +2689,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     rawAudioName = file.name;
     rawAudioFile = file;   // (13/09) guardada no servidor quando o vídeo for gerado
     rascSalvar();          // (23/09) música enviada → guarda o projeto (a original sobe agora)
-    abrirEditorCorte();
+    await usarMusicaInteira();   // (20/10) entra INTEIRA; o corte é opcional (botão "Cortar a música")
   } catch (err) {
     toast('⚠️ Não consegui ler esse áudio (arquivo corrompido ou formato que o navegador não abre): ' + err.message);
   }
@@ -2706,7 +2706,7 @@ function setMusicReady(m) {
   document.getElementById('musicName').textContent = m.name;
   document.getElementById('musicDur').textContent = fmtTime(m.duration);
   document.getElementById('player').src = m.playerSrc;
-  document.getElementById('btnReabrirCorte').style.display = m.wasCut ? '' : 'none';
+  document.getElementById('btnReabrirCorte').style.display = rawAudioBuffer ? '' : 'none';   // (20/10) sempre que houver a música original
   renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
   rascSalvar();   // (23/09) trecho cortado → guarda o projeto
 }
@@ -2800,6 +2800,22 @@ async function startVocalAnalysis() {
   renderStoryboard();
 }
 
+// (20/10) a música enviada entra INTEIRA, sem fade. Maior que o teto (5 min): abre o editor com os 5 primeiros minutos.
+async function usarMusicaInteira() {
+  abrirEditorCorte();
+  const dur = rawAudioBuffer.duration;
+  document.getElementById('cutStart').value = 0;
+  document.getElementById('cutEnd').value = Math.min(dur, VIDEO_SECONDS);
+  document.getElementById('fadeIn').value = 0;
+  document.getElementById('fadeOut').value = 0;
+  updateCutUI();
+  if (dur > VIDEO_SECONDS + 0.5) {
+    toast('⏱ A música tem ' + fmtTime(dur) + ' e o vídeo vai até ' + fmtTime(VIDEO_SECONDS) + '. Escolha o trecho e clique em Cortar e usar.');
+    return;
+  }
+  await aplicarCorte(true);
+}
+
 function abrirEditorCorte(sel) {
   document.getElementById('musicTile').style.display = 'none';
   document.getElementById('musicLoaded').classList.remove('show');
@@ -2807,7 +2823,7 @@ function abrirEditorCorte(sel) {
   ed.classList.add('show');
   document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
   document.getElementById('cutStart').value = 0;
-  if (sel) trechoLivre = !!sel.livre;   // (13/09) sel = trecho já escolhido antes (Refazer o corte / Editar)
+  trechoLivre = true;   // (20/10) sempre livre
   aplicaFaixaDosSeletores(!sel);   // (12/09) limites do início e do fim conforme o botão "Trecho livre"
   if (sel) {   // (13/09) volta no trecho de antes, e não no zero — os limites acima já valem para esta música
     document.getElementById('cutStart').value = Number(sel.inicio) || 0;
@@ -2850,7 +2866,7 @@ const MIN_TRECHO_S = 5;
 //   LIGADO: o atendente escolhe onde começa E onde termina (um pedaço do meio ou a música inteira),
 //           respeitando o mínimo MIN_TRECHO_S e o teto VIDEO_SECONDS (5 min, o mesmo do worker).
 const JANELA_PADRAO_S = 60;
-var trechoLivre = false;   // var, e não let: nada quebra se algum código ler antes desta linha rodar
+var trechoLivre = true;   // (20/10) SEMPRE livre: o botão saiu (a música entra inteira; o corte é opcional)
 // Tamanho do trecho escolhido, lido dos seletores. O argumento das chamadas antigas é ignorado.
 function trechoLen() {
   const v = getCutValues();
@@ -2880,7 +2896,7 @@ function aplicaFaixaDosSeletores(novaMusica) {
   e.max = Math.floor(dur * 2) / 2;
   s.max = Math.max(0, Math.floor((dur - (trechoLivre ? MIN_TRECHO_S : JANELA_PADRAO_S)) * 2) / 2);
   if (parseFloat(s.value) > parseFloat(s.max)) s.value = s.max;
-  if (trechoLivre && novaMusica) e.value = Math.min(parseFloat(e.max), (parseFloat(s.value) || 0) + JANELA_PADRAO_S);
+  if (trechoLivre && novaMusica) e.value = Math.min(parseFloat(e.max), (parseFloat(s.value) || 0) + VIDEO_SECONDS);   // (20/10) a música toda (até o teto)
 }
 function toggleTrechoLivre() {
   const antes = rawAudioBuffer ? getCutValues() : null;   // o trecho que já estava marcado
@@ -3148,7 +3164,7 @@ async function encodeMP3(buffer, onProgress) {
   return new Blob(parts, { type: 'audio/mpeg' });
 }
 
-async function aplicarCorte() {
+async function aplicarCorte(inteira) {   // (20/10) inteira = música toda ao enviar (aviso diferente)
   if (!rawAudioBuffer) return;
   if (typeof lamejs === 'undefined') { toast('⚠️ O conversor MP3 não carregou. Recarregue a página.'); return; }
   stopPreviewCorte();
@@ -3168,12 +3184,12 @@ async function aplicarCorte() {
     corteUsado = { inicio: startSec, fim: startSec + trechoLen(startSec), fadeIn, fadeOut, livre: trechoLivre };   // (13/09) vai no pedido: o Editar reabre este trecho
     setMusicReady({
       base64,
-      name: baseName + '_trecho.mp3',
+      name: baseName + (inteira ? '.mp3' : '_trecho.mp3'),   // (20/10) música inteira mantém o nome
       duration: Math.round(trechoLen(startSec)),
       playerSrc: URL.createObjectURL(mp3Blob),
       wasCut: true
     });
-    toast('✂ Corte feito: ' + fmtTime(trechoLen(startSec)) + ' com fades.');
+    toast(inteira ? ('🎵 Música inteira (' + fmtTime(trechoLen(startSec)) + ') pronta. Para usar só um trecho, clique em ✂ Cortar a música.') : ('✂ Corte feito: ' + fmtTime(trechoLen(startSec)) + ' com fades.'));
   } catch (err) {
     toast('⚠️ Erro no corte: ' + err.message);
   } finally {
@@ -3774,7 +3790,7 @@ async function editarClipe(orderId) {
     rawAudioFile = new File([fonte], rawAudioName, { type: fonte.type || 'audio/mpeg' });
     corteUsado = (original && d.corte) ? d.corte
       : { inicio: 0, fim: audioBuf.duration, fadeIn: 0, fadeOut: 0, livre: true };   // só o trecho: inteiro e sem fade de novo
-    trechoLivre = !!corteUsado.livre; setTrechoBtn();
+    trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre
     setMusicReady({
       base64: trechoB64,
       name: rawAudioName.replace(/\.[^.]+$/, '') + '_trecho.mp3',
@@ -3993,7 +4009,7 @@ async function continuarProjeto(pid) {
       rawAudioFile = new File([fonte], rawAudioName, { type: fonte.type || 'audio/mpeg' });
       corteUsado = (bOriginal && e.corte) ? e.corte
         : { inicio: 0, fim: rawAudioBuffer.duration, fadeIn: 0, fadeOut: 0, livre: true };
-      trechoLivre = !!corteUsado.livre; setTrechoBtn();
+      trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre
       setMusicReady({
         base64: trechoB64,
         name: e.musicName || (rawAudioName.replace(/\.[^.]+$/, '') + '_trecho.mp3'),
@@ -4197,7 +4213,7 @@ function resetCreateForm() {
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
-  trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
+  trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
   rawAudioFile = null; corteUsado = null;   // (13/09) a original e o trecho eram do vídeo que acabou de ir
@@ -4225,7 +4241,7 @@ function sairEdicao() {
   imagemReal = false; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
-  trechoLivre = false; setTrechoBtn();   // (12/09) editor de música volta à janela de 1 minuto
+  trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
