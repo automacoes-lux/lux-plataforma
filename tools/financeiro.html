@@ -79,6 +79,10 @@ input[type="file"]{display:none}
 .fin-total.avo-tres .value{font-size:28px;white-space:nowrap}
 .fin-total.avo-tres .value.verde{color:#4ADE80}
 @media(max-width:760px){.fin-total.avo-tres{grid-template-columns:1fr;gap:12px}.fin-total.avo-tres .avo-col{text-align:center!important}}
+/* (20/10/2026) card do dia no formato da Visão Geral: entrada no topo, descontos, lucro por sócio verde */
+.fin-total.avo-card .value.verde{color:#4ADE80}
+.fin-total.avo-card .avo-socio-label{margin-top:16px;padding-top:14px;border-top:1px solid rgba(201,168,76,.18)}
+@media(max-width:760px){.fin-total.avo-card .value{font-size:26px}.fin-total.avo-card .sub.big{font-size:15px}}
 
 /* tabela editável da revisão (6 colunas) */
 .rev-head,.rev-row{display:grid;grid-template-columns:1.3fr repeat(4,.95fr) 1.7fr;gap:8px;align-items:center}
@@ -434,23 +438,16 @@ input[type="file"]{display:none}
         <span class="hint" style="margin:0">Dá pra fechar dias passados (ex.: sábado e domingo).</span>
       </div>
       <div id="autoFechStatus" style="display:none;align-items:center;gap:8px;background:rgba(212,175,55,.08);border:.5px solid var(--border-bright);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:13px;color:var(--text-dim)"></div>
-      <!-- (19/10/2026) 3 colunas: entradas à esquerda, lucro líquido no meio, lucro por sócio à direita (verde) -->
-      <div class="fin-total avo-tres">
-        <div class="avo-col esq">
-          <div class="label">Entradas Pix do dia</div>
-          <div class="value" id="avoTotal">R$ 0,00</div>
-          <div class="sub" id="avoQtd">aguardando…</div>
-        </div>
-        <div class="avo-col meio" title="Entradas (Pix + Mercado Pago + diversas) − imposto 6% − anúncio − plataforma, de todas as equipes — a mesma conta do fechamento">
-          <div class="label">Lucro líquido</div>
-          <div class="value" id="avoLucro">—</div>
-          <div class="sub" id="avoLucroSub">calculando…</div>
-        </div>
-        <div class="avo-col dir" title="Um quarto do lucro líquido: metade é das atendentes e a outra metade é dividida entre os 2 sócios">
-          <div class="label">Lucro por sócio</div>
-          <div class="value verde" id="avoSocio">—</div>
-          <div class="sub">¼ do lucro líquido</div>
-        </div>
+      <!-- (20/10/2026, Thiago) igual ao card da Visão Geral: ENTRADA TOTAL no topo, os descontos embaixo e o lucro
+           por sócio em verde no fim. Mesma conta do fechamento (/financeiro/preview). -->
+      <div class="fin-total avo-card" title="Entradas (Pix + Mercado Pago + diversas) − imposto 6% − anúncio − plataforma; o lucro por sócio é ¼ (metade é das atendentes, a outra metade dos 2 sócios)">
+        <div class="label">Entrada total</div>
+        <div class="value" id="avoEntrada">—</div>
+        <div class="sub big" id="avoDesc">Imposto — · Anúncio — · Plataforma —</div>
+        <div class="label avo-socio-label">Lucro por sócio</div>
+        <div class="value verde" id="avoSocio">—</div>
+        <div class="sub"><span id="avoQtd">aguardando…</span> · <span id="avoLucroSub">calculando…</span></div>
+        <span id="avoTotal" hidden></span>
       </div>
       <div class="section-sub">Por atendente</div>
       <div id="avoPorAtend"><div class="bd-note">—</div></div>
@@ -1864,11 +1861,13 @@ async function avoLucroAtualizar(forcar){
     const r=await window.__luxFetch(WORKER_URL+'/financeiro/preview',{method:'POST',body:JSON.stringify(body)});
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'erro');
     if((avoDate||ymd(new Date()))!==data) return;                 // trocou de dia no meio do caminho
-    const s=(d.atendentes||[]).reduce((t,a)=>t+(a.entradaBRL||0)-(a.impostoBRL||0)-(a.anuncioBRL||0)-(a.custoIaBRL||0),0);
-    const res=Math.round(s*100)/100;
-    document.getElementById('avoLucro').textContent=fmtBRL(res);
+    const soma=k=>Math.round((d.atendentes||[]).reduce((t,a)=>t+(a[k]||0),0)*100)/100;
+    const ent=soma('entradaBRL'), imp=soma('impostoBRL'), anu=soma('anuncioBRL'), pla=soma('custoIaBRL');
+    const res=Math.round((ent-imp-anu-pla)*100)/100;
+    document.getElementById('avoEntrada').textContent=fmtBRL(ent);
+    document.getElementById('avoDesc').textContent='Imposto '+fmtBRL(imp)+' · Anúncio '+fmtBRL(anu)+' · Plataforma '+fmtBRL(pla);
     document.getElementById('avoSocio').textContent=fmtBRL(Math.round(res/4*100)/100);
-    if(sub) sub.textContent=body.anuncioUSD>0 ? 'já com '+fmtBRL(d.anuncioBRL||0)+' de anúncio' : 'ainda sem o anúncio (etapa 2)';
+    if(sub) sub.textContent=body.anuncioUSD>0 ? 'com o anúncio do dia' : 'ainda sem o anúncio (etapa 2)';
   }catch(e){ if(sub) sub.textContent='não deu para calcular agora'; avoLucroEm=0; }
   finally{ avoLucroRodando=false; }
 }
