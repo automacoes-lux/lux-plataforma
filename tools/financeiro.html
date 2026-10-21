@@ -116,6 +116,9 @@ input[type="file"]{display:none}
 .list-row.atend .anun{min-width:98px;text-align:right;white-space:nowrap;color:var(--text-mid);font-variant-numeric:tabular-nums;
   border-right:.5px solid var(--border);padding-right:18px}
 .list-row.atend .anun small{display:block;color:var(--text-dim);font-size:12px}
+/* (20/10/2026) X vermelho: anúncio da equipe maior que o vendido no dia */
+.list-row.atend .anun-x{display:inline-flex;vertical-align:-2px;margin-right:6px;color:#F26D6D}
+.list-row.atend .anun-x svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round}
 .list-row.atend .r{min-width:104px;text-align:right}
 .list-row.atend .who small.nid{color:var(--gold-dim);white-space:normal;line-height:1.45;margin-top:1px}
 /* celular: nome na 1ª linha inteira; anúncio e total dividem a 2ª */
@@ -1909,7 +1912,8 @@ function aovivoRender(d){
             .sort((x,y)=>String(x.hora||'').localeCompare(String(y.hora||'')))
             .map(x=>`<small class="nid">${escapeHtml(x.pagador||'(sem nome no comprovante)')} · ${fmtBRL(x.valorBRL)} · ${escapeHtml(x.hora||'—')}</small>`).join('') : '';
           return `<div class="list-row atend"><div class="who">${i+1}. ${escapeHtml(a.atendente||'—')}<small>${a.qtd} Pix</small>${semDono}</div>`
-            + `<div class="anun" title="${an.ok?'fatia do anúncio do dia, proporcional ao % de atendimento':'informe o gasto de anúncio (etapa 2) e o % de atendimento (etapa 4)'}">${an.ok?fmtBRL(v):'—'}<small>anúncio</small></div>`
+            // (20/10/2026) X vermelho à esquerda do anúncio quando ele passa do que a equipe vendeu no dia
+            + `<div class="anun" title="${an.ok?'fatia do anúncio do dia, proporcional ao % de atendimento':'informe o gasto de anúncio (etapa 2) e o % de atendimento (etapa 4)'}">${an.ok&&v>(a.totalBRL||0)?'<span class="anun-x" title="Anúncio maior que o vendido no dia" aria-label="Anúncio maior que o vendido"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span>':''}${an.ok?fmtBRL(v):'—'}<small>anúncio</small></div>`
             + `<div class="r" style="color:var(--gold)">${fmtBRL(a.totalBRL)}</div></div>`;
         }).join(''); })()
     : '<div class="bd-note">Nenhum ainda.</div>';
