@@ -408,7 +408,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
   <div class="page-head">
     <div class="page-title">🎤 Avatar 150</div>
-    <div class="page-sub">O cliente vira o cantor do próprio clipe (até 1 minuto): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
+    <div class="page-sub">O cliente vira o cantor do próprio clipe (até 5 minutos): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
   </div>
 
   <!-- banner de pedido em andamento -->
@@ -499,7 +499,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
-      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 1 minuto)</span></div>
+      <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 5 minutos)</span></div>
       <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original — é ela que o avatar está cantando. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
         <button type="button" class="btn-destrava" onclick="destravarMusica()">🎵 Quero trocar a música</button>
       </div>
@@ -518,17 +518,19 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
           <button class="btn-mini" id="btnTrocarMusica" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
           <button class="btn-mini" id="btnRemoverMusica" onclick="removerMusica()">🗑️ Remover</button>
-          <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">✂ Refazer o corte</button>
+          <button class="btn-mini" id="btnReabrirCorte" style="display:none" onclick="reabrirCorte()">✂ Cortar a música</button>
         </div>
       </div>
 
-      <!-- editor de corte (música > 1:00) -->
+      <!-- editor de corte — (22/10) OPCIONAL: a música entra inteira; o editor escolhe início E fim (igual ao Avatar 97) -->
       <div class="cut-editor" id="cutEditor">
-        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o <b>1 minuto</b> que vai pro clipe:</div>
+        <div class="cut-title">✂ A música tem <span id="cutDurTotal"></span> — escolha o trecho que vai pro clipe:</div>
         <canvas id="waveCanvas" onclick="ouvirDaOnda(event)" title="Clique para ouvir a partir daqui"></canvas>
         <div id="cutHint" style="font-size:11.5px;color:var(--text-dim);text-align:center;margin:-6px 0 10px;min-height:15px">👆 Clique em qualquer ponto da onda para ouvir a música a partir dali (não muda o trecho escolhido).</div>
-        <div class="cut-row"><span>O minuto começa em</span><b id="cutStartLabel">0:00 → 1:00</b></div>
+        <div class="cut-row"><span>O trecho começa em</span><b id="cutStartLabel">—</b></div>
         <input type="range" id="cutStart" min="0" max="0" step="0.5" value="0"/>
+        <div class="cut-row"><span>O trecho termina em</span><b id="cutEndLabel">—</b></div>
+        <input type="range" id="cutEnd" min="0" max="0" step="0.5" value="0"/>
         <div class="fades-row">
           <div class="fade-box">
             <div class="cut-row"><span>Fade in (entrada)</span><b id="fadeInVal">1,0s</b></div>
@@ -541,7 +543,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         </div>
         <div class="cut-actions">
           <button class="btn-preview" id="btnCutPreview" onclick="previewCorte()">▶ Ouvir o resultado</button>
-          <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar 1:00</button>
+          <button class="btn-cut" id="btnCutApply" onclick="aplicarCorte()">✂ Cortar e usar</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
           <button class="btn-mini" id="btnTrocarMusicaCorte" onclick="document.getElementById('musicInput').click()">🔁 Trocar a música</button>
@@ -586,7 +588,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     </div>
 
     <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">🎬 Gerar o clipe</button>
-    <div class="gerar-note">A produção leva ~15 a 20 minutos e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
+    <div class="gerar-note">A produção leva cerca de 45 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
 
   </div>
 
@@ -784,10 +786,10 @@ const MAX_IMAGE_DIMENSION = 1536;   // redimensiona no navegador (custo/upload)
 const IMAGE_QUALITY = 0.85;
 
 const NUM_SCENES    = 6;            // FIXO: 6 fotos = 6 cenas
-const VIDEO_SECONDS = 60;           // FIXO: clipe de 1 minuto
+const VIDEO_SECONDS = 300;          // (22/10) TETO = 5 min, igual ao Avatar 97 (era 60 fixo). A música entra INTEIRA; o corte é opcional.
 const OUT_W = 1080, OUT_H = 1920;   // editor de enquadramento 9:16
 const SCENE_SECONDS = VIDEO_SECONDS / NUM_SCENES;   // 10s por cena
-const DUR_TOLERANCE = 1.5;          // música 58.5–61.5s passa sem corte
+const DUR_TOLERANCE = 0.5;          // (22/10) até 5:00,5 passa inteira; acima abre o editor (o servidor corta no teto)
 const MAX_MEDIA      = 20;          // até 20 fundos (fotos + vídeos) atrás do avatar
 const MIN_PHOTO_SEC  = 3;           // cada foto fica no mínimo 3s na tela
 const CLIP_MAX_MB    = 100;         // limite final por vídeo de b-roll (= teto do Cloudflare no plano atual)
@@ -798,10 +800,10 @@ const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
-const EST_USD_LIPSEC  = 0.0243;    // (29/09) canto 1080p: 0,40 crédito/s × US$0,0607 (plano Ultra + IOF) — era 0,03 (MultiTalk)
+const EST_USD_LIPSEC  = 0.03;      // (22/10) o 150 voltou p/ a WaveSpeed (US$0,03/s); era 0,0243 (VisionStory 1080p)
 const EST_USD_LIPSEC_DUO = 0.0243; // dupla canta no mesmo motor, mesmo preço
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
-const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
+const EST_USD_J2VSEC  = 0.00667;   // render Shotstack ($0,20/min ÷ 60) × 2 — (22/10) os pedaços do recorte TAMBÉM renderizam lá
 const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
 const EST_CAMBIO      = 5.18;
 
@@ -843,7 +845,10 @@ let vocalState  = 'idle';          // idle | working | done | failed
 let vocalToken  = 0;               // invalida análises antigas quando troca a música
 
 // Editor de corte
-let rawAudioBuffer = null;         // AudioBuffer da música original (> 1:00)
+let rawAudioBuffer = null;         // AudioBuffer da música original — (22/10) guardado SEMPRE (o corte é opcional)
+let corteUsado = null;             // (22/10) último trecho escolhido no editor → "Cortar a música" reabre nele
+const MIN_TRECHO_S = 5;            // (22/10) trecho mínimo no editor
+const DUR_PADRAO_S = 60;           // (22/10) duração usada no preço/tempo enquanto não tem música
 let rawAudioName = '';
 let wavePeaks = null;
 let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
@@ -1096,6 +1101,8 @@ async function continuarProjeto(pid) {
     if (typeof renderClientPhoto === 'function') renderClientPhoto();
     if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
     if (bMusicaB64) {
+      // (22/10) decodifica a música do rascunho p/ o botão "Cortar a música" funcionar também aqui
+      try { const _ac = new (window.AudioContext || window.webkitAudioContext)(); rawAudioBuffer = await _ac.decodeAudioData(await bMusica.arrayBuffer()); rawAudioName = e.musicName || 'musica.mp3'; try { _ac.close(); } catch (e3) {} } catch (e2) { rawAudioBuffer = null; }
       setMusicReady({ base64: bMusicaB64, name: e.musicName || 'musica.mp3',
         duration: Math.round(e.musicDuration || 60), playerSrc: URL.createObjectURL(bMusica), wasCut: false });
     }
@@ -2620,7 +2627,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
 
   stopPreviewCorte();
   music = null;
-  rawAudioBuffer = null;
+  rawAudioBuffer = null; corteUsado = null;
   document.getElementById('musicLoaded').classList.remove('show');
   document.getElementById('cutEditor').classList.remove('show');
   document.getElementById('musicTile').style.display = '';
@@ -2632,13 +2639,16 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
     try { ctx.close(); } catch (e2) {}
     const dur = audioBuf.duration;
 
-    // SEM mínimo: aceita qualquer duração até ~1:00; só acima disso abre o editor de corte.
+    // (22/10) a música entra INTEIRA (até 5 min). O áudio fica guardado → o corte é OPCIONAL ("✂ Cortar a música").
+    rawAudioBuffer = audioBuf;
+    rawAudioName = file.name;
     if (dur <= VIDEO_SECONDS + DUR_TOLERANCE) {
-      // ≤ ~1:00 → usa a música INTEIRA (a duração dela = a duração do clipe)
+      // ≤ 5:00 → usa a música INTEIRA (a duração dela = a duração do clipe)
       if (isMp3) {
         // já é MP3 → manda o arquivo ORIGINAL, sem re-comprimir (não perde qualidade à toa)
         const dataUrl = await readFileAsDataURL(file);
         setMusicReady({ base64: dataUrl.split(',')[1], name: file.name, duration: Math.round(dur), playerSrc: dataUrl, wasCut: false });
+        toast('🎵 Música inteira (' + fmtTime(dur) + ') pronta. Para usar só um trecho, clique em ✂ Cortar a música.');
         return;
       }
       // outro formato → converte pra MP3 aqui no navegador (o servidor só aceita MP3)
@@ -2653,14 +2663,13 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
         playerSrc: URL.createObjectURL(mp3Blob),
         wasCut: false
       });
-      toast('✅ Áudio convertido pra MP3 e pronto.');
+      toast('✅ Música inteira (' + fmtTime(dur) + ') convertida pra MP3 e pronta. Para usar só um trecho, clique em ✂ Cortar a música.');
       return;
     }
 
-    // > 1:00 → abre o editor de corte
-    rawAudioBuffer = audioBuf;
-    rawAudioName = file.name;
+    // > 5:00 → abre o editor com os 5 primeiros minutos marcados
     abrirEditorCorte();
+    toast('⏱ A música tem ' + fmtTime(dur) + ' e o vídeo vai até ' + fmtTime(VIDEO_SECONDS) + '. Escolha o trecho e clique em Cortar e usar.');
   } catch (err) {
     toast('⚠️ Não consegui ler esse áudio (arquivo corrompido ou formato que o navegador não abre): ' + err.message);
   }
@@ -2677,7 +2686,7 @@ function setMusicReady(m) {
   document.getElementById('musicName').textContent = m.name;
   document.getElementById('musicDur').textContent = fmtTime(m.duration);
   document.getElementById('player').src = m.playerSrc;
-  document.getElementById('btnReabrirCorte').style.display = m.wasCut ? '' : 'none';
+  document.getElementById('btnReabrirCorte').style.display = rawAudioBuffer ? '' : 'none';   // (22/10) corte opcional: aparece sempre que dá pra cortar
   renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
   rascSalvar();   // (24/09) música salva no rascunho
 }
@@ -2771,24 +2780,49 @@ async function startVocalAnalysis() {
   renderStoryboard();
 }
 
-function abrirEditorCorte() {
+// (22/10) sel = trecho escolhido antes (reabre nele); sem sel = do começo até o fim da música (no máx. 5 min)
+function abrirEditorCorte(sel) {
   document.getElementById('musicTile').style.display = 'none';
   document.getElementById('musicLoaded').classList.remove('show');
   const ed = document.getElementById('cutEditor');
   ed.classList.add('show');
-  document.getElementById('cutDurTotal').textContent = fmtTime(rawAudioBuffer.duration);
-  const slider = document.getElementById('cutStart');
-  slider.max = Math.max(0, Math.floor((rawAudioBuffer.duration - VIDEO_SECONDS) * 2) / 2);
-  slider.value = 0;
+  const dur = rawAudioBuffer.duration;
+  document.getElementById('cutDurTotal').textContent = fmtTime(dur);
+  const s = document.getElementById('cutStart'), e = document.getElementById('cutEnd');
+  e.max = Math.floor(dur * 2) / 2;
+  s.max = Math.max(0, Math.floor((dur - MIN_TRECHO_S) * 2) / 2);
+  s.value = sel ? (Number(sel.inicio) || 0) : 0;
+  e.value = sel ? (Number(sel.fim) || 0) : Math.min(parseFloat(e.max), VIDEO_SECONDS);
+  if (sel) {
+    document.getElementById('fadeIn').value = Number(sel.fadeIn) || 0;
+    document.getElementById('fadeOut').value = Number(sel.fadeOut) || 0;
+  }
   computePeaks();
   updateCutUI();
+}
+
+// (22/10) mantém o fim depois do início (mínimo MIN_TRECHO_S) e o trecho dentro do teto (5 min).
+// quem = o seletor que a atendente mexeu ('inicio' ou 'fim'); é o OUTRO que se ajusta.
+function normalizaTrecho(quem) {
+  if (!rawAudioBuffer) return;
+  const dur = rawAudioBuffer.duration;
+  const s = document.getElementById('cutStart'), e = document.getElementById('cutEnd');
+  let a = parseFloat(s.value) || 0, b = parseFloat(e.value) || 0;
+  if (quem === 'fim') {
+    if (b < a + MIN_TRECHO_S) a = Math.max(0, b - MIN_TRECHO_S);
+    if (b - a > VIDEO_SECONDS) a = b - VIDEO_SECONDS;
+  } else {
+    if (b < a + MIN_TRECHO_S) b = Math.min(dur, a + MIN_TRECHO_S);
+    if (b - a > VIDEO_SECONDS) b = a + VIDEO_SECONDS;
+  }
+  s.value = a; e.value = b;
 }
 
 // Remove a música escolhida na CRIAÇÃO (upload errado) — volta o Passo 2 pro estado inicial,
 // sem precisar recarregar a página. Na EDIÇÃO não existe (música travada).
 function removerMusica() {
   if (editState) return;
-  music = null; rawAudioBuffer = null; rawAudioName = '';
+  music = null; rawAudioBuffer = null; rawAudioName = ''; corteUsado = null;
   try { stopPreviewCorte(); } catch (e) {}
   lyricBlocks = null; lyricOn = false; updateLyricStatus();   // a letra casada era da música removida
   document.getElementById('musicLoaded').classList.remove('show');
@@ -2802,26 +2836,32 @@ function removerMusica() {
 function reabrirCorte() {
   if (!rawAudioBuffer) { toast('Envie a música de novo pra refazer o corte.'); return; }
   music = null;
-  abrirEditorCorte();
+  abrirEditorCorte(corteUsado);   // (22/10) reabre no trecho que estava escolhido
   renderStoryboard();
 }
 
 function getCutValues() {
+  const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
+  const startSec = parseFloat(document.getElementById('cutStart').value) || 0;
   return {
-    startSec: parseFloat(document.getElementById('cutStart').value) || 0,
+    startSec,
+    endSec: Math.min(dur, startSec + VIDEO_SECONDS, Math.max(startSec, parseFloat(document.getElementById('cutEnd').value) || 0)),   // (22/10) fim escolhido
     fadeIn:   parseFloat(document.getElementById('fadeIn').value) || 0,
     fadeOut:  parseFloat(document.getElementById('fadeOut').value) || 0
   };
 }
 
 function updateCutUI() {
-  const { startSec, fadeIn, fadeOut } = getCutValues();
-  document.getElementById('cutStartLabel').textContent = fmtTime(startSec) + ' → ' + fmtTime(startSec + VIDEO_SECONDS);
+  const { startSec, endSec, fadeIn, fadeOut } = getCutValues();
+  document.getElementById('cutStartLabel').textContent = fmtTime(startSec);
+  document.getElementById('cutEndLabel').textContent = fmtTime(endSec) + '  (' + fmtTime(endSec - startSec) + ')';
+  { const b = document.getElementById('btnCutApply'); if (b && !b.disabled) b.textContent = '✂ Cortar e usar ' + fmtTime(endSec - startSec); }
   document.getElementById('fadeInVal').textContent = fadeIn.toFixed(1).replace('.', ',') + 's';
   document.getElementById('fadeOutVal').textContent = fadeOut.toFixed(1).replace('.', ',') + 's';
   drawWave();
 }
-document.getElementById('cutStart').addEventListener('input', () => { stopPreviewCorte(); updateCutUI(); });
+document.getElementById('cutStart').addEventListener('input', () => { stopPreviewCorte(); normalizaTrecho('inicio'); updateCutUI(); });
+document.getElementById('cutEnd').addEventListener('input', () => { stopPreviewCorte(); normalizaTrecho('fim'); updateCutUI(); });
 document.getElementById('fadeIn').addEventListener('input', updateCutUI);
 document.getElementById('fadeOut').addEventListener('input', updateCutUI);
 
@@ -2851,9 +2891,9 @@ function drawWave() {
   ctx.clearRect(0, 0, W, H);
 
   const dur = rawAudioBuffer.duration;
-  const { startSec } = getCutValues();
+  const { startSec, endSec } = getCutValues();
   const selA = (startSec / dur) * W;
-  const selB = ((startSec + VIDEO_SECONDS) / dur) * W;
+  const selB = (endSec / dur) * W;
 
   // faixa selecionada (o minuto)
   ctx.fillStyle = 'rgba(201,168,76,0.13)';
@@ -2958,9 +2998,10 @@ function processAudio(srcBuffer, startSec, endSec, fadeIn, fadeOut) {
 function previewCorte() {
   if (!rawAudioBuffer) return;
   if (previewPlaying) { stopPreviewCorte(); return; }
-  const { startSec, fadeIn, fadeOut } = getCutValues();
+  const { startSec, endSec, fadeIn, fadeOut } = getCutValues();
+  const _len = Math.max(0.1, endSec - startSec);
   try {
-    const buf = processAudio(rawAudioBuffer, startSec, startSec + VIDEO_SECONDS, fadeIn, fadeOut);
+    const buf = processAudio(rawAudioBuffer, startSec, endSec, fadeIn, fadeOut);
     previewCtxAudio = new (window.AudioContext || window.webkitAudioContext)();
     previewSrc = previewCtxAudio.createBufferSource();
     previewSrc.buffer = buf;
@@ -2973,7 +3014,7 @@ function previewCorte() {
     const t0 = previewCtxAudio.currentTime;
     const tick = () => {
       if (!previewPlaying || !previewCtxAudio) return;
-      playheadFrac = Math.min(1, (previewCtxAudio.currentTime - t0) / VIDEO_SECONDS);
+      playheadFrac = Math.min(1, (previewCtxAudio.currentTime - t0) / _len);
       drawWave();
       if (playheadFrac < 1) playheadRAF = requestAnimationFrame(tick);
     };
@@ -3045,21 +3086,22 @@ async function aplicarCorte() {
   prog.classList.add('show');
   prog.textContent = 'Cortando…';
   try {
-    const { startSec, fadeIn, fadeOut } = getCutValues();
-    const processed = processAudio(rawAudioBuffer, startSec, startSec + VIDEO_SECONDS, fadeIn, fadeOut);
+    const { startSec, endSec, fadeIn, fadeOut } = getCutValues();
+    const processed = processAudio(rawAudioBuffer, startSec, endSec, fadeIn, fadeOut);
     const mp3Blob = await encodeMP3(processed, (p) => {
       prog.textContent = 'Convertendo pra MP3… ' + Math.round(p * 100) + '%';
     });
     const base64 = await blobToBase64(mp3Blob);
     const baseName = rawAudioName.replace(/\.[^.]+$/, '');
+    corteUsado = { inicio: startSec, fim: endSec, fadeIn, fadeOut };   // (22/10) "Cortar a música" reabre aqui
     setMusicReady({
       base64,
-      name: baseName + '_1min.mp3',
-      duration: VIDEO_SECONDS,
+      name: baseName + '_trecho.mp3',
+      duration: Math.round(endSec - startSec),
       playerSrc: URL.createObjectURL(mp3Blob),
       wasCut: true
     });
-    toast('✂ Corte feito: 1:00 com fades.');
+    toast('✂ Corte feito: ' + fmtTime(endSec - startSec) + '.');
   } catch (err) {
     toast('⚠️ Erro no corte: ' + err.message);
   } finally {
@@ -3093,7 +3135,7 @@ function renderStoryboard() {
   }
   sb.innerHTML = html;
 
-  const D = videoDur() || VIDEO_SECONDS;
+  const D = videoDur() || DUR_PADRAO_S;   // (22/10) sem música = preço de 1 min (o teto virou 5 min)
   const note = document.getElementById('cutNote');
   if (note) note.innerHTML = scenes.length ? '🎬 As mídias passam atrás do avatar, em sequência (e repetem até fechar ' + fmtTime(D) + ').' : '';
   const durEl = document.getElementById('sbDur');
@@ -3522,7 +3564,7 @@ function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTroc
 function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && !s.srcKey).length; }
 // Quanto esta edição vai custar, do jeito que a tela está agora.
 function custoEdicaoBRL() {
-  const D = videoDur() || VIDEO_SECONDS;
+  const D = videoDur() || DUR_PADRAO_S;
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
   let usd = D * EST_USD_J2VSEC;                                        // a montagem sempre acontece
   if (editTrocaAvatar) usd += EST_USD_CENA;                            // desenhar o avatar de novo
@@ -3531,13 +3573,13 @@ function custoEdicaoBRL() {
   return usd * EST_CAMBIO;
 }
 function _avisoRegravar(oQue, extraCartoon) {
-  const D = videoDur() || VIDEO_SECONDS;
+  const D = videoDur() || DUR_PADRAO_S;
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
   const usd = D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC) + (extraCartoon ? EST_USD_CENA : 0);
   const brl = (usd * EST_CAMBIO).toFixed(2).replace('.', ',');
   return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do avatar do zero.\n\n' +
          '• Custo: cerca de R$ ' + brl + ' (quase o preço de um vídeo novo)\n' +
-         '• Tempo: de 15 a 20 minutos\n\n' +
+         '• Tempo: cerca de ' + Math.max(45, Math.round(D / 60 * 45)) + ' minutos\n\n' +   // (22/10) ~45 min por minuto de música
          'As fotos que já foram melhoradas continuam como estão e NÃO são cobradas de novo.\n\n' +
          'Quer continuar?';
 }
@@ -3559,7 +3601,7 @@ function destravarMusica() {
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
   aplicarModoEdicao(null);
   renderStoryboard();
-  toast('🎵 Música liberada — envie o MP3. Se passar de 1 minuto, o editor de corte abre normalmente.');
+  toast('🎵 Música liberada — envie a música. Ela entra inteira (até 5 min); para usar só um trecho, clique em ✂ Cortar a música.');
 }
 // Aviso ÚNICO por edição quando a atendente mexe nas mídias (add/troca). Só reordenar não avisa nada.
 function avisarCustoMidia() {
