@@ -30,6 +30,11 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .chips{display:flex;flex-wrap:wrap;gap:.5rem}
 .chip{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:999px;padding:.55rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;user-select:none}
 .chip.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* (22/10) ESTILO DA IMAGEM: 2 botões com bolinha (igual ao Avatar 97), escolha OBRIGATÓRIA */
+#chipsEstilo .chip{display:inline-flex;align-items:center;gap:.5rem;border:2px solid var(--gold);color:#fff}
+#chipsEstilo .chip.on{background:#0b0b0d;color:#fff;box-shadow:0 0 10px rgba(201,168,76,.55),inset 0 0 7px rgba(201,168,76,.22)}
+#chipsEstilo .est-bola{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;display:grid;place-items:center}
+#chipsEstilo .chip.on .est-bola::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold)}
 /* (21/09) chave liga/desliga. O checkbox de verdade fica por baixo: funciona no teclado e no leitor de tela */
 .chave{position:relative;display:flex;align-items:center;gap:.7rem;min-height:44px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .chave input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
@@ -368,12 +373,12 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="step-hint" style="margin-top:.7rem">Não tem foto do lugar? Descreva aqui e a IA constrói o cenário.</div>
     <textarea id="fAmbienteTxt" rows="2" style="min-height:0" placeholder="Ex: sorveteria pequena, balcão de vidro com potes coloridos, mesinhas de madeira e letreiro luminoso na parede"></textarea>
 
-    <!-- (15/10) mesma chave do Avatar 97: personagem 3D animado (padrão) ou foto realista da pessoa -->
-    <div class="mini" style="margin-top:.9rem">Estilo da imagem</div>
-    <div class="step-hint">Pessoa real deixa a foto com cara de fotografia. Se a foto enviada já for um desenho, ele continua desenho.</div>
-    <div class="chips" id="chipsEstilo">
-      <div class="chip on" data-v="animado">Personagem animado</div>
-      <div class="chip" data-v="real">Pessoa real</div>
+    <!-- (22/10) escolha OBRIGATÓRIA, igual ao Avatar 97: Pessoa real (1 geração) ou Animação (real + camada de desenho) -->
+    <div class="mini" style="margin-top:.9rem">Estilo da imagem *</div>
+    <div class="step-hint">Escolha um dos dois. Pessoa real: sai como foto. Animação: vira personagem 3D.</div>
+    <div class="chips" id="chipsEstilo" role="radiogroup" aria-label="Estilo da imagem">
+      <div class="chip" data-v="real" role="radio"><span class="est-bola"></span>Pessoa real</div>
+      <div class="chip" data-v="animado" role="radio"><span class="est-bola"></span>Animação</div>
     </div>
 
     <!-- (12/10) "Personagem montado" foi REMOVIDO para os atendentes. (19/10) VOLTOU só para ADMIN (correções). -->
@@ -958,7 +963,7 @@ function estadoAtual(){
     briefing: (document.getElementById('fBriefing')||{}).value||'',
     ambienteTexto: (document.getElementById('fAmbienteTxt')||{}).value||'',
     sexoVoz: sexoVoz, vozId: vozId, textoLongo: textoLongo,   // (16/10) chave do texto longo   // (02/10) a voz da VisionStory escolhida no passo 2
-    imagemReal: imagemReal,           // (15/10) chave "Pessoa real"
+    imagemReal: imagemReal,           // (15/10) chave "Pessoa real" · (22/10) null = ainda não escolheu
     passo: passoAtual, passoMax: passoMax,
     refsProduto: refs.product.map(p=>p.base64||p.url||''),
     refsAmbiente: refs.environment.map(p=>p.base64||p.url||''),
@@ -1176,8 +1181,9 @@ async function abrirProjeto(id){
     });
     vozId = String(p.vozId || '');
     textoLongo = !!p.textoLongo;   // (16/10)   // (02/10) projeto do Veo não tem: fica a padrão do sexo
-    imagemReal = !!p.imagemReal;     // (15/10) projeto antigo volta como "Personagem animado"
-    document.querySelectorAll('#chipsEstilo .chip').forEach(function(c){ c.classList.toggle('on', c.dataset.v === (imagemReal ? 'real' : 'animado')); });
+    // (22/10) escolha obrigatória: projeto antigo COM imagem volta como Animação; sem imagem, fica para escolher
+    imagemReal = (p.imagemReal === true || p.imagemReal === false) ? p.imagemReal : (p.personagem ? false : null);
+    document.querySelectorAll('#chipsEstilo .chip').forEach(function(c){ c.classList.toggle('on', imagemReal !== null && c.dataset.v === (imagemReal ? 'real' : 'animado')); });
     abriuProjeto = true;             // (02/10) em manutenção, deixa terminar o que já começou
     refs.product     = (p.refsProduto||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
     refs.environment = (p.refsAmbiente||[]).map(u=>({ url:u, thumbUrl:u, mimeType:'image/jpeg' }));
@@ -1253,6 +1259,7 @@ function faltaNoBriefing(){
   // dois caminhos válidos: foto pra IA desenhar, OU a arte pronta do cliente
   if(!refs.product.length && !refs.montado.length)
     return { msg:'📸 Suba a foto do personagem.', el:null };
+  if(!refs.montado.length && imagemReal === null) return { msg:'🎨 Escolha o estilo da imagem: Pessoa real ou Animação.', el:'chipsEstilo' };   // (22/10)
   if(!briefTexto())         return { msg:'📝 Escreva as informações do cliente.', el:'fBriefing' };
   if(briefingExcedeu())     return { msg: briefingExcedeu(), el:'fBriefing' };
   if(!sexoVoz)              return { msg:'🎙️ Escolha a voz do personagem: masculina ou feminina.', el:'chipsVoz' };
@@ -1320,6 +1327,7 @@ async function gerarPersonagem(silencioso){
     return false;
   }
   if(!refs.product.length && !personagemMontado){ toast('📸 Suba a foto do produto.'); return false; }
+  if(!personagemMontado && imagemReal === null){ toast('🎨 Escolha o estilo da imagem: Pessoa real ou Animação.'); const el=document.getElementById('chipsEstilo'); if(el) el.scrollIntoView({block:'center',behavior:'smooth'}); return false; }   // (22/10)
   // silencioso = veio do gerarTudo (1ª geração, sem cenas ainda): não pergunta nada
   if(!silencioso && !invalidarCenas()) return false;
   const btn=silencioso?null:document.getElementById('btnPersonagem');
@@ -1342,7 +1350,7 @@ async function gerarPersonagem(silencioso){
       // (09/09) o desenho precisa saber a voz escolhida: cílio longo num mascote faz o motor de
       // vídeo falar com voz de mulher mesmo quando o prompt pede voz de homem.
       sexoVoz: (campanha && campanha.sexoVoz) || sexoVoz || 'masculina',
-      real: imagemReal,   // (15/10) "Pessoa real" × "Personagem animado" (igual ao Avatar 97)
+      real: imagemReal === true,   // (15/10) "Pessoa real" × "Personagem animado" (igual ao Avatar 97)
       // na arte pronta a imagem atual vai SEMPRE: é ela que segura a composição do cliente
       ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
@@ -2134,8 +2142,8 @@ function ligarChips(id, cb){
 // Vale pras 4 cenas e decide DUAS coisas: a descrição de voz que a IA escreve E qual timbre entra
 // no prompt negativo do Veo (o oposto do escolhido).
 let sexoVoz = '';   // vazio = o atendente ainda NÃO escolheu; gerarTudo() cobra
-// (15/10) estilo da imagem, igual ao Avatar 97: false = Personagem animado (padrão), true = Pessoa real
-let imagemReal = false;
+// (15/10) estilo da imagem, igual ao Avatar 97 · (22/10) true = Pessoa real, false = Animação, null = ainda não escolheu (obrigatório)
+let imagemReal = null;
 // legenda automática LIGADA por padrão (28/08). Desligar é escolha do atendente.
 let legendas = true;
 // cor da palavra falada. Branco é o padrão — só muda se o atendente escolher na paleta.
