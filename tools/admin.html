@@ -2463,7 +2463,16 @@ async function anuAtualizarDados() {
     const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/coletar', { method: 'POST', body: '{}' });
     const d = await r.json();
     if (!d.ok) throw new Error((d.coleta && d.coleta.erro) || d.error || 'Falha na coleta');
-    toast('Dados atualizados (' + d.coleta.linhas + ' linhas)', 'success');
+    // (22/10/2026, Thiago) o botão também LÊ AS CONVERSAS na hora — a mesma conferência de hora em hora: acha vendas e
+    // atualiza a temperatura de cada lead (mudo / Pix em aberto / em negociação). Se ela falhar, a coleta já valeu.
+    anuBotaoAtualizar('Lendo as conversas…');
+    let txtConf = '';
+    try {
+      const rc = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/auditoria', { method: 'POST', body: JSON.stringify({ acao: 'procurar' }) });
+      const dc = await rc.json(); const a = (dc && dc.auditoria) || {};
+      txtConf = a.ok ? ' · ' + anuPlural(a.abertas || 0, 'conversa lida', 'conversas lidas') + (a.novasAuto ? ', ' + anuPlural(a.novasAuto, 'venda achada', 'vendas achadas') : '') : ' · conversas não lidas agora (' + (a.erro || dc.error || 'falha') + ')';
+    } catch (e) { txtConf = ' · conversas não lidas agora'; }
+    toast('Dados atualizados (' + d.coleta.linhas + ' linhas)' + txtConf, 'success');
     anuCarregar();
   } catch (err) {
     toast(err.message, 'error');
