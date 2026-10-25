@@ -638,6 +638,7 @@ body.anu-larga .container{max-width:1180px}
 .anu-lt-cd b{display:block;font-size:13px;font-weight:600;color:var(--a-txt);margin-bottom:4px}
 .anu-lt-cd .s{display:block;font-size:11.5px;color:#4ADE80}.anu-lt-cd .c{display:block;font-size:11.5px;color:#F26D6D}.anu-lt-cd .p{display:block;font-size:11px;color:var(--a-txt2)}
 .anu-lt-cd .v{display:block;font-size:11.5px;font-weight:600;color:#4ADE80}
+.anu-lt-cd .v.zero{color:#F2F2F3}
 .anu-lt-cd.hoje{box-shadow:inset 0 0 0 1.5px #F2F2F3AA}.anu-lt-cd.fut{background:transparent;border:1px dashed var(--a-line)}
 .anu-lt-rot{font-size:11px;color:var(--a-txt3)}.anu-lt-rot b{display:block;color:var(--a-txt2);font-weight:500;font-size:11.5px}
 .anu-lt-div{grid-column:1 / -1;height:1px;background:var(--a-line);margin-top:8px}
@@ -2972,7 +2973,7 @@ function anuLinhaTeste(lt) {
   lt.futuros.forEach(function (x) {
     const vagas = Math.max(0, META_TESTES - (x.noTeste || 0));
     h += '<div class="anu-lt-cd fut"><small>' + sem(x.d) + '</small><b>' + anuDia(x.d) + '</b><span class="p">' + (x.noTeste ? x.noTeste + ' no teste' : 'nenhum no teste') + '</span>' +
-      '<span class="v">' + anuPlural(vagas, 'vaga', 'vagas') + '</span></div>';
+      '<span class="v' + (vagas ? '' : ' zero') + '">' + anuPlural(vagas, 'vaga', 'vagas') + '</span></div>';   // 0 vagas = branco; 1+ = verde
   });
   h += '<div class="anu-lt-rot" style="text-align:right"><b>ROAS real</b>do teste</div><div class="anu-lt-div"></div>';
   lt.linhas.forEach(function (l) {
