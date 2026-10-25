@@ -640,7 +640,9 @@ body.anu-larga .container{max-width:1180px}
 .anu-lt-cd.hoje{box-shadow:inset 0 0 0 1.5px #F2F2F3AA}.anu-lt-cd.fut{background:transparent;border:1px dashed var(--a-line)}
 .anu-lt-rot{font-size:11px;color:var(--a-txt3)}.anu-lt-rot b{display:block;color:var(--a-txt2);font-weight:500;font-size:11.5px}
 .anu-lt-div{grid-column:1 / -1;height:1px;background:var(--a-line);margin-top:8px}
-.anu-lt-nome{padding:12px 0;min-width:0}
+.anu-lt-nome{padding:8px 0;min-width:0;display:flex;align-items:center;gap:10px}
+.anu-lt-nome > div{min-width:0}
+.anu-lt-thumb{flex:0 0 auto;width:34px;height:52px;border-radius:7px;object-fit:cover;background:var(--a-campo);display:block}
 .anu-lt-nome b{font-size:13px;font-weight:600;display:block;color:var(--a-txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .anu-lt-nome small{font-size:11px;color:var(--a-txt3)}
 .anu-lt-cel{text-align:center;padding:10px 0}
@@ -2526,7 +2528,9 @@ function anuRender(d) {
   const sel = document.getElementById('anuCampanha');
   const atual = sel.value;
   const grupo = function (tipo, rot) {
-    const l = d.campanhas.filter(function (c) { return anuTipoDe(c.nome) === tipo && anuCampOk(d, c.id, c.nome); });
+    // 25/10/2026 (Thiago): em ordem de data, a mais antiga em cima (o id da Meta cresce com a data de criação)
+    const l = d.campanhas.filter(function (c) { return anuTipoDe(c.nome) === tipo && anuCampOk(d, c.id, c.nome); })
+      .sort(function (a, b) { return String(a.id).length - String(b.id).length || String(a.id).localeCompare(String(b.id)); });
     return l.length ? '<optgroup label="' + rot + '">' + l.map(function (c) { return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atual ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>'; }).join('') + '</optgroup>' : '';
   };
   sel.innerHTML = '<option value="">' + (anuTipo === 'teste' ? 'Todas as campanhas de teste' : anuTipo === 'escala' ? 'Todas as campanhas de escala' : 'Todas as campanhas') + '</option>' +
@@ -2941,7 +2945,9 @@ function anuLinhaTeste(lt) {
   lt.futuros.forEach(function (x) { h += '<div class="anu-lt-cd fut"><small>' + sem(x.d) + '</small><b>' + anuDia(x.d) + '</b><span class="p">' + (x.noTeste ? x.noTeste + ' no teste' : '—') + '</span></div>'; });
   h += '<div class="anu-lt-rot" style="text-align:right"><b>ROAS real</b>do teste</div><div class="anu-lt-div"></div>';
   lt.linhas.forEach(function (l) {
-    h += '<div class="anu-lt-nome" title="' + escapeHtml(l.nome) + '"><b>' + escapeHtml(l.nome) + '</b><small>' + (l.lote ? 'Lote ' + l.lote + ' · ' : '') + 'dia ' + l.diaAtual + '</small></div>';
+    // 25/10/2026: capa do anúncio ao lado do nome; lote que ainda não rodou mostra "começa dd/mm"
+    h += '<div class="anu-lt-nome" title="' + escapeHtml(l.nome) + '">' + (l.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(l.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : '<span class="anu-lt-thumb"></span>') +
+      '<div><b>' + escapeHtml(l.nome) + '</b><small>' + (l.lote ? 'Lote ' + l.lote + ' · ' : '') + (l.diaAtual ? 'dia ' + l.diaAtual : 'começa ' + anuDia(l.inicio)) + '</small></div></div>';
     datas.forEach(function (d, k) {
       if (k === 5) h += '<div class="anu-lt-sep"></div>';
       const z = l.dias.find(function (y) { return y.d === d; });
