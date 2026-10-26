@@ -2979,7 +2979,7 @@ function anuLinhaTeste(lt) {
   lt.linhas.forEach(function (l) {
     // 25/10/2026: capa do anúncio ao lado do nome; lote que ainda não rodou mostra "começa dd/mm"
     h += '<div class="anu-lt-nome" title="' + escapeHtml(l.nome) + '">' + (l.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(l.thumb) + '" alt="" data-nome="' + escapeHtml(l.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)" onclick="event.stopPropagation();anuLtZoom(document.getElementById(\'anuLtZoom\')&&document.getElementById(\'anuLtZoom\').classList.contains(\'on\')?null:this,event)"/>' : '<span class="anu-lt-thumb"></span>') +
-      '<div><b>' + escapeHtml(l.nome) + '</b><small>' + (l.lote ? 'Lote ' + l.lote + ' · ' : '') + (l.diaAtual ? 'dia ' + l.diaAtual : 'começa ' + anuDia(l.inicio)) + '</small></div></div>';
+      '<div><b>' + escapeHtml(l.nome) + '</b><small>' + (l.lote ? 'Lote ' + l.lote + ' · ' : '') + (l.diaAtual ? 'dia ' + l.diaAtual : 'começa ' + anuDia(l.inicio)) + (l.saiHoje ? ' · <span class="verm" title="previsão: sai às 23h45 se não entrar venda">sai hoje*</span>' : '') + '</small></div></div>';
     datas.forEach(function (d, k) {
       if (k === 5) h += '<div class="anu-lt-sep"></div>';
       const z = l.dias.find(function (y) { return y.d === d; });
