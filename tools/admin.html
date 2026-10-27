@@ -643,6 +643,8 @@ body.anu-larga .container{max-width:1180px}
 .anu-lt-rot{font-size:11px;color:var(--a-txt3)}.anu-lt-rot b{display:block;color:var(--a-txt2);font-weight:500;font-size:11.5px}
 .anu-lt-div{grid-column:1 / -1;height:1px;background:var(--a-line);margin-top:8px}
 .anu-lt-nome{padding:8px 0;min-width:0;display:flex;align-items:center;gap:10px}
+.anu-lt-nome,.anu-lt-g > .anu-lt-rot:first-child{background:var(--a-card);z-index:1;align-self:stretch}
+.anu-lt-g > .anu-lt-rot:first-child{display:flex;flex-direction:column;justify-content:center}
 .anu-lt-nome > div{min-width:0}
 .anu-lt-thumb{flex:0 0 auto;width:34px;height:52px;border-radius:7px;object-fit:cover;background:var(--a-campo);display:block}
 img.anu-lt-thumb{cursor:zoom-in;transition:box-shadow .15s}
@@ -663,7 +665,11 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
 .anu-lt-tot{text-align:right}.anu-lt-tot small{display:block;font-size:10px;color:var(--a-txt3)}.anu-lt-tot b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .anu-lt .verde{color:#4ADE80}.anu-lt .lar{color:#F59E42}.anu-lt .verm{color:#F26D6D}
 .anu-lt .bverde{background:#4ADE80}.anu-lt .blar{background:#F59E42}.anu-lt .bverm{background:#F26D6D}
-@media (max-width:760px){ .anu-lt{padding:14px 10px 8px} .anu-lt-g{grid-template-columns:112px repeat(5,58px) 10px repeat(5,58px) 64px;min-width:0} .anu-lt-nome{position:sticky;left:0;background:var(--a-card);z-index:1} .anu-lt-nome b{font-size:12px;white-space:normal;line-height:1.25} .anu-lt-rot{position:sticky;left:0;background:var(--a-card);z-index:1} }
+.anu-lt-g.esc{grid-template-columns:170px repeat(11,minmax(54px,1fr)) 78px;min-width:1000px}
+.r2{color:var(--a-txt3)}.anu-lt-cd .r2{display:block;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.anu-lt-g.esc .anu-lt-nome b{white-space:normal;line-height:1.25}
+.anu-lt-nota{font-size:11px;color:var(--a-txt3);margin:8px 0 0}
+@media (max-width:760px){ .anu-lt{padding:14px 10px 8px} .anu-lt-g{grid-template-columns:112px repeat(5,58px) 10px repeat(5,58px) 64px;min-width:0} .anu-lt-g.esc{grid-template-columns:112px repeat(11,54px) 64px;min-width:0} .anu-lt-nome{position:relative} .anu-lt-nome b{font-size:12px;white-space:normal;line-height:1.25} .anu-lt-rot{position:relative} }
 .anu-kpis-nota{font-size:12.5px;color:var(--a-txt2);margin:0 0 8px 2px}   /* 20/10: o topo conta só os criativos ativos */
 .anu-kpi{padding:15px 18px;border-left:1px solid var(--a-line);min-width:0}
 .anu-kpi:first-child{border-left:none}
@@ -2576,8 +2582,10 @@ function anuRender(d) {
   // Motor v3 (30/09/2026): campanha → estados → card com o funil. O layout antigo fica só de reserva,
   // para o caso de a tela subir antes do Worker novo.
   if (d.campanhasDec) {
-    document.getElementById('anuConteudo').innerHTML = anuLinhaTeste(d.linhaTeste) + anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
+    document.getElementById('anuConteudo').innerHTML = anuLinhaTeste(d.linhaTeste) + anuLinhaEscala(d.linhaEscala) + anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
       '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
+    // linha da escala abre mostrando HOJE (a ponta direita) quando não cabe na tela
+    document.querySelectorAll('.anu-lt-g.esc').forEach(function (g) { g.parentNode.scrollLeft = g.parentNode.scrollWidth; });
     if (anuAberto) anuCarregarDetalhe(anuAberto);
     return;
   }
@@ -2948,7 +2956,14 @@ function anuLtZoom(img, ev) {
   z.style.width = W + 'px'; z.style.left = x + 'px'; z.style.top = y + 'px';
   z.classList.add('on');
 }
-document.addEventListener('scroll', function () { anuLtZoom(null); }, true);
+document.addEventListener('scroll', function (e) {
+  anuLtZoom(null);
+  // 26/10/2026: nome do criativo PARADO enquanto a régua rola (o sticky não funciona dentro do grid: preso à própria coluna)
+  const r = e.target;
+  if (!r || !r.classList || !r.classList.contains('anu-lt-rolo')) return;
+  const x = 'translateX(' + r.scrollLeft + 'px)';
+  r.querySelectorAll('.anu-lt-nome, .anu-lt-g > .anu-lt-rot:first-child').forEach(function (el) { el.style.transform = x; });
+}, true);
 
 function anuLinhaTeste(lt) {
   if (!lt || !lt.linhas || !lt.linhas.length) return '';
@@ -2991,6 +3006,40 @@ function anuLinhaTeste(lt) {
     h += '<div class="anu-lt-tot"><small>ROAS real</small><b class="' + cor(l.roasReal) + '">' + (l.roasReal == null ? '—' : anuD(l.roasReal)) + '</b></div>';
   });
   return h + '</div></div></section>';
+}
+
+// LINHA DO TEMPO DA ESCALA (26/10/2026, Thiago): embaixo da dos testes, mesmas cores e mesma capa ampliada. Sem dias
+// futuros: hoje + os 10 dias úteis anteriores; em cima, o ROAS da escala inteira em cada dia; dia em que o criativo não
+// rodou = tracejado; no fim, o ROAS real dos 11 dias.
+function anuLinhaEscala(le) {
+  if (!le || !le.linhas || !le.linhas.length) return '';
+  const SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const sem = function (d) { return SEM[new Date(d + 'T12:00:00Z').getUTCDay()]; };
+  const cor = function (r) { return r == null ? '' : r >= 1.5 ? 'verde' : r >= 1 ? 'lar' : 'verm'; };
+  const hoje = le.hoje === le.ultimoUtil;
+  let h = '<section class="anu-lt" aria-label="Linha do tempo da escala"><div class="anu-lt-cab"><h4>Linha do tempo da escala · ' + anuPlural(le.linhas.length, 'rodando', 'rodando') + '</h4>' +
+    '<div class="anu-lt-leg"><span><i class="bverde"></i>ROAS 1,5 ou mais</span><span><i class="blar"></i>ROAS 1,0 a 1,5</span><span><i class="bverm"></i>ROAS abaixo de 1,0 (prejuízo)</span>' +
+    '<span><i style="border:1.5px dashed var(--a-txt3);height:7px"></i>dia em que não rodou</span></div></div>' +
+    '<div class="anu-lt-rolo"><div class="anu-lt-g esc">';
+  h += '<div class="anu-lt-rot"><b>Últimos 11 dias úteis</b>ROAS do dia, somando os de baixo</div>';
+  le.dias.forEach(function (x) {
+    const eh = x.d === le.ultimoUtil, c = cor(x.roas);
+    h += '<div class="anu-lt-cd' + (eh ? ' hoje' : '') + '" title="' + anuR(x.gastoBRL) + ' de gasto na escala"><small>' + sem(x.d) + (eh ? (hoje ? ' · hoje' : ' · último') : '') + '</small><b>' + anuDia(x.d) + '</b>' +
+      '<span class="r2 ' + c + '">' + (x.roas == null ? '—' : anuD(x.roas)) + (eh && hoje ? '*' : '') + '</span></div>';
+  });
+  h += '<div class="anu-lt-rot" style="text-align:right"><b>ROAS real</b>11 dias</div><div class="anu-lt-div"></div>';
+  le.linhas.forEach(function (l) {
+    const sub = [l.campanha, l.conjunto && l.conjunto !== l.nome ? l.conjunto : ''].filter(Boolean).join(' · ');
+    h += '<div class="anu-lt-nome" title="' + escapeHtml(l.nome + (sub ? ' — ' + sub : '')) + '">' + (l.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(l.thumb) + '" alt="" data-nome="' + escapeHtml(l.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)" onclick="event.stopPropagation();anuLtZoom(document.getElementById(\'anuLtZoom\')&&document.getElementById(\'anuLtZoom\').classList.contains(\'on\')?null:this,event)"/>' : '<span class="anu-lt-thumb"></span>') +
+      '<div><b>' + escapeHtml(l.nome) + '</b><small>' + escapeHtml(sub) + (sub ? ' · ' : '') + (l.diasRodou ? 'rodou ' + l.diasRodou + ' de 11' : 'ainda não rodou') + '</small></div></div>';
+    l.dias.forEach(function (z) {
+      if (z.vazio) { h += '<div class="anu-lt-cel"><div class="r">·</div><div class="bar proj"></div><div class="d">' + anuDia(z.d) + '</div></div>'; return; }
+      const c = cor(z.roas);
+      h += '<div class="anu-lt-cel" title="' + anuDia(z.d) + ': ' + anuR(z.gastoBRL) + ' de gasto · ' + anuPlural(z.vendas, 'venda', 'vendas') + ' · ' + anuR(z.faturamento) + '"><div class="r ' + c + '">' + anuD(z.roas) + '</div><div class="bar' + (c ? ' b' + c : '') + '"></div><div class="d">' + anuDia(z.d) + '</div></div>';
+    });
+    h += '<div class="anu-lt-tot"><small>ROAS real</small><b class="' + cor(l.roasReal) + '">' + (l.roasReal == null ? '—' : anuD(l.roasReal)) + '</b></div>';
+  });
+  return h + '</div></div>' + (hoje ? '<p class="anu-lt-nota">* hoje ainda está em andamento: o ROAS sobe conforme as vendas entram.</p>' : '') + '</section>';
 }
 
 function anuKpisV4(d) {
