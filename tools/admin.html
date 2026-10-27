@@ -3237,14 +3237,20 @@ function anuJornadaLeads(leads) {
 }
 
 function anuCardV4(i, c, d) {
-  const x = i.dec, et = x.etapas, ativo = anuEhAtivo(i), final = c.fase === 'final';
+  // teste com período diferente do lote (27/10/2026, Thiago): gasto, etapas e jornada só do período (Hoje = só hoje);
+  // a situação, a posição e o motivo continuam pelo lote inteiro, que é o que o robô julga
+  const P = c.teste && c.periodo && !c.periodo.mesmoQueLote && i.dec.periodo && i.dec.periodo.etapas ? i.dec.periodo : null;
+  const x = i.dec, et = P ? P.etapas : x.etapas, ativo = anuEhAtivo(i), final = c.fase === 'final';
   const cambio = (d.motor && d.motor.cambio) || 5.2;
+  const rotP = P ? (P.ini === P.fim ? (P.fim === anuHojeBR() ? 'hoje' : 'em ' + anuDia(P.fim)) : 'no período') : '';
+  if (P) i = Object.assign({}, i, { jornada: (i.jornada || []).filter(function (z) { return z.d >= P.ini && z.d <= P.fim; }) });
   const pills = [anuEst(x.rotulo || x.estado, ANU_EST_COR[x.estado] || 'cinza')];
   if (c.teste && x.posicao) pills.push('<span class="anu-pos">' + x.posicao + 'º no lote</span>');
   if (x.melhor) pills.push('<span class="anu-melhor">' + ANU_IC.estrela + 'Melhor da campanha</span>');
   if (!ativo && !final) pills.push('<span class="anu-tag">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(String(i.status).toLowerCase())) + '</span>');
   const reco = ativo || final ? '<span class="anu-reco ' + (ANU_RECO_COR[x.recomendacao] || 'cinza') + '" title="Recomendação do motor. Nada é pausado sem você confirmar.">' + escapeHtml(x.recomendacao) + '</span>' : '';
-  const dir = '<div class="anu-v3-dir"><div><span>Gasto ' + (c.teste ? 'no lote' : 'no período') + '</span><b>' + anuR(x.gasto) + '</b><small>' + anuUS(x.gasto / cambio, 0) + '</small></div>' + reco + '</div>';
+  const gastoCard = P ? P.gastoBRL : x.gasto;
+  const dir = '<div class="anu-v3-dir"><div><span>Gasto ' + (P ? rotP : c.teste ? 'no lote' : 'no período') + '</span><b>' + anuR(gastoCard) + '</b><small>' + anuUS(gastoCard / cambio, 0) + '</small></div>' + reco + '</div>';
   const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : 'sem imagem';
 
   // jornada: ícone + uma palavra + nota, um número e no máximo uma linha
@@ -3265,7 +3271,7 @@ function anuCardV4(i, c, d) {
     ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
     '<div class="anu-v3-top"><div class="anu-thumb">' + thumb + '</div>' +
     '<div class="anu-v3-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="anu-v3-pills">' + pills.join('') + '</div>' +
-    '<div class="anu-motivo">' + escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1)) + '.</div></div>' + dir + '</div>' +
+    '<div class="anu-motivo">' + (P ? 'No lote inteiro: ' + escapeHtml(x.motivo) : escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1))) + '.</div></div>' + dir + '</div>' +
     funil + anuJornada(i) + '</div>';
   if (anuAberto === i.ad) {
     // conferência (não entra na decisão): a diferença com a Meta explicada, as vendas achadas pela conferência
