@@ -3683,8 +3683,17 @@ function cardVitrine(v, custoBRL, luxBRL) {
     quem +
     '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + refeito + '</div></div>' +
     '<div class="order-side">' + estrela + '<span class="st-chip st-ok">Pronto</span>' +
-    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + refazer +
+    '<a class="btn-baixar" href="' + escapeHtml(linkBaixarVideo(v)) + '" rel="noopener" download>⬇ Baixar</a>' + editar + refazer +
     '</div></div>';
+}
+
+// (28/10) Baixar pelo Worker, que lê o vídeo direto do armazenamento. O link direto do vídeo usa um endereço
+// de teste com limite de velocidade (~40 KB/s): baixar levava mais de 15 min ou travava no meio.
+function linkBaixarVideo(v) {
+  const u = String((v && v.videoUrl) || '');
+  if (!u) return '';
+  const nome = (String(v.cliente || 'video').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'video') + '.mp4';
+  return WORKER_URL + '/a97Baixar?u=' + encodeURIComponent(u) + '&nome=' + encodeURIComponent(nome);
 }
 
 // (06/10) "Refazer na reserva": refaz o canto em outro motor como um vídeo NOVO (o atual fica). Sem custo pro atendente.
