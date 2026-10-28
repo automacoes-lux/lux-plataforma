@@ -670,6 +670,73 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
 .anu-lt-g.esc .anu-lt-nome b{white-space:normal;line-height:1.25}
 .anu-lt-nota{font-size:11px;color:var(--a-txt3);margin:8px 0 0}
 @media (max-width:760px){ .anu-lt{padding:14px 10px 8px} .anu-lt-g{grid-template-columns:112px repeat(5,58px) 10px repeat(5,58px) 64px;min-width:0} .anu-lt-g.esc{grid-template-columns:112px repeat(11,54px) 64px;min-width:0} .anu-lt-nome{position:relative} .anu-lt-nome b{font-size:12px;white-space:normal;line-height:1.25} .anu-lt-rot{position:relative} }
+/* FUNIL DA CARTEIRA (28/10/2026): a jornada de cada criativo hora a hora, agrupada pela etapa em que saiu */
+.anu-fn{background:var(--a-card);border-radius:16px;padding:18px 18px 14px;margin-bottom:22px}
+.anu-fn-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
+.anu-fn-cab h4{font-family:inherit;font-size:15.5px;font-weight:600;color:var(--a-txt);margin:0}
+.anu-fn-cab h4 small{display:block;font-size:12px;font-weight:400;color:var(--a-txt3);margin-top:3px}
+.anu-fn-seg{display:inline-flex;background:var(--a-campo);border-radius:999px;padding:3px}
+.anu-fn-seg button{border:none;background:transparent;color:var(--a-txt2);font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;cursor:pointer}
+.anu-fn-seg button.on{background:var(--a-sup-h);color:var(--a-txt)}
+.anu-fn-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:16px 0 18px}
+.anu-fn-kpi{background:var(--a-campo);border-radius:12px;padding:10px 12px}
+.anu-fn-kpi span{display:block;font-size:11.5px;color:var(--a-txt3)}
+.anu-fn-kpi b{display:block;font-size:18px;font-weight:700;color:var(--a-txt);font-variant-numeric:tabular-nums;margin-top:2px}
+.anu-fn-kpi small{display:block;font-size:11.5px;color:var(--a-txt2);margin-top:1px}
+/* distância entre as etapas */
+.anu-fn-et{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:7px 14px;align-items:center;margin-bottom:6px}
+.anu-fn-et-rot{font-size:12.5px;color:var(--a-txt);line-height:1.3}
+.anu-fn-et-rot small{display:block;font-size:11px;color:var(--a-txt3)}
+.anu-fn-et-l{display:flex;align-items:center;gap:10px;min-width:0}
+.anu-fn-et-bar{height:22px;border-radius:6px;min-width:4px;flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:12px;font-weight:700;color:#111;font-variant-numeric:tabular-nums;white-space:nowrap}
+.anu-fn-et-x{font-size:11.5px;color:var(--a-txt2);font-variant-numeric:tabular-nums;min-width:0;line-height:1.4}
+.anu-fn-et-x b{font-weight:600}
+.anu-fn-nota{font-size:12px;color:var(--a-txt2);margin:10px 0 0;line-height:1.5}
+.anu-fn-nota b{color:var(--a-txt);font-weight:600}
+/* a grade hora a hora */
+.anu-fn-rolo{overflow-x:auto;margin-top:16px;padding-bottom:4px}
+.anu-fn-g{display:grid;grid-template-columns:190px repeat(8,minmax(78px,1fr)) 112px;column-gap:4px;row-gap:4px;min-width:1000px}
+.anu-fn-h{font-size:11.5px;color:var(--a-txt3);text-align:center;padding:4px 0 2px;line-height:1.3}
+.anu-fn-h b{display:block;font-size:12.5px;color:var(--a-txt2);font-weight:600}
+.anu-fn-h.corte{color:var(--a-ruim)}.anu-fn-h.corte b{color:var(--a-ruim)}
+.anu-fn-h.tot{text-align:right}
+.anu-fn-sec{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:14px 2px 4px;border-top:1px solid var(--a-line);margin-top:6px}
+.anu-fn-sec b{font-size:13.5px;font-weight:600;color:var(--a-txt)}
+.anu-fn-sec span{font-size:12px;color:var(--a-txt2)}
+.anu-fn-sec i{font-style:normal;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--a-sup);color:var(--a-txt2)}
+.anu-fn-sec.fim i{background:rgba(74,222,128,.14);color:var(--a-ok)}
+.anu-fn-nome{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 0;position:sticky;left:0;background:var(--a-card);z-index:1}
+.anu-fn-nome > div{min-width:0}
+.anu-fn-nome b{display:block;font-size:12.5px;font-weight:600;color:var(--a-txt);line-height:1.25}
+.anu-fn-nome small{display:block;font-size:10.5px;color:var(--a-txt3);line-height:1.35;margin-top:2px}
+.anu-fn-nome small em{font-style:normal;color:var(--a-at)}
+.anu-fn-c{background:var(--a-campo);border-radius:9px;padding:7px 4px 6px;text-align:center;line-height:1.3;font-variant-numeric:tabular-nums;min-height:66px}
+.anu-fn-c .l{display:block;font-size:13.5px;font-weight:700;color:var(--a-txt)}
+.anu-fn-c .l.sem{font-size:11.5px;font-weight:500;color:var(--a-txt3)}
+.anu-fn-c .q{display:block;font-size:10.5px;color:var(--a-txt3)}
+.anu-fn-c .v{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(74,222,128,.16);color:var(--a-ok)}
+.anu-fn-c .r{display:block;font-size:10.5px;font-weight:600;margin-top:2px}
+.anu-fn-c.bom{background:rgba(74,222,128,.10)}.anu-fn-c.ruim{background:rgba(242,109,109,.10)}
+.anu-fn-c.fora{background:transparent;border:1px dashed var(--a-line);min-height:0}
+.anu-fn-c.cortou{background:transparent;border:1px dashed rgba(242,109,109,.45);color:var(--a-ruim);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.anu-fn-c.cortou small{display:block;font-size:10px;color:var(--a-txt3);margin-top:2px}
+.anu-fn-t{text-align:right;padding:6px 4px 6px 8px;line-height:1.3;font-variant-numeric:tabular-nums;border-left:1px solid var(--a-line)}
+.anu-fn-t b{display:block;font-size:14px;font-weight:700;color:var(--a-txt)}
+.anu-fn-t small{display:block;font-size:10.5px;color:var(--a-txt3)}
+.anu-fn-t .r{font-size:11px;font-weight:600}
+.anu-fn .ok{color:var(--a-ok)}.anu-fn .at{color:var(--a-at)}.anu-fn .ruim{color:var(--a-ruim)}
+.anu-fn-pe{font-size:11px;color:var(--a-txt3);margin:12px 0 0;line-height:1.5}
+.anu-fn-g .rodape{border-top:1px solid var(--a-line);margin-top:8px}
+@media (max-width:760px){
+  .anu-fn{padding:14px 11px 12px}
+  .anu-fn-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anu-fn-kpis .anu-fn-kpi:last-child{grid-column:1 / -1}
+  .anu-fn-et{grid-template-columns:1fr;gap:3px 0}
+  .anu-fn-et-l{margin-bottom:8px}
+  .anu-fn-g{grid-template-columns:118px repeat(8,74px) 84px;min-width:0}
+  .anu-fn-nome .anu-lt-thumb{display:none}
+  .anu-fn-sec{position:sticky;left:0}
+}
 .anu-kpis-nota{font-size:12.5px;color:var(--a-txt2);margin:0 0 8px 2px}   /* 20/10: o topo conta só os criativos ativos */
 .anu-kpi{padding:15px 18px;border-left:1px solid var(--a-line);min-width:0}
 .anu-kpi:first-child{border-left:none}
@@ -2582,11 +2649,13 @@ function anuRender(d) {
   // Motor v3 (30/09/2026): campanha → estados → card com o funil. O layout antigo fica só de reserva,
   // para o caso de a tela subir antes do Worker novo.
   if (d.campanhasDec) {
-    document.getElementById('anuConteudo').innerHTML = anuLinhaTeste(d.linhaTeste) + anuLinhaEscala(d.linhaEscala) + anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
+    // 28/10/2026: o funil da carteira de teste abre a aba (dia do período; na semana, o último dia)
+    document.getElementById('anuConteudo').innerHTML = '<div id="anuFunil">' + (anuFnDados && anuFnDados.dia === per.ate ? anuFunil(anuFnDados) : '') + '</div>' + anuLinhaTeste(d.linhaTeste) + anuLinhaEscala(d.linhaEscala) + anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
       '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
     // linha da escala abre mostrando HOJE (a ponta direita) quando não cabe na tela
     document.querySelectorAll('.anu-lt-g.esc').forEach(function (g) { g.parentNode.scrollLeft = g.parentNode.scrollWidth; });
     if (anuAberto) anuCarregarDetalhe(anuAberto);
+    anuCarregarFunil(per.ate);
     return;
   }
   h += anuResumoTipos(d);
@@ -2964,6 +3033,148 @@ document.addEventListener('scroll', function (e) {
   const x = 'translateX(' + r.scrollLeft + 'px)';
   r.querySelectorAll('.anu-lt-nome, .anu-lt-g > .anu-lt-rot:first-child').forEach(function (el) { el.style.transform = x; });
 }, true);
+
+/* FUNIL DA CARTEIRA (28/10/2026, pedido do Thiago): a jornada de cada criativo da carteira hora a hora — custo por lead,
+   vendas e ROAS de cada hora — agrupada pela etapa em que saiu (corte das 11h, 12h, 14h… e os vencedores no fundo).
+   Dados: GET /anuncios/carteira?dia= (gasto por hora da Meta + leads/vendas pela hora do CLIQUE, rastreio por UTM).
+   "Por hora" = só o que aconteceu naquela hora; "Acumulado" = das 8h até o fim daquela hora (o que o robô via no corte). */
+let anuFnModo = 'hora', anuFnDados = null;
+function anuFnR(x, c) { return x == null ? '—' : 'R$ ' + Number(x).toLocaleString('pt-BR', { minimumFractionDigits: c == null ? 2 : c, maximumFractionDigits: c == null ? 2 : c }); }
+function anuFnRoas(r) { return r == null ? '—' : r.toFixed(2).replace('.', ','); }
+function anuFnCorRoas(r) { return r == null ? '' : r >= 1.3 ? 'ok' : r >= 1 ? 'at' : 'ruim'; }
+async function anuCarregarFunil(dia) {
+  const box = document.getElementById('anuFunil');
+  if (!box) return;
+  if (anuFnDados && anuFnDados.dia === dia) box.innerHTML = anuFunil(anuFnDados); // mostra o que já tem enquanto atualiza
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/carteira?dia=' + dia);
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'falha');
+    anuFnDados = d;
+    const b = document.getElementById('anuFunil');
+    if (b) b.innerHTML = anuFunil(d);
+  } catch (e) {
+    const b = document.getElementById('anuFunil');
+    if (b && !(anuFnDados && anuFnDados.dia === dia)) b.innerHTML = '<div class="anu-fn"><div class="anu-fn-nota">Funil da carteira: não carregou (' + escapeHtml(e.message) + ').</div></div>';
+  }
+}
+function anuFnModoTrocar(m) { anuFnModo = m; const b = document.getElementById('anuFunil'); if (b && anuFnDados) b.innerHTML = anuFunil(anuFnDados); }
+function anuFunil(d) {
+  if (!d || d.vazio || !d.itens || !d.itens.length) return '';
+  const SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const H = d.horas;
+  const soma = function (lst) { return lst.reduce(function (t, i) { return { g: t.g + i.tot.gastoBRL, l: t.l + i.tot.leads, v: t.v + i.tot.vendas, val: t.val + i.tot.val }; }, { g: 0, l: 0, v: 0, val: 0 }); };
+  const T = soma(d.itens), cplDia = T.l ? T.g / T.l : null;
+  // etapas: uma por hora de corte (na ordem) + os vencedores no fundo
+  const horasCorte = [];
+  d.itens.forEach(function (i) { if (i.cortadoHora != null && horasCorte.indexOf(i.cortadoHora) < 0) horasCorte.push(i.cortadoHora); });
+  horasCorte.sort(function (a, b) { return a - b; });
+  const porCpl = function (a, b) { return (a.tot.cpl == null ? 1e9 : a.tot.cpl) - (b.tot.cpl == null ? 1e9 : b.tot.cpl); };
+  const etapas = horasCorte.map(function (h) {
+    return { h: h, fim: false, rot: 'Saíram às ' + h + 'h', sub: 'rodaram das 8h às ' + h + 'h', itens: d.itens.filter(function (i) { return i.cortadoHora === h; }).sort(porCpl) };
+  });
+  const fin = d.itens.filter(function (i) { return i.cortadoHora == null; }).sort(porCpl);
+  if (fin.length) etapas.push({ h: null, fim: true, rot: fin.length === 1 ? 'O vencedor' : 'Os ' + fin.length + ' vencedores', sub: 'rodaram o dia inteiro', itens: fin });
+  etapas.forEach(function (e) { e.s = soma(e.itens); e.cpl = e.s.l ? e.s.g / e.s.l : null; e.roas = e.s.g ? e.s.val / e.s.g : null; });
+  const cortePorHora = {}; (d.cortes || []).forEach(function (c) { cortePorHora[c.hora] = c; });
+  const retrato = (d.retratos || []).find(function (r) { return !cortePorHora[r.hora]; });
+
+  let h = '<section class="anu-fn" aria-label="Funil da carteira de teste">';
+  h += '<div class="anu-fn-cab"><h4>Funil da carteira · ' + SEM[new Date(d.dia + 'T12:00:00Z').getUTCDay()] + ' ' + anuDia(d.dia) +
+    '<small>' + d.itens.length + ' criativos às 8h' + horasCorte.map(function (x) { const c = cortePorHora[x]; return ' → ' + (c ? c.vagas : '?') + ' às ' + x + 'h'; }).join('') +
+    ' · leads e vendas pela hora do clique (UTM)' + (d.leadsEm ? ' · atualizado às ' + new Date(d.leadsEm).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '') + '</small></h4>' +
+    '<div class="anu-fn-seg" role="group" aria-label="Como ler cada hora"><button type="button" class="' + (anuFnModo === 'hora' ? 'on' : '') + '" onclick="anuFnModoTrocar(\'hora\')">Por hora</button>' +
+    '<button type="button" class="' + (anuFnModo === 'acum' ? 'on' : '') + '" onclick="anuFnModoTrocar(\'acum\')" title="Das 8h até o fim de cada hora: é o que o robô enxerga na hora do corte">Acumulado</button></div></div>';
+
+  // números do dia
+  const K = function (rot, val, sub) { return '<div class="anu-fn-kpi"><span>' + rot + '</span><b>' + val + '</b><small>' + sub + '</small></div>'; };
+  const roasDia = T.g ? T.val / T.g : null;
+  h += '<div class="anu-fn-kpis">' +
+    K('Gasto', anuFnR(T.g, 0), d.verbaDiaBRL ? 'de ' + anuFnR(d.verbaDiaBRL, 0) + ' previstos' : '') +
+    K('Leads', anuNum(T.l), 'conversas no WhatsApp') +
+    K('Custo por lead', anuFnR(cplDia), 'o dia inteiro') +
+    K('Vendas', anuNum(T.v), anuFnR(T.val, 0) + ' em vendas') +
+    K('ROAS', '<span class="' + anuFnCorRoas(roasDia) + '">' + anuFnRoas(roasDia) + '</span>', 'vendas ÷ gasto') + '</div>';
+
+  // distância entre as etapas: custo por lead de cada etapa (barra), comparado aos vencedores
+  const maxCpl = Math.max.apply(null, etapas.map(function (e) { return e.cpl || 0; }).concat([1]));
+  const ref = etapas.length && etapas[etapas.length - 1].fim ? etapas[etapas.length - 1] : null;
+  etapas.forEach(function (e) {
+    const cor = e.fim ? '#4ADE80' : e.cpl != null && cplDia && e.cpl > cplDia * 1.3 ? '#F26D6D' : '#E8B86B';
+    const dif = ref && !e.fim && e.cpl != null && ref.cpl ? Math.round(100 * (e.cpl / ref.cpl - 1)) : null;
+    h += '<div class="anu-fn-et"><div class="anu-fn-et-rot">' + e.rot + ' · ' + anuPlural(e.itens.length, 'criativo', 'criativos') + '<small>' + e.sub + ' · gastaram ' + anuFnR(e.s.g, 0) + '</small></div>' +
+      '<div class="anu-fn-et-l"><div class="anu-fn-et-bar" style="width:' + Math.max(14, Math.round(62 * (e.cpl || 0) / maxCpl)) + '%;background:' + cor + '">' + anuFnR(e.cpl) + '</div>' +
+      '<span class="anu-fn-et-x">por lead · ' + anuPlural(e.s.l, 'lead', 'leads') + ' · ' + anuPlural(e.s.v, 'venda', 'vendas') + ' · ROAS <b class="' + anuFnCorRoas(e.roas) + '">' + anuFnRoas(e.roas) + '</b>' +
+      (dif != null ? ' · <b class="' + (dif > 0 ? 'ruim' : 'ok') + '">' + (dif > 0 ? '+' : '') + dif + '%</b> vs vencedores' : '') + '</span></div></div>';
+  });
+  if (retrato) {
+    const nomeDe = function (a) { const i = d.itens.find(function (x) { return x.ad === a; }); return i ? i.nome : a; };
+    const sai = retrato.sairiam.map(nomeDe);
+    const deVerdade = retrato.sairiam.filter(function (a) { const i = d.itens.find(function (x) { return x.ad === a; }); return i && i.cortadoHora === horasCorte[0]; }).length;
+    h += '<p class="anu-fn-nota"><b>Retrato das ' + retrato.hora + 'h</b> (o corte foi adiado): se cortasse às ' + retrato.hora + 'h, sairiam ' + sai.map(escapeHtml).join(', ') + '. ' +
+      deVerdade + ' de ' + sai.length + ' saíram de verdade no corte das ' + horasCorte[0] + 'h. Na grade, eles aparecem com o aviso <em style="font-style:normal;color:var(--a-at)">sairia às ' + retrato.hora + 'h</em>.</p>';
+  }
+
+  // a grade: criativo × hora
+  h += '<div class="anu-fn-rolo"><div class="anu-fn-g">';
+  h += '<div class="anu-fn-h" style="text-align:left">Criativo</div>';
+  H.forEach(function (x) {
+    const c = cortePorHora[x];
+    h += '<div class="anu-fn-h' + (c ? ' corte' : '') + '"><b>' + x + 'h</b>' + (c ? '✂ ficam ' + c.vagas : x + 'h–' + (x + 1) + 'h') + '</div>';
+  });
+  h += '<div class="anu-fn-h tot">Dia</div>';
+  const celula = function (i, x) {
+    if (i.cortadoHora != null && x >= i.cortadoHora) {
+      if (x !== i.cortadoHora) return '<div class="anu-fn-c fora"></div>';
+      const c = cortePorHora[x], v = c && c.visto && c.visto[i.ad];
+      return '<div class="anu-fn-c cortou">✂ cortado<small>' + (v ? 'robô viu ' + anuFnR(v.cpl) : '') + '</small></div>';
+    }
+    let g = 0, l = 0, vd = 0, val = 0;
+    i.porHora.forEach(function (z) { if (anuFnModo === 'acum' ? z.h <= x : z.h === x) { g += z.gastoBRL; l += z.leads; vd += z.vendas; val += z.val; } });
+    if (g < 1 && !l) return '<div class="anu-fn-c fora"></div>';
+    const cpl = l ? g / l : null, roas = g > 0 ? val / g : null;
+    const tom = cpl == null ? (g > cplDia ? 'ruim' : '') : cpl <= cplDia * 0.8 ? 'bom' : cpl >= cplDia * 1.3 ? 'ruim' : '';
+    return '<div class="anu-fn-c ' + tom + '" title="' + escapeHtml(i.nome) + ' · ' + (anuFnModo === 'acum' ? '8h até ' + (x + 1) + 'h' : x + 'h–' + (x + 1) + 'h') + ': gasto ' + anuFnR(g) + ', ' + anuPlural(l, 'lead', 'leads') + ', ' + anuPlural(vd, 'venda', 'vendas') + (val ? ' (' + anuFnR(val) + ')' : '') + '">' +
+      (cpl != null ? '<span class="l">' + anuFnR(cpl) + '</span>' : '<span class="l sem">sem lead</span>') +
+      '<span class="q">' + anuPlural(l, 'lead', 'leads') + ' · ' + anuFnR(g, 0) + '</span>' +
+      (vd ? '<span class="v">' + anuPlural(vd, 'venda', 'vendas') + '</span>' : '') +
+      '<span class="r ' + anuFnCorRoas(roas) + '">ROAS ' + anuFnRoas(roas) + '</span></div>';
+  };
+  etapas.forEach(function (e) {
+    h += '<div class="anu-fn-sec' + (e.fim ? ' fim' : '') + '"><b>' + e.rot + '</b><span>' + e.sub + ' · ' + anuFnR(e.cpl) + ' por lead · ' + anuPlural(e.s.v, 'venda', 'vendas') + ' · ROAS ' + anuFnRoas(e.roas) + '</span><i>' + anuPlural(e.itens.length, 'criativo', 'criativos') + '</i></div>';
+    e.itens.forEach(function (i) {
+      const ult = e.h != null ? cortePorHora[e.h] : (d.cortes || [])[(d.cortes || []).length - 1];
+      const v = ult && ult.visto && ult.visto[i.ad];
+      const sairia = retrato && retrato.sairiam.indexOf(i.ad) >= 0;
+      const sub = (e.fim ? (v ? 'no último corte: ' + v.pos + 'º' + (v.protegido ? ' · protegido' : '') : 'ficou até o fim') : (v ? 'saiu em ' + v.pos + 'º de ' + Object.keys(ult.visto).length : 'saiu às ' + e.h + 'h')) +
+        (sairia ? ' · <em>sairia às ' + retrato.hora + 'h</em>' : '');
+      h += '<div class="anu-fn-nome" title="' + escapeHtml(i.nome) + '">' + (i.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(i.thumb) + '" alt="" data-nome="' + escapeHtml(i.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)"/>' : '<span class="anu-lt-thumb"></span>') +
+        '<div><b>' + escapeHtml(i.nome) + '</b><small>' + sub + '</small></div></div>';
+      H.forEach(function (x) { h += celula(i, x); });
+      h += '<div class="anu-fn-t"><b>' + anuFnR(i.tot.cpl) + '</b><small>' + anuPlural(i.tot.leads, 'lead', 'leads') + ' · ' + anuFnR(i.tot.gastoBRL, 0) + '</small>' +
+        (i.tot.vendas ? '<small class="ok">' + anuPlural(i.tot.vendas, 'venda', 'vendas') + '</small>' : '<small>sem venda</small>') +
+        '<span class="r ' + anuFnCorRoas(i.tot.roas) + '">ROAS ' + anuFnRoas(i.tot.roas) + '</span></div>';
+    });
+  });
+  // rodapé: a carteira inteira em cada hora
+  h += '<div class="anu-fn-sec"><b>A carteira em cada hora</b><span>todos os criativos que estavam rodando</span></div>';
+  h += '<div class="anu-fn-nome"><div><b>Carteira</b><small>' + (anuFnModo === 'acum' ? 'acumulado desde as 8h' : 'só aquela hora') + '</small></div></div>';
+  H.forEach(function (x) {
+    let g = 0, l = 0, vd = 0, val = 0, n = 0;
+    d.itens.forEach(function (i) {
+      let roda = false;
+      i.porHora.forEach(function (z) { if (anuFnModo === 'acum' ? z.h <= x : z.h === x) { g += z.gastoBRL; l += z.leads; vd += z.vendas; val += z.val; } if (z.h === x && z.gastoBRL >= 1) roda = true; });
+      if (roda) n++;
+    });
+    const cpl = l ? g / l : null, roas = g ? val / g : null;
+    h += g < 1 ? '<div class="anu-fn-c fora"></div>' : '<div class="anu-fn-c"><span class="l">' + anuFnR(cpl) + '</span><span class="q">' + n + ' rodando · ' + anuFnR(g, 0) + '</span><span class="q">' + anuPlural(l, 'lead', 'leads') + (vd ? ' · ' + anuPlural(vd, 'venda', 'vendas') : '') + '</span><span class="r ' + anuFnCorRoas(roas) + '">ROAS ' + anuFnRoas(roas) + '</span></div>';
+  });
+  h += '<div class="anu-fn-t"><b>' + anuFnR(cplDia) + '</b><small>' + anuPlural(T.l, 'lead', 'leads') + ' · ' + anuFnR(T.g, 0) + '</small><span class="r ' + anuFnCorRoas(roasDia) + '">ROAS ' + anuFnRoas(roasDia) + '</span></div>';
+  h += '</div></div>';
+  h += '<p class="anu-fn-pe">Fundo verde = custo por lead pelo menos 20% abaixo do dia (' + anuFnR(cplDia) + '); vermelho = 30% acima. ROAS verde = 1,3 ou mais; laranja = 1,0 a 1,3; vermelho = abaixo de 1,0. ' +
+    'A venda entra na hora do clique que trouxe o cliente, mesmo que ele tenha pago mais tarde. "Robô viu" = o custo por lead acumulado no momento do corte (dados de 1 minuto antes).' + (d.obs ? ' · ' + escapeHtml(d.obs) : '') + '</p>';
+  return h + '</section>';
+}
 
 function anuLinhaTeste(lt) {
   if (!lt || !lt.linhas || !lt.linhas.length) return '';
