@@ -3615,6 +3615,7 @@ async function carregaVitrine(termo) {
 function desenhaResultados(orders, ehAdmin) {
   _meusOrders = orders || [];
   _ehAdmin    = !!ehAdmin;
+  mostraProntaAdmin();   // (28/10) a lista confirmou o papel
   pintarResultados();
 }
 
@@ -4507,11 +4508,18 @@ async function checkManutencao() {
     if (d && d.locked) { const el = document.getElementById('avatarSoon'); if (el) el.style.display = 'flex'; }
   } catch (e) { /* rede oscilou — não trava a tela por isso (o backend já barra a geração) */ }
 }
+// (28/10) a caixa "imagem pronta" do admin aparece JÁ no Passo 1, sem precisar subir foto antes
+// (antes só o refreshAvatarUI mostrava, e ele só rodava depois de alguma foto).
+function mostraProntaAdmin() {
+  const pbx = document.getElementById('prontaBox');
+  if (pbx && (!editState || editTrocaAvatar)) pbx.style.display = souAdmin() ? '' : 'none';
+}
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
   renderStoryboard();
   checkPending();
   checkManutencao();
+  mostraProntaAdmin(); setTimeout(mostraProntaAdmin, 1500); setTimeout(mostraProntaAdmin, 5000);   // de novo, caso o login termine depois
 });
 window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
 

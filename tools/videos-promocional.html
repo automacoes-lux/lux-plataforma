@@ -2248,7 +2248,7 @@ ligarChips('chipsEstilo', function(v){ imagemReal = (v === 'real'); });
 // (19/10) "Personagem montado" só para ADMIN. O papel vem da página principal (mesmo site).
 function podeMontado(){ if (souAdmin) return true; try { return !!(window.parent && window.parent.__luxRole === 'admin'); } catch(e){ return false; } }   // souAdmin = o que o servidor disse na lista de projetos
 function mostrarMontadoAdmin(){ ['cxMontado1','cxMontado2'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display = podeMontado() ? '' : 'none'; }); }
-mostrarMontadoAdmin(); setTimeout(mostrarMontadoAdmin, 1500);   // de novo depois, caso o login termine depois da tela
+mostrarMontadoAdmin(); setTimeout(mostrarMontadoAdmin, 1500); setTimeout(mostrarMontadoAdmin, 5000);   // de novo depois, caso o login termine depois da tela
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
 ligarChips('chipsLegenda', function(v){ legendas = (v === 'sim'); });
 // (21/09) transição entre as cenas: true = fade rápido (padrão, como sempre foi); false = corte seco
