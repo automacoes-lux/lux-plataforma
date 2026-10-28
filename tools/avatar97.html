@@ -249,6 +249,12 @@ audio{width:100%;margin:4px 0 6px;height:40px}
 .est-bola{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;display:grid;place-items:center}
 .est-op.on{box-shadow:0 0 10px rgba(201,168,76,.55),inset 0 0 7px rgba(201,168,76,.22)}
 .est-op.on .est-bola::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold)}
+/* (28/10) Animação em LARANJA: os dois dourados confundiam o atendente */
+#btnEstAnim{border-color:#F28C28}
+#btnEstAnim:hover{border-color:#FFAE5C}
+#btnEstAnim .est-bola{border-color:#F28C28}
+#btnEstAnim.on{box-shadow:0 0 10px rgba(242,140,40,.6),inset 0 0 7px rgba(242,140,40,.25)}
+#btnEstAnim.on .est-bola::after{background:#F28C28}
 
 /* (13/09) CHECKLIST do Passo 3 — lista vertical: ✅ pronto / ❌ falta; a última linha diz pessoa ou mascote */
 .checklist{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0 6px}
@@ -391,10 +397,29 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
 /* ABA PROJETOS (23/09) — rascunho salvo sozinho */
 button.btn-baixar{cursor:pointer}
-.proj-th{
-  width:54px;height:54px;flex-shrink:0;border-radius:10px;object-fit:cover;
-  background:var(--bg-input);border:.5px solid var(--border);
+/* (28/10) MINIATURA 9:16 à esquerda de cada card (Projetos e Resultados) — a imagem inteira, sem cortar.
+   Nos vídeos prontos, clicar abre a prévia (o atendente confere antes de baixar). */
+.mini916{
+  position:relative;width:54px;aspect-ratio:9/16;flex-shrink:0;border-radius:8px;overflow:hidden;padding:0;
+  background:#000;border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--text-dim);font-family:inherit;
 }
+.mini916 img,.mini916 video{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+button.mini916{cursor:pointer}
+button.mini916:hover{border-color:var(--gold)}
+.mini916 .mini-play{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.55);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;padding-left:2px;pointer-events:none;
+}
+.order-item .mini916 + .order-info{min-width:150px}
+/* prévia do vídeo (modal) */
+.prev-fundo{display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,.86);align-items:center;justify-content:center;padding:16px}
+.prev-fundo.show{display:flex}
+.prev-cx{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%}
+.prev-cx video{display:block;height:min(72vh,640px);aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;border:.5px solid var(--border-bright)}
+.prev-nome{font-size:13.5px;font-weight:600;color:var(--text);text-align:center;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prev-bts{display:flex;gap:10px;justify-content:center}
 #rascAviso{font-size:11.5px;color:var(--text-dim);text-align:right;min-height:16px;margin:-2px 0 8px}
 
 /* TOAST */
@@ -729,6 +754,13 @@ button.btn-baixar{cursor:pointer}
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Projetos salvos</div>
       <div class="hint" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
+      <!-- (28/10) busca nos projetos (cliente, categoria ou atendente) — filtra na própria tela -->
+      <div class="busca">
+        <span class="lupa">🔎</span>
+        <input type="text" id="buscaProj" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+        <button type="button" id="buscaProjLimpa" title="Limpar" style="display:none">✕</button>
+      </div>
+      <div class="busca-cont" id="buscaProjCont"></div>
       <div id="listaProjetos"><div class="empty-state">Carregando…</div></div>
     </div>
   </div>
@@ -762,6 +794,18 @@ button.btn-baixar{cursor:pointer}
 
   </div>
 
+</div>
+
+<!-- (28/10) PRÉVIA do vídeo pronto: clicar na miniatura abre aqui, pra conferir antes de baixar -->
+<div class="prev-fundo" id="prevFundo" onclick="if(event.target===this)fechaPrevia()">
+  <div class="prev-cx">
+    <div class="prev-nome" id="prevNome"></div>
+    <video id="prevVid" controls playsinline preload="metadata"></video>
+    <div class="prev-bts">
+      <a class="btn-baixar" id="prevBaixar" href="#" rel="noopener" download>⬇ Baixar</a>
+      <button type="button" class="btn-editar" onclick="fechaPrevia()">Fechar</button>
+    </div>
+  </div>
 </div>
 
 <!-- EDITOR 9:16 (enquadrar a foto da cena) -->
@@ -3627,7 +3671,9 @@ function pintarResultados() {
         : '<div class="empty-state">Nenhum vídeo ainda.<br/>Crie o primeiro na aba <b>Criar vídeo</b>. 🎤' +
           '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
     }
+    const antigos = minisCarregadas(el);   // (28/10) miniaturas já carregadas não recarregam
     el.innerHTML = html;
+    ligaMinis(el, antigos);
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
@@ -3650,7 +3696,10 @@ function cardPedido(o) {
   const cat = o.categoria ? '<div class="order-cat">' + escapeHtml(o.categoria) + '</div>' : '';
   const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
   const linhaAtend = (_ehAdmin && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
-  return '<div class="order-item">' +
+  // (28/10) o vídeo ainda não existe: a miniatura só marca o estado
+  const falhou = (o.status === 'ERROR' || o.status === 'CANCELLED');
+  const mini = '<div class="mini916" title="' + (falhou ? 'Falhou' : 'Em produção') + '">' + (falhou ? '⚠️' : '⏳') + '</div>';
+  return '<div class="order-item">' + mini +
     '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' +
     linhaAtend +
     '<div class="order-meta">Início ' + (o.createdAt || '—') + ' · ' + numCenas + ' cena(s)' + custo +
@@ -3678,7 +3727,7 @@ function cardVitrine(v, custoBRL, luxBRL) {
   const estrela = '<button class="estrela' + (_estrelas[id] ? ' on' : '') + '" data-id="' + escapeHtml(id) + '" onclick="alternaEstrela(this)">' +
     '<span class="est-lbl">Postar?</span>' +
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></button>';
-  return '<div class="order-item">' +
+  return '<div class="order-item">' + miniVideo(v) +
     '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' +
     quem +
     '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + refeito + '</div></div>' +
@@ -3695,6 +3744,59 @@ function linkBaixarVideo(v) {
   const nome = (String(v.cliente || 'video').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'video') + '.mp4';
   return WORKER_URL + '/a97Baixar?u=' + encodeURIComponent(u) + '&nome=' + encodeURIComponent(nome);
 }
+
+// (28/10) MINIATURA + PRÉVIA. Pedido do Thiago: o Baixar passou a baixar direto (antes abria o vídeo numa aba)
+// e o atendente perdeu como conferir o vídeo. A miniatura 9:16 mostra um quadro do próprio vídeo (não há imagem
+// separada guardada para os vídeos antigos) e o clique abre a prévia, com o Baixar dentro.
+// O quadro só carrega quando o card aparece na tela (são até 60 vídeos; no celular isso pesaria).
+function miniVideo(v) {
+  const u = String((v && v.videoUrl) || '');
+  if (!u) return '<div class="mini916">🎬</div>';
+  return '<button type="button" class="mini916" title="Ver o vídeo" data-v="' + escapeHtml(u) + '" data-b="' + escapeHtml(linkBaixarVideo(v)) +
+    '" data-n="' + escapeHtml(v.cliente || '') + '" onclick="abrePrevia(this)">' +
+    '<video muted playsinline preload="none" data-src="' + escapeHtml(u + '#t=1') + '"></video><span class="mini-play">▶</span></button>';
+}
+var _miniObs = null;
+function ligaMinis(raiz, antigos) {
+  if (!raiz) return;
+  raiz.querySelectorAll('video[data-src]').forEach(function (vd) {
+    // repintura da lista (busca, atualização a cada ~30 s): reaproveita o quadro que já carregou, sem piscar
+    const velho = antigos && antigos[vd.dataset.src];
+    if (velho) { vd.replaceWith(velho); return; }
+    if (!('IntersectionObserver' in window)) { vd.preload = 'metadata'; vd.src = vd.dataset.src; return; }
+    if (!_miniObs) _miniObs = new IntersectionObserver(function (itens) {
+      itens.forEach(function (it) {
+        if (!it.isIntersecting) return;
+        _miniObs.unobserve(it.target);
+        it.target.preload = 'metadata';
+        it.target.src = it.target.dataset.src;
+      });
+    }, { rootMargin: '200px' });
+    _miniObs.observe(vd);
+  });
+}
+function minisCarregadas(raiz) {
+  const m = {};
+  if (raiz) raiz.querySelectorAll('video[data-src]').forEach(function (vd) { if (vd.getAttribute('src')) m[vd.dataset.src] = vd; });
+  return m;
+}
+function abrePrevia(bt) {
+  const f = document.getElementById('prevFundo'), vd = document.getElementById('prevVid');
+  if (!f || !vd || !bt) return;
+  document.getElementById('prevNome').textContent = bt.dataset.n || '';
+  document.getElementById('prevBaixar').href = bt.dataset.b || bt.dataset.v;
+  vd.src = bt.dataset.v;
+  f.classList.add('show');
+  const p = vd.play(); if (p && p.catch) p.catch(function () {});
+}
+function fechaPrevia() {
+  const f = document.getElementById('prevFundo'), vd = document.getElementById('prevVid');
+  if (vd) { vd.pause(); vd.removeAttribute('src'); vd.load(); }
+  if (f) f.classList.remove('show');
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && (document.getElementById('prevFundo') || {}).classList && document.getElementById('prevFundo').classList.contains('show')) fechaPrevia();
+});
 
 // (06/10) "Refazer na reserva": refaz o canto em outro motor como um vídeo NOVO (o atual fica). Sem custo pro atendente.
 async function refazerNaReserva(orderId, bt) {
@@ -3952,14 +4054,42 @@ async function carregaProjetos() {
         '<br/><button class="btn-mini" style="margin-top:10px" onclick="carregaProjetos()">🔄 Tentar de novo</button></div>';
       return;
     }
-    const lista = d.projetos || [];
-    if (!lista.length) {
+    _projetos = d.projetos || [];
+    pintarProjetos();
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+  }
+}
+
+// (28/10) Busca nos projetos: filtra na própria tela (são no máximo 100), por cliente, categoria ou atendente,
+// sem acento e exigindo todas as palavras — igual à busca dos Resultados.
+var _projetos = [];   // var: a aba pode abrir antes desta linha rodar
+function semAcentoProj(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function pintarProjetos() {
+  const el = document.getElementById('listaProjetos');
+  if (!el) return;
+  try {
+    const cx = document.getElementById('buscaProj');
+    const termo = semAcentoProj((cx && cx.value) || '').trim();
+    const btL = document.getElementById('buscaProjLimpa');
+    if (btL) btL.style.display = termo ? '' : 'none';
+    const lista = !termo ? _projetos : _projetos.filter(function (p) {
+      const alvo = semAcentoProj((p.categoria || '') + ' ' + (p.cliente || '') + ' ' + (p.atendente || ''));
+      return termo.split(/\s+/).every(function (t) { return alvo.indexOf(t) >= 0; });
+    });
+    const cont = document.getElementById('buscaProjCont');
+    if (cont) cont.textContent = (termo && _projetos.length) ? (lista.length + ' de ' + _projetos.length + ' projetos') : '';
+    if (!_projetos.length) {
       el.innerHTML = '<div class="empty-state">Nenhum projeto em andamento.<br/>O que você preencher na aba <b>Criar vídeo</b> fica guardado aqui sozinho. 💾</div>';
+      return;
+    }
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state">Nada encontrado para <b>' + escapeHtml(cx.value) + '</b>.</div>';
       return;
     }
     el.innerHTML = lista.map(function (p) {
       const cat  = p.categoria ? '<div class="order-cat">' + escapeHtml(p.categoria) + '</div>' : '';
-      const th   = p.thumb ? '<img class="proj-th" src="' + escapeHtml(p.thumb) + '" alt=""/>' : '<div class="proj-th"></div>';
+      const th   = '<div class="mini916">' + (p.thumb ? '<img src="' + escapeHtml(p.thumb) + '" alt="" loading="lazy"/>' : '🖼️') + '</div>';
       const quem = p.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(p.atendente) + '</div>' : '';
       return '<div class="order-item">' + th +
         '<div class="order-info">' + cat +
@@ -3972,9 +4102,17 @@ async function carregaProjetos() {
         '</div></div>';
     }).join('');
   } catch (e) {
-    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+    el.innerHTML = '<div class="empty-state">Não consegui mostrar os projetos.<br/>Abra a aba de novo.</div>';
   }
 }
+(function ligaBuscaProjetos() {
+  const liga = function () {
+    const cx = document.getElementById('buscaProj'), btL = document.getElementById('buscaProjLimpa');
+    if (cx) cx.addEventListener('input', pintarProjetos);
+    if (btL) btL.addEventListener('click', function () { if (cx) { cx.value = ''; cx.focus(); } pintarProjetos(); });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();
 
 // Continuar de onde parou: baixa tudo ANTES de mexer na tela (se falhar, nada se perde).
 async function continuarProjeto(pid) {

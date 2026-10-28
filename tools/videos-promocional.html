@@ -102,7 +102,26 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .btn-salvar:disabled{opacity:.6;cursor:not-allowed}
 /* cards de projeto salvo / resultado */
 .pj{display:flex;gap:.75rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:.8rem;margin-bottom:.7rem;align-items:center}
-.pj-th{width:56px;height:74px;border-radius:8px;object-fit:cover;background:var(--bg-input);flex-shrink:0}
+/* (28/10) miniatura em 9:16 (era 56×74, cortava): a imagem inteira, sem cortar. Nos vídeos prontos vira botão
+   que abre a prévia — o atendente confere o vídeo antes de baixar. */
+.pj-th{position:relative;width:54px;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:#000;flex-shrink:0;
+  border:.5px solid var(--border);padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:inherit}
+img.pj-th,.pj-th img,.pj-th video{object-fit:contain}
+.pj-th img,.pj-th video{width:100%;height:100%;display:block;pointer-events:none}
+button.pj-th{cursor:pointer}
+button.pj-th:hover{border-color:var(--gold)}
+.pj-th .mini-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.55);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;padding-left:2px;pointer-events:none}
+/* prévia do vídeo (modal) */
+.prev-fundo{display:none;position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.86);align-items:center;justify-content:center;padding:1rem}
+.prev-fundo.show{display:flex}
+.prev-cx{display:flex;flex-direction:column;align-items:center;gap:.75rem;max-width:100%}
+.prev-cx video{display:block;height:min(72vh,640px);aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;border:.5px solid var(--border-bright)}
+.prev-nome{font-size:13.5px;font-weight:600;color:var(--text);text-align:center;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prev-bts{display:flex;gap:.6rem;justify-content:center}
+.prev-bts button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.55rem 1rem;font-size:13px;cursor:pointer}
+.prev-bts button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
 .pj-in{flex:1;min-width:0}
 .pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
@@ -629,6 +648,13 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="abaProjetos" class="hide">
     <div class="sec-title">📁 Projetos salvos</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou. Guardado por 7 dias.</div>
+    <!-- (28/10) busca nos projetos (cliente, categoria ou atendente) -->
+    <div class="busca">
+      <span class="lupa">🔎</span>
+      <input type="text" id="buscaProj" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+      <button type="button" id="buscaProjLimpa" title="Limpar" style="display:none">✕</button>
+    </div>
+    <div class="busca-cont" id="buscaProjCont"></div>
     <div id="listaProjetos"><div class="pj-vazio">Carregando…</div></div>
   </div>
 
@@ -647,6 +673,18 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- (28/10) PRÉVIA do vídeo pronto: clicar na miniatura abre aqui, pra conferir antes de baixar -->
+<div class="prev-fundo" id="prevFundo" onclick="if(event.target===this)fechaPrevia()">
+  <div class="prev-cx">
+    <div class="prev-nome" id="prevNome"></div>
+    <video id="prevVid" controls playsinline preload="metadata"></video>
+    <div class="prev-bts">
+      <button type="button" class="ouro" id="prevBaixar">⬇️ Baixar</button>
+      <button type="button" onclick="fechaPrevia()">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <!-- (02/10) MANUTENÇÃO: troca do motor (Veo → VisionStory). O Worker já barra começar algo novo;
      esta tela só explica. Projetos e Resultados continuam abertos: quem começou um vídeo termina. -->
@@ -1005,8 +1043,41 @@ function baixarResultado(url, cliente){
   document.body.appendChild(a); a.click(); a.remove();
   toast('⬇️ Baixando…');
 }
+// (28/10) MINIATURA + PRÉVIA. O Baixar passou a baixar direto (antes abria o vídeo numa aba) e o atendente
+// perdeu como conferir o vídeo: a miniatura do vídeo pronto abre a prévia, com o Baixar dentro.
+// A imagem e o vídeo vêm pelo domínio próprio do armazenamento (o r2.dev é de teste e limitado a ~40 KB/s).
+const R2_ANTIGO = 'https://pub-2385c1507e84414f9df2410953ac4af1.r2.dev/';
+const R2_RAPIDO = 'https://arquivos.plataformalux.com.br/';
+function rapido(u){ const t=String(u||''); return t.indexOf(R2_ANTIGO)===0 ? R2_RAPIDO+t.slice(R2_ANTIGO.length) : t; }
+function miniPj(p, tipo){
+  const img = p.thumb ? '<img src="'+escA(rapido(imgSrc(p.thumb)))+'" alt="" loading="lazy"/>' : '';
+  if(tipo!=='res' || !p.videoUrl) return '<div class="pj-th">'+(img||'🖼️')+'</div>';
+  // sem a imagem do personagem (vídeo antigo recuperado): mostra um quadro do próprio vídeo
+  const quadro = img || '<video muted playsinline preload="metadata" src="'+escA(rapido(p.videoUrl)+'#t=1')+'"></video>';
+  return '<button type="button" class="pj-th" title="Ver o vídeo" data-v="'+escA(p.videoUrl)+'" data-n="'+escA(p.cliente||'')+'" onclick="abrePrevia(this)">'+
+    quadro+'<span class="mini-play">▶</span></button>';
+}
+function abrePrevia(bt){
+  const f=document.getElementById('prevFundo'), vd=document.getElementById('prevVid');
+  if(!f || !vd || !bt) return;
+  const url=bt.dataset.v, nome=bt.dataset.n||'';
+  document.getElementById('prevNome').textContent = nome;
+  document.getElementById('prevBaixar').onclick = function(){ baixarResultado(url, nome||'video'); };
+  vd.src = rapido(url);
+  f.classList.add('show');
+  const pr=vd.play(); if(pr && pr.catch) pr.catch(function(){});
+}
+function fechaPrevia(){
+  const f=document.getElementById('prevFundo'), vd=document.getElementById('prevVid');
+  if(vd){ vd.pause(); vd.removeAttribute('src'); vd.load(); }
+  if(f) f.classList.remove('show');
+}
+document.addEventListener('keydown', function(e){
+  const f=document.getElementById('prevFundo');
+  if(e.key==='Escape' && f && f.classList.contains('show')) fechaPrevia();
+});
 function pjCard(p, tipo){
-  const th=p.thumb ? '<img class="pj-th" src="'+escA(imgSrc(p.thumb))+'"/>' : '<div class="pj-th"></div>';
+  const th=miniPj(p, tipo);
   // A aba Resultados é uma VITRINE compartilhada: todo atendente vê o vídeo pronto de todo mundo
   // pra mandar como prova social pro lead. Mas mexer no projeto do colega atrapalharia o trabalho
   // dele — então quem não é dono (nem admin) só ganha o botão de baixar.
@@ -1072,8 +1143,8 @@ async function carregarProjetos(){
                    custoBRL: Number((custoUSD * 5.18).toFixed(2)) };
       (videoFinalUrl ? d.resultados : d.projetos).unshift(eu);
     }
-    lp.innerHTML = d.projetos.length ? d.projetos.map(p=>pjCard(p,'proj')).join('')
-      : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>';
+    _projetosLista = d.projetos || [];
+    pintarProjetos();
     _resultados = d.resultados || [];
     pintarResultados();
   }catch(e){
@@ -1158,7 +1229,29 @@ document.addEventListener('DOMContentLoaded', function(){
   const cx=document.getElementById('buscaRes'), btL=document.getElementById('buscaLimpa');
   if(cx) cx.addEventListener('input', pintarResultados);
   if(btL) btL.addEventListener('click', function(){ cx.value=''; pintarResultados(); cx.focus(); });
+  // (28/10) busca nos Projetos
+  const cp=document.getElementById('buscaProj'), btP=document.getElementById('buscaProjLimpa');
+  if(cp) cp.addEventListener('input', pintarProjetos);
+  if(btP) btP.addEventListener('click', function(){ cp.value=''; pintarProjetos(); cp.focus(); });
 });
+// (28/10) BUSCA DOS PROJETOS — mesma regra da vitrine: categoria, cliente e atendente, sem acento, todas as palavras
+var _projetosLista = [];
+function pintarProjetos(){
+  const lp = document.getElementById('listaProjetos'); if(!lp) return;
+  const cx = document.getElementById('buscaProj');
+  const termo = semAcento((cx && cx.value) || '').trim();
+  const btL = document.getElementById('buscaProjLimpa');
+  if(btL) btL.style.display = termo ? '' : 'none';
+  const lista = !termo ? _projetosLista : _projetosLista.filter(function(p){
+    const alvo = semAcento((p.categoria||'')+' '+(p.cliente||'')+' '+(p.atendente||''));
+    return termo.split(/\s+/).every(function(t){ return alvo.indexOf(t) >= 0; });
+  });
+  const cont = document.getElementById('buscaProjCont');
+  if(cont) cont.textContent = (termo && _projetosLista.length) ? (lista.length+' de '+_projetosLista.length+' projetos') : '';
+  lp.innerHTML = lista.length ? lista.map(p=>pjCard(p,'proj')).join('')
+    : (termo ? '<div class="pj-vazio">Nada encontrado para <b>'+esc(cx.value)+'</b>.</div>'
+             : '<div class="pj-vazio">Nada salvo ainda.<br>Comece um vídeo na aba <b>Criar</b> e clique em <b>Salvar projeto</b>.</div>');
+}
 
 async function abrirProjeto(id){
   toast('📂 Abrindo…');
