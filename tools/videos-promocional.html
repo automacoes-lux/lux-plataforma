@@ -402,8 +402,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
     <!-- (12/10) "Personagem montado" foi REMOVIDO para os atendentes. (19/10) VOLTOU só para ADMIN (correções). -->
     <div class="cx-montado" id="cxMontado1" style="display:none">
-      <div class="tit">🔒 Só admin — personagem pronto</div>
-      <div class="sub">Para correções: suba a arte do personagem já com o cenário. A imagem vai <b>exatamente como está</b>
+      <div class="tit">Já tem o personagem pronto?</div>
+      <div class="sub">Suba a arte do personagem já com o cenário. A imagem vai <b>exatamente como está</b>
         para os vídeos, sem a IA redesenhar nada. Usando este campo, não precisa da foto do personagem acima.</div>
       <div class="thumbs" id="thMontado"></div>
       <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onPick(event,'montado')"/></label>
@@ -455,7 +455,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
       <!-- (19/10) troca pela arte pronta: VOLTOU só para ADMIN (correções) -->
       <div class="cx-montado" id="cxMontado2" style="display:none">
-        <div class="tit">🔒 Só admin — usar uma arte pronta?</div>
+        <div class="tit">Usar uma arte pronta?</div>
         <div class="sub">Suba aqui e ela <b>substitui a imagem acima</b>, indo direto para os vídeos,
           <b>sem a IA redesenhar nada</b>. O texto continua o mesmo.</div>
         <label class="up-btn montado">+ Personagem montado<input type="file" accept="image/*" hidden onchange="onMontadoPasso2(event)"/></label>
@@ -2246,7 +2246,7 @@ let volumeTrilha = 0.12;
 ligarChips('chipsVoz', function(v){ sexoVoz = v; vozId = ''; });   // (02/10) trocou o sexo: volta pra voz padrão dele
 ligarChips('chipsEstilo', function(v){ imagemReal = (v === 'real'); });
 // (19/10) "Personagem montado" só para ADMIN. O papel vem da página principal (mesmo site).
-function podeMontado(){ if (souAdmin) return true; try { return !!(window.parent && window.parent.__luxRole === 'admin'); } catch(e){ return false; } }   // souAdmin = o que o servidor disse na lista de projetos
+function podeMontado(){ return true; }   // (29/10) personagem pronto LIBERADO para os atendentes também   // (19/10) era só admin
 function mostrarMontadoAdmin(){ ['cxMontado1','cxMontado2'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display = podeMontado() ? '' : 'none'; }); }
 mostrarMontadoAdmin(); setTimeout(mostrarMontadoAdmin, 1500); setTimeout(mostrarMontadoAdmin, 5000);   // de novo depois, caso o login termine depois da tela
 ligarArrastoLegenda();   // (11/09) arrasto da legenda de exemplo
