@@ -2985,8 +2985,12 @@ function getCutValues() {
   const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
   const startSec = parseFloat(document.getElementById('cutStart').value) || 0;
   // (12/09) DESLIGADO: o fim é sempre início + 1 minuto (ou o fim da música). LIGADO: o fim vem do seletor.
+  // (30/10) seletor do fim encostado no máximo = o FIM REAL da música. O seletor anda de 0,5 em 0,5 s e o máximo é
+  // arredondado para baixo, então ele parava até meio segundo antes do fim e cortava a última palavra (Bárbara).
+  const ce = document.getElementById('cutEnd');
+  const fimNoMax = parseFloat(ce.value) >= (parseFloat(ce.max) || 0) - 0.001;
   const endSec = trechoLivre
-    ? Math.min(dur, Math.max(startSec, parseFloat(document.getElementById('cutEnd').value) || 0))
+    ? (fimNoMax ? Math.min(dur, startSec + VIDEO_SECONDS) : Math.min(dur, Math.max(startSec, parseFloat(ce.value) || 0)))
     : Math.min(dur, startSec + JANELA_PADRAO_S);
   return {
     startSec,
@@ -3247,7 +3251,7 @@ async function aplicarCorte(inteira) {   // (20/10) inteira = música toda ao en
     setMusicReady({
       base64,
       name: baseName + (inteira ? '.mp3' : '_trecho.mp3'),   // (20/10) música inteira mantém o nome
-      duration: Math.round(trechoLen(startSec)),
+      duration: Math.round(trechoLen(startSec) * 1000) / 1000,   // (30/10) duração EXATA (o Math.round cortava o fim no servidor)
       playerSrc: URL.createObjectURL(mp3Blob),
       wasCut: true
     });

@@ -2647,7 +2647,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
       if (isMp3) {
         // já é MP3 → manda o arquivo ORIGINAL, sem re-comprimir (não perde qualidade à toa)
         const dataUrl = await readFileAsDataURL(file);
-        setMusicReady({ base64: dataUrl.split(',')[1], name: file.name, duration: Math.round(dur), playerSrc: dataUrl, wasCut: false });
+        setMusicReady({ base64: dataUrl.split(',')[1], name: file.name, duration: Math.round(dur * 1000) / 1000, playerSrc: dataUrl, wasCut: false });
         toast('🎵 Música inteira (' + fmtTime(dur) + ') pronta. Para usar só um trecho, clique em ✂ Cortar a música.');
         return;
       }
@@ -2659,7 +2659,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
       setMusicReady({
         base64,
         name: file.name.replace(/\.[^.]+$/, '') + '.mp3',
-        duration: Math.round(dur),
+        duration: Math.round(dur * 1000) / 1000,   // (30/10) exata
         playerSrc: URL.createObjectURL(mp3Blob),
         wasCut: false
       });
@@ -2843,9 +2843,12 @@ function reabrirCorte() {
 function getCutValues() {
   const dur = rawAudioBuffer ? rawAudioBuffer.duration : 0;
   const startSec = parseFloat(document.getElementById('cutStart').value) || 0;
+  // (30/10) seletor do fim encostado no máximo = o FIM REAL da música (o seletor anda de 0,5 em 0,5 s e parava antes do fim)
+  const ce = document.getElementById('cutEnd');
+  const fimNoMax = parseFloat(ce.value) >= (parseFloat(ce.max) || 0) - 0.001;
   return {
     startSec,
-    endSec: Math.min(dur, startSec + VIDEO_SECONDS, Math.max(startSec, parseFloat(document.getElementById('cutEnd').value) || 0)),   // (22/10) fim escolhido
+    endSec: Math.min(dur, startSec + VIDEO_SECONDS, fimNoMax ? dur : Math.max(startSec, parseFloat(ce.value) || 0)),   // (22/10) fim escolhido
     fadeIn:   parseFloat(document.getElementById('fadeIn').value) || 0,
     fadeOut:  parseFloat(document.getElementById('fadeOut').value) || 0
   };
@@ -3097,7 +3100,7 @@ async function aplicarCorte() {
     setMusicReady({
       base64,
       name: baseName + '_trecho.mp3',
-      duration: Math.round(endSec - startSec),
+      duration: Math.round((endSec - startSec) * 1000) / 1000,   // (30/10) duração EXATA (o Math.round cortava o fim)
       playerSrc: URL.createObjectURL(mp3Blob),
       wasCut: true
     });
