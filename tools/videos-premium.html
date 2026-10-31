@@ -461,6 +461,21 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
         <label for="clientName">Nome do cliente</label>
         <input type="text" id="clientName" maxlength="60" placeholder="Ex: Jessica"/>
       </div>
+      <!-- (31/10) AVATAR 150 NOVO (teste, só e-mails liberados no servidor): nome da empresa, WhatsApp e endereço aparecem no vídeo -->
+      <div id="v2Campos" style="display:none">
+        <div class="field">
+          <label for="v2Empresa">Nome da empresa (aparece no vídeo) <span style="color:var(--gold)">*</span></label>
+          <input type="text" id="v2Empresa" maxlength="60" placeholder="Ex: Padaria Pão Dourado"/>
+        </div>
+        <div class="field">
+          <label for="v2Whats">WhatsApp (aparece no final) <span style="color:var(--gold)">*</span></label>
+          <input type="tel" id="v2Whats" maxlength="30" inputmode="tel" placeholder="Ex: (31) 99999-0000"/>
+        </div>
+        <div class="field">
+          <label for="v2Endereco">Endereço (opcional — aparece no final com o ícone de localização)</label>
+          <input type="text" id="v2Endereco" maxlength="140" placeholder="Ex: Rua das Flores, 123 — Centro, Belo Horizonte"/>
+        </div>
+      </div>
       <!-- UM botão só (19/08): até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
            as miniaturas + o tile de adicionar enquanto houver vaga. -->
       <div class="thumb-row" id="clientPhotoRow">
@@ -1464,12 +1479,12 @@ async function gerarAvatar() {
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo };
+    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, v2: modoV2 };
     if (clientPhoto2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
-    const normB64 = await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco
+    const normB64 = modoV2 ? j.cartoonBase64 : await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco (o 150 novo não tem palco)
     avatarPreview = { cartoonBase64: normB64, approved: false };
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
@@ -1492,6 +1507,7 @@ async function gerarAvatar() {
 
 function aprovarAvatar() {
   if (!avatarPreview) return;
+  if (modoV2) { avatarPreview.approved = true; refreshAvatarUI(); renderStoryboard(); rascSalvar(); return; }   // (31/10) 150 novo: sem palco, aprova direto
   abrirCalib();   // abre a calibração de posição no palco; o "Confirmar" lá dentro é que aprova
 }
 function reabrirAvatar() {
@@ -3160,6 +3176,10 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!((document.getElementById('fCategoria') || {}).value || '').trim()) return 'Preencha a categoria do cliente (Passo 1).';
+  if (modoV2 && !editState) {   // (31/10) 150 novo: o nome da empresa abre o vídeo e o WhatsApp fecha
+    if (!document.getElementById('v2Empresa').value.trim()) return 'Preencha o nome da empresa (Passo 1) — ele aparece no vídeo.';
+    if (!document.getElementById('v2Whats').value.trim()) return 'Preencha o WhatsApp (Passo 1) — ele aparece no final do vídeo.';
+  }
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
@@ -3261,7 +3281,11 @@ async function gerarClipe() {
       agitado: agitado,                      // interruptor do Passo 1: canto mais solto (prompt antigo)
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
-      cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade
+      cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs,   // (11/09) o que foi gerado/transcrito de verdade
+      v2: modoV2,   // (31/10) 150 novo (o servidor confere se o e-mail está liberado)
+      empresa: ((document.getElementById('v2Empresa') || {}).value || '').trim(),
+      whatsapp: ((document.getElementById('v2Whats') || {}).value || '').trim(),
+      endereco: ((document.getElementById('v2Endereco') || {}).value || '').trim()
     };
 
     const r1 = await api('/createAvatarOrder', {
@@ -3750,11 +3774,23 @@ async function checkManutencao() {
     if (d && d.locked) { const el = document.getElementById('avatarSoon'); if (el) el.style.display = 'flex'; }
   } catch (e) { /* rede oscilou — não trava a tela por isso (o backend já barra a geração) */ }
 }
+// ── (31/10) AVATAR 150 NOVO (em teste, só para os e-mails liberados no servidor — KV config:a150:v2): personagem do
+// joelho para cima em fundo liso, SEM palco e sem calibração; o vídeo é montado sozinho (efeitos, letra, final com
+// WhatsApp e endereço). Para todo o resto a tela segue igual.
+let modoV2 = false;
+async function checkModoV2() {
+  try { const r = await api('/a150Modo'); const d = await r.json(); modoV2 = !!(d && d.v2); } catch (e) { modoV2 = false; }
+  const c = document.getElementById('v2Campos'); if (c) c.style.display = modoV2 ? '' : 'none';
+  if (!modoV2) return;
+  const h = document.getElementById('avatarHint');
+  if (h) h.innerHTML = '🧪 <b style="color:var(--gold)">Avatar 150 NOVO (teste)</b>: envie <b style="color:var(--text-mid)">até 2 imagens</b> (pessoa, personagem, produto ou animal). A IA cria o personagem <b style="color:var(--text-mid)">do joelho para cima</b>, num fundo liso — <b style="color:var(--text-mid)">sem palco e sem ajuste de posição</b>. O vídeo é montado sozinho, com efeitos, a letra e o WhatsApp no final. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).';
+}
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
   renderStoryboard();
   checkPending();
   checkManutencao();
+  checkModoV2();
 });
 window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
 
