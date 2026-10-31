@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
 <link rel="stylesheet" href="../css/theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -405,6 +406,80 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .es-redo:hover{filter:brightness(1.1)}
 .es-swap{display:block;margin-top:5px;font-size:10.5px;color:var(--text-dim);cursor:pointer;text-decoration:underline}
 .es-swap.has{color:#7ED9A0}
+
+/* ═══════════ (01/11) LAYOUT NOVO — padrão da casa (design-lux) ═══════════
+   Inter, painéis sem borda (o fundo separa), pílulas, um dourado só na ação que gera. Só a CASCA: nenhum id/classe mudou.
+   Assinatura: a TRILHA no topo (Cliente · Personagem · Música · Fotos) — cada etapa fica verde quando está pronta e
+   leva até o cartão dela com um toque. */
+:root{
+  --lx-bg:#0D0D0F; --lx-card:#191A1D; --lx-campo:#212226; --lx-sup:#2A2B30; --lx-line:#2E2F35;
+  --lx-txt:#F2F2F3; --lx-txt2:#9B9BA3; --lx-txt3:#6B6C74; --lx-cta-a:#C9932F; --lx-cta-b:#F0CE68;
+  --lx-ok:#4ADE80; --lx-laranja:#F08A3C;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background-image:none;color:var(--lx-txt)}
+.container{max-width:720px}
+.page-head{margin-bottom:1rem}
+.page-title{font-family:'Inter',sans-serif;font-size:21px;font-weight:700;letter-spacing:0;color:var(--lx-txt)}
+.page-sub{color:var(--lx-txt2);font-size:13.5px;line-height:1.5}
+.tabs{background:var(--lx-card);border:none;border-radius:999px;padding:4px;margin-bottom:14px}
+.tab{font-family:'Inter',sans-serif;border-radius:999px;font-size:14px;letter-spacing:0;padding:10px;color:var(--lx-txt2)}
+.tab.active{background:var(--lx-sup);color:var(--lx-txt);border:none;font-family:'Inter',sans-serif;font-size:14px;letter-spacing:0;font-weight:600}
+.card{background:var(--lx-card);border:none;border-radius:16px;padding:18px;margin-bottom:12px;scroll-margin-top:72px}
+.card-title{font-size:15.5px;font-weight:600;color:var(--lx-txt);margin-bottom:6px}
+.card-hint{color:var(--lx-txt2);font-size:13px}
+.card-hint b{color:var(--lx-txt) !important}
+.step-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;margin-bottom:10px;border-radius:999px;background:var(--lx-sup);
+  color:var(--lx-txt2);font:600 11.5px/1.2 'Inter',sans-serif;text-transform:none;letter-spacing:0}
+.step-eyebrow .dot{width:6px;height:6px;opacity:1;background:var(--lx-cta-b)}
+.card.pronto .step-eyebrow{background:rgba(74,222,128,.12);color:var(--lx-ok)}
+.card.pronto .step-eyebrow .dot{background:var(--lx-ok)}
+.field label{color:var(--lx-txt2);letter-spacing:0;font-size:12.5px;font-weight:500}
+.field input[type=text]{background:var(--lx-campo);border:1px solid transparent;border-radius:12px;color:var(--lx-txt);font-family:'Inter',sans-serif}
+.field input[type=text]::placeholder{color:var(--lx-txt3)}
+.field input[type=text]:focus{border-color:var(--lx-cta-a)}
+.upload-tile,.add-tile{background:var(--lx-campo);border:1.5px dashed var(--lx-line);border-radius:14px;color:var(--lx-txt2);font-family:'Inter',sans-serif}
+.upload-tile:hover,.upload-tile:focus-visible,.add-tile:hover{border-color:var(--lx-cta-b);color:var(--lx-txt);outline:none}
+.upload-tile .ic{width:26px;height:26px;fill:currentColor}
+.thumb{border-radius:12px;border:none;background:var(--lx-campo)}
+.thumb .tag{font-family:'Inter',sans-serif;letter-spacing:0;text-transform:none;font-weight:600}
+.btn-mini{background:var(--lx-sup);border:none;border-radius:999px;color:var(--lx-txt);font-family:'Inter',sans-serif;padding:8px 14px}
+.btn-mini:hover{background:#34353B;color:var(--lx-txt);border:none}
+.btn-gold{background:linear-gradient(90deg,var(--lx-cta-a),var(--lx-cta-b));color:#17130A;border:none;border-radius:999px;
+  font-family:'Inter',sans-serif;letter-spacing:0;text-transform:none;font-weight:700}
+.btn-gold:focus-visible,.btn-mini:focus-visible,.tab:focus-visible,.trilha button:focus-visible{outline:2px solid var(--lx-cta-b);outline-offset:2px}
+.storyboard-card{background:var(--lx-card);border:none}
+.sb-meta{border:none;margin-top:0;padding-top:0}
+.sb-total{color:var(--lx-txt2)}
+.sb-total b{color:var(--lx-txt)}
+.sb-cost{background:var(--lx-sup);border:none;border-radius:999px;color:var(--lx-txt)}
+.gerar-note{color:var(--lx-txt2)}
+/* a TRILHA (assinatura): fica presa no topo enquanto a atendente desce a tela */
+.trilha{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 -2px 12px;padding:8px 2px;
+  background:rgba(13,13,15,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.trilha button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:6px 10px;border:1.5px solid transparent;
+  border-radius:999px;background:var(--lx-card);color:var(--lx-txt2);font:600 13px/1.1 'Inter',sans-serif;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.trilha button:hover{color:var(--lx-txt)}
+.trilha .tr-n{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--lx-sup);color:var(--lx-txt);font-size:12px}
+.trilha button.atual{border-color:var(--lx-cta-b);color:var(--lx-txt)}
+.trilha button.feito{color:var(--lx-txt)}
+.trilha button.feito .tr-n{background:var(--lx-ok);color:#0D0D0F;font-size:0}
+.trilha button.feito .tr-n::after{content:"";width:9px;height:5px;border:2px solid #0D0D0F;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+/* Pessoa real × Animação (como no Avatar 97; Animação em laranja) */
+.estilo-v2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 14px;border-radius:999px;transition:box-shadow .2s}
+.estilo-v2.alerta{box-shadow:0 0 0 2px var(--lx-cta-b)}
+.est-btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;border:none;border-radius:999px;background:var(--lx-campo);
+  color:var(--lx-txt);font:600 14px 'Inter',sans-serif;cursor:pointer}
+.est-btn .est-bola{width:16px;height:16px;border-radius:50%;border:2px solid var(--lx-txt3);flex:none}
+.est-btn.on{background:var(--lx-txt);color:#0D0D0F}
+.est-btn.on .est-bola{border-color:#0D0D0F;background:radial-gradient(circle,#0D0D0F 0 4px,transparent 4.5px)}
+.est-btn.laranja.on{background:var(--lx-laranja);color:#1A0E04}
+.est-btn.laranja.on .est-bola{border-color:#1A0E04;background:radial-gradient(circle,#1A0E04 0 4px,transparent 4.5px)}
+.est-btn:focus-visible{outline:2px solid var(--lx-cta-b);outline-offset:2px}
+@media (max-width:560px){
+  .trilha{grid-template-columns:1fr 1fr}
+  .card{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){ .trilha button,.estilo-v2{transition:none} }
 </style>
 </head>
 <body>
@@ -412,7 +487,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 <div class="container">
 
   <div class="page-head">
-    <div class="page-title">🎤 Avatar 150</div>
+    <div class="page-title">Avatar 150</div>
     <div class="page-sub">O cliente vira o cantor do próprio clipe (até 5 minutos): fotos e vídeos do comércio passam atrás do avatar dele cantando.</div>
   </div>
 
@@ -427,13 +502,21 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tabCriar" onclick="showTab('criar')">🎬 Criar clipe</button>
-    <button class="tab" id="tabProjetos" onclick="showTab('projetos')">📁 Projetos</button>
-    <button class="tab" id="tabResultados" onclick="showTab('resultados')">📋 Resultados</button>
+    <button class="tab active" id="tabCriar" onclick="showTab('criar')">Criar clipe</button>
+    <button class="tab" id="tabProjetos" onclick="showTab('projetos')">Projetos</button>
+    <button class="tab" id="tabResultados" onclick="showTab('resultados')">Resultados</button>
   </div>
 
   <!-- ════════════ ABA CRIAR ════════════ -->
   <div class="panel active" id="panel-criar">
+
+    <!-- (01/11) TRILHA: as 4 etapas; cada uma fica verde quando está pronta e leva até o cartão dela -->
+    <nav class="trilha" id="trilha" aria-label="Etapas do clipe">
+      <button type="button" data-alvo="cardCliente"><span class="tr-n">1</span>Cliente</button>
+      <button type="button" data-alvo="cardPersonagem"><span class="tr-n">2</span>Personagem</button>
+      <button type="button" data-alvo="cardMusica"><span class="tr-n">3</span>Música</button>
+      <button type="button" data-alvo="cardFotos"><span class="tr-n">4</span>Fotos</button>
+    </nav>
 
     <!-- salvamento automático (aba Projetos) -->
     <div id="rascAviso" style="text-align:right;font-size:12px;color:var(--text-dim);min-height:16px;margin:-4px 2px 8px"></div>
@@ -446,17 +529,10 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     </div>
 
     <!-- PASSO 1 -->
-    <div class="card">
+    <div class="card" id="cardCliente">
       <div class="step-eyebrow"><span class="dot"></span>Passo 1</div>
-      <div class="card-title">Quem vai cantar</div>
-      <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original — o canto já está gravado com ele. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
-        <button type="button" class="btn-destrava" onclick="destravarAvatar()">🎤 Quero trocar o avatar</button>
-      </div>
-
-      <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
-           pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
-
-      <div class="card-hint" id="avatarHint">Um botão só: envie <b style="color:var(--text-mid)">até 2 imagens</b> — <b style="color:var(--text-mid)">1 imagem</b> = um avatar; <b style="color:var(--text-mid)">2 imagens</b> = dupla (um cantor de cada imagem; ou mande 1 foto com os dois juntos). Vale pessoa, personagem, produto ou animal — se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra. A IA preserva rosto, roupa, logo e cores. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
+      <div class="card-title">Cliente</div>
+      <div class="card-hint">Quem é o cliente e o que vai aparecer escrito no vídeo.</div>
       <!-- (08/10) CATEGORIA = o nicho do cliente (padaria, pizzaria, oficina…). É por ela que a equipe acha o vídeo na vitrine. -->
       <div class="field">
         <label for="fCategoria">Categoria <span style="color:var(--gold)">*</span></label>
@@ -481,11 +557,29 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
           <input type="text" id="v2Endereco" maxlength="140" placeholder="Ex: Rua das Flores, 123 — Centro, Belo Horizonte"/>
         </div>
       </div>
+    </div>
+
+    <div class="card" id="cardPersonagem">
+      <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
+      <div class="card-title">Quem vai cantar</div>
+      <div class="edit-lock" id="avatarLock">🔒 O avatar é o mesmo do vídeo original — o canto já está gravado com ele. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
+        <button type="button" class="btn-destrava" onclick="destravarAvatar()">🎤 Quero trocar o avatar</button>
+      </div>
+
+      <!-- UI UNIVERSAL (19/08): sem seleção de tipo — o prompt universal detecta pessoa/personagem/produto/animal
+           pela própria imagem. Imagem 1 obrigatória; Imagem 2 opcional (dupla). -->
+
+      <div class="card-hint" id="avatarHint">Um botão só: envie <b style="color:var(--text-mid)">até 2 imagens</b> — <b style="color:var(--text-mid)">1 imagem</b> = um avatar; <b style="color:var(--text-mid)">2 imagens</b> = dupla (um cantor de cada imagem; ou mande 1 foto com os dois juntos). Vale pessoa, personagem, produto ou animal — se for gente, <b style="color:var(--text-mid)">corpo inteiro</b> com os pés à mostra. A IA preserva rosto, roupa, logo e cores. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).</div>
+      <!-- (01/11) 150 novo: estilo da imagem, escolha OBRIGATÓRIA antes de gerar (igual ao Avatar 97) -->
+      <div class="estilo-v2 so-novo" id="estiloV2" role="radiogroup" aria-label="Estilo do personagem">
+        <button type="button" class="est-btn" data-real="1" role="radio" aria-checked="false" onclick="escolherEstiloV2(true)"><span class="est-bola"></span>Pessoa real</button>
+        <button type="button" class="est-btn laranja" data-real="0" role="radio" aria-checked="false" onclick="escolherEstiloV2(false)"><span class="est-bola"></span>Animação</button>
+      </div>
       <!-- UM botão só (19/08): até 2 imagens — 1 = avatar solo; 2 = dupla. O render combinado (JS) mostra
            as miniaturas + o tile de adicionar enquanto houver vaga. -->
       <div class="thumb-row" id="clientPhotoRow">
         <div class="upload-tile" id="clientPhotoTile" role="button" tabindex="0" onclick="document.getElementById('clientPhotoInput').click()">
-          <span class="big" id="clientPhotoIcon">🧑‍🎤</span>
+          <span class="big" id="clientPhotoIcon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
           <span id="clientPhotoLabel">Enviar ou colar as imagens (1 ou 2)</span>
         </div>
       </div>
@@ -493,22 +587,23 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 
       <!-- Gerar o avatar (preview) -->
       <div id="avatarGenRow" style="display:none;margin-top:12px">
-        <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">🎨 Gerar o avatar</button>
+        <button class="btn-gold" id="btnGenAvatar" onclick="gerarAvatar()" style="width:100%">Gerar o personagem</button>
         <div class="gerar-note" id="avatarGenNote" style="margin-top:6px">A IA transforma a foto no avatar cartoon de frente. Você confere antes de continuar.</div>
       </div>
       <!-- Preview do avatar (aprovar / regerar) -->
       <div id="avatarPreview" style="display:none;margin-top:12px">
-        <div class="card-hint" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b> — cada geração entra no custo do pedido.</div>
+        <div class="card-hint so-novo" style="margin-bottom:6px">Esse é o personagem que vai cantar. Quer mudar algo? Escreva o ajuste abaixo e <b>gere de novo</b> — cada geração entra no custo do pedido.</div>
+        <div class="card-hint so-antigo" style="margin-bottom:6px">Esse é o avatar que vai cantar. Tá bom? <b style="color:var(--gold)">Aprove</b>. Quer mudar algo? <b>Gere de novo</b> — cada geração entra no custo do pedido.</div>
         <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
-        <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
+        <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
           <label for="avatarNote">O que ajustar? (opcional)</label>
           <input type="text" id="avatarNote" maxlength="120" placeholder='ex: "boné azul", "sorriso menor" — vazio = só tenta de novo'/>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn-mini" id="btnRegenAvatar" onclick="gerarAvatar()" style="flex:1">🔄 Gerar de novo</button>
-          <button class="btn-gold" onclick="aprovarAvatar()" style="flex:2">✓ Aprovar avatar</button>
+          <button class="btn-mini" id="btnRegenAvatar" onclick="gerarAvatar()" style="flex:1">Gerar de novo</button>
+          <button class="btn-gold so-antigo" onclick="aprovarAvatar()" style="flex:2">Aprovar avatar</button>
         </div>
       </div>
       <!-- Avatar aprovado -->
@@ -517,14 +612,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     </div>
 
     <!-- PASSO 2 — A MÚSICA (define a duração do clipe) -->
-    <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Passo 2</div>
+    <div class="card" id="cardMusica">
+      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
       <div class="card-title">A música <span style="color:var(--text-dim);font-size:12px;font-weight:400">(até 5 minutos)</span></div>
       <div class="edit-lock" id="musicLock">🔒 A música é a mesma do vídeo original — é ela que o avatar está cantando. Se você trocar, o canto precisa ser <b>regravado do zero</b>.
         <button type="button" class="btn-destrava" onclick="destravarMusica()">🎵 Quero trocar a música</button>
       </div>
       <div class="upload-tile" id="musicTile" role="button" tabindex="0" onclick="document.getElementById('musicInput').click()">
-        <span class="big">🎵</span>
+        <span class="big"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span>
         <span>Enviar a música (qualquer formato)</span>
       </div>
       <!-- (07/09) aceita QUALQUER áudio. As extensões vão listadas uma a uma porque só "audio/*"
@@ -574,8 +669,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
     </div>
 
     <!-- PASSO 3 — FOTOS E VÍDEOS (calculados pela duração da música) -->
-    <div class="card">
-      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
+    <div class="card" id="cardFotos">
+      <div class="step-eyebrow"><span class="dot"></span>Passo 4</div>
       <div class="card-title">Fotos e vídeos do comércio <span id="sceneCount" style="color:var(--gold);font-size:13px"></span></div>
       <div class="card-hint so-novo" style="margin-bottom:8px">Envie até <b style="color:var(--text-mid)">20 fotos e vídeos</b> do comércio. A ordem, as transições e em que parte da música cada um entra são decididos <b style="color:var(--text-mid)">sozinhos</b>, combinando cada imagem com a letra e o ritmo.</div>
       <button type="button" class="btn-trans so-antigo" id="btnTrans" onclick="toggleTransicoes()">🎞️ Transições entre as cenas — <span id="transState">LIGADAS</span></button>
@@ -608,7 +703,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
       </div>
     </div>
 
-    <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">🎬 Gerar o clipe</button>
+    <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">Gerar o clipe</button>
     <div class="gerar-note so-antigo">A produção leva cerca de 45 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
     <div class="gerar-note so-novo">A produção leva cerca de 15 a 20 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
 
@@ -851,7 +946,7 @@ let editDados = null;              // dados do vídeo-fonte (guardados p/ redese
 let editTrocaAvatar = false;       // atendente liberou trocar o avatar
 let editTrocaMusica = false;       // atendente liberou trocar a música
 let _avisouMidia = false;          // aviso de custo ao mexer nas mídias — 1x por edição
-let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
+let transicoes = true;             // Passo 4: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let agitado = false;               // Passo 1: 'Personagem agitado' — DESLIGADO por padrão (canto contido, o de hoje)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
@@ -1269,7 +1364,7 @@ async function fileToOptimizedImage(file, keepPng) {
 }
 
 // (22/09) MINIATURA PRA TELA — conserto do travamento no celular.
-// As listas do Passo 1 e do Passo 3 mostram cada foto num quadradinho de ~90px, mas o src
+// As listas do Passo 1 e do Passo 4 mostram cada foto num quadradinho de ~90px, mas o src
 // delas era a foto INTEIRA (1536px). A cada redesenho da lista (adicionar, remover, arrastar,
 // mudar a duração de um clipe) o navegador tinha que decodificar de novo TODAS as fotos em
 // tamanho cheio — com 10-20 mídias isso congela o celular por segundos e come memória até o
@@ -1335,7 +1430,7 @@ function renderClientPhoto() {
   if (clientPhoto2 && !modoV2) html += '<div class="thumb"><img src="' + clientPhoto2.thumbUrl + '" alt="Imagem 2"/><div class="tag">Imagem 2</div><button class="rm" title="Remover" onclick="removeClientPhoto2()">✕</button></div>';
   if (!clientPhoto || (!clientPhoto2 && !modoV2)) {
     const lbl = modoV2 ? 'Enviar ou colar a imagem da pessoa' : !clientPhoto ? 'Enviar ou colar as imagens (1 ou 2)' : 'Adicionar a 2ª imagem (opcional — vira dupla)';
-    html += '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big">🧑‍🎤</span><span>' + lbl + '</span></div>';
+    html += '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'clientPhotoInput\').click()"><span class="big"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span><span>' + lbl + '</span></div>';
   }
   row.innerHTML = html;
 }
@@ -1375,6 +1470,12 @@ function refreshAvatarUI() {
   if (!genRow || !preview || !okBadge) return;
   const hasPhoto = !!clientPhoto, hasPrev = !!avatarPreview;
   const approved = hasPrev && avatarPreview.approved;
+  if (modoV2) {   // (01/11) 150 novo: a imagem fica à mostra com "Gerar de novo"; não há aprovação nem posição
+    genRow.style.display = (hasPhoto && !hasPrev) ? 'block' : 'none';
+    preview.style.display = hasPrev ? 'block' : 'none';
+    okBadge.style.display = 'none';
+    return;
+  }
   genRow.style.display  = (hasPhoto && !hasPrev) ? 'block' : 'none';
   preview.style.display = (hasPrev && !approved) ? 'block' : 'none';
   okBadge.style.display = approved ? 'block' : 'none';
@@ -1486,18 +1587,23 @@ function setAvatarTipo(t) {
 
 async function gerarAvatar() {
   if (!clientPhoto) { toast('Envie a Imagem 1 primeiro.'); return; }
+  if (modoV2 && imagemRealV2 === null) {   // (01/11) 150 novo: Pessoa real ou Animação antes de gerar
+    const e = document.getElementById('estiloV2'); if (e) { e.classList.add('alerta'); e.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    toast('Escolha primeiro: Pessoa real ou Animação.');
+    return;
+  }
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
   try {
-    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, v2: modoV2 };
+    const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, v2: modoV2, real: imagemRealV2 === true };
     if (clientPhoto2 && !modoV2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };   // Imagem 2 vai sempre que existir (UI universal)
     const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
     const normB64 = modoV2 ? j.cartoonBase64 : await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco (o 150 novo não tem palco)
-    avatarPreview = { cartoonBase64: normB64, approved: false };
+    avatarPreview = { cartoonBase64: normB64, approved: !!modoV2 };   // (01/11) 150 novo: sem botão Aprovar — a imagem gerada já vale
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
     document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
@@ -1671,8 +1777,8 @@ let lyricBlocks = null;   // [{ start, text, mediaId }]
 let lyricSelIdx = -1;
 let lyricOn = false;
 async function abrirCasarLetra() {
-  if (!music || !music.base64) { toast('Envie a música no Passo 2 primeiro.'); return; }
-  if (!scenes.length) { toast('Adicione fotos/vídeos no Passo 3 primeiro.'); return; }
+  if (!music || !music.base64) { toast('Envie a música no Passo 3 primeiro.'); return; }
+  if (!scenes.length) { toast('Adicione fotos/vídeos no Passo 4 primeiro.'); return; }
   const btn = document.getElementById('btnCasarLetra');
   if (!lyricBlocks) {
     const t0 = btn.innerHTML; btn.disabled = true; btn.textContent = '⏳ Transcrevendo a música…';
@@ -1783,7 +1889,7 @@ function buildBackgrounds() {
     scenes.forEach(s => { if (s.at != null) atById[s.id] = parseFloat(s.at) || 0; });
   }
   if (atById) {
-    // TODAS as mídias entram, na ordem do Passo 3: ancorada abre um grupo no seu tempo;
+    // TODAS as mídias entram, na ordem do Passo 4: ancorada abre um grupo no seu tempo;
     // não-ancoradas entram no grupo da ancorada ANTERIOR e dividem a janela até o próximo grupo.
     const total = Math.max(5, Math.min(VIDEO_SECONDS, (music && music.duration) || VIDEO_SECONDS));
     const groups = [];
@@ -1862,7 +1968,7 @@ document.getElementById('scenesInput').addEventListener('change', async (e) => {
           } catch (err) { hideCompact(); r = null; okComp = false; }
           hideCompact();
           // (08/09) compactação ruim NÃO descarta mais a mídia: manda o ORIGINAL (melhor qualidade,
-          // só maior). Antes o vídeo sumia do Passo 3 e a atendente ficava sem entender.
+          // só maior). Antes o vídeo sumia do Passo 4 e a atendente ficava sem entender.
           if (okComp && r && r.blob) {
             up = r.blob; if (r.dur > 0.3) realDur = r.dur;
             toast('✅ ' + file.name + ' compactado: ' + (file.size / 1048576).toFixed(0) + 'MB → ' + (up.size / 1048576).toFixed(0) + 'MB');
@@ -2009,7 +2115,7 @@ function compactarVideo(file, onProgress) {
         if (!blob.size) { if (!done) { done = true; reject(new Error('a compactação saiu vazia')); } return; }
         // DURAÇÃO REAL = o ponto MAIS LONGE que o vídeo REALMENTE tocou (maxCT), NÃO o srcDur do cabeçalho do
         // original (que pode MENTIR: dizer 82s mas o conteúdo acabar em 75s → o clipe pisca no fim — bug SAFETY
-        // HUB 09/07). Injeta maxCT no WebM e devolve p/ o Passo 3 limitar o corte a esse tempo.
+        // HUB 09/07). Injeta maxCT no WebM e devolve p/ o Passo 4 limitar o corte a esse tempo.
         realDur = (maxCT > 0.3) ? maxCT : srcDur;
         if (realDur) { try { blob = await fixWebmDuration(blob, Math.round(realDur * 1000)); } catch (e) {} }
         // REDE DE SEGURANÇA (incidente Diogo 13/07): mede os buracos entre quadros DO PRÓPRIO arquivo
@@ -2215,7 +2321,7 @@ function setClipDur(id, val) {
 function videoDur() { return (music && music.duration) ? Math.round(music.duration) : 0; }   // duração do clipe = duração da música
 function computeTiming() {
   const D = videoDur();
-  if (!D) return { ok: false, photoDur: 0, msg: 'Envie a música no Passo 2 primeiro — ela define a duração do clipe.' };
+  if (!D) return { ok: false, photoDur: 0, msg: 'Envie a música no Passo 3 primeiro — ela define a duração do clipe.' };
   const vids = scenes.filter(s => s.kind === 'video');
   const photos = scenes.filter(s => s.kind !== 'video');
   const vidSum = vids.reduce((a, s) => a + (parseFloat(s.dur) || 0), 0);
@@ -2583,7 +2689,7 @@ async function autoFitHorizontais() {
 // (05/09) Deixou de ser botão: TODA foto passa por isso, sempre, e o trabalho roda NO SERVIDOR
 // depois do "Gerar o clipe" (a atendente não espera). Aqui a tela só CONTA as fotos pra estimar
 // o custo — quem faz e cobra é o Worker. Ver contarFotos().
-// ── TRANSIÇÕES (Passo 3) ────────────────────────────────────────────────────
+// ── TRANSIÇÕES (Passo 4) ────────────────────────────────────────────────────
 // Ligadas (padrão) = cada cena entra com fade/wipe. Desligadas = corte seco em TODAS.
 // A 1ª cena é SEMPRE corte seco (senão o WhatsApp pega o 1º frame preto como capa).
 function toggleTransicoes() {
@@ -2846,7 +2952,7 @@ function normalizaTrecho(quem) {
   s.value = a; e.value = b;
 }
 
-// Remove a música escolhida na CRIAÇÃO (upload errado) — volta o Passo 2 pro estado inicial,
+// Remove a música escolhida na CRIAÇÃO (upload errado) — volta o Passo 3 pro estado inicial,
 // sem precisar recarregar a página. Na EDIÇÃO não existe (música travada).
 function removerMusica() {
   if (editState) return;
@@ -3152,7 +3258,7 @@ function renderStoryboard() {
   const t = computeTiming();
   let html = '';
   if (!scenes.length) {
-    html = '<div style="color:var(--text-dim);font-size:12.5px;padding:6px 0">Adicione fotos/vídeos do comércio no Passo 3 — eles passam atrás do avatar.</div>';
+    html = '<div style="color:var(--text-dim);font-size:12.5px;padding:6px 0">Adicione fotos/vídeos do comércio no Passo 4 — eles passam atrás do avatar.</div>';
   } else {
     scenes.forEach((s, i) => {
       const isVid = s.kind === 'video';
@@ -3197,32 +3303,33 @@ function validar() {
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
-      return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 1) — ou recarregue a página pra manter o avatar antigo.';
+      return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 2) — ou recarregue a página pra manter o avatar antigo.';
     if (editTrocaMusica && !(music && music.base64))
-      return 'Você liberou a troca da música: envie o novo MP3 (Passo 2) — ou recarregue a página pra manter a música antiga.';
-    if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 3).';
-    if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
+      return 'Você liberou a troca da música: envie o novo MP3 (Passo 3) — ou recarregue a página pra manter a música antiga.';
+    if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 4).';
+    if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 4).';
     if (scenes.some(s => s.at != null)) {
       // vídeo casado com a letra: valida a densidade (mín. ~2,5s por mídia)
       const D = videoDur();
       const maxM = Math.max(1, Math.floor(D / 2.5));
-      if (scenes.length > maxM) return 'Este vídeo foi casado com a letra: cabem no máximo ' + maxM + ' mídias em ' + D + 's. Remova ' + (scenes.length - maxM) + ' mídia(s) (Passo 3).';
+      if (scenes.length > maxM) return 'Este vídeo foi casado com a letra: cabem no máximo ' + maxM + ' mídias em ' + D + 's. Remova ' + (scenes.length - maxM) + ' mídia(s) (Passo 4).';
     } else {
-      const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).';   // antes a edição pulava esta checagem e enviava timeline inválida
+      const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 4).';   // antes a edição pulava esta checagem e enviava timeline inválida
     }
     return '';
   }
-  if (!clientPhoto) return 'Envie a foto do cliente (Passo 1).';
-  if (!avatarPreview || !avatarPreview.approved) return 'Gere e APROVE o avatar (Passo 1).';
-  if (!music) return 'Envie a música (Passo 2).';
-  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 3).';
-  if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
-  if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 3).'; }   // modo letra define o tempo pela música
+  if (!clientPhoto) return 'Envie a foto do cliente (Passo 2).';
+  if (!avatarPreview || !avatarPreview.approved) return modoV2 ? 'Gere o personagem (Passo 2).' : 'Gere e APROVE o avatar (Passo 2).';
+  if (!music) return 'Envie a música (Passo 3).';
+  if (scenes.length < 1) return 'Adicione pelo menos 1 foto ou vídeo do comércio (Passo 4).';
+  if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 4).';
+  if (modoV2) { /* (01/11) 150 novo: o servidor encaixa as fotos no tempo da música (cenas mais curtas e transições rápidas quando há muitas) */ }
+  else if (!lyricOn) { const t = computeTiming(); if (!t.ok) return t.msg + ' (Passo 4).'; }   // modo letra define o tempo pela música
   else {
     // modo letra: garante espaço mínimo de ~2,5s por mídia (senão o clipe pisca — cada fundo teria <2,5s na tela)
     const D = videoDur();
     const maxMidias = Math.max(1, Math.floor(D / 2.5));
-    if (scenes.length > maxMidias) return 'No modo "casar com a letra" cabem no máximo ' + maxMidias + ' mídias em ' + D + 's de música (mín. ~2,5s por mídia). Remova ' + (scenes.length - maxMidias) + ' mídia(s) ou use um trecho maior (Passo 3).';
+    if (scenes.length > maxMidias) return 'No modo "casar com a letra" cabem no máximo ' + maxMidias + ' mídias em ' + D + 's de música (mín. ~2,5s por mídia). Remova ' + (scenes.length - maxMidias) + ' mídia(s) ou use um trecho maior (Passo 4).';
   }
   return null;
 }
@@ -3240,7 +3347,7 @@ async function gerarClipe() {
     // estendida pra 9:16 no servidor, e o certo é mandar a foto ORIGINAL — mandar a versão com as
     // barras desfocadas faria o servidor "melhorar" o borrão em vez de continuar o cenário.
     // (autoFitHorizontais/renderBlurFill9x16 continuam no arquivo, sem uso, caso precise voltar atrás.)
-    // PROTEÇÃO ANTI-PERDA (incidente 09-07): a lista enviada tem que ter TODAS as mídias do Passo 3.
+    // PROTEÇÃO ANTI-PERDA (incidente 09-07): a lista enviada tem que ter TODAS as mídias do Passo 4.
     // Se divergir (qualquer bug futuro), BLOQUEIA com aviso claro — nunca mais descarte silencioso.
     const bgs = buildBackgrounds();
     if (bgs.length !== scenes.length) {
@@ -3253,7 +3360,7 @@ async function gerarClipe() {
     // se o modo letra se desligou SOZINHO no buildBackgrounds (encaixes órfãos), valida o timing automático agora
     if (!editState && !lyricOn && !scenes.some(s => s.at != null)) {
       const tv = computeTiming();
-      if (!tv.ok) { toast('⚠️ ' + tv.msg + ' (Passo 3).'); return; }
+      if (!tv.ok) { toast('⚠️ ' + tv.msg + ' (Passo 4).'); return; }
     }
     if (editState) {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
@@ -3291,7 +3398,7 @@ async function gerarClipe() {
       avScale: avScale,
       backgrounds: bgs,
       bgExpected: scenes.length,
-      semTransicao: !transicoes,             // interruptor do Passo 3: corte seco em todas as cenas
+      semTransicao: !transicoes,             // interruptor do Passo 4: corte seco em todas as cenas
       agitado: agitado,                      // interruptor do Passo 1: canto mais solto (prompt antigo)
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
@@ -3338,7 +3445,7 @@ async function gerarClipe() {
     toast('⚠️ ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = editState ? '💾 Salvar edição' : '🎬 Gerar o clipe';
+    btn.textContent = editState ? 'Salvar edição' : 'Gerar o clipe';
   }
 }
 
@@ -3595,7 +3702,7 @@ function aplicarModoEdicao(d) {
     const pl = document.getElementById('player'); if (pl) pl.src = d.musicUrl || '';
   }
   const btn = document.getElementById('btnGerar');
-  if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : '🎬 Gerar o clipe';
+  if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : 'Gerar o clipe';
 }
 
 // ── EDIÇÃO: destravar avatar / música (sempre avisando o custo e o tempo ANTES) ──────────────
@@ -3632,7 +3739,7 @@ function destravarAvatar() {
   try { renderClientPhoto2(); } catch (e) {}
   aplicarModoEdicao(null);
   renderStoryboard();
-  toast('🎤 Avatar liberado — envie a imagem no Passo 1, gere e APROVE o novo avatar.');
+  toast('🎤 Avatar liberado — envie a imagem no Passo 2, gere e APROVE o novo avatar.');
 }
 function destravarMusica() {
   if (!editState || editTrocaMusica) return;
@@ -3792,6 +3899,45 @@ async function checkManutencao() {
 // joelho para cima em fundo liso, SEM palco e sem calibração; o vídeo é montado sozinho (efeitos, letra, final com
 // WhatsApp e endereço). Para todo o resto a tela segue igual.
 let modoV2 = false;
+let imagemRealV2 = null;   // (01/11) 150 novo: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
+function escolherEstiloV2(real) {
+  const mudou = imagemRealV2 !== null && imagemRealV2 !== real;
+  imagemRealV2 = real;
+  document.querySelectorAll('#estiloV2 .est-btn').forEach((b) => { const on = (b.dataset.real === '1') === real; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  const e = document.getElementById('estiloV2'); if (e) e.classList.remove('alerta');
+  if (mudou && avatarPreview) toast(real ? 'Pessoa real — gere a imagem de novo para ver.' : 'Animação — gere a imagem de novo para ver.');
+}
+// (01/11) TRILHA do topo: cada etapa fica verde quando está pronta; a 1ª que falta ganha o contorno dourado
+function etapasProntas() {
+  const v = (id) => ((document.getElementById(id) || {}).value || '').trim();
+  const avatarOk = (editState && !editTrocaAvatar) || !!(avatarPreview && avatarPreview.approved);
+  return {
+    cardCliente: !!(v('fCategoria') && v('clientName') && (!modoV2 || (v('v2Empresa') && v('v2Whats')))),
+    cardPersonagem: avatarOk,
+    cardMusica: !!music || (!!editState && !editTrocaMusica),
+    cardFotos: scenes.length > 0,
+  };
+}
+function atualizarTrilha() {
+  const nav = document.getElementById('trilha'); if (!nav) return;
+  const ok = etapasProntas();
+  let marcou = false;
+  nav.querySelectorAll('button[data-alvo]').forEach((b) => {
+    const feito = !!ok[b.dataset.alvo];
+    b.classList.toggle('feito', feito);
+    const atual = !feito && !marcou; if (atual) marcou = true;
+    b.classList.toggle('atual', atual);
+    const card = document.getElementById(b.dataset.alvo); if (card) card.classList.toggle('pronto', feito);
+  });
+}
+(function () {
+  const nav = document.getElementById('trilha');
+  if (nav) nav.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-alvo]'); if (!b) return;
+    const c = document.getElementById(b.dataset.alvo); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  setInterval(atualizarTrilha, 700);
+})();
 async function checkModoV2() {
   try { const r = await api('/a150Modo'); const d = await r.json(); modoV2 = !!(d && d.v2); } catch (e) { modoV2 = false; }
   const c = document.getElementById('v2Campos'); if (c) c.style.display = modoV2 ? '' : 'none';
@@ -3800,9 +3946,9 @@ async function checkModoV2() {
   const inp = document.getElementById('clientPhotoInput'); if (inp) inp.removeAttribute('multiple');
   if (clientPhoto2) { clientPhoto2 = null; avatarPreview = null; }
   renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
-  const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = 'A IA transforma a foto no personagem do joelho para cima, num fundo liso — sem palco. Você confere antes de continuar.';
+  const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = 'A IA cria o personagem do quadril para cima, sem microfone, num fundo liso. Se não gostar, é só gerar de novo.';
   const h = document.getElementById('avatarHint');
-  if (h) h.innerHTML = '🧪 <b style="color:var(--gold)">Avatar 150 NOVO (teste)</b>: envie <b style="color:var(--text-mid)">1 imagem</b> — a pessoa (ou personagem, produto, animal) que vai virar o cantor. A IA cria o personagem <b style="color:var(--text-mid)">do joelho para cima</b>, num fundo liso — <b style="color:var(--text-mid)">sem palco e sem ajuste de posição</b>. O vídeo é montado sozinho, com efeitos, a letra e o WhatsApp no final. Pode <b style="color:var(--text-mid)">colar</b> (Ctrl+V).';
+  if (h) h.innerHTML = 'Escolha o estilo e envie <b>1 imagem</b> — a pessoa (ou personagem, produto, animal) que vai virar o cantor. A IA cria o personagem <b>do quadril para cima</b>, sem microfone, num fundo liso. O vídeo é montado sozinho, com efeitos, a letra e o WhatsApp no final. Pode <b>colar</b> (Ctrl+V).';
 }
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
