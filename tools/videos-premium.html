@@ -3356,9 +3356,9 @@ async function gerarClipe() {
     }
     if (_lyricExtra > 0) toast('ℹ️ ' + _lyricExtra + ' mídia(s) não casadas com a letra foram distribuídas no tempo — todas as ' + scenes.length + ' aparecem no vídeo.');
     // última mídia (geralmente a LOGO do fechamento) com pouca tela → avisa ANTES de gastar (incidente MDS 14/07)
-    if (_ultimaJanela > 0 && _ultimaJanela < 4) toast('⚠️ Atenção: a ÚLTIMA mídia vai aparecer por só ' + String(_ultimaJanela).replace('.', ',') + 's. Se ela é a logo do fechamento e você quer mais tempo, remova algumas mídias ou use um trecho de música maior.');
+    if (!modoV2 && _ultimaJanela > 0 && _ultimaJanela < 4) toast('⚠️ Atenção: a ÚLTIMA mídia vai aparecer por só ' + String(_ultimaJanela).replace('.', ',') + 's. Se ela é a logo do fechamento e você quer mais tempo, remova algumas mídias ou use um trecho de música maior.');
     // se o modo letra se desligou SOZINHO no buildBackgrounds (encaixes órfãos), valida o timing automático agora
-    if (!editState && !lyricOn && !scenes.some(s => s.at != null)) {
+    if (!modoV2 && !editState && !lyricOn && !scenes.some(s => s.at != null)) {   // (01/11) no 150 novo o servidor encaixa as fotos no tempo
       const tv = computeTiming();
       if (!tv.ok) { toast('⚠️ ' + tv.msg + ' (Passo 4).'); return; }
     }
