@@ -648,21 +648,24 @@ $('btnRefazerFolha').addEventListener('click', () => {
   if (!confirm('Isto cria imagens novas para as 3 cenas. Continuar?')) return;
   criarImagens({ botao: 'btnRefazerFolha', texto: 'Refazendo…', corpo: { refazerPersonagens: true, ajuste: $('inAjusteFolha').value.trim() } });
 });
+// (01/11) cada personagem criado pela IA tem a SUA referência (proj.folhas); projetos antigos tinham uma folha só
+function folhasDe(pr){ return pr ? (pr.folhas ? Object.keys(pr.folhas).sort().map(k => pr.folhas[k]) : (pr.folha ? [pr.folha] : [])) : []; }
 function pintarImagens(){
-  const tem = !!(proj && (proj.folha || (proj.cenas && proj.cenas.some(c => c.img))));
+  const criados = folhasDe(proj);
+  const tem = !!(proj && (criados.length || (proj.cenas && proj.cenas.some(c => c.img))));
   $('semImagens').classList.toggle('hide', tem);
   $('comImagens').classList.toggle('hide', !tem);
   if (!tem) return;
-  // a foto ORIGINAL do personagem do cliente (vai como está) + a folha só dos personagens que a IA criou
+  // a foto ORIGINAL do personagem do cliente (vai como está) + a referência de cada personagem que a IA criou
   const fotosCli = [proj.modo === 2 ? proj.pessoaCliente : null, proj.pessoa].filter(Boolean);   // na ordem esquerda, direita
-  const refs = fotosCli.map(f => '<img src="' + esc(f.url) + '" alt="Personagem do cliente"/>');
-  if (proj.folha) refs.push('<img src="' + esc(proj.folha.url) + '" alt="Personagem criado"/>');
+  const refs = fotosCli.map(f => '<img src="' + esc(f.url) + '" alt="Personagem do cliente"/>')
+    .concat(criados.map(f => '<img src="' + esc(f.url) + '" alt="Personagem criado"/>'));
   $('folhaImgs').innerHTML = refs.join('');
   $('estadoFolha').textContent = fotosCli.length
-    ? (proj.folha ? 'Quem veio de foto entra nas cenas como está; o outro foi criado pela IA e aparece igual nas 3 cenas.'
-                  : (fotosCli.length > 1 ? 'Os dois personagens entram nas 3 cenas como estão, sem alteração.' : 'O personagem do cliente entra nas 3 cenas como está, sem alteração.'))
+    ? (criados.length ? 'Quem veio de foto entra nas cenas como está; o outro foi criado pela IA e aparece igual nas 3 cenas.'
+                      : (fotosCli.length > 1 ? 'Os dois personagens entram nas 3 cenas como estão, sem alteração.' : 'O personagem do cliente entra nas 3 cenas como está, sem alteração.'))
     : 'Personagens criados pela IA. Eles aparecem iguais nas 3 cenas.';
-  $('btnRefazerFolha').innerHTML = IC.refazer + (proj.folha ? ' Refazer personagens e cenas' : ' Refazer as 3 imagens');
+  $('btnRefazerFolha').innerHTML = IC.refazer + (criados.length ? ' Refazer personagens e cenas' : ' Refazer as 3 imagens');
   $('btnStoryboard').disabled = !proj.cenas.every(c => c.img) || ocupado;
   $('gradeImgs').innerHTML = proj.cenas.map((c, i) =>
     '<div class="cena-box"><div class="tit">Cena ' + (i + 1) + '</div>' +
@@ -881,7 +884,7 @@ function pintarMontagem(){
 // ── tudo junto ──
 function pintarTravas(){
   // f = já tem imagem (com a foto do cliente nem sempre existe folha de personagens)
-  const r = !!(proj && proj.roteiro), f = !!(proj && (proj.folha || (proj.cenas && proj.cenas.some(c => c.img))));
+  const r = !!(proj && proj.roteiro), f = !!(proj && (folhasDe(proj).length || (proj.cenas && proj.cenas.some(c => c.img))));
   const v = !!(proj && proj.cenas && proj.cenas.some(c => c.video || c.gerando || c.erro));
   const todas = !!(proj && proj.cenas && proj.cenas.every(c => c.video));
   $('p2').classList.toggle('travado', !r);
