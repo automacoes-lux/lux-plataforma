@@ -104,6 +104,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
   display:grid;place-items:center;cursor:pointer;z-index:2;padding:0}
 .slot .x .ic-sv{width:14px;height:14px}
 .slot-pessoa{max-width:150px}
+.pessoa-col{width:120px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.pessoa-leg{font-size:11.5px;color:var(--txt2);text-align:center;line-height:1.35}
 .linha-pessoa{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .linha-pessoa .lado{flex:1;min-width:180px}
 /* roteiro */
@@ -214,9 +216,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
         <button type="button" class="chip on" data-v="2">2 personagens conversando</button>
       </div>
 
-      <span class="rot">Foto do personagem — pessoa ou mascote (opcional)</span>
+      <span class="rot" id="rotPessoa">Foto do personagem — pessoa ou mascote (opcional)</span>
       <div class="linha-pessoa">
-        <div class="slot slot-pessoa" id="slotPessoa" style="width:120px"></div>
+        <!-- (01/11) no diálogo: uma foto para cada personagem, na posição em que ele fica na cena -->
+        <div class="pessoa-col hide" id="colPessoaCliente">
+          <div class="slot slot-pessoa" id="slotPessoaCliente"></div>
+          <div class="pessoa-leg">Personagem 1<br/>quem pergunta (esquerda)</div>
+        </div>
+        <div class="pessoa-col">
+          <div class="slot slot-pessoa" id="slotPessoa"></div>
+          <div class="pessoa-leg hide" id="legPessoa">Personagem 2<br/>do negócio (direita)</div>
+        </div>
         <div class="lado">
           <div class="card-hint" style="margin-bottom:8px" id="dicaPessoa"></div>
         </div>
@@ -381,6 +391,7 @@ let estilo = 'real', modo = 2;           // (01/11) padrão = Pessoa real; clica
 let fotosNovas = [null, null, null];     // base64 das fotos escolhidas e ainda não enviadas
 let fotosRemovidas = [false, false, false];   // foto já salva que a atendente tirou
 let pessoaNova = null, pessoaRemovida = false;   // o sexo (= a voz) o servidor descobre sozinho pela foto
+let pessoaClienteNova = null, pessoaClienteRemovida = false;   // diálogo: foto de quem pergunta (personagem 1, à esquerda)
 let vozes = [], trilhas = [], trilhaSel = null, volume = 0.12, legendas = true, transicoes = true;
 let ocupado = false, timerStatus = null, audioTeste = null, tocando = '';
 
@@ -415,7 +426,7 @@ function ligaChips(id, cb){
 }
 function marcaChip(id, v){ $(id).querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.v === String(v))); }
 ligaChips('chipsEstilo', v => { estilo = v; pintarDicaPessoa(); });
-ligaChips('chipsModo', v => { modo = Number(v); });
+ligaChips('chipsModo', v => { modo = Number(v); pintarSlots(); });
 ligaChips('chipsVolume', v => { volume = Number(v); });
 ligaChips('chipsLegenda', v => { legendas = v === '1'; });
 ligaChips('chipsTransicao', v => { transicoes = v === '1'; });
@@ -476,12 +487,22 @@ function pintarSlots(){
     if (fotosNovas[i]) fotosNovas[i] = null; else fotosRemovidas[i] = true;
     pintarSlots();
   }));
-  const sp = $('slotPessoa');
-  const srcP = pessoaNova || (!pessoaRemovida && proj && proj.pessoa && proj.pessoa.url) || '';
-  sp.innerHTML = srcP ? '<img src="' + esc(srcP) + '" alt="Personagem"/><button type="button" class="x" title="Tirar a foto">' + IC.fechar + '</button>'
-                      : IC.foto + '<span>Foto do personagem</span>';
+  // fotos dos personagens: 1 no "1 personagem falando"; 2 no diálogo (cada uma na posição em que fica na cena)
+  const dois = modo === 2;
+  $('colPessoaCliente').classList.toggle('hide', !dois);
+  $('legPessoa').classList.toggle('hide', !dois);
+  $('rotPessoa').textContent = dois ? 'Fotos dos personagens — pessoa ou mascote (opcionais)' : 'Foto do personagem — pessoa ou mascote (opcional)';
+  pintarSlotPessoa('slotPessoa', pessoaNova || (!pessoaRemovida && proj && proj.pessoa && proj.pessoa.url) || '',
+    dois ? 'Personagem 2' : 'Foto do personagem', () => { pessoaNova = null; pessoaRemovida = true; });
+  pintarSlotPessoa('slotPessoaCliente', pessoaClienteNova || (!pessoaClienteRemovida && proj && proj.pessoaCliente && proj.pessoaCliente.url) || '',
+    'Personagem 1', () => { pessoaClienteNova = null; pessoaClienteRemovida = true; });
+}
+function pintarSlotPessoa(id, src, rotulo, tirar){
+  const sp = $(id);
+  sp.innerHTML = src ? '<img src="' + esc(src) + '" alt="' + esc(rotulo) + '"/><button type="button" class="x" title="Tirar a foto">' + IC.fechar + '</button>'
+                     : IC.foto + '<span>' + esc(rotulo) + '</span>';
   const x = sp.querySelector('.x');
-  if (x) x.addEventListener('click', (ev) => { ev.stopPropagation(); if (ocupado) return; pessoaNova = null; pessoaRemovida = true; pintarSlots(); });
+  if (x) x.addEventListener('click', (ev) => { ev.stopPropagation(); if (ocupado) return; tirar(); pintarSlots(); });
 }
 // quantas fotos de ambiente vão valer (novas + salvas que não foram tiradas)
 function contaAmbientes(){
@@ -492,6 +513,10 @@ function contaAmbientes(){
 $('slotPessoa').addEventListener('click', () => {
   if (ocupado) return;
   escolheArquivo(b64 => { pessoaNova = b64; pessoaRemovida = false; pintarSlots(); });
+});
+$('slotPessoaCliente').addEventListener('click', () => {
+  if (ocupado) return;
+  escolheArquivo(b64 => { pessoaClienteNova = b64; pessoaClienteRemovida = false; pintarSlots(); });
 });
 $('inBriefing').addEventListener('input', () => { const n = $('inBriefing').value.length; $('contBriefing').textContent = n + ' / 2500'; });
 
@@ -507,11 +532,14 @@ async function criarRoteiro(ajuste){
   const corpo = { id: proj ? proj.id : undefined, cliente, briefing, estilo, modo, fotos, ajuste: ajuste || '' };
   if (pessoaNova) corpo.pessoa = { base64: pessoaNova };
   else if (pessoaRemovida) corpo.pessoa = null;
+  if (pessoaClienteNova) corpo.pessoaCliente = { base64: pessoaClienteNova };
+  else if (pessoaClienteRemovida) corpo.pessoaCliente = null;
   const botao = ajuste ? 'btnOutroRoteiro' : 'btnRoteiro';
   const d = await comBotao(botao, 'Escrevendo o texto…', () => chama('/cenas/roteiro', corpo));
   if (!d) return;
   if (!d.ok) { if (d.id && !proj) { proj = { id: d.id }; } return aviso(d.error || 'Não consegui escrever o roteiro.'); }
   fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false;
+  pessoaClienteNova = null; pessoaClienteRemovida = false;
   aplicar(d.projeto);
   $('inAjuste').value = '';
   // (01/11) "Gerar personagem e texto": as imagens das cenas saem logo depois do texto, num clique só
@@ -615,13 +643,13 @@ function pintarImagens(){
   $('comImagens').classList.toggle('hide', !tem);
   if (!tem) return;
   // a foto ORIGINAL do personagem do cliente (vai como está) + a folha só dos personagens que a IA criou
-  const refs = [];
-  if (proj.pessoa) refs.push('<img src="' + esc(proj.pessoa.url) + '" alt="Personagem do cliente"/>');
+  const fotosCli = [proj.modo === 2 ? proj.pessoaCliente : null, proj.pessoa].filter(Boolean);   // na ordem esquerda, direita
+  const refs = fotosCli.map(f => '<img src="' + esc(f.url) + '" alt="Personagem do cliente"/>');
   if (proj.folha) refs.push('<img src="' + esc(proj.folha.url) + '" alt="Personagem criado"/>');
   $('folhaImgs').innerHTML = refs.join('');
-  $('estadoFolha').textContent = proj.pessoa
-    ? (proj.folha ? 'O personagem do cliente entra nas cenas como está; o outro foi criado pela IA e aparece igual nas 3 cenas.'
-                  : 'O personagem do cliente entra nas 3 cenas como está, sem alteração.')
+  $('estadoFolha').textContent = fotosCli.length
+    ? (proj.folha ? 'Quem veio de foto entra nas cenas como está; o outro foi criado pela IA e aparece igual nas 3 cenas.'
+                  : (fotosCli.length > 1 ? 'Os dois personagens entram nas 3 cenas como estão, sem alteração.' : 'O personagem do cliente entra nas 3 cenas como está, sem alteração.'))
     : 'Personagens criados pela IA. Eles aparecem iguais nas 3 cenas.';
   $('btnRefazerFolha').innerHTML = IC.refazer + (proj.folha ? ' Refazer personagens e cenas' : ' Refazer as 3 imagens');
   $('btnStoryboard').disabled = !proj.cenas.every(c => c.img) || ocupado;
@@ -881,6 +909,7 @@ function aplicar(p, consultaAuto){
 function novoProjeto(){
   clearTimeout(timerStatus);
   proj = null; fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false; textoMudou = false; trilhaSel = null;
+  pessoaClienteNova = null; pessoaClienteRemovida = false;
   $('inCliente').value = ''; $('inBriefing').value = ''; $('contBriefing').textContent = '0 / 2500'; $('inAjuste').value = '';
   estilo = 'real'; marcaChip('chipsEstilo', 'real');
   guarda('cenas:ultimo', null);
@@ -894,6 +923,7 @@ async function abrir(id){
   const d = await chama('/cenas/projeto?id=' + encodeURIComponent(id));
   if (!d.ok) { aviso(d.error || 'Não consegui abrir o projeto.'); return false; }
   fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false; textoMudou = false;
+  pessoaClienteNova = null; pessoaClienteRemovida = false;
   aplicar(d.projeto);
   acompanhar();
   return true;
