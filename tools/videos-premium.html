@@ -3375,7 +3375,7 @@ function renderStoryboard() {
   const brl = editState
     ? custoEdicaoBRL()
     : modoV2
-    ? (0.11 + D * (0.0243 + 0.22 / 60)) * EST_CAMBIO   // (31/10) 150 novo: imagem + letra (~US$0,11) + canto (US$0,0243/s) + recorte e montagem (US$0,22/min)
+    ? (0.12 + D * (0.0243 + 0.50 / 60)) * EST_CAMBIO   // (01/11) 150 novo, custo REAL medido: imagem + letra (~US$0,12) + canto (US$0,0243/s) + recorte (US$0,33/min) e montagem (US$0,17/min)
     : (EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC)) * EST_CAMBIO;   // cartoon + melhoria das fotos + lipsync + recorte + montagem
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por clipe') + '</small>';
@@ -3869,10 +3869,10 @@ function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && 
 // Quanto esta edição vai custar, do jeito que a tela está agora.
 function custoEdicaoBRL() {
   const D = videoDur() || DUR_PADRAO_S;
-  if (modoV2) {   // (01/11) 150 novo: a montagem sempre (US$0,05 + 0,22/min) + letra e fotos (~US$0,01); canto só se regravar
-    let u = 0.06 + D * (0.22 / 60);
-    if (editTrocaAvatar) u += 0.05;                 // imagem nova do personagem
-    if (editRegravaCanto()) u += D * 0.0243;        // canto de novo
+  if (modoV2) {   // (01/11) 150 novo: a montagem sempre (US$0,06 + 0,17/min) + letra e fotos (~US$0,01); o recorte guardado é reaproveitado
+    let u = 0.07 + D * (0.17 / 60);
+    if (editTrocaAvatar) u += 0.05;                         // imagem nova do personagem
+    if (editRegravaCanto()) u += D * (0.0243 + 0.33 / 60);  // canto novo → recorte novo também
     return u * EST_CAMBIO;
   }
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
@@ -3885,7 +3885,7 @@ function custoEdicaoBRL() {
 function _avisoRegravar(oQue, extraCartoon) {
   const D = videoDur() || DUR_PADRAO_S;
   if (modoV2) {   // (01/11) 150 novo: preço e tempo do canto + montagem novos
-    const brlV2 = ((0.06 + D * (0.0243 + 0.22 / 60) + (extraCartoon ? 0.05 : 0)) * EST_CAMBIO).toFixed(2).replace('.', ',');
+    const brlV2 = ((0.07 + D * (0.0243 + 0.50 / 60) + (extraCartoon ? 0.05 : 0)) * EST_CAMBIO).toFixed(2).replace('.', ',');
     return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do personagem do zero.\n\n' +
            '• Custo: cerca de R$ ' + brlV2 + ' (quase o preço de um vídeo novo)\n' +
            '• Tempo: cerca de ' + Math.max(15, Math.round(D / 60 * 20)) + ' minutos\n\n' +
