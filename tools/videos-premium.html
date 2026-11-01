@@ -1599,10 +1599,20 @@ async function gerarAvatar() {
   try {
     const payload = { clientPhoto: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, v2: modoV2, real: imagemRealV2 === true };
     if (clientPhoto2 && !modoV2) payload.clientPhoto2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name };   // Imagem 2 vai sempre que existir (UI universal)
-    const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
-    const normB64 = modoV2 ? j.cartoonBase64 : await normalizarAvatarPes(j.cartoonBase64);   // centraliza os pés + padroniza p/ cair sempre no centro do palco (o 150 novo não tem palco)
+    // (01/11) 150 novo: o personagem não pode encostar nas laterais (no vídeo ficaria cortado). A tela diminui a imagem sobre o mesmo
+    // fundo até sobrar 10% de cada lado (ajustarMargemV2); se a figura tocava a borda (pode ter corte), avisa para conferir.
+    let j = null, normB64 = null;
+    for (let tent = 0; tent < 1; tent++) {   // (01/11) sem 2ª geração automática: nos testes a IA encostou a dupla na borda de novo
+      const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
+      j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
+      if (!modoV2) { normB64 = await normalizarAvatarPes(j.cartoonBase64); break; }   // centraliza os pés + padroniza p/ cair sempre no centro do palco
+      if (tent > 0) cartoonGens++;   // a 2ª geração também é cobrada (a 1ª conta lá embaixo)
+      const aj = await ajustarMargemV2(j.cartoonBase64);
+      normB64 = aj.b64;
+      if (!aj.encostou) break;
+      toast('⚠️ O personagem encostou na borda da imagem e a tela afastou ele. Confira: se algo ficou cortado (cabelo, mão, chapéu), clique em Gerar de novo.');
+    }
     avatarPreview = { cartoonBase64: normB64, approved: !!modoV2 };   // (01/11) 150 novo: sem botão Aprovar — a imagem gerada já vale
     avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
     avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
@@ -3899,6 +3909,51 @@ async function checkManutencao() {
 // joelho para cima em fundo liso, SEM palco e sem calibração; o vídeo é montado sozinho (efeitos, letra, final com
 // WhatsApp e endereço). Para todo o resto a tela segue igual.
 let modoV2 = false;
+// (01/11) MARGEM DO PERSONAGEM no 150 novo: mede a silhueta (tudo que não é o fundo marrom liso, sem olhar os 12% de baixo, onde
+// a imagem acaba no quadril) e devolve { b64, encostou }. encostou = a figura toca a lateral (provável corte). Se só faltou margem,
+// a imagem é reduzida e centralizada pela figura, apoiada embaixo, sobre a cor do fundo — no vídeo o fundo é recortado mesmo.
+function ajustarMargemV2(b64) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const W = img.naturalWidth, H = img.naturalHeight;
+        const c = document.createElement('canvas'); c.width = W; c.height = H;
+        const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        const px = g.getImageData(0, 0, W, H).data;
+        const cor = (x, y) => { const i = (y * W + x) * 4; return [px[i], px[i + 1], px[i + 2]]; };
+        const amostras = [];
+        for (let y = 4; y < H * 0.25; y += 24) { amostras.push(cor(3, y), cor(W - 4, y)); }
+        const fundo = [0, 1, 2].map((k) => amostras.reduce((s, a) => s + a[k], 0) / amostras.length);
+        const ehFigura = (x, y) => { const p = cor(x, y); return Math.abs(p[0] - fundo[0]) + Math.abs(p[1] - fundo[1]) + Math.abs(p[2] - fundo[2]) > 70; };
+        const passo = 2, yMax = Math.floor(H * 0.88);
+        let esq = W, dir = -1, topo = H;
+        for (let y = 0; y < yMax; y += passo) {
+          let n = 0;
+          for (let x = 0; x < W; x += passo) {
+            if (!ehFigura(x, y)) continue;
+            if (++n < 2) continue;   // ignora pixel solto (ruído)
+            if (x < esq) esq = x; if (x > dir) dir = x; if (y < topo) topo = y;
+          }
+        }
+        if (dir < 0) { resolve({ b64, encostou: false }); return; }
+        const mE = esq / W, mD = (W - 1 - dir) / W;
+        const encostou = mE < 0.012 || mD < 0.012;
+        const larg = (dir - esq + 1) / W;
+        const s = Math.min(1, 0.8 / larg, 1 - Math.max(0, 0.05 - topo / H));
+        if (s >= 0.995 && mE >= 0.08 && mD >= 0.08) { resolve({ b64, encostou }); return; }
+        const o = document.createElement('canvas'); o.width = W; o.height = H;
+        const go = o.getContext('2d');
+        go.fillStyle = 'rgb(' + fundo.map(Math.round).join(',') + ')'; go.fillRect(0, 0, W, H);
+        const cx = (esq + dir) / 2;   // centraliza pela figura (não pela imagem)
+        go.drawImage(img, W / 2 - cx * s, H - H * s, W * s, H * s);
+        resolve({ b64: o.toDataURL('image/png').split(',')[1], encostou });
+      } catch (e) { resolve({ b64, encostou: false }); }
+    };
+    img.onerror = () => resolve({ b64, encostou: false });
+    img.src = 'data:image/png;base64,' + b64;
+  });
+}
 let imagemRealV2 = null;   // (01/11) 150 novo: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
 function escolherEstiloV2(real) {
   const mudou = imagemRealV2 !== null && imagemRealV2 !== real;
