@@ -586,11 +586,12 @@ button.mini916:hover{border-color:var(--gold)}
             <button type="button" class="est-op" id="btnEstAnim" role="radio" aria-checked="false" onclick="escolherEstilo(false)"
                     title="A pessoa vira um personagem de animação 3D."><span class="est-bola"></span>Animação</button>
           </div>
-          <!-- (12/10) IA DO VÍDEO — desligada (padrão) = IA nova; ligada = IA antiga (o canto vai pelo motor antigo) -->
+          <!-- (01/11) NÃO DANÇAR — desligada (padrão) = o personagem canta dançando no ritmo; ligada = canta parado, só com gestos.
+               (era a chave "IA antiga" de 12/10; o canto agora é sempre no motor novo) -->
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="sw-label" id="motorLbl">IA<br/>antiga</span>
+            <span class="sw-label" id="motorLbl">Não<br/>dançar</span>
             <button type="button" class="sw" id="btnMotor" role="switch" aria-checked="false" onclick="toggleMotor()"
-                    title="Desligada: o vídeo é feito na IA nova (padrão). Ligue para fazer na IA antiga.">
+                    title="Desligada (padrão): o personagem canta dançando no ritmo da música. Ligue para ele cantar parado, só com gestos.">
               <span class="sw-knob"></span><span class="sw-txt" id="motorState">Off</span>
             </button>
           </div>
@@ -981,8 +982,10 @@ const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes
 
 // Estimativa de custo (números reais no cost.js do Worker)
 const EST_USD_CENA    = 0.076;     // (15/10) imagem (0,038) + passada de fundo na prévia (0,038), no gpt-image-2.5-sunburst medium
-const EST_USD_LIPSEC  = 0.0243;    // (29/09) canto 1080p: 0,40 crédito/s × US$0,0607 (plano Ultra + IOF) — era 0,03 (MultiTalk)
-const EST_USD_LIPSEC_DUO = 0.0243; // dupla canta no mesmo motor, mesmo preço
+// (01/11) canto no H3 Max Turbo 768P: US$0,028/s na promoção (até 15/11), US$0,04/s depois; +5% (o vídeo gerado sai um
+// pouco maior que o pedido) + montagem final (Shotstack, US$0,00333/s). Era 0,0243 (VisionStory 1080p, sem montagem).
+const EST_USD_LIPSEC  = (Date.now() < Date.UTC(2026, 10, 16, 3) ? 0.028 : 0.04) * 1.05 + 0.00333;
+const EST_USD_LIPSEC_DUO = EST_USD_LIPSEC; // dupla canta no mesmo motor, mesmo preço
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
 const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
@@ -1015,7 +1018,8 @@ let transicoes = true;             // Passo 3: transições entre cenas LIGADAS 
 let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let imagemReal = null;             // (22/10) Passo 1: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
-let motorAntigo = false;           // (12/10) Passo 1: 'IA antiga' — DESLIGADA por padrão (IA nova)
+let naoDancar = false;             // (01/11) Passo 1: 'Não dançar' — DESLIGADA por padrão (personagem dança). Era 'IA antiga' (12/10)
+let naoDancarOriginal = false;     // (01/11) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let corpoInteiro = true;   // (14/10) SEMPRE corpo inteiro (a chave saiu da tela)          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
 let _cfgCarregada = false;         // EDIÇÃO: true quando tamanho/transições vieram do vídeo original (trava do Worker)
 let logo = null;
@@ -2644,20 +2648,21 @@ function setInteiroBtn() {
   if (l) l.classList.toggle('on', corpoInteiro);
   renderChecklist();
 }
-// (12/10) IA DO VÍDEO — desligada (padrão) = IA nova; ligada = IA antiga. Não muda a imagem, só quem faz o canto.
+// (01/11) NÃO DANÇAR — desligada (padrão) = dança no ritmo; ligada = canta parado, só com gestos. Não muda a imagem.
 function toggleMotor() {
-  motorAntigo = !motorAntigo;
+  naoDancar = !naoDancar;
   setMotorBtn();
-  toast(motorAntigo ? 'IA antiga ligada para este vídeo.' : 'IA nova (padrão) para este vídeo.');
+  toast(naoDancar ? 'Não dançar: o personagem canta parado, só com gestos.' : 'Padrão: o personagem canta dançando.');
+  if (typeof renderStoryboard === 'function') renderStoryboard();   // na edição, mudar a chave regrava o canto (preço)
   rascSalvar();
 }
 function setMotorBtn() {
   const b = document.getElementById('btnMotor');
   const e = document.getElementById('motorState');
   const l = document.getElementById('motorLbl');
-  if (b) { b.classList.toggle('on', motorAntigo); b.setAttribute('aria-checked', motorAntigo ? 'true' : 'false'); }
-  if (e) e.textContent = motorAntigo ? 'On' : 'Off';
-  if (l) l.classList.toggle('on', motorAntigo);
+  if (b) { b.classList.toggle('on', naoDancar); b.setAttribute('aria-checked', naoDancar ? 'true' : 'false'); }
+  if (e) e.textContent = naoDancar ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', naoDancar);
   renderChecklist();
 }
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
@@ -2679,7 +2684,7 @@ function renderChecklist() {
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
     // (29/09) sem a chave Mascote (o motor novo serve pessoa e mascote), a linha mostra só o estilo da imagem
     '<li class="modo"><span class="ck-ico">' + (imagemReal === null ? '❔' : imagemReal ? '📸' : '🎨') + '</span><span>' +
-      (imagemReal === null ? 'Falta escolher: Pessoa real ou Animação' : imagemReal ? 'Pessoa real' : 'Animação') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (motorAntigo ? 'IA antiga' : 'IA nova') + '</span></li>';
+      (imagemReal === null ? 'Falta escolher: Pessoa real ou Animação' : imagemReal ? 'Pessoa real' : 'Animação') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (naoDancar ? 'sem dançar' : 'dançando') + '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
@@ -3304,7 +3309,7 @@ function renderStoryboard() {
   // Na EDIÇÃO o preço depende do que a atendente destravou: só remontar (~R$1) × regravar o canto (caro).
   const brl = editState
     ? custoEdicaoBRL()
-    : (EST_USD_CENA * (cartoonGens + cartoonGensRes) + D * _lipsec) * EST_CAMBIO;   // (29/09) a97: cada imagem gerada + canto por segundo (1080p já sai pronto: sem ampliação final); personagem pronto = sem imagem
+    : (EST_USD_CENA * (cartoonGens + cartoonGensRes) + D * _lipsec) * EST_CAMBIO;   // (01/11) a97: cada imagem gerada + canto por segundo (já inclui a montagem final); personagem pronto = sem imagem
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = semMusica
     ? '<small>o preço sai com a música</small>'
@@ -3387,7 +3392,7 @@ async function gerarClipe() {
       // EDIÇÃO: reaproveita o avatar do original. Envia fundos (srcKey mantidos / base64 novos)
       // + música SÓ se o atendente trocou. Custo: só a re-montagem (ou + canto, se trocou a música).
       const nome = document.getElementById('clientName').value.trim();
-      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, mascote: mascote, motor: motorAntigo ? 'wavespeed' : 'visionstory', cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
+      const payloadE = { sourceOrderId: editState.sourceOrderId, clientName: nome, categoria: (document.getElementById('fCategoria').value || '').trim(), backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes, mascote: mascote, motor: 'minimax', naoDancar: !!naoDancar, cfgFromEdit: _cfgCarregada };   // cfgFromEdit: confirma que tamanho/transições vieram do original (senão o Worker preserva os do vídeo-fonte)
       if (editState.musicChanged && music && music.base64) {
         payloadE.music = { base64: music.base64, name: music.name, mimeType: music.mimeType };
         payloadE.musicDuration = music.duration;
@@ -3423,7 +3428,8 @@ async function gerarClipe() {
       mascote: mascote,                      // (13/09) chave "Mascote ativado" do Passo 1: o canto usa o motor de mascote
       real: imagemReal === true,             // (16/09) chave "Imagem real" do Passo 1: fica guardada para o Editar
       corpoInteiro: corpoInteiro,            // (03/10) chave "Corpo inteiro" do Passo 1: fica guardada para o Editar
-      motor: motorAntigo ? 'wavespeed' : 'visionstory',   // (12/10) chave "IA antiga" do Passo 1
+      motor: 'minimax',   // (01/11) canto no motor novo (o servidor volta sozinho p/ o anterior se ele falhar)
+      naoDancar: !!naoDancar,   // (01/11) chave "Não dançar" do Passo 1
       // (13/09) o resto do que a atendente preencheu, guardado para o botão Editar trazer de volta
       clientPhoto2: clientPhoto2 ? { base64: clientPhoto2.base64, name: clientPhoto2.name, mimeType: clientPhoto2.mimeType } : null,
       clientPhoto3: clientPhoto3 ? { base64: clientPhoto3.base64, name: clientPhoto3.name, mimeType: clientPhoto3.mimeType } : null,
@@ -3916,7 +3922,7 @@ async function editarClipe(orderId) {
     mascote = !!d.mascote; setMascoteBtn();
     imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
-    motorAntigo = (d.motorPedido === 'wavespeed'); setMotorBtn();   // (12/10) volta a chave "IA antiga"
+    naoDancar = !!d.naoDancar; naoDancarOriginal = naoDancar; setMotorBtn();   // (01/11) volta a chave "Não dançar"
     renderClientPhoto(); refreshAvatarUI();
 
     rawAudioBuffer = audioBuf;
@@ -4029,7 +4035,7 @@ async function rascSalvarAgora() {
     await rascSincroniza();
     const estado = {
       clientName: campo('clientName'), categoria: campo('fCategoria'), avatarNote: campo('avatarNote'),
-      mascote: !!mascote, real: imagemReal, corpoInteiro: !!corpoInteiro, motorAntigo: !!motorAntigo, trechoLivre: !!trechoLivre,
+      mascote: !!mascote, real: imagemReal, corpoInteiro: !!corpoInteiro, naoDancar: !!naoDancar, trechoLivre: !!trechoLivre,
       corte: corteUsado || null,
       musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
       origName: rawAudioName || '',
@@ -4167,7 +4173,7 @@ async function continuarProjeto(pid) {
     mascote = !!e.mascote; setMascoteBtn();
     imagemReal = (e.real === true || e.real === false) ? e.real : null; setRealBtn();
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
-    motorAntigo = !!e.motorAntigo; setMotorBtn();
+    naoDancar = !!e.naoDancar; setMotorBtn();
     renderClientPhoto(); refreshAvatarUI();
 
     if (bTrecho) {
@@ -4318,7 +4324,7 @@ function aplicarModoEdicao(d) {
 // ── EDIÇÃO: destravar avatar / música (sempre avisando o custo e o tempo ANTES) ──────────────
 // Trocar qualquer um dos dois obriga a REGRAVAR o canto e o recorte — é o pedaço caro do vídeo.
 // O que a edição preserva de verdade é o melhoramento das FOTOS, que não é refeito nem recobrado.
-function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTrocaMusica || mascote !== mascoteOriginal); }   // (13/09) mudar a chave Mascote também regrava
+function editRegravaCanto() { return !!editState && (editTrocaAvatar || editTrocaMusica || mascote !== mascoteOriginal || naoDancar !== naoDancarOriginal); }   // (01/11) + chave "Não dançar"   // (13/09) mudar a chave Mascote também regrava
 function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && !s.srcKey).length; }
 // Quanto esta edição vai custar, do jeito que a tela está agora.
 function custoEdicaoBRL() {
@@ -4333,11 +4339,11 @@ function custoEdicaoBRL() {
 function _avisoRegravar(oQue, extraCartoon) {
   const D = videoDur() || VIDEO_SECONDS;
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
-  const usd = D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC) + (extraCartoon ? EST_USD_CENA : 0);
+  const usd = D * _lipsec + (extraCartoon ? EST_USD_CENA : 0);   // (01/11) a97 não recorta; o canto já inclui a montagem
   const brl = (usd * EST_CAMBIO).toFixed(2).replace('.', ',');
   return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do avatar do zero.\n\n' +
          '• Custo: cerca de R$ ' + brl + ' (quase o preço de um vídeo novo)\n' +
-         '• Tempo: de 15 a 20 minutos\n\n' +
+         '• Tempo: uns 3 a 6 minutos\n\n' +
          'As fotos que já foram melhoradas continuam como estão e NÃO são cobradas de novo.\n\n' +
          'Quer continuar?';
 }
@@ -4382,7 +4388,7 @@ function resetCreateForm() {
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = null; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
-  motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
+  naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
   trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -4410,7 +4416,7 @@ function sairEdicao() {
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
   imagemReal = null; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
-  motorAntigo = false; setMotorBtn();   // (12/10) volta ao padrão (IA nova)
+  naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
   trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
