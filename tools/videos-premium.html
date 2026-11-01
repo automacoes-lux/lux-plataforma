@@ -730,7 +730,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
 
     <button class="btn-gold" id="btnGerar" onclick="gerarClipe()">Gerar o clipe</button>
     <div class="gerar-note so-antigo">A produção leva cerca de 45 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
-    <div class="gerar-note so-novo">A produção leva cerca de 15 a 20 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
+    <div class="gerar-note so-novo">A produção leva cerca de 10 minutos por minuto de música e continua sozinha — pode fechar a aba e voltar depois.<br/>O custo exato é calculado e registrado no pedido.</div>
 
   </div>
 
@@ -963,6 +963,8 @@ const COMPACT_ABOVE_MB = 30;   // comprimir clipe acima de 30MB (18/08: 6 clipes
 const EST_USD_CENA    = 0.06;      // cartoon (gpt-image-2 medium — custo real medido 12/08)
 const EST_USD_LIPSEC  = 0.03;      // (22/10) o 150 voltou p/ a WaveSpeed (US$0,03/s); era 0,0243 (VisionStory 1080p)
 const EST_USD_LIPSEC_DUO = 0.0243; // dupla canta no mesmo motor, mesmo preço
+// (01/11) o 150 NOVO canta no H3 Max Turbo (fal.ai): US$0,028/s até 15/11 e US$0,04/s depois (+~0,4 s por pedaço de 15 s)
+const H3_USD_SEG = Date.now() < Date.UTC(2026, 10, 16, 3) ? 0.029 : 0.041;
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
 const EST_USD_J2VSEC  = 0.00667;   // render Shotstack ($0,20/min ÷ 60) × 2 — (22/10) os pedaços do recorte TAMBÉM renderizam lá
 const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
@@ -3375,7 +3377,7 @@ function renderStoryboard() {
   const brl = editState
     ? custoEdicaoBRL()
     : modoV2
-    ? (0.12 + D * (0.0243 + 0.50 / 60)) * EST_CAMBIO   // (01/11) 150 novo, custo REAL medido: imagem + letra (~US$0,12) + canto (US$0,0243/s) + recorte (US$0,33/min) e montagem (US$0,17/min)
+    ? (0.12 + D * (H3_USD_SEG + 0.50 / 60)) * EST_CAMBIO   // (01/11) 150 novo, custo REAL medido: imagem + letra (~US$0,12) + canto no H3 (H3_USD_SEG/s) + recorte (US$0,33/min) e montagem (US$0,17/min)
     : (EST_USD_CENA + contarFotos() * EST_USD_EXPAND + D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC)) * EST_CAMBIO;   // cartoon + melhoria das fotos + lipsync + recorte + montagem
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por clipe') + '</small>';
@@ -3872,7 +3874,7 @@ function custoEdicaoBRL() {
   if (modoV2) {   // (01/11) 150 novo: a montagem sempre (US$0,06 + 0,17/min) + letra e fotos (~US$0,01); o recorte guardado é reaproveitado
     let u = 0.07 + D * (0.17 / 60);
     if (editTrocaAvatar) u += 0.05;                         // imagem nova do personagem
-    if (editRegravaCanto()) u += D * (0.0243 + 0.33 / 60);  // canto novo → recorte novo também
+    if (editRegravaCanto()) u += D * (H3_USD_SEG + 0.33 / 60);  // canto novo (H3) → recorte novo também
     return u * EST_CAMBIO;
   }
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
@@ -3885,10 +3887,10 @@ function custoEdicaoBRL() {
 function _avisoRegravar(oQue, extraCartoon) {
   const D = videoDur() || DUR_PADRAO_S;
   if (modoV2) {   // (01/11) 150 novo: preço e tempo do canto + montagem novos
-    const brlV2 = ((0.07 + D * (0.0243 + 0.50 / 60) + (extraCartoon ? 0.05 : 0)) * EST_CAMBIO).toFixed(2).replace('.', ',');
+    const brlV2 = ((0.07 + D * (H3_USD_SEG + 0.50 / 60) + (extraCartoon ? 0.05 : 0)) * EST_CAMBIO).toFixed(2).replace('.', ',');
     return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do personagem do zero.\n\n' +
            '• Custo: cerca de R$ ' + brlV2 + ' (quase o preço de um vídeo novo)\n' +
-           '• Tempo: cerca de ' + Math.max(15, Math.round(D / 60 * 20)) + ' minutos\n\n' +
+           '• Tempo: cerca de ' + Math.max(10, Math.round(D / 60 * 10)) + ' minutos\n\n' +
            'Quer continuar?';
   }
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
