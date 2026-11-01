@@ -134,7 +134,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
 .estado.erro{color:#F9B4B4}
 .estado.alerta{color:var(--cta-b)}
 .folha{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--campo);border-radius:var(--r);padding:10px;margin-bottom:12px}
-.folha img{height:120px;border-radius:8px;background:#0f0f11}
+.folha-imgs{display:flex;gap:8px;flex-wrap:wrap}
+.folha-imgs img{height:120px;border-radius:8px;background:#0f0f11;object-fit:cover}
+.voz-auto{background:var(--campo);border-radius:var(--r);padding:10px 12px;font-size:13px;color:var(--txt2);display:flex;align-items:center;gap:8px}
 .folha .lado{flex:1;min-width:180px;display:flex;flex-direction:column;gap:8px}
 /* trilhas */
 .trilhas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
@@ -200,10 +202,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
       <label class="rot" for="inCliente">Cliente ou empresa</label>
       <input type="text" id="inCliente" maxlength="120" placeholder="Ex.: Café Delícia da Roça"/>
 
-      <span class="rot">Estilo do vídeo</span>
+      <span class="rot">Estilo da imagem</span>
       <div class="chips" id="chipsEstilo">
-        <button type="button" class="chip on" data-v="animado">Personagem animado</button>
-        <button type="button" class="chip" data-v="real">Pessoa real</button>
+        <button type="button" class="chip on" data-v="real">Pessoa real</button>
+        <button type="button" class="chip" data-v="animado">Animação</button>
       </div>
 
       <span class="rot">Quantos personagens</span>
@@ -212,21 +214,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
         <button type="button" class="chip on" data-v="2">2 personagens conversando</button>
       </div>
 
-      <span class="rot">Foto da pessoa (opcional)</span>
+      <span class="rot">Foto do personagem — pessoa ou mascote (opcional)</span>
       <div class="linha-pessoa">
         <div class="slot slot-pessoa" id="slotPessoa" style="width:120px"></div>
         <div class="lado">
           <div class="card-hint" style="margin-bottom:8px" id="dicaPessoa"></div>
-          <div class="chips hide" id="chipsSexo">
-            <button type="button" class="chip" data-v="F">Mulher</button>
-            <button type="button" class="chip" data-v="M">Homem</button>
-          </div>
         </div>
       </div>
 
-      <span class="rot">Fotos do negócio — uma para cada cena</span>
+      <span class="rot">Fotos do ambiente — até 3, uma para cada cena</span>
       <div class="slots" id="slotsFotos"></div>
-      <div class="card-hint" style="margin:8px 0 0">Fachada, ambiente, produto ou logo. A cena 1 usa a foto 1, e assim por diante.</div>
+      <div class="card-hint" style="margin:8px 0 0">Fachada, ambiente, produto ou logo. Com menos de 3 fotos, o vídeo repete um ambiente com outro ângulo.</div>
 
       <label class="rot" for="inBriefing">O que o cliente quer divulgar</label>
       <textarea id="inBriefing" rows="5" maxlength="2500" placeholder="O que vende, o diferencial, a oferta e o contato (WhatsApp, Instagram, endereço)."></textarea>
@@ -259,14 +257,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
       <div id="semImagens" class="card-hint">As imagens aparecem aqui depois do passo 2.</div>
       <div id="comImagens" class="hide">
         <div class="folha">
-          <img id="imgFolha" alt="Personagens"/>
+          <div class="folha-imgs" id="folhaImgs"></div>
           <div class="lado">
-            <div class="estado">Estes são os personagens do vídeo. Eles aparecem iguais nas 3 cenas.</div>
-            <input type="text" id="inAjusteFolha" maxlength="300" placeholder="O que mudar nos personagens (opcional)"/>
+            <div class="estado" id="estadoFolha"></div>
+            <input type="text" id="inAjusteFolha" maxlength="300" placeholder="O que mudar (opcional)"/>
             <div class="btn-row"><button class="btn btn-ghost" id="btnRefazerFolha" type="button"></button></div>
           </div>
         </div>
         <div class="grade3 imgs" id="gradeImgs"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn-gold" id="btnStoryboard" type="button" style="border-radius:var(--pill)"></button>
+          <span class="estado">Uma imagem 16:9 com as 3 cenas, para o cliente aprovar antes do vídeo.</span>
+        </div>
         <button class="btn btn-gold btn-lg" id="btnGerar" type="button" style="margin-top:14px"></button>
       </div>
     </div>
@@ -375,16 +377,18 @@ function le(k){ try { return localStorage.getItem(k); } catch (e) { return null;
 
 // ── estado ──
 let proj = null;                         // projeto como o servidor devolveu
-let estilo = 'animado', modo = 2;
+let estilo = 'real', modo = 2;           // (01/11) padrão = Pessoa real; clica para virar Animação
 let fotosNovas = [null, null, null];     // base64 das fotos escolhidas e ainda não enviadas
-let pessoaNova = null, pessoaRemovida = false, sexoPessoa = '';
+let fotosRemovidas = [false, false, false];   // foto já salva que a atendente tirou
+let pessoaNova = null, pessoaRemovida = false;   // o sexo (= a voz) o servidor descobre sozinho pela foto
 let vozes = [], trilhas = [], trilhaSel = null, volume = 0.12, legendas = true, transicoes = true;
 let ocupado = false, timerStatus = null, audioTeste = null, tocando = '';
 
 // ── botões com ícone ──
 $('markIc').innerHTML = IC.pessoas;
 $('btnNovo').innerHTML = IC.mais + ' Novo projeto';
-$('btnRoteiro').innerHTML = IC.varinha + ' Criar roteiro';
+$('btnRoteiro').innerHTML = IC.varinha + ' Gerar personagem e texto';
+$('btnStoryboard').innerHTML = IC.baixar + ' Baixar storyboard';
 $('btnOutroRoteiro').innerHTML = IC.refazer + ' Outro roteiro';
 $('btnImagens').innerHTML = IC.foto + ' Criar as imagens das cenas';
 $('btnRefazerFolha').innerHTML = IC.refazer + ' Refazer personagens';
@@ -412,15 +416,15 @@ function ligaChips(id, cb){
 function marcaChip(id, v){ $(id).querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.v === String(v))); }
 ligaChips('chipsEstilo', v => { estilo = v; pintarDicaPessoa(); });
 ligaChips('chipsModo', v => { modo = Number(v); });
-ligaChips('chipsSexo', v => { sexoPessoa = v; });
 ligaChips('chipsVolume', v => { volume = Number(v); });
 ligaChips('chipsLegenda', v => { legendas = v === '1'; });
 ligaChips('chipsTransicao', v => { transicoes = v === '1'; });
 
 function pintarDicaPessoa(){
-  $('dicaPessoa').textContent = estilo === 'real'
-    ? 'Se o cliente quer aparecer no vídeo, envie a foto dele: a pessoa aparece como ela é. Sem foto, a IA cria uma pessoa.'
-    : 'Se o cliente quer virar o personagem, envie a foto dele: ele vira um personagem animado parecido. Sem foto, a IA cria o personagem.';
+  $('dicaPessoa').textContent = (estilo === 'real'
+    ? 'A pessoa (ou o mascote) da foto entra nos ambientes exatamente como é, sem alteração. '
+    : 'A pessoa da foto vira animação parecida com ela; mascote ou desenho entra como é. ') +
+    'Sem foto, a IA cria o personagem. A voz (masculina ou feminina) é escolhida sozinha.';
 }
 
 // ── fotos: reduz no navegador (máx. 1600 px) antes de enviar ──
@@ -453,25 +457,37 @@ const TIPO_TXT = { lugar: 'lugar', produto: 'produto', logo: 'logo' };
 function pintarSlots(){
   const box = $('slotsFotos');
   box.innerHTML = [0, 1, 2].map(i => {
-    const nova = fotosNovas[i], salva = proj && proj.fotos && proj.fotos[i];
+    const nova = fotosNovas[i], salva = !fotosRemovidas[i] && proj && proj.fotos && proj.fotos[i];
     const src = nova || (salva && salva.url) || '';
     const tipo = !nova && salva && salva.tipo ? TIPO_TXT[salva.tipo] || '' : '';
     return '<div class="slot" data-i="' + i + '">' +
-      (src ? '<img src="' + esc(src) + '" alt="Foto ' + (i + 1) + '"/><div class="tira"><span>Cena ' + (i + 1) + '</span>' + (tipo ? '<span>' + tipo + '</span>' : '') + '</div>'
-           : IC.foto + '<span>Foto da cena ' + (i + 1) + '</span>') + '</div>';
+      (src ? '<img src="' + esc(src) + '" alt="Foto ' + (i + 1) + '"/><button type="button" class="x" data-x="' + i + '" title="Tirar a foto">' + IC.fechar + '</button>' +
+             '<div class="tira"><span>Ambiente ' + (i + 1) + '</span>' + (tipo ? '<span>' + tipo + '</span>' : '') + '</div>'
+           : IC.foto + '<span>Ambiente ' + (i + 1) + (i ? ' (opcional)' : '') + '</span>') + '</div>';
   }).join('');
   box.querySelectorAll('.slot').forEach(s => s.addEventListener('click', () => {
     if (ocupado) return;
     const i = Number(s.dataset.i);
     escolheArquivo(b64 => { fotosNovas[i] = b64; pintarSlots(); });
   }));
+  box.querySelectorAll('[data-x]').forEach(b => b.addEventListener('click', (ev) => {
+    ev.stopPropagation(); if (ocupado) return;
+    const i = Number(b.dataset.x);
+    if (fotosNovas[i]) fotosNovas[i] = null; else fotosRemovidas[i] = true;
+    pintarSlots();
+  }));
   const sp = $('slotPessoa');
   const srcP = pessoaNova || (!pessoaRemovida && proj && proj.pessoa && proj.pessoa.url) || '';
-  sp.innerHTML = srcP ? '<img src="' + esc(srcP) + '" alt="Pessoa"/><button type="button" class="x" title="Tirar a foto">' + IC.fechar + '</button>'
-                      : IC.foto + '<span>Foto da pessoa</span>';
-  $('chipsSexo').classList.toggle('hide', !srcP);
+  sp.innerHTML = srcP ? '<img src="' + esc(srcP) + '" alt="Personagem"/><button type="button" class="x" title="Tirar a foto">' + IC.fechar + '</button>'
+                      : IC.foto + '<span>Foto do personagem</span>';
   const x = sp.querySelector('.x');
-  if (x) x.addEventListener('click', (ev) => { ev.stopPropagation(); if (ocupado) return; pessoaNova = null; pessoaRemovida = true; sexoPessoa = ''; marcaChip('chipsSexo', ''); pintarSlots(); });
+  if (x) x.addEventListener('click', (ev) => { ev.stopPropagation(); if (ocupado) return; pessoaNova = null; pessoaRemovida = true; pintarSlots(); });
+}
+// quantas fotos de ambiente vão valer (novas + salvas que não foram tiradas)
+function contaAmbientes(){
+  let n = 0;
+  for (let i = 0; i < 3; i++) if (fotosNovas[i] || (!fotosRemovidas[i] && proj && proj.fotos && proj.fotos[i])) n++;
+  return n;
 }
 $('slotPessoa').addEventListener('click', () => {
   if (ocupado) return;
@@ -485,24 +501,26 @@ async function criarRoteiro(ajuste){
   const cliente = $('inCliente').value.trim(), briefing = $('inBriefing').value.trim();
   if (!cliente) return aviso('Escreva o nome do cliente.');
   if (briefing.length < 15) return aviso('Escreva o que o cliente quer divulgar: o que vende, o diferencial, a oferta e o contato.');
-  for (let i = 0; i < 3; i++) if (!fotosNovas[i] && !(proj && proj.fotos && proj.fotos[i])) return aviso('Envie as 3 fotos do negócio (uma para cada cena).');
-  const temPessoa = pessoaNova || (!pessoaRemovida && proj && proj.pessoa);
-  if (temPessoa && !sexoPessoa) return aviso('Marque se a pessoa da foto é mulher ou homem.');
-  const corpo = { id: proj ? proj.id : undefined, cliente, briefing, estilo, modo, fotos: fotosNovas.slice(), ajuste: ajuste || '' };
-  if (pessoaNova) corpo.pessoa = { base64: pessoaNova, sexo: sexoPessoa };
+  if (!contaAmbientes()) return aviso('Envie pelo menos 1 foto do ambiente (até 3).');
+  // por posição: base64 = foto nova · false = tirou a que estava · null = mantém
+  const fotos = [0, 1, 2].map(i => fotosNovas[i] || (fotosRemovidas[i] ? false : null));
+  const corpo = { id: proj ? proj.id : undefined, cliente, briefing, estilo, modo, fotos, ajuste: ajuste || '' };
+  if (pessoaNova) corpo.pessoa = { base64: pessoaNova };
   else if (pessoaRemovida) corpo.pessoa = null;
-  else if (proj && proj.pessoa) corpo.pessoa = { sexo: sexoPessoa };
-  const d = await comBotao(ajuste ? 'btnOutroRoteiro' : 'btnRoteiro', 'Escrevendo o roteiro…', () => chama('/cenas/roteiro', corpo));
+  const botao = ajuste ? 'btnOutroRoteiro' : 'btnRoteiro';
+  const d = await comBotao(botao, 'Escrevendo o texto…', () => chama('/cenas/roteiro', corpo));
   if (!d) return;
   if (!d.ok) { if (d.id && !proj) { proj = { id: d.id }; } return aviso(d.error || 'Não consegui escrever o roteiro.'); }
-  fotosNovas = [null, null, null]; pessoaNova = null; pessoaRemovida = false;
+  fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false;
   aplicar(d.projeto);
   $('inAjuste').value = '';
-  toast('Roteiro pronto. Confira o texto e as vozes.');
+  // (01/11) "Gerar personagem e texto": as imagens das cenas saem logo depois do texto, num clique só
+  if (!proj.cenas.every(c => c.img)) await criarImagens({ botao, texto: 'Colocando o personagem nos ambientes… (uns 30 s)', corpo: {} });
+  else toast('Texto pronto.');
   $('p2').scrollIntoView({ behavior: 'smooth' });
 }
 $('btnRoteiro').addEventListener('click', () => {
-  if (proj && proj.roteiro && !confirm('Fazer um roteiro novo? O texto atual será trocado (e, se os personagens mudarem, as imagens também).')) return;
+  if (proj && proj.roteiro && !confirm('Fazer um texto novo? O texto atual será trocado (e, se o personagem ou as fotos mudarem, as imagens também).')) return;
   criarRoteiro('');
 });
 $('btnOutroRoteiro').addEventListener('click', () => criarRoteiro($('inAjuste').value.trim() || 'escreva uma versão diferente'));
@@ -520,6 +538,11 @@ async function comBotao(id, texto, fn){
 }
 
 // ── passo 2: texto e vozes ──
+// o roteiro às vezes escreve o objetivo por extenso ("oferta e chamada para ação"): na tela fica sempre curto
+function rotuloObjetivo(o){
+  const t = String(o || '').toLowerCase();
+  return /^gancho/.test(t) ? 'Gancho' : /^solu/.test(t) ? 'Solução' : /^oferta/.test(t) ? 'Oferta' : String(o || '');
+}
 function nomePersonagem(x){
   const ps = (proj && proj.roteiro && proj.roteiro.personagens) || [];
   const base = x.papel ? x.papel.charAt(0).toUpperCase() + x.papel.slice(1) : x.id;
@@ -530,20 +553,14 @@ function pintarRoteiro(){
   $('semRoteiro').classList.toggle('hide', !!r);
   $('comRoteiro').classList.toggle('hide', !r);
   if (!r) return;
-  // vozes
-  $('vozes').innerHTML = r.personagens.map(x => {
-    const lista = vozes.filter(v => v.sexo === x.sexo);
-    return '<div class="voz-item"><label>Voz — ' + esc(nomePersonagem(x)) + '</label><div class="btn-row">' +
-      '<select data-p="' + x.id + '">' + lista.map(v => '<option value="' + v.id + '"' + (v.id === x.voz ? ' selected' : '') + '>' + esc(v.nome + ' — ' + v.desc) + '</option>').join('') + '</select>' +
-      '<button type="button" class="btn btn-ghost ouvir-voz" data-p="' + x.id + '" title="Ouvir">' + (tocando === x.id ? IC.pausa : IC.play) + '</button></div></div>';
-  }).join('');
-  $('vozes').querySelectorAll('select').forEach(s => s.addEventListener('change', () => { textoMudou = true; }));
-  $('vozes').querySelectorAll('.ouvir-voz').forEach(b => b.addEventListener('click', () => ouvirVoz(b.dataset.p)));
+  // (01/11) voz AUTOMÁTICA pelo sexo do personagem (mascote só é feminina com traço feminino) — sem escolha na tela
+  $('vozes').innerHTML = r.personagens.map(x =>
+    '<div class="voz-item"><label>Voz — ' + esc(nomePersonagem(x)) + '</label><div class="voz-auto">' + IC.nota + ' Automática · ' +
+    (x.sexo === 'F' ? 'feminina' : 'masculina') + '</div></div>').join('');
   // cenas
-  const OBJ = { gancho: 'Gancho', 'solução': 'Solução', solucao: 'Solução', oferta: 'Oferta' };
   $('cenasTxt').innerHTML = r.cenas.map((c, i) => {
     const pal = c.falas.reduce((s, f) => s + f.fala.trim().split(/\s+/).filter(Boolean).length, 0);
-    return '<div class="cena-txt"><div class="topo">Cena ' + c.n + ' <span class="obj">' + esc(OBJ[(c.objetivo || '').toLowerCase()] || c.objetivo || '') + '</span></div>' +
+    return '<div class="cena-txt"><div class="topo">Cena ' + c.n + ' <span class="obj">' + esc(rotuloObjetivo(c.objetivo)) + '</span></div>' +
       c.falas.map((f, k) => {
         const x = r.personagens.find(y => y.id === f.p) || r.personagens[0];
         return '<div class="fala"><label>' + esc(nomePersonagem(x)) + '</label><textarea rows="2" data-c="' + i + '" data-k="' + k + '">' + esc(f.fala) + '</textarea>' +
@@ -562,32 +579,18 @@ function pintarRoteiro(){
   }));
 }
 let textoMudou = false;
-// manda o texto editado e as vozes antes de qualquer passo que use o roteiro
+// manda o texto editado antes de qualquer passo que use o roteiro
 async function salvarTexto(){
   if (!textoMudou || !proj || !proj.roteiro) return true;
   const cenas = proj.roteiro.cenas.map((c, i) => ({ n: c.n, falas: c.falas.map((f, k) => {
     const t = $('cenasTxt').querySelector('textarea[data-c="' + i + '"][data-k="' + k + '"]');
     return { fala: t ? t.value.trim() : f.fala };
   }) }));
-  const vz = {};
-  $('vozes').querySelectorAll('select').forEach(s => { vz[s.dataset.p] = s.value; });
-  const d = await chama('/cenas/salvarTexto', { id: proj.id, cenas, vozes: vz });
+  const d = await chama('/cenas/salvarTexto', { id: proj.id, cenas });
   if (!d.ok) { aviso(d.error || 'Não consegui salvar o texto.'); return false; }
   textoMudou = false;
   aplicar(d.projeto);
   return true;
-}
-async function ouvirVoz(pid){
-  if (audioTeste) { audioTeste.pause(); audioTeste = null; }
-  if (tocando === pid) { tocando = ''; pintarRoteiro(); return; }
-  const sel = $('vozes').querySelector('select[data-p="' + pid + '"]');
-  if (!sel) return;
-  tocando = pid; pintarRoteiro();
-  const d = await chama('/cenas/amostra', { voz: sel.value });
-  if (!d.ok || tocando !== pid) { if (!d.ok) toast(d.error || 'Não consegui tocar a voz.'); tocando = ''; pintarRoteiro(); return; }
-  audioTeste = new Audio(d.url);
-  audioTeste.addEventListener('ended', () => { tocando = ''; pintarRoteiro(); });
-  audioTeste.play().catch(() => { tocando = ''; pintarRoteiro(); });
 }
 
 // ── passo 3: imagens ──
@@ -603,15 +606,25 @@ async function criarImagens(extra){
 }
 $('btnImagens').addEventListener('click', () => criarImagens(null));
 $('btnRefazerFolha').addEventListener('click', () => {
-  if (!confirm('Refazer os personagens cria imagens novas para as 3 cenas. Continuar?')) return;
+  if (!confirm('Isto cria imagens novas para as 3 cenas. Continuar?')) return;
   criarImagens({ botao: 'btnRefazerFolha', texto: 'Refazendo…', corpo: { refazerPersonagens: true, ajuste: $('inAjusteFolha').value.trim() } });
 });
 function pintarImagens(){
-  const tem = proj && proj.folha;
-  $('semImagens').classList.toggle('hide', !!tem);
+  const tem = !!(proj && (proj.folha || (proj.cenas && proj.cenas.some(c => c.img))));
+  $('semImagens').classList.toggle('hide', tem);
   $('comImagens').classList.toggle('hide', !tem);
   if (!tem) return;
-  $('imgFolha').src = proj.folha.url;
+  // a foto ORIGINAL do personagem do cliente (vai como está) + a folha só dos personagens que a IA criou
+  const refs = [];
+  if (proj.pessoa) refs.push('<img src="' + esc(proj.pessoa.url) + '" alt="Personagem do cliente"/>');
+  if (proj.folha) refs.push('<img src="' + esc(proj.folha.url) + '" alt="Personagem criado"/>');
+  $('folhaImgs').innerHTML = refs.join('');
+  $('estadoFolha').textContent = proj.pessoa
+    ? (proj.folha ? 'O personagem do cliente entra nas cenas como está; o outro foi criado pela IA e aparece igual nas 3 cenas.'
+                  : 'O personagem do cliente entra nas 3 cenas como está, sem alteração.')
+    : 'Personagens criados pela IA. Eles aparecem iguais nas 3 cenas.';
+  $('btnRefazerFolha').innerHTML = IC.refazer + (proj.folha ? ' Refazer personagens e cenas' : ' Refazer as 3 imagens');
+  $('btnStoryboard').disabled = !proj.cenas.every(c => c.img) || ocupado;
   $('gradeImgs').innerHTML = proj.cenas.map((c, i) =>
     '<div class="cena-box"><div class="tit">Cena ' + (i + 1) + '</div>' +
     '<div class="midia">' + (c.img ? '<a href="' + esc(c.img.url) + '" target="_blank" rel="noopener"><img src="' + esc(c.img.url) + '" alt="Cena ' + (i + 1) + '"/></a>' : 'Sem imagem') + '</div>' +
@@ -624,6 +637,68 @@ function pintarImagens(){
     criarImagens({ botao: 'btnImg' + i, texto: '…', corpo: { cena: i + 1, ajuste: aj.trim() } });
   }));
 }
+
+// ── storyboard: UMA imagem 16:9 com as 3 cenas 9:16 (para o cliente aprovar antes do vídeo) ──
+// Montado aqui no navegador, sem custo. As imagens vêm pela rota de download (que libera o acesso do canvas).
+function quebraLinhas(g, texto, largura, maxLinhas){
+  const linhas = []; let atual = '';
+  for (const p of String(texto || '').split(/\s+/).filter(Boolean)) {
+    const tenta = atual ? atual + ' ' + p : p;
+    if (g.measureText(tenta).width > largura && atual) { linhas.push(atual); atual = p; } else atual = tenta;
+  }
+  if (atual) linhas.push(atual);
+  if (linhas.length > maxLinhas) { linhas.length = maxLinhas; linhas[maxLinhas - 1] = linhas[maxLinhas - 1].replace(/\s*\S*$/, '') + '…'; }
+  return linhas;
+}
+async function baixarStoryboard(){
+  if (!proj || !proj.cenas.every(c => c.img)) return toast('Crie as 3 imagens primeiro.');
+  const b = $('btnStoryboard'), antes = b.innerHTML;
+  b.disabled = true; b.innerHTML = '<span class="spin"></span> Montando…';
+  try {
+    const imgs = await Promise.all(proj.cenas.map(async c => {
+      const r = await fetch(WORKER_URL + '/cenas/baixar?k=' + encodeURIComponent(c.img.key) + '&nome=cena.png');
+      if (!r.ok) throw new Error('Não consegui abrir a imagem de uma cena.');
+      return await createImageBitmap(await r.blob());
+    }));
+    try { await document.fonts.ready; } catch (e) {}
+    const W = 1920, H = 1080, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#0D0D0F'; g.fillRect(0, 0, W, H);
+    g.textBaseline = 'top';
+    g.fillStyle = '#F2F2F3'; g.font = '600 34px Inter, Arial, sans-serif';
+    g.fillText(proj.cliente || 'Storyboard', 80, 40);
+    g.fillStyle = '#9B9BA3'; g.font = '400 21px Inter, Arial, sans-serif';
+    g.fillText('Storyboard do vídeo · 3 cenas', 80, 84);
+    const ih = 760, iw = Math.round(ih * 9 / 16), gap = 90, x0 = Math.round((W - (3 * iw + 2 * gap)) / 2), y0 = 134;
+    imgs.forEach((im, k) => {
+      const x = x0 + k * (iw + gap);
+      // recorta para 9:16 sem deformar
+      const alvo = 9 / 16, r = im.width / im.height;
+      let sx = 0, sy = 0, sw = im.width, sh = im.height;
+      if (r > alvo) { sw = im.height * alvo; sx = (im.width - sw) / 2; } else { sh = im.width / alvo; sy = (im.height - sh) / 2; }
+      g.save(); g.beginPath();
+      if (g.roundRect) g.roundRect(x, y0, iw, ih, 18); else g.rect(x, y0, iw, ih);
+      g.clip(); g.drawImage(im, sx, sy, sw, sh, x, y0, iw, ih); g.restore();
+      const rc = proj.roteiro && proj.roteiro.cenas[k];
+      g.fillStyle = '#F2F2F3'; g.font = '600 23px Inter, Arial, sans-serif';
+      g.fillText('Cena ' + (k + 1) + (rc && rc.objetivo ? ' · ' + rotuloObjetivo(rc.objetivo) : ''), x, y0 + ih + 16);
+      if (rc) {
+        g.fillStyle = '#9B9BA3'; g.font = '400 18px Inter, Arial, sans-serif';
+        quebraLinhas(g, rc.falas.map(f => f.legenda || f.fala).join(' '), iw, 3).forEach((l, n) => g.fillText(l, x, y0 + ih + 50 + n * 24));
+      }
+    });
+    const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'storyboard-' + nomeArquivo(proj.cliente) + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Storyboard baixado. Envie ao cliente para aprovar.');
+  } catch (e) { toast(e.message || 'Não consegui montar o storyboard.'); }
+  finally { b.innerHTML = antes; b.disabled = false; }
+}
+$('btnStoryboard').addEventListener('click', baixarStoryboard);
 
 // ── passo 4: vídeos ──
 async function gerarCenas(cena){
@@ -766,7 +841,8 @@ function pintarMontagem(){
 
 // ── tudo junto ──
 function pintarTravas(){
-  const r = !!(proj && proj.roteiro), f = !!(proj && proj.folha);
+  // f = já tem imagem (com a foto do cliente nem sempre existe folha de personagens)
+  const r = !!(proj && proj.roteiro), f = !!(proj && (proj.folha || (proj.cenas && proj.cenas.some(c => c.img))));
   const v = !!(proj && proj.cenas && proj.cenas.some(c => c.video || c.gerando || c.erro));
   const todas = !!(proj && proj.cenas && proj.cenas.every(c => c.video));
   $('p2').classList.toggle('travado', !r);
@@ -780,7 +856,7 @@ function pintarTravas(){
   $('btnGerar').innerHTML = IC.filme + (algumaFeita ? ' Gerar as cenas que faltam ou mudaram' : ' Gerar os vídeos das 3 cenas');
   $('btnGerar').classList.toggle('hide', algumaFeita && !falta);   // tudo pronto e em dia: o botão some
   $('btnGerar').disabled = !(proj && proj.cenas && proj.cenas.every(c => c.img)) || ocupado;
-  if (!ocupado) $('btnRoteiro').innerHTML = IC.varinha + (r ? ' Refazer roteiro' : ' Criar roteiro');
+  if (!ocupado) $('btnRoteiro').innerHTML = IC.varinha + (r ? ' Refazer personagem e texto' : ' Gerar personagem e texto');
   $('btnNovo').classList.toggle('hide', !proj);
 }
 // consultaAuto = veio da consulta de 5 em 5 s: o roteiro não muda ali, e redesenhar tiraria o cursor de quem edita
@@ -792,7 +868,6 @@ function aplicar(p, consultaAuto){
     if (p.briefing !== undefined && document.activeElement !== $('inBriefing')) { $('inBriefing').value = p.briefing || ''; $('contBriefing').textContent = (p.briefing || '').length + ' / 2500'; }
     if (p.estilo) { estilo = p.estilo; marcaChip('chipsEstilo', estilo); }
     if (p.modo) { modo = p.modo; marcaChip('chipsModo', modo); }
-    if (p.pessoa && !pessoaNova && !pessoaRemovida) { sexoPessoa = p.pessoa.sexo || sexoPessoa; marcaChip('chipsSexo', sexoPessoa); }
   }
   pintarDicaPessoa();
   pintarSlots();
@@ -805,9 +880,9 @@ function aplicar(p, consultaAuto){
 }
 function novoProjeto(){
   clearTimeout(timerStatus);
-  proj = null; fotosNovas = [null, null, null]; pessoaNova = null; pessoaRemovida = false; sexoPessoa = ''; textoMudou = false; trilhaSel = null;
+  proj = null; fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false; textoMudou = false; trilhaSel = null;
   $('inCliente').value = ''; $('inBriefing').value = ''; $('contBriefing').textContent = '0 / 2500'; $('inAjuste').value = '';
-  marcaChip('chipsSexo', '');
+  estilo = 'real'; marcaChip('chipsEstilo', 'real');
   guarda('cenas:ultimo', null);
   aviso('');
   aplicar(null);
@@ -818,7 +893,7 @@ $('btnNovo').addEventListener('click', () => { if (confirm('Começar um projeto 
 async function abrir(id){
   const d = await chama('/cenas/projeto?id=' + encodeURIComponent(id));
   if (!d.ok) { aviso(d.error || 'Não consegui abrir o projeto.'); return false; }
-  fotosNovas = [null, null, null]; pessoaNova = null; pessoaRemovida = false; textoMudou = false;
+  fotosNovas = [null, null, null]; fotosRemovidas = [false, false, false]; pessoaNova = null; pessoaRemovida = false; textoMudou = false;
   aplicar(d.projeto);
   acompanhar();
   return true;
