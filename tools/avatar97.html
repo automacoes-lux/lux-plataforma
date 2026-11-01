@@ -589,7 +589,7 @@ button.mini916:hover{border-color:var(--gold)}
           <!-- (01/11) NÃO DANÇAR — desligada (padrão) = o personagem canta dançando no ritmo; ligada = canta parado, só com gestos.
                (era a chave "IA antiga" de 12/10; o canto agora é sempre no motor novo) -->
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="sw-label" id="motorLbl">Não<br/>dançar</span>
+            <span class="sw-label" id="motorLbl" style="white-space:nowrap">Não dançar</span>
             <button type="button" class="sw" id="btnMotor" role="switch" aria-checked="false" onclick="toggleMotor()"
                     title="Desligada (padrão): o personagem canta dançando no ritmo da música. Ligue para ele cantar parado, só com gestos.">
               <span class="sw-knob"></span><span class="sw-txt" id="motorState">Off</span>
