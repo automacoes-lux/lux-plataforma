@@ -780,6 +780,8 @@ $('btnProcess').addEventListener('click', async () => {
   // Sem mexer (trecho inteiro, sem fade) → envia a música original como está.
   let payload = originalFile;
   let payloadName = originalFile.name;
+  // Duração (s) do que vai ser enviado — usada pro custo (o WaveSpeed cobra por segundo).
+  let payloadDurationSec = trimBuffer ? trimBuffer.duration : 0;
   if (trimBuffer && isTrimmed()) {
     try {
       const { startSec, endSec, fadeIn, fadeOut } = getTrimValues();
@@ -787,6 +789,7 @@ $('btnProcess').addEventListener('click', async () => {
       const base = originalFile.name.replace(/\.[^.]+$/, '');
       payload = audioBufferToWav(cut);
       payloadName = base + '.wav';
+      payloadDurationSec = Math.max(0, endSec - startSec);
     } catch (err) {
       showError('Não consegui cortar o trecho: ' + err.message);
       $('btnProcess').disabled = false;
@@ -799,10 +802,10 @@ $('btnProcess').addEventListener('click', async () => {
     }
   }
 
-  await startProcessing(payload, payloadName);
+  await startProcessing(payload, payloadName, payloadDurationSec);
 });
 
-async function startProcessing(file, filename) {
+async function startProcessing(file, filename, durationSec) {
   showScreen('progress');
   setStep('upload', 'active', '');
   setStep('process', '', '');
@@ -815,6 +818,7 @@ async function startProcessing(file, filename) {
     const form = new FormData();
     if (filename) form.append('file', file, filename);
     else form.append('file', file);
+    if (durationSec && durationSec > 0) form.append('durationSec', String(Math.round(durationSec)));
 
     const resp = await window.__luxFetch(WORKER_URL + '/process', {
       method: 'POST',
