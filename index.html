@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20261101i';</script>
+<script>window.__LUX_VERSION = '20261101j';</script>
 <script type="module" src="js/auth.js?v=20260904a"></script>
 </head>
 <body>
@@ -158,6 +158,11 @@
       <a class="nav-item" data-tool="videos-promocional" href="#">
         <div class="nav-icon">🐱</div> Personagem Animado
         <span class="nav-badge badge-live">LIVE</span>
+      </a>
+      <!-- (01/11) motor novo do Personagem: 3 cenas, diálogo, Pessoa real × Animado. Só admin enquanto testa. -->
+      <a class="nav-item" data-tool="personagem-cenas" href="#" data-role-required="admin" style="display:none">
+        <div class="nav-icon">🎬</div> Personagem em cenas
+        <span class="nav-badge badge-new">TESTE</span>
       </a>
       <a class="nav-item" data-tool="atendimento" href="#">
         <div class="nav-icon">📋</div> Suporte
@@ -444,6 +449,15 @@
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">🐱 PERSONAGEM ANIMADO</span>
+      </div>
+      <!-- iframe injetado lazy pelo shell.js -->
+    </div>
+
+    <!-- PERSONAGEM EM CENAS (01/11 — motor novo, só admin enquanto testa) -->
+    <div id="view-personagem-cenas" class="tool-panel" data-role-required="admin" style="display:none">
+      <div class="tool-panel-header">
+        <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+        <span class="tool-panel-title">🎬 PERSONAGEM EM CENAS</span>
       </div>
       <!-- iframe injetado lazy pelo shell.js -->
     </div>

@@ -21,6 +21,7 @@ const TOOLS = {
   'videos-premium':  'tools/videos-premium.html',
   avatar97:          'tools/avatar97.html',
   'videos-promocional':'tools/videos-promocional.html',
+  'personagem-cenas':'tools/personagem-cenas.html',   // (01/11) motor novo do Personagem — só admin no menu
   atendimento:       'tools/atendimento.html',
   'financeiro-atendente': 'tools/financeiro-atendente.html',
   financeiro:        'tools/financeiro.html',
