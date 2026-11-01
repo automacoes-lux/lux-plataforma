@@ -989,7 +989,19 @@ const EST_USD_LIPSEC_DUO = EST_USD_LIPSEC; // dupla canta no mesmo motor, mesmo 
 const EST_USD_MATTESEC = 0.0225;   // recorte BRIA direto, por segundo (05/09: preço REAL do painel/pay-as-you-go; a fal revendia e subiu p/ $0,14)
 const EST_USD_J2VSEC  = 0.00333;   // render Shotstack ($0,20/min ÷ 60), por segundo
 const EST_USD_EXPAND  = 0.013;     // melhoria+extensão AUTOMÁTICA por FOTO (custo real medido 05/09; roda sozinha no servidor)
-const EST_CAMBIO      = 5.18;
+let EST_CAMBIO        = 5.18;      // (01/11) troca pelo DÓLAR DO DIA ao abrir a tela (rota /cotacao97, a mesma cotação da cobrança); 5,18 só se não responder
+// (01/11) busca o dólar do dia uma vez; se o login ainda não carregou, tenta de novo no próximo redesenho (no máx. a cada 20 s)
+let _cambioFonte = '', _cambioPedidoTs = 0;
+async function atualizaCambio() {
+  try {
+    const r = await api('/cotacao97');
+    const d = await r.json();
+    if (d && d.ok && Number(d.rate) >= 3 && Number(d.rate) <= 10) {
+      EST_CAMBIO = Number(d.rate); _cambioFonte = d.source || 'dia';
+      if (typeof renderStoryboard === 'function') renderStoryboard();
+    }
+  } catch (e) {}
+}
 
 const POLL_INTERVAL_MS = 8000;
 const PENDING_KEY = 'lux_avatar_pending';
@@ -3277,6 +3289,7 @@ async function aplicarCorte(inteira) {   // (20/10) inteira = música toda ao en
 function renderStoryboard() {
   const sb = document.getElementById('storyboard');
   if (!sb) return;
+  if (!_cambioFonte && Date.now() - _cambioPedidoTs > 20000) { _cambioPedidoTs = Date.now(); atualizaCambio(); }   // (01/11) dólar do dia
   const t = computeTiming();
   let html = '';
   if (!scenes.length) {
@@ -3313,7 +3326,8 @@ function renderStoryboard() {
   const costEl = document.getElementById('sbCost');
   if (costEl) costEl.innerHTML = semMusica
     ? '<small>o preço sai com a música</small>'
-    : ('≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por vídeo') + '</small>');
+    : ('≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>' + (editState ? 'nesta edição' : 'por vídeo') +
+       (_cambioFonte ? (_cambioFonte === 'fallback' ? ' · dólar de reserva' : ' · dólar do dia R$ ' + EST_CAMBIO.toFixed(2).replace('.', ',')) : '') + '</small>');   // (01/11)
   renderChecklist();   // (13/09) o checklist do Passo 3 acompanha tudo que redesenha duração e preço
 }
 
