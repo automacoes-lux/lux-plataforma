@@ -396,6 +396,31 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 /* Botão Editar nos resultados + modal de refazer cena */
 .btn-editar{padding:9px 14px;border-radius:var(--radius);background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);font-size:12.5px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.04em;cursor:pointer}
 .btn-editar:hover{border-color:var(--gold);color:var(--gold)}
+/* (01/11) igual ao Avatar 97: MINIATURA 9:16 à esquerda de cada card (Resultados e Projetos) + PRÉVIA do vídeo + busca */
+.mini916{
+  position:relative;width:54px;aspect-ratio:9/16;flex-shrink:0;border-radius:8px;overflow:hidden;padding:0;
+  background:#000;border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--text-dim);font-family:inherit;
+}
+.mini916 img,.mini916 video{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+button.mini916{cursor:pointer}
+button.mini916:hover{border-color:var(--gold)}
+.mini916 .mini-play{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.55);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;padding-left:2px;pointer-events:none;
+}
+.order-item .mini916 + .order-info{min-width:150px}
+.order-cat{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);border-radius:999px;padding:2px 9px;margin-bottom:4px}
+.prev-fundo{display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,.86);align-items:center;justify-content:center;padding:16px}
+.prev-fundo.show{display:flex}
+.prev-cx{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%}
+.prev-cx video{display:block;height:min(72vh,640px);aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;border:.5px solid var(--border-bright)}
+.prev-nome{font-size:13.5px;font-weight:600;color:var(--text);text-align:center;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prev-bts{display:flex;gap:10px;justify-content:center}
+.busca-proj{display:flex;align-items:center;gap:8px;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:2px 12px;margin:2px 0 10px}
+.busca-proj input{border:none;background:transparent;padding:11px 0;flex:1;min-width:0;color:var(--text);font-size:14px;outline:none}
+.busca-proj button{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
 .es-box{max-width:560px}
 .es-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
 .es-cell{width:120px;text-align:center}
@@ -742,10 +767,29 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
     <div class="card">
       <div class="step-eyebrow"><span class="dot"></span>Projetos salvos</div>
       <div class="card-hint" style="margin-bottom:12px">Tudo que você preenche em <b>Criar clipe</b> fica guardado aqui sozinho. Continue de onde parou — guardado por <b>7 dias</b>. 💾</div>
+      <!-- (01/11) busca nos projetos (cliente, categoria ou atendente) — filtra na própria tela, igual ao Avatar 97 -->
+      <div class="busca-proj">
+        <span style="font-size:14px;opacity:.7">🔎</span>
+        <input type="text" id="buscaProj" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+        <button type="button" id="buscaProjLimpa" title="Limpar" style="display:none">✕</button>
+      </div>
+      <div id="buscaProjCont" style="font-size:11.5px;color:var(--text-dim);margin:-4px 0 12px"></div>
       <div id="listaProjetos"><div class="empty-state">Carregando…</div></div>
     </div>
   </div>
 
+</div>
+
+<!-- (01/11) PRÉVIA do clipe pronto: clicar na miniatura abre aqui, para conferir antes de baixar (igual ao Avatar 97) -->
+<div class="prev-fundo" id="prevFundo" onclick="if(event.target===this)fechaPrevia()">
+  <div class="prev-cx">
+    <div class="prev-nome" id="prevNome"></div>
+    <video id="prevVid" controls playsinline preload="metadata"></video>
+    <div class="prev-bts">
+      <a class="btn-baixar" id="prevBaixar" href="#" target="_blank" rel="noopener" download>⬇ Baixar</a>
+      <button type="button" class="btn-editar" onclick="fechaPrevia()">Fechar</button>
+    </div>
+  </div>
 </div>
 
 <!-- EDITOR 9:16 (enquadrar a foto da cena) -->
@@ -1092,7 +1136,12 @@ async function rascSalvarAgora() {
       avatarCalib: avatarCalib, avScale: avScale,
       musicName: music ? music.name : '', musicDuration: music ? music.duration : 0,
       arquivos: _rascArq, cartoonKey: (_rascArq.cartoon || {}).key || '',
-      scenes: cenas, passo: rascPasso(), passoMax: 3
+      scenes: cenas, passo: rascPasso(), passoMax: 3,
+      // (01/11) 150 novo: o que aparece escrito no vídeo + o estilo da imagem
+      empresa: ((document.getElementById('v2Empresa') || {}).value || '').trim(),
+      whatsapp: ((document.getElementById('v2Whats') || {}).value || '').trim(),
+      endereco: ((document.getElementById('v2Endereco') || {}).value || '').trim(),
+      imagemReal: imagemRealV2
     };
     const r = await api('/avpSalvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: rascId, estado: estado }) });
     const j = await r.json();
@@ -1116,18 +1165,39 @@ async function carregaProjetos() {
         '<br/><button class="btn-mini" style="margin-top:10px" onclick="carregaProjetos()">🔄 Tentar de novo</button></div>';
       return;
     }
-    const lista = d.projetos || [];
-    if (!lista.length) {
+    _proj150 = d.projetos || [];
+    pintarProjetos150();
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+  }
+}
+// (01/11) busca nos projetos: filtra na própria tela (são no máximo 100) por cliente, categoria ou atendente, sem acento e
+// exigindo todas as palavras — igual à busca dos Resultados e ao Avatar 97. Miniatura 9:16 = a imagem do personagem.
+var _proj150 = [];   // var: a aba pode abrir antes desta linha rodar
+function pintarProjetos150() {
+  const el = document.getElementById('listaProjetos');
+  if (!el) return;
+  try {
+    const cx = document.getElementById('buscaProj');
+    const termo = semAcento150((cx && cx.value) || '').trim();
+    const btL = document.getElementById('buscaProjLimpa'); if (btL) btL.style.display = termo ? '' : 'none';
+    const lista = !termo ? _proj150 : _proj150.filter(function (p) {
+      const alvo = semAcento150((p.categoria || '') + ' ' + (p.cliente || '') + ' ' + (p.atendente || ''));
+      return termo.split(/\s+/).every(function (w) { return alvo.indexOf(w) >= 0; });
+    });
+    const cont = document.getElementById('buscaProjCont');
+    if (cont) cont.textContent = (termo && _proj150.length) ? (lista.length + ' de ' + _proj150.length + ' projetos') : '';
+    if (!_proj150.length) {
       el.innerHTML = '<div class="empty-state">Nenhum projeto em andamento.<br/>O que você preencher em <b>Criar clipe</b> fica guardado aqui sozinho. 💾</div>';
       return;
     }
+    if (!lista.length) { el.innerHTML = '<div class="empty-state">Nada encontrado para <b>' + escapeHtml(cx.value) + '</b>.</div>'; return; }
     el.innerHTML = lista.map(function (p) {
-      const th = p.thumb
-        ? '<img src="' + escapeHtml(p.thumb) + '" alt="" style="width:46px;height:60px;border-radius:8px;object-fit:cover;background:#222;flex:none"/>'
-        : '<div style="width:46px;height:60px;border-radius:8px;background:#222;flex:none"></div>';
+      const cat = p.categoria ? '<div class="order-cat">' + escapeHtml(p.categoria) + '</div>' : '';
+      const th = '<div class="mini916">' + (p.thumb ? '<img src="' + escapeHtml(rapido150(p.thumb)) + '" alt="" loading="lazy"/>' : '🖼️') + '</div>';
       const quem = p.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(p.atendente) + '</div>' : '';
       return '<div class="order-item">' + th +
-        '<div class="order-info"><div class="order-client">' + escapeHtml(p.cliente || '(sem nome ainda)') + '</div>' + quem +
+        '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(p.cliente || '(sem nome ainda)') + '</div>' + quem +
         '<div class="order-meta">parou no passo ' + (p.passo || 1) + ' de ' + (p.passoMax || 3) + ' · ' + escapeHtml(p.atualizadoEm || '') + '</div></div>' +
         '<div class="order-side">' +
         '<button class="btn-baixar" onclick="continuarProjeto(\'' + p.projectId + '\')">▶ Continuar</button>' +
@@ -1135,9 +1205,17 @@ async function carregaProjetos() {
         '</div></div>';
     }).join('');
   } catch (e) {
-    el.innerHTML = '<div class="empty-state">Não consegui carregar os projetos.<br/>Verifique a conexão e abra a aba de novo.</div>';
+    el.innerHTML = '<div class="empty-state">Não consegui mostrar os projetos.<br/>Abra a aba de novo.</div>';
   }
 }
+(function ligaBuscaProjetos150() {
+  const liga = function () {
+    const cx = document.getElementById('buscaProj'), btL = document.getElementById('buscaProjLimpa');
+    if (cx) cx.addEventListener('input', pintarProjetos150);
+    if (btL) btL.addEventListener('click', function () { if (cx) { cx.value = ''; cx.focus(); } pintarProjetos150(); });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
+})();
 
 // Continuar de onde parou: baixa tudo ANTES de mexer na tela (se falhar, nada se perde).
 async function continuarProjeto(pid) {
@@ -1202,6 +1280,7 @@ async function continuarProjeto(pid) {
     editState = null;               // continuar = criar do zero (não é edição de vídeo pronto)
     document.getElementById('clientName').value = e.clientName || '';
     { const fc = document.getElementById('fCategoria'); if (fc) fc.value = e.categoria || ''; }
+    preencheCamposV2(e);   // (01/11) empresa, WhatsApp, endereço e estilo do 150 novo
     clientPhoto = f1; clientPhoto2 = f2;
     if (cartoonB64) {
       avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi gerado no rascunho
@@ -1250,6 +1329,8 @@ async function apagarProjeto(pid) {
 
 // digitar o nome do cliente também salva (debounced)
 (function () { const cn = document.getElementById('clientName'); if (cn) cn.addEventListener('input', rascSalvar); const fc = document.getElementById('fCategoria'); if (fc) fc.addEventListener('input', rascSalvar); })();
+// (01/11) os campos do 150 novo também salvam o rascunho
+(function () { ['v2Empresa', 'v2Whats', 'v2Endereco'].forEach(function (id) { const x = document.getElementById(id); if (x) x.addEventListener('input', rascSalvar); }); })();
 
 function fmtTime(s) {
   s = Math.max(0, Math.round(s));
@@ -1456,12 +1537,13 @@ function refreshAvatarUI() {
   // (07/09) Na edição o Passo 1 fica escondido SÓ enquanto o avatar está travado. Se a atendente
   // destravou (botão "Quero trocar o avatar"), a tela de gerar/aprovar volta a funcionar igual à criação.
   if (editState && !editTrocaAvatar) {
-    ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+    ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved', 'estiloV2'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     return;
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
+  const est = document.getElementById('estiloV2'); if (est) est.style.display = '';         // (01/11) idem o estilo do 150 novo
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
   const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = '';   // Imagem 2 sempre disponível (UI universal 19/08)
   const genRow  = document.getElementById('avatarGenRow');
@@ -3306,18 +3388,20 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!((document.getElementById('fCategoria') || {}).value || '').trim()) return 'Preencha a categoria do cliente (Passo 1).';
-  if (modoV2 && !editState) {   // (31/10) 150 novo: o nome da empresa abre o vídeo e o WhatsApp fecha
+  if (modoV2) {   // (31/10) 150 novo: o nome da empresa abre o vídeo e o WhatsApp fecha (01/11: na edição também)
     if (!document.getElementById('v2Empresa').value.trim()) return 'Preencha o nome da empresa (Passo 1) — ele aparece no vídeo.';
     if (!document.getElementById('v2Whats').value.trim()) return 'Preencha o WhatsApp (Passo 1) — ele aparece no final do vídeo.';
   }
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
     if (editTrocaAvatar && !(avatarPreview && avatarPreview.approved && avatarPreview.cartoonBase64))
-      return 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 2) — ou recarregue a página pra manter o avatar antigo.';
+      return modoV2 ? 'Você liberou a troca do personagem: envie a imagem e gere o novo personagem (Passo 2) — ou clique em Cancelar no topo para manter o antigo.'
+                    : 'Você liberou a troca do avatar: envie a imagem, gere e APROVE o novo avatar (Passo 2) — ou recarregue a página pra manter o avatar antigo.';
     if (editTrocaMusica && !(music && music.base64))
       return 'Você liberou a troca da música: envie o novo MP3 (Passo 3) — ou recarregue a página pra manter a música antiga.';
     if (scenes.length < 1) return 'Mantenha pelo menos 1 foto ou vídeo (Passo 4).';
     if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 4).';
+    if (modoV2) return '';   // (01/11) 150 novo: o servidor encaixa as fotos no tempo da música
     if (scenes.some(s => s.at != null)) {
       // vídeo casado com a letra: valida a densidade (mín. ~2,5s por mídia)
       const D = videoDur();
@@ -3387,12 +3471,18 @@ async function gerarClipe() {
         payloadE.tipo = avatarTipo;
       }
       payloadE.cartoonGens = cartoonGens; payloadE.cartoonGensRes = cartoonGensRes; payloadE.lyricSeconds = lyricSegs;
+      if (modoV2) {   // (01/11) 150 novo: o que aparece escrito no vídeo + o estilo da imagem nova
+        payloadE.empresa = ((document.getElementById('v2Empresa') || {}).value || '').trim();
+        payloadE.whatsapp = ((document.getElementById('v2Whats') || {}).value || '').trim();
+        payloadE.endereco = ((document.getElementById('v2Endereco') || {}).value || '').trim();
+        payloadE.real = imagemRealV2 === true;
+      }
       const re = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadE) });
       const de = await re.json();
       if (!de.ok) throw new Error(de.error || 'Falha ao salvar a edição.');
       cartoonGens = 0; cartoonGensRes = 0; lyricSegs = 0;   // já foram cobrados nesta edição
       addPending(de.orderId, nome + ' (edição)');
-      toast('💾 ' + (de.musicaNova ? 'Edição em produção — trocou a música, então o canto é refeito (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).'));
+      toast('💾 ' + (de.message || (de.musicaNova ? 'Edição em produção — trocou a música, então o canto é refeito (uns minutos a mais).' : 'Edição em produção (rápida — reaproveita o avatar).')));
       sairEdicao();
       showTab('resultados');
       startPolling();
@@ -3414,6 +3504,7 @@ async function gerarClipe() {
       musicDuration: music.duration,
       cartoonGens, cartoonGensRes, lyricSeconds: lyricSegs,   // (11/09) o que foi gerado/transcrito de verdade
       v2: modoV2,   // (31/10) 150 novo (o servidor confere se o e-mail está liberado)
+      real: imagemRealV2 === true,   // (01/11) Pessoa real × Animação fica guardado no pedido (o Editar traz de volta)
       empresa: ((document.getElementById('v2Empresa') || {}).value || '').trim(),
       whatsapp: ((document.getElementById('v2Whats') || {}).value || '').trim(),
       endereco: ((document.getElementById('v2Endereco') || {}).value || '').trim()
@@ -3581,7 +3672,10 @@ function pintar150() {
   if (!html) html = termo
     ? '<div class="empty-state">Nada encontrado para <b>' + escapeHtml(cx.value) + '</b>.<br/>Tente o ramo do cliente (ex.: <b>padaria</b>, <b>oficina</b>) ou o nome do atendente.</div>'
     : '<div class="empty-state">Nenhum clipe ainda.<br/>Crie o primeiro na aba <b>Criar clipe</b>. 🎤<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">🔄 Atualizar</button></div>';
+  const antigos = {};   // (01/11) quadros das miniaturas já carregados (a lista é repintada a cada busca/atualização)
+  el.querySelectorAll('video[data-src]').forEach(function (vd) { if (vd.getAttribute('src')) antigos[vd.dataset.src] = vd; });
   el.innerHTML = html;
+  ligaMinis150(el, antigos);
 }
 // MEU pedido em produção ou que falhou (igual era antes)
 function card150Pedido(o) {
@@ -3593,7 +3687,9 @@ function card150Pedido(o) {
   const etapa = (o.status !== 'ERROR' && o.status !== 'CANCELLED' && o.statusMsg) ? ' <span class="order-etapa">⏳ ' + escapeHtml(o.statusMsg) + '</span>' : '';
   const custo = (o.costBRL != null) ? ' · R$ ' + Number(o.costBRL).toFixed(2).replace('.', ',') : '';
   const linhaAtend = (_admin150 && o.attendantName) ? '<div class="order-attendant">👤 ' + escapeHtml(o.attendantName) + '</div>' : '';
-  return '<div class="order-item"><div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' + linhaAtend +
+  const falhou = (o.status === 'ERROR' || o.status === 'CANCELLED');   // (01/11) o vídeo ainda não existe: a miniatura só marca o estado
+  const mini = '<div class="mini916" title="' + (falhou ? 'Falhou' : 'Em produção') + '">' + (falhou ? '⚠️' : '⏳') + '</div>';
+  return '<div class="order-item">' + mini + '<div class="order-info"><div class="order-client">' + escapeHtml(o.clientName || '—') + etapa + '</div>' + linhaAtend +
     '<div class="order-meta">Início ' + (o.createdAt || '—') + ' · ' + numCenas + ' cena(s)' + custo +
     (o.status === 'ERROR' && o.genError ? '<br/>⚠️ ' + escapeHtml(o.genError) : '') + '</div></div>' +
     '<div class="order-side">' + chip + '</div></div>';
@@ -3605,12 +3701,57 @@ function card150Vitrine(v, custoBRL) {
   const dur = v.segundos ? ' · ' + Math.round(v.segundos) + 's' : '';
   const custo = (podeEditar && custoBRL != null) ? ' · R$ ' + Number(custoBRL).toFixed(2).replace('.', ',') : '';
   const quem = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
-  const editar = podeEditar ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trocar música/fotos reaproveitando o avatar (mais barato)">✏️ Editar</button>' : '';
-  return '<div class="order-item"><div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' + quem +
+  const editar = podeEditar ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar clipe (dados, personagem, música e fotos) para mudar o que precisar">✏️ Editar</button>' : '';
+  return '<div class="order-item">' + miniVideo150(v) + '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' + quem +
     '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
     '<div class="order-side"><span class="st-chip st-ok">Pronto</span>' +
-    '<a class="btn-baixar" href="' + escapeHtml(v.videoUrl || '') + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + '</div></div>';
+    '<a class="btn-baixar" href="' + escapeHtml(rapido150(v.videoUrl || '')) + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + '</div></div>';
 }
+// (01/11) MINIATURA + PRÉVIA (igual ao Avatar 97): um quadro do próprio vídeo; o clique abre a prévia, com o Baixar dentro.
+// O endereço de teste do armazenamento (r2.dev) é lento — troca pelo domínio próprio do mesmo armazenamento.
+function rapido150(u) { return String(u || '').replace('https://pub-2385c1507e84414f9df2410953ac4af1.r2.dev', 'https://arquivos.plataformalux.com.br'); }
+function miniVideo150(v) {
+  const u = rapido150(v && v.videoUrl);
+  if (!u) return '<div class="mini916">🎬</div>';
+  return '<button type="button" class="mini916" title="Ver o vídeo" data-v="' + escapeHtml(u) + '" data-n="' + escapeHtml(v.cliente || '') + '" onclick="abrePrevia(this)">' +
+    '<video muted playsinline preload="none" data-src="' + escapeHtml(u + '#t=1') + '"></video><span class="mini-play">▶</span></button>';
+}
+var _miniObs150 = null;
+function ligaMinis150(raiz, antigos) {   // o quadro só carrega quando o card aparece na tela (são muitos vídeos; no celular pesaria)
+  if (!raiz) return;
+  raiz.querySelectorAll('video[data-src]').forEach(function (vd) {
+    const velho = antigos && antigos[vd.dataset.src];
+    if (velho) { vd.replaceWith(velho); return; }   // repintura (busca / atualização): reaproveita o quadro já carregado
+    if (!('IntersectionObserver' in window)) { vd.preload = 'metadata'; vd.src = vd.dataset.src; return; }
+    if (!_miniObs150) _miniObs150 = new IntersectionObserver(function (itens) {
+      itens.forEach(function (it) {
+        if (!it.isIntersecting) return;
+        _miniObs150.unobserve(it.target);
+        it.target.preload = 'metadata';
+        it.target.src = it.target.dataset.src;
+      });
+    }, { rootMargin: '200px' });
+    _miniObs150.observe(vd);
+  });
+}
+function abrePrevia(bt) {
+  const f = document.getElementById('prevFundo'), vd = document.getElementById('prevVid');
+  if (!f || !vd || !bt) return;
+  document.getElementById('prevNome').textContent = bt.dataset.n || '';
+  document.getElementById('prevBaixar').href = bt.dataset.v;
+  vd.src = bt.dataset.v;
+  f.classList.add('show');
+  const pl = vd.play(); if (pl && pl.catch) pl.catch(function () {});
+}
+function fechaPrevia() {
+  const f = document.getElementById('prevFundo'), vd = document.getElementById('prevVid');
+  if (vd) { vd.pause(); vd.removeAttribute('src'); vd.load(); }
+  if (f) f.classList.remove('show');
+}
+document.addEventListener('keydown', function (e) {
+  const f = document.getElementById('prevFundo');
+  if (e.key === 'Escape' && f && f.classList.contains('show')) fechaPrevia();
+});
 (function ligaBusca150() {
   const liga = function () {
     const cx = document.getElementById('buscaRes'), btL = document.getElementById('buscaLimpa');
@@ -3633,6 +3774,7 @@ async function editarClipe(orderId) {
     editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false;   // toda edição começa com avatar e música TRAVADOS
     document.getElementById('clientName').value = d.clientName || '';
     { const fc = document.getElementById('fCategoria'); if (fc) fc.value = d.categoria || ''; }
+    preencheCamposV2(d.v2 ? d : null);   // (01/11) 150 novo: empresa, WhatsApp, endereço e estilo do vídeo original
     avatarPreview = { cartoonUrl: d.cartoonUrl, approved: true, fromEdit: true };   // avatar TRAVADO (do original)
     clientPhoto  = { fromEdit: true };                                              // p/ a validação não pedir foto
     avatarCalib  = (d.avatarCalib && typeof d.avatarCalib.dx === 'number') ? d.avatarCalib : { dx: 0, dy: 0 };
@@ -3649,7 +3791,7 @@ async function editarClipe(orderId) {
     scenes = (d.backgrounds || []).map((b, i) => ({
       id: 'ed' + i + Math.random().toString(36).slice(2, 5),
       kind: b.kind === 'video' ? 'video' : 'photo',
-      srcKey: b.srcKey, thumbUrl: b.url, base64: null, name: 'mídia ' + (i + 1),
+      srcKey: b.srcKey, thumbUrl: rapido150(b.url), base64: null, name: 'mídia ' + (i + 1),
       dur: b.dur, trimStart: b.trimStart, scale: b.scale, offsetX: b.offsetX, offsetY: b.offsetY, at: b.at,
       origDur: (b.odur != null ? Number(b.odur) : null)   // conteúdo real do clipe (limita ⏱ e viaja de volta no payload)
     }));
@@ -3666,7 +3808,9 @@ async function editarClipe(orderId) {
     if (typeof renderStoryboard === 'function') renderStoryboard();
     showTab('criar');
     window.scrollTo(0, 0);
-    toast('✏️ Editando "' + (d.clientName || '') + '". Troque as imagens e salve. Se precisar, dá pra trocar também o avatar ou a música — os botões estão nos Passos 1 e 2.');
+    toast(d.v2
+      ? '✏️ Editando "' + (d.clientName || '') + '". Está tudo de volta: mude o que precisar (dados da empresa, fotos e vídeos) e salve. Dá pra trocar também o personagem ou a música (Passos 2 e 3).'
+      : '✏️ Editando "' + (d.clientName || '') + '". Troque as imagens e salve. Se precisar, dá pra trocar também o avatar ou a música — os botões estão nos Passos 1 e 2.');
   } catch (e) { toast('⚠️ Erro ao abrir a edição: ' + e.message); }
 }
 
@@ -3682,15 +3826,17 @@ function aplicarModoEdicao(d) {
     if (on) {
       const trocou = [editTrocaAvatar ? 'avatar' : '', editTrocaMusica ? 'música' : ''].filter(Boolean).join(' e ');
       document.getElementById('editBannerText').textContent =
-        '"' + ((d && d.clientName) || '') + '" — ' + (trocou
+        '"' + ((d && d.clientName) || '') + '" — ' + (modoV2
+          ? (trocou ? ('trocando o ' + trocou + ': o canto vai ser regravado.') : 'mude os dados da empresa, as fotos e os vídeos. O personagem e a música são mantidos; só a nova montagem é cobrada.')
+          : trocou
           ? ('trocando o ' + trocou + ': o canto vai ser regravado. As fotos já melhoradas são preservadas.')
           : 'troque as imagens/vídeos de fundo. O avatar e a música são mantidos; só a edição é cobrada.');
-      const img = document.getElementById('editBannerImg'); if (img && d) img.src = d.cartoonUrl || '';
+      const img = document.getElementById('editBannerImg'); if (img && d) img.src = rapido150(d.cartoonUrl || '');
     }
   }
   // Passo 1: escondido enquanto o avatar está travado. Destravou → volta a tela normal de criar avatar
   // (quem manda no detalhe é o refreshAvatarUI; aqui só liberamos/escondemos o bloco).
-  ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved'].forEach(id => {
+  ['avatarTipoSeg', 'clientPhotoRow', 'clientPhoto2Row', 'avatarGenRow', 'avatarPreview', 'avatarApproved', 'estiloV2'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = avTravado ? 'none' : '';
   });
   if (!avTravado && typeof refreshAvatarUI === 'function') refreshAvatarUI();   // mostra o bloco CERTO do Passo 1
@@ -3709,7 +3855,7 @@ function aplicarModoEdicao(d) {
     const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.add('show');
     const nm = document.getElementById('musicName'); if (nm) nm.textContent = 'Música atual (mantida)';
     const du = document.getElementById('musicDur'); if (du) du.textContent = '';
-    const pl = document.getElementById('player'); if (pl) pl.src = d.musicUrl || '';
+    const pl = document.getElementById('player'); if (pl) pl.src = rapido150(d.musicUrl || '');
   }
   const btn = document.getElementById('btnGerar');
   if (btn) btn.textContent = on ? (editRegravaCanto() ? '🎬 Refazer o vídeo' : '💾 Salvar edição') : 'Gerar o clipe';
@@ -3723,6 +3869,12 @@ function fotosNovasNaEdicao() { return scenes.filter(s => s.kind === 'photo' && 
 // Quanto esta edição vai custar, do jeito que a tela está agora.
 function custoEdicaoBRL() {
   const D = videoDur() || DUR_PADRAO_S;
+  if (modoV2) {   // (01/11) 150 novo: a montagem sempre (US$0,05 + 0,22/min) + letra e fotos (~US$0,01); canto só se regravar
+    let u = 0.06 + D * (0.22 / 60);
+    if (editTrocaAvatar) u += 0.05;                 // imagem nova do personagem
+    if (editRegravaCanto()) u += D * 0.0243;        // canto de novo
+    return u * EST_CAMBIO;
+  }
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
   let usd = D * EST_USD_J2VSEC;                                        // a montagem sempre acontece
   if (editTrocaAvatar) usd += EST_USD_CENA;                            // desenhar o avatar de novo
@@ -3732,6 +3884,13 @@ function custoEdicaoBRL() {
 }
 function _avisoRegravar(oQue, extraCartoon) {
   const D = videoDur() || DUR_PADRAO_S;
+  if (modoV2) {   // (01/11) 150 novo: preço e tempo do canto + montagem novos
+    const brlV2 = ((0.06 + D * (0.0243 + 0.22 / 60) + (extraCartoon ? 0.05 : 0)) * EST_CAMBIO).toFixed(2).replace('.', ',');
+    return 'Trocar ' + oQue + ' obriga a REGRAVAR o canto do personagem do zero.\n\n' +
+           '• Custo: cerca de R$ ' + brlV2 + ' (quase o preço de um vídeo novo)\n' +
+           '• Tempo: cerca de ' + Math.max(15, Math.round(D / 60 * 20)) + ' minutos\n\n' +
+           'Quer continuar?';
+  }
   const _lipsec = (avatarTipo === 'dupla' || avatarTipo === 'personagemDupla') ? EST_USD_LIPSEC_DUO : EST_USD_LIPSEC;
   const usd = D * (_lipsec + EST_USD_MATTESEC + EST_USD_J2VSEC) + (extraCartoon ? EST_USD_CENA : 0);
   const brl = (usd * EST_CAMBIO).toFixed(2).replace('.', ',');
@@ -3749,7 +3908,7 @@ function destravarAvatar() {
   try { renderClientPhoto2(); } catch (e) {}
   aplicarModoEdicao(null);
   renderStoryboard();
-  toast('🎤 Avatar liberado — envie a imagem no Passo 2, gere e APROVE o novo avatar.');
+  toast(modoV2 ? '🎤 Personagem liberado — envie a imagem no Passo 2 e gere o novo personagem.' : '🎤 Avatar liberado — envie a imagem no Passo 2, gere e APROVE o novo avatar.');
 }
 function destravarMusica() {
   if (!editState || editTrocaMusica) return;
@@ -3763,7 +3922,7 @@ function destravarMusica() {
 }
 // Aviso ÚNICO por edição quando a atendente mexe nas mídias (add/troca). Só reordenar não avisa nada.
 function avisarCustoMidia() {
-  if (!editState || _avisouMidia) return;
+  if (!editState || _avisouMidia || modoV2) return;   // (01/11) no 150 novo foto nova não tem custo à parte
   _avisouMidia = true;
   toast('ℹ️ Imagem nova entra no melhoramento (~R$ 0,07 cada) e o vídeo é remontado. Só mudar a ORDEM não custa nada a mais.');
 }
@@ -3784,6 +3943,7 @@ function resetCreateForm() {
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   { const fc = document.getElementById('fCategoria'); if (fc) fc.value = ''; }
+  preencheCamposV2(null);   // (01/11) empresa, WhatsApp, endereço e estilo em branco
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
   const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
   const cut = document.getElementById('cutEditor'); if (cut) cut.classList.remove('show');
@@ -3806,6 +3966,7 @@ function sairEdicao() {
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   { const fc = document.getElementById('fCategoria'); if (fc) fc.value = ''; }
+  preencheCamposV2(null);   // (01/11) empresa, WhatsApp, endereço e estilo em branco
   aplicarModoEdicao(null);
   if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
   const loaded = document.getElementById('musicLoaded'); if (loaded) loaded.classList.remove('show');
@@ -3955,6 +4116,16 @@ function ajustarMargemV2(b64) {
   });
 }
 let imagemRealV2 = null;   // (01/11) 150 novo: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
+// (01/11) põe de volta (ou limpa, com null) empresa, WhatsApp, endereço e o estilo da imagem — Editar e Continuar projeto
+function preencheCamposV2(d) {
+  const poe = (id, v) => { const x = document.getElementById(id); if (x) x.value = v || ''; };
+  poe('v2Empresa', d && d.empresa); poe('v2Whats', d && d.whatsapp); poe('v2Endereco', d && d.endereco);
+  imagemRealV2 = (d && (d.imagemReal === true || d.imagemReal === false)) ? d.imagemReal : null;
+  document.querySelectorAll('#estiloV2 .est-btn').forEach((b) => {
+    const on = imagemRealV2 !== null && (b.dataset.real === '1') === imagemRealV2;
+    b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
 function escolherEstiloV2(real) {
   const mudou = imagemRealV2 !== null && imagemRealV2 !== real;
   imagemRealV2 = real;
