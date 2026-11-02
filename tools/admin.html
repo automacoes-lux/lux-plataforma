@@ -1175,13 +1175,14 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
           <label for="anuDe">De</label><input type="date" class="anu-data" id="anuDe" onchange="anuEscolherPeriodo()"/>
           <label for="anuAte">até</label><input type="date" class="anu-data" id="anuAte" onchange="anuEscolherPeriodo()"/>
         </div>
-        <select class="anu-sel" id="anuCampanha" onchange="anuEscolheuCampanha()" aria-label="Campanha">
+        <!-- 02/11/2026 (Thiago, "vamos simplificar"): a tela mostra TODOS os criativos; o seletor fica escondido (o JS ainda usa) -->
+        <select class="anu-sel" id="anuCampanha" onchange="anuEscolheuCampanha()" aria-label="Campanha" style="display:none">
           <option value="">Todas as campanhas</option>
         </select>
         <button type="button" class="anu-bt" id="anuAtualizar" onclick="anuAtualizarDados()"></button>
       </div>
     </div>
-    <div class="anu-etqs">
+    <div class="anu-etqs" style="display:none">
       Etiqueta no nome da campanha:
       <button type="button" class="anu-etq" onclick="anuCopiar('[TESTE]', this)" title="Campanha de teste: o motor avalia o lote inteiro e, às 23h55, recomenda o corte dos candidatos; você confirma aqui"><code>[TESTE]</code><span class="lbl">copiar</span></button>
       <button type="button" class="anu-etq" onclick="anuCopiar('[ESCALA]', this)" title="Campanha de escala: acompanha e recomenda cortar criativo com ROAS abaixo de 1,05 quando houver outro mais forte"><code>[ESCALA]</code><span class="lbl">copiar</span></button>
@@ -2620,8 +2621,7 @@ function anuRender(d) {
     grupo('teste', 'Teste') + grupo('escala', 'Escala');
   if (!anuCampInicial) {
     anuCampInicial = true;
-    const principal = (d.campanhasDec || []).find(function (c) { return c.teste && c.ativos > 0; });
-    if (!atual && principal) { sel.value = principal.id; anuCarregar(); return; }
+    // 02/11/2026: não escolhe mais a campanha principal sozinha — a tela simples mostra todos os criativos juntos
   }
 
   const a = d.ancoras;
@@ -2650,8 +2650,11 @@ function anuRender(d) {
   // para o caso de a tela subir antes do Worker novo.
   if (d.campanhasDec) {
     // 28/10/2026: o funil da carteira de teste abre a aba (dia do período; na semana, o último dia)
-    document.getElementById('anuConteudo').innerHTML = '<div id="anuFunil">' + (anuFnDados && anuFnDados.dia === per.ate ? anuFunil(anuFnDados) : '') + '</div>' + anuLinhaTeste(d.linhaTeste) + anuLinhaEscala(d.linhaEscala) + anuKpisV4(d) + anuQualidade(d) + (d.itens.length ? anuMotor(d) :
-      '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período ou outra campanha' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
+    // 02/11/2026 (Thiago, "não estou entendendo nada"): tela SIMPLES = funil da carteira + um card por criativo, todos
+    // com os números do período. Saíram da tela: linha do tempo dos testes/escala, bloco da campanha, ranking do lote,
+    // linhas do robô (as funções continuam no código; backup admin.html.bak-simplifica-anuncios)
+    document.getElementById('anuConteudo').innerHTML = '<div id="anuFunil">' + (anuFnDados && anuFnDados.dia === per.ate ? anuFunil(anuFnDados) : '') + '</div>' + (d.itens.length ? anuCriativos(d) :
+      '<div class="anu-vazio">Nenhum criativo teve impressão neste período. Escolha outro período' + (d.faltando && d.faltando.length ? ', ou clique em Atualizar dados' : '') + '.</div>');
     // linha da escala abre mostrando HOJE (a ponta direita) quando não cabe na tela
     document.querySelectorAll('.anu-lt-g.esc').forEach(function (g) { g.parentNode.scrollLeft = g.parentNode.scrollWidth; });
     if (anuAberto) anuCarregarDetalhe(anuAberto);
@@ -3447,7 +3450,29 @@ function anuJornadaLeads(leads) {
   }).join('') + '</div>';
 }
 
-function anuCardV4(i, c, d) {
+// Tela simples (02/11/2026): um card por criativo, de todas as campanhas juntas, com os números do PERÍODO (os mesmos
+// do funil da carteira). Ligados em cima, do maior ROAS para o menor; desligados que gastaram no período ficam dobrados.
+function anuCriativos(d) {
+  const camp = {};
+  (d.campanhasDec || []).forEach(function (c) { camp[c.id] = c; });
+  const lista = d.itens.filter(function (i) { return i.dec && camp[i.campanha]; });
+  const per = function (i) {
+    const c = camp[i.campanha], P = c.teste && c.periodo && !c.periodo.mesmoQueLote ? i.dec.periodo : null;
+    return P ? { roas: P.roasReal, g: P.gastoBRL } : { roas: i.dec.etapas.retorno.roasReal, g: i.dec.gasto };
+  };
+  const ordem = function (a, b) { const A = per(a), B = per(b); return (B.roas || 0) - (A.roas || 0) || (B.g || 0) - (A.g || 0); };
+  const ligados = lista.filter(anuEhAtivo).sort(ordem);
+  const desligados = lista.filter(function (i) { return !anuEhAtivo(i) && (per(i).g || 0) > 1; }).sort(ordem);
+  let h = '<div class="anu-egrupo">' + anuEst('Ligados', 'ok') + '<em>do maior para o menor ROAS no período</em><span class="n">' + anuPlural(ligados.length, 'criativo', 'criativos') + '</span></div>';
+  h += ligados.length ? ligados.map(function (i) { return anuCardV4(i, camp[i.campanha], d, true); }).join('') : '<div class="anu-vazio">Nenhum criativo ligado agora.</div>';
+  if (desligados.length) {
+    h += '<details class="anu-dobra"' + (desligados.some(function (i) { return i.ad === anuAberto; }) ? ' open' : '') + '><summary>' + anuPlural(desligados.length, 'criativo desligado', 'criativos desligados') + ' que gastou no período</summary>' +
+      desligados.map(function (i) { return anuCardV4(i, camp[i.campanha], d, true); }).join('') + '</details>';
+  }
+  return h;
+}
+
+function anuCardV4(i, c, d, simples) {
   // teste com período diferente do lote (27/10/2026, Thiago): gasto, etapas e jornada só do período (Hoje = só hoje);
   // a situação, a posição e o motivo continuam pelo lote inteiro, que é o que o robô julga
   const P = c.teste && c.periodo && !c.periodo.mesmoQueLote && i.dec.periodo && i.dec.periodo.etapas ? i.dec.periodo : null;
@@ -3455,11 +3480,12 @@ function anuCardV4(i, c, d) {
   const cambio = (d.motor && d.motor.cambio) || 5.2;
   const rotP = P ? (P.ini === P.fim ? (P.fim === anuHojeBR() ? 'hoje' : 'em ' + anuDia(P.fim)) : 'no período') : '';
   if (P) i = Object.assign({}, i, { jornada: (i.jornada || []).filter(function (z) { return z.d >= P.ini && z.d <= P.fim; }) });
-  const pills = [anuEst(x.rotulo || x.estado, ANU_EST_COR[x.estado] || 'cinza')];
-  if (c.teste && x.posicao) pills.push('<span class="anu-pos">' + x.posicao + 'º no lote</span>');
-  if (x.melhor) pills.push('<span class="anu-melhor">' + ANU_IC.estrela + 'Melhor da campanha</span>');
+  // simples (02/11): sem situação/posição do lote nem recomendação do robô — só o nome, os números do período e a jornada
+  const pills = simples ? [] : [anuEst(x.rotulo || x.estado, ANU_EST_COR[x.estado] || 'cinza')];
+  if (!simples && c.teste && x.posicao) pills.push('<span class="anu-pos">' + x.posicao + 'º no lote</span>');
+  if (!simples && x.melhor) pills.push('<span class="anu-melhor">' + ANU_IC.estrela + 'Melhor da campanha</span>');
   if (!ativo && !final) pills.push('<span class="anu-tag">' + (i.status === 'PAUSED' ? 'pausado' : i.status === 'CAMPAIGN_PAUSED' ? 'campanha pausada' : i.status === 'ADSET_PAUSED' ? 'conjunto pausado' : escapeHtml(String(i.status).toLowerCase())) + '</span>');
-  const reco = ativo || final ? '<span class="anu-reco ' + (ANU_RECO_COR[x.recomendacao] || 'cinza') + '" title="Recomendação do motor. Nada é pausado sem você confirmar.">' + escapeHtml(x.recomendacao) + '</span>' : '';
+  const reco = !simples && (ativo || final) ? '<span class="anu-reco ' + (ANU_RECO_COR[x.recomendacao] || 'cinza') + '" title="Recomendação do motor. Nada é pausado sem você confirmar.">' + escapeHtml(x.recomendacao) + '</span>' : '';
   const gastoCard = P ? P.gastoBRL : x.gasto;
   const dir = '<div class="anu-v3-dir"><div><span>Gasto ' + (P ? rotP : c.teste ? 'no lote' : 'no período') + '</span><b>' + anuR(gastoCard) + '</b><small>' + anuUS(gastoCard / cambio, 0) + '</small></div>' + reco + '</div>';
   const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : 'sem imagem';
@@ -3482,7 +3508,8 @@ function anuCardV4(i, c, d) {
     ' onclick="anuAbrir(\'' + i.ad + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();anuAbrir(\'' + i.ad + '\')}">' +
     '<div class="anu-v3-top"><div class="anu-thumb">' + thumb + '</div>' +
     '<div class="anu-v3-nome"><b>' + escapeHtml(i.nome || i.ad) + '</b><div class="anu-v3-pills">' + pills.join('') + '</div>' +
-    '<div class="anu-motivo">' + (P ? 'No lote inteiro: ' + escapeHtml(x.motivo) : escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1))) + '.</div></div>' + dir + '</div>' +
+    (simples ? '<div class="anu-motivo">' + escapeHtml(String(c.nome || '').replace(/^\[[^\]]*\]\s*(Carteira\s*·\s*)?/i, '')) + '</div>' :
+      '<div class="anu-motivo">' + (P ? 'No lote inteiro: ' + escapeHtml(x.motivo) : escapeHtml(x.motivo.charAt(0).toUpperCase() + x.motivo.slice(1))) + '.</div>') + '</div>' + dir + '</div>' +
     funil + anuJornada(i) + '</div>';
   if (anuAberto === i.ad) {
     // conferência (não entra na decisão): a diferença com a Meta explicada, as vendas achadas pela conferência
