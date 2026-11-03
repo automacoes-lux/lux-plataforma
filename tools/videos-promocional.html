@@ -470,7 +470,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <!-- (02/10) VOZ DA VISIONSTORY: a lista vem do Worker (/pvsVozes); ▶ toca a amostra -->
     <div class="step" id="boxVozPasso2">
       <div class="step-head"><div class="step-title">Voz do personagem</div></div>
-      <div class="step-hint">Toque em <b>▶</b> pra ouvir uma amostra. A voz escolhida fala o texto inteiro.</div>
+      <div class="step-hint">A voz segue o botão <b>masculina/feminina</b> do passo 1 e fala o texto inteiro.</div>
       <div id="seletorVoz2"></div>
     </div>
     <button class="btn-gold" id="btnIrVideo" onclick="irParaVideo()">🎬 GERAR VÍDEO</button>
@@ -1950,7 +1950,8 @@ async function dispararVs(i, comZoom){
   s._pedidoVs = projectId.replace(/[^A-Za-z0-9_-]/g,'').slice(-30) + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   if(!comZoom) s._tentouZoom = false;   // pedido novo do atendente: a 2ª tentativa com zoom volta a valer
   const r = await apiRetry('/pvsVideoStart', { method:'POST', body: JSON.stringify({
-    projectId, imagem: img, texto: String(s.fala||'').trim(), vozId: vozAtual(), pedidoId: s._pedidoVs, zoom: !!comZoom }) });
+    projectId, imagem: img, texto: String(s.fala||'').trim(), vozId: vozAtual(), pedidoId: s._pedidoVs, zoom: !!comZoom,
+    sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });   // (03/11) motor novo: a voz sai do sexo
   const d = await r.json();
   if(!d.ok) throw new Error(d.error||'Falha ao pedir o vídeo');
   s._vozUsada = vozAtual();
@@ -2310,8 +2311,9 @@ function refsPayload(){
 // grupo aparece primeiro; a escolha do atendente fica em `vozId` e vai salva no projeto.
 // Não existe voz de criança em pt-BR na VisionStory (conferido em 02/10).
 let audioVoz = null;
+const VOZ_AUTOMATICA = true;   // (03/11) false = volta a lista de vozes (se o servidor voltar para o motor antigo)
 function vozAtual(){
-  if(vozId) return vozId;
+  if(vozId && !VOZ_AUTOMATICA) return vozId;   // (03/11) automática: a voz salva no projeto (ex.: Gaúcha) não vale mais
   return PVS_VOZ_PADRAO[sexoVoz === 'feminina' ? 'feminina' : 'masculina'];
 }
 async function carregarVozes(){
@@ -2325,6 +2327,11 @@ async function carregarVozes(){
 function rotuloVoz(v){ return v.nome + (v.estilo ? ' — ' + v.estilo : '') + (v.idade ? ' (' + v.idade + ')' : ''); }
 async function pintarSeletorVoz(boxId){
   const box = document.getElementById(boxId); if(!box) return;
+  // (03/11, pedido do Thiago) a voz NÃO se escolhe mais: sai do botão masculina/feminina do passo 1
+  if(VOZ_AUTOMATICA){
+    box.innerHTML = '<div class="soon-note">🎙️ Voz <b>'+(sexoVoz === 'feminina' ? 'feminina' : 'masculina')+'</b>, escolhida automaticamente pelo botão do passo 1.</div>';
+    return;
+  }
   if(!vozes.length){
     box.innerHTML = '<div class="soon-note"><span class="spin" style="border-top-color:var(--gold)"></span> Carregando as vozes…</div>';
     if(!await carregarVozes()){
@@ -3148,7 +3155,7 @@ function renderCortes(){
         : (s._vozErro ? ('<span style="color:#F5B7B1">⚠️ Não consegui limpar o áudio desta cena ('+esc(s._vozErro)+'). Ela vai entrar com a música do motor por baixo.</span>')
         : (s._vozId ? '<span class="spin"></span> Limpando o áudio (removendo a música do motor)…' : ''))
       )+'</div>'+
-      (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz <span style="color:var(--text-dim)">(trocar vale no próximo Refazer)</span></div><div id="seletorVoz3"></div>')+
+      (L ? '' : '<div class="mini" style="margin-top:.6rem">🎙️ Voz</div><div id="seletorVoz3"></div>')+
       '<div class="btn-row" style="margin-top:.4rem">'+
         // (05/10) VisionStory: baixar o vídeo pronto LANÇA o custo (antes só a montagem lançava)
         (L ? ('<button class="btn-refaz" onclick="baixarCena('+i+')">⬇️ Baixar cena</button>')
