@@ -1280,11 +1280,15 @@ async function continuarProjeto(pid) {
     resetCreateForm();
     rascId = pid; _rascArq = arq;   // continua salvando NESTE projeto, sem re-subir o que não mudou
     editState = null;               // continuar = criar do zero (não é edição de vídeo pronto)
+    if (modoV2 !== modoV2Conta) aplicarModoV2(modoV2Conta);   // (04/11) se estava editando um vídeo antigo, volta ao modo da conta
     document.getElementById('clientName').value = e.clientName || '';
     { const fc = document.getElementById('fCategoria'); if (fc) fc.value = e.categoria || ''; }
     preencheCamposV2(e);   // (01/11) empresa, WhatsApp, endereço e estilo do 150 novo
-    clientPhoto = f1; clientPhoto2 = f2;
-    if (cartoonB64) {
+    // (04/11) projeto salvo ANTES de o 150 novo ser liberado (sem o estilo Pessoa real/Animação): o personagem dele é do
+    // jeito antigo (corpo inteiro, para o palco) → no 150 novo ele não serve. Fica a foto do cliente; o personagem é gerado de novo.
+    const projetoAntigo = modoV2 && !(e.imagemReal === true || e.imagemReal === false);
+    clientPhoto = f1; clientPhoto2 = modoV2 ? null : f2;
+    if (cartoonB64 && !projetoAntigo) {
       avatarPreview = { cartoonBase64: cartoonB64, approved: true, reaproveitada: true };   // já foi gerado no rascunho
       cartoonGens = 0; cartoonGensRes = 0;
       const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
@@ -1309,7 +1313,9 @@ async function continuarProjeto(pid) {
     showTab('criar');
     window.scrollTo(0, 0);
     rascAviso('💾 Projeto aberto · continue de onde parou');
-    toast('▶ "' + (e.clientName || 'Projeto') + '" está de volta no Criar clipe.');
+    toast(projetoAntigo && cartoonB64
+      ? '▶ "' + (e.clientName || 'Projeto') + '" está de volta. O Avatar 150 mudou: escolha Pessoa real ou Animação e gere o personagem de novo (Passo 2). Preencha também o nome da empresa e o WhatsApp.'
+      : '▶ "' + (e.clientName || 'Projeto') + '" está de volta no Criar clipe.');
   } catch (err) {
     toast('⚠️ Não consegui abrir o projeto: ' + err.message);
   } finally {
@@ -3772,6 +3778,7 @@ async function editarClipe(orderId) {
     if (resp.status === 410) { toast('⚠️ Esse vídeo passou de 7 dias e não pode mais ser editado. Gere um novo.'); return; }
     const d = await resp.json();
     if (!d.ok) { toast('⚠️ ' + (d.error || 'Não consegui abrir a edição.')); return; }
+    if (!!d.v2 !== modoV2) aplicarModoV2(!!d.v2);   // (04/11) vídeo antigo abre na tela antiga (e o novo, na nova)
     editState = { sourceOrderId: orderId, musicChanged: false };
     editTrocaAvatar = false; editTrocaMusica = false; _avisouMidia = false;   // toda edição começa com avatar e música TRAVADOS
     document.getElementById('clientName').value = d.clientName || '';
@@ -3968,6 +3975,7 @@ function sairEdicao() {
   lyricBlocks = null; lyricOn = false; updateLyricStatus();
   const cn = document.getElementById('clientName'); if (cn) cn.value = '';
   { const fc = document.getElementById('fCategoria'); if (fc) fc.value = ''; }
+  if (modoV2 !== modoV2Conta) aplicarModoV2(modoV2Conta);   // (04/11) a edição de um vídeo antigo terminou: volta ao modo da conta
   preencheCamposV2(null);   // (01/11) empresa, WhatsApp, endereço e estilo em branco
   aplicarModoEdicao(null);
   if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
@@ -4068,7 +4076,7 @@ async function checkManutencao() {
     if (d && d.locked) { const el = document.getElementById('avatarSoon'); if (el) el.style.display = 'flex'; }
   } catch (e) { /* rede oscilou — não trava a tela por isso (o backend já barra a geração) */ }
 }
-// ── (31/10) AVATAR 150 NOVO (em teste, só para os e-mails liberados no servidor — KV config:a150:v2): personagem do
+// ── (31/10) AVATAR 150 NOVO (04/11: liberado para TODOS — KV config:a150:v2 = "todos"): personagem do
 // joelho para cima em fundo liso, SEM palco e sem calibração; o vídeo é montado sozinho (efeitos, letra, final com
 // WhatsApp e endereço). Para todo o resto a tela segue igual.
 let modoV2 = false;
@@ -4166,12 +4174,35 @@ function atualizarTrilha() {
   });
   setInterval(atualizarTrilha, 700);
 })();
+// (04/11) o 150 novo foi liberado para TODOS. modoV2Conta = o que o servidor diz para esta conta; modoV2 = o modo da tela agora.
+// Editar um vídeo ANTIGO (feito no 150 de antes) troca a tela para o modo antigo só durante a edição (sairEdicao volta).
+let modoV2Conta = false;
+let _telaAntiga = null;   // textos e o "várias imagens" do modo antigo, para voltar a eles
 async function checkModoV2() {
-  try { const r = await api('/a150Modo'); const d = await r.json(); modoV2 = !!(d && d.v2); } catch (e) { modoV2 = false; }
+  let on = false;
+  try { const r = await api('/a150Modo'); const d = await r.json(); on = !!(d && d.v2); } catch (e) { on = false; }
+  modoV2Conta = on;
+  if (editState && editDados) return;   // abriu a edição antes da resposta: a edição decide o modo; sairEdicao aplica o da conta
+  aplicarModoV2(on);
+}
+function aplicarModoV2(on) {
+  const inp = document.getElementById('clientPhotoInput');
+  const gn0 = document.getElementById('avatarGenNote'), h0 = document.getElementById('avatarHint');
+  if (!_telaAntiga) _telaAntiga = { multiplo: !!(inp && inp.hasAttribute('multiple')), gn: gn0 ? gn0.textContent : '', h: h0 ? h0.innerHTML : '' };
+  const era = modoV2;
+  modoV2 = !!on;
   const c = document.getElementById('v2Campos'); if (c) c.style.display = modoV2 ? '' : 'none';
   document.body.classList.toggle('modo-v2', modoV2);
-  if (!modoV2) return;
-  const inp = document.getElementById('clientPhotoInput'); if (inp) inp.removeAttribute('multiple');
+  if (!modoV2) {
+    if (era) {   // voltando do 150 novo para o antigo (edição de um vídeo antigo)
+      if (inp && _telaAntiga.multiplo) inp.setAttribute('multiple', '');
+      if (gn0) gn0.textContent = _telaAntiga.gn;
+      if (h0) h0.innerHTML = _telaAntiga.h;
+      renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
+    }
+    return;
+  }
+  if (inp) inp.removeAttribute('multiple');
   if (clientPhoto2) { clientPhoto2 = null; avatarPreview = null; }
   renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
   const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = 'A IA cria o personagem do quadril para cima, sem microfone, num fundo liso. Se não gostar, é só gerar de novo.';
