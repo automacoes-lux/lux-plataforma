@@ -695,7 +695,7 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
 .anu-fn-nota b{color:var(--a-txt);font-weight:600}
 /* a grade hora a hora */
 .anu-fn-rolo{overflow-x:auto;margin-top:16px;padding-bottom:4px}
-.anu-fn-g{display:grid;grid-template-columns:190px repeat(8,minmax(78px,1fr)) 112px;column-gap:4px;row-gap:4px;min-width:1000px}
+.anu-fn-g{display:grid;grid-template-columns:190px repeat(8,minmax(78px,1fr)) 112px;column-gap:4px;row-gap:12px;min-width:1000px}   /* 04/11: 4→12px, um criativo não gruda no outro */
 .anu-fn-h{font-size:11.5px;color:var(--a-txt3);text-align:center;padding:4px 0 2px;line-height:1.3}
 .anu-fn-h b{display:block;font-size:12.5px;color:var(--a-txt2);font-weight:600}
 .anu-fn-h.corte{color:var(--a-ruim)}.anu-fn-h.corte b{color:var(--a-ruim)}
@@ -730,13 +730,15 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
 /* 04/11/2026 (Thiago): o que a META acusou, em AMARELO, embaixo dos nossos números (card mais alto, bloco no pé) */
 .anu-fn{--a-meta:#FACC15}
 .anu-fn .mt{color:var(--a-meta)}
-.anu-fn-c.com-mt{display:flex;flex-direction:column;align-items:center;min-height:112px}
-.anu-fn-c.com-mt > .r{margin-bottom:6px}
-.anu-fn-c > .mt,.anu-fn-t > .mt{display:block;width:100%;margin-top:auto;padding-top:5px;border-top:1px dashed rgba(250,204,21,.4)}
-.anu-fn-t > .mt{margin-top:6px}
-.anu-fn .mt .mt-l,.anu-fn .mt .mt-r{display:block;font-size:10.5px;font-weight:600}
-.anu-fn .mt .mt-r{margin-top:2px}
-.anu-fn .mt .mt-v{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(250,204,21,.15)}
+/* 04/11 23h55: duas METADES IGUAIS (em cima UTM, embaixo Meta, mesmas informações), tracejado amarelo no meio do card */
+.anu-fn-c.com-mt{display:flex;flex-direction:column;padding:0;min-height:142px}
+.anu-fn-c .meia{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px}
+.anu-fn-t.com-mt{display:flex;flex-direction:column;padding:0 4px 0 8px}
+.anu-fn-t .meia{flex:1 1 0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:6px 0}
+.anu-fn .meia.mt{border-top:1px dashed rgba(250,204,21,.45)}
+.anu-fn .meia.mt .l,.anu-fn .meia.mt .r,.anu-fn .meia.mt b{color:var(--a-meta)}
+.anu-fn .meia.mt .q,.anu-fn .meia.mt small,.anu-fn .meia.mt .l.sem{color:var(--a-meta);opacity:.78}
+.anu-fn .meia.mt .v{background:rgba(250,204,21,.15);color:var(--a-meta)}
 .anu-fn-kpi em.mt{display:block;font-style:normal;font-size:11.5px;font-weight:600;margin-top:4px}
 .anu-fn-leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11.5px;color:var(--a-txt2);margin:-6px 0 14px;line-height:1.45}
 .anu-fn-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
@@ -3063,10 +3065,17 @@ function anuFnRoas(r) { return r == null ? '—' : r.toFixed(2).replace('.', ','
 function anuFnCorRoas(r) { return r == null ? '' : r >= 1.3 ? 'ok' : r >= 1 ? 'at' : 'ruim'; }
 // 04/11/2026 (Thiago): embaixo dos nossos números, em AMARELO, o que a META acusou naquela hora (Gerenciador):
 // leads, vendas e ROAS (valor das compras da Meta ÷ gasto da hora). Mesmo desenho do nosso bloco, para comparar de olho.
-function anuFnMeta(ml, mv, mval, g) {
-  return '<span class="mt"><span class="mt-l">' + anuPlural(ml, 'lead', 'leads') + '</span>' +
-    (mv ? '<span class="mt-v">' + anuPlural(mv, 'venda', 'vendas') + '</span>' : '') +
-    '<span class="mt-r">ROAS ' + anuFnRoas(g > 0 ? mval / g : null) + '</span></span>';
+// 04/11 23h55 (Thiago): a metade de baixo ESPELHA a de cima — custo por lead, leads · gasto, vendas e ROAS — e o tracejado
+// fica no meio do card. tot=true → versão da coluna Dia (alinhada à direita, como a de cima).
+function anuFnMeta(ml, mv, mval, g, tot) {
+  const cpl = ml ? g / ml : null, roas = g > 0 ? mval / g : null;
+  if (tot) return '<div class="meia mt"><b>' + anuFnR(cpl) + '</b><small>' + anuPlural(ml, 'lead', 'leads') + ' · ' + anuFnR(g, 0) + '</small>' +
+    (mv ? '<small>' + anuPlural(mv, 'venda', 'vendas') + ' · ' + anuFnR(mval, 0) + '</small>' : '<small>sem venda</small>') +
+    '<span class="r">ROAS ' + anuFnRoas(roas) + '</span></div>';
+  return '<div class="meia mt">' + (cpl != null ? '<span class="l">' + anuFnR(cpl) + '</span>' : '<span class="l sem">sem lead</span>') +
+    '<span class="q">' + anuPlural(ml, 'lead', 'leads') + ' · ' + anuFnR(g, 0) + '</span>' +
+    (mv ? '<span class="v">' + anuPlural(mv, 'venda', 'vendas') + '</span>' : '') +
+    '<span class="r">ROAS ' + anuFnRoas(roas) + '</span></div>';
 }
 function anuFnMetaSoma(lst) {
   return lst.reduce(function (t, i) { const m = (i.tot && i.tot.meta) || {}; return { l: t.l + (m.leads || 0), v: t.v + (m.vendas || 0), val: t.val + (m.val || 0) }; }, { l: 0, v: 0, val: 0 });
@@ -3173,11 +3182,12 @@ function anuFunil(d) {
     const tom = cpl == null ? (g > cplDia ? 'ruim' : '') : cpl <= cplDia * 0.8 ? 'bom' : cpl >= cplDia * 1.3 ? 'ruim' : '';
     return '<div class="anu-fn-c ' + tom + (d.temMeta ? ' com-mt' : '') + '" title="' + escapeHtml(i.nome) + ' · ' + (anuFnModo === 'acum' ? '8h até ' + (x + 1) + 'h' : x + 'h–' + (x + 1) + 'h') + ': gasto ' + anuFnR(g) + ', ' + anuPlural(l, 'lead', 'leads') + ', ' + anuPlural(vd, 'venda', 'vendas') + (val ? ' (' + anuFnR(val) + ')' : '') +
       (d.temMeta ? ' · Meta: ' + anuPlural(ml, 'lead', 'leads') + ', ' + anuPlural(mv, 'venda', 'vendas') + (mval ? ' (' + anuFnR(mval) + ')' : '') : '') + '">' +
+      (d.temMeta ? '<div class="meia">' : '') +
       (cpl != null ? '<span class="l">' + anuFnR(cpl) + '</span>' : '<span class="l sem">sem lead</span>') +
       '<span class="q">' + anuPlural(l, 'lead', 'leads') + ' · ' + anuFnR(g, 0) + '</span>' +
       (vd ? '<span class="v">' + anuPlural(vd, 'venda', 'vendas') + '</span>' : '') +
       '<span class="r ' + anuFnCorRoas(roas) + '">ROAS ' + anuFnRoas(roas) + '</span>' +
-      (d.temMeta ? anuFnMeta(ml, mv, mval, g) : '') + '</div>';
+      (d.temMeta ? '</div>' + anuFnMeta(ml, mv, mval, g) : '') + '</div>';
   };
   etapas.forEach(function (e) {
     h += '<div class="anu-fn-sec' + (e.fim ? ' fim' : '') + '"><b>' + e.rot + '</b><span>' + e.sub + ' · ' + anuFnR(e.cpl) + ' por lead · ' + anuPlural(e.s.v, 'venda', 'vendas') + ' · ROAS ' + anuFnRoas(e.roas) + '</span><i>' + anuPlural(e.itens.length, 'criativo', 'criativos') + '</i></div>';
@@ -3190,10 +3200,11 @@ function anuFunil(d) {
       h += '<div class="anu-fn-nome" title="' + escapeHtml(i.nome) + '">' + (i.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(i.thumb) + '" alt="" data-nome="' + escapeHtml(i.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)"/>' : '<span class="anu-lt-thumb"></span>') +
         '<div><b>' + escapeHtml(i.nome) + '</b><small>' + sub + '</small></div></div>';
       H.forEach(function (x) { h += celula(i, x); });
-      h += '<div class="anu-fn-t"><b>' + anuFnR(i.tot.cpl) + '</b><small>' + anuPlural(i.tot.leads, 'lead', 'leads') + ' · ' + anuFnR(i.tot.gastoBRL, 0) + '</small>' +
+      const mtT = d.temMeta && i.tot.meta;
+      h += '<div class="anu-fn-t' + (mtT ? ' com-mt' : '') + '">' + (mtT ? '<div class="meia">' : '') + '<b>' + anuFnR(i.tot.cpl) + '</b><small>' + anuPlural(i.tot.leads, 'lead', 'leads') + ' · ' + anuFnR(i.tot.gastoBRL, 0) + '</small>' +
         (i.tot.vendas ? '<small class="ok">' + anuPlural(i.tot.vendas, 'venda', 'vendas') + '</small>' : '<small>sem venda</small>') +
         '<span class="r ' + anuFnCorRoas(i.tot.roas) + '">ROAS ' + anuFnRoas(i.tot.roas) + '</span>' +
-        (d.temMeta && i.tot.meta ? anuFnMeta(i.tot.meta.leads, i.tot.meta.vendas, i.tot.meta.val, i.tot.gastoBRL) : '') + '</div>';
+        (mtT ? '</div>' + anuFnMeta(i.tot.meta.leads, i.tot.meta.vendas, i.tot.meta.val, i.tot.gastoBRL, true) : '') + '</div>';
     });
   });
   // rodapé: a carteira inteira em cada hora
@@ -3213,15 +3224,16 @@ function anuFunil(d) {
       if (roda) n++;
     });
     const cpl = l ? g / l : null, roas = g ? val / g : null;
-    h += g < 1 ? '<div class="anu-fn-c fora"></div>' : '<div class="anu-fn-c' + (d.temMeta ? ' com-mt' : '') + '"><span class="l">' + anuFnR(cpl) + '</span><span class="q">' + n + ' rodando · ' + anuFnR(g, 0) + '</span><span class="q">' + anuPlural(l, 'lead', 'leads') + (vd ? ' · ' + anuPlural(vd, 'venda', 'vendas') : '') + '</span><span class="r ' + anuFnCorRoas(roas) + '">ROAS ' + anuFnRoas(roas) + '</span>' +
-      (d.temMeta ? anuFnMeta(ml, mv, mval, g) : '') + '</div>';
+    h += g < 1 ? '<div class="anu-fn-c fora"></div>' : '<div class="anu-fn-c' + (d.temMeta ? ' com-mt' : '') + '">' + (d.temMeta ? '<div class="meia">' : '') + '<span class="l">' + anuFnR(cpl) + '</span><span class="q">' + n + ' rodando · ' + anuFnR(g, 0) + '</span><span class="q">' + anuPlural(l, 'lead', 'leads') + (vd ? ' · ' + anuPlural(vd, 'venda', 'vendas') : '') + '</span><span class="r ' + anuFnCorRoas(roas) + '">ROAS ' + anuFnRoas(roas) + '</span>' +
+      (d.temMeta ? '</div>' + anuFnMeta(ml, mv, mval, g) : '') + '</div>';
   });
-  h += '<div class="anu-fn-t"><b>' + anuFnR(cplDia) + '</b><small>' + anuPlural(T.l, 'lead', 'leads') + ' · ' + anuFnR(T.g, 0) + '</small><span class="r ' + anuFnCorRoas(roasDia) + '">ROAS ' + anuFnRoas(roasDia) + '</span>' +
-    (TM ? anuFnMeta(TM.l, TM.v, TM.val, T.g) : '') + '</div>';
+  h += '<div class="anu-fn-t' + (TM ? ' com-mt' : '') + '">' + (TM ? '<div class="meia">' : '') + '<b>' + anuFnR(cplDia) + '</b><small>' + anuPlural(T.l, 'lead', 'leads') + ' · ' + anuFnR(T.g, 0) + '</small>' +
+    (T.v ? '<small class="ok">' + anuPlural(T.v, 'venda', 'vendas') + ' · ' + anuFnR(T.val, 0) + '</small>' : '') + '<span class="r ' + anuFnCorRoas(roasDia) + '">ROAS ' + anuFnRoas(roasDia) + '</span>' +
+    (TM ? '</div>' + anuFnMeta(TM.l, TM.v, TM.val, T.g, true) : '') + '</div>';
   h += '</div></div>';
   h += '<p class="anu-fn-pe">Fundo verde = custo por lead pelo menos 20% abaixo do dia (' + anuFnR(cplDia) + '); vermelho = 30% acima. ROAS verde = 1,3 ou mais; laranja = 1,0 a 1,3; vermelho = abaixo de 1,0. ' +
     'A venda entra na hora do clique que trouxe o cliente, mesmo que ele tenha pago mais tarde. "Robô viu" = o custo por lead acumulado no momento do corte (dados de 1 minuto antes).' +
-    (TM ? ' <span class="mt">Amarelo = Gerenciador da Meta: leads e compras que o pixel registrou naquela hora e ROAS = valor das compras da Meta ÷ gasto da hora. A Meta põe a compra na hora em que o cliente PAGOU (por isso um Pix da noite aparece só na coluna Dia) e conta também quem só viu o anúncio e comprou por outro.</span>' : '') +
+    (TM ? ' <span class="mt">Amarelo (metade de baixo de cada card) = Gerenciador da Meta: leads e compras que o pixel registrou naquela hora; custo por lead = gasto ÷ leads da Meta; ROAS = valor das compras da Meta ÷ gasto da hora. A Meta põe a compra na hora em que o cliente PAGOU (por isso um Pix da noite aparece só na coluna Dia) e conta também quem só viu o anúncio e comprou por outro.</span>' : '') +
     (d.obs ? ' · ' + escapeHtml(d.obs) : '') + '</p>';
   return h + '</section>';
 }
