@@ -1481,13 +1481,34 @@ function limparCenas(){
   if(typeof renderCortes==='function') renderCortes();
 }
 
+// (05/11) PROJETO COM VÍDEO PRONTO É DE UM VÍDEO SÓ. O Pedro abriu o "el baio" (pronto em 02/11) e fez a "Maria Celino
+// Macedo - Video 3" por cima: a tela salvou tudo no MESMO projeto → o el baio sumiu e o card da Maria tocava o vídeo do el baio.
+// Agora, texto novo ou personagem novo num projeto que JÁ TEM vídeo pronto continua num projeto NOVO; o anterior fica intacto
+// em Resultados. O custo ainda não lançado vem junto (é deste trabalho); o já lançado fica com o projeto anterior.
+function separarSeJaPronto(){
+  if(!videoFinalUrl) return false;
+  const pend = custoPendente();
+  const somaOutros = Object.keys(pend.outros).reduce(function(a, e){ return a + pend.outros[e]; }, 0);
+  projectId = 'promo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  custoUSD = Number((pend.aLancar + somaOutros).toFixed(4)); custoLancadoUSD = 0;
+  custoPor = pend.outros; custoPorLancado = {};
+  videoFinalUrl = '';
+  const v=document.getElementById('videoFinal'); if(v) v.removeAttribute('src');
+  const bx=document.getElementById('telaFinal'); if(bx) bx.classList.add('hide');
+  projetoJaSalvo = false; salvoEm = '';
+  const nt=document.getElementById('notaSalvar'); if(nt) nt.textContent='';
+  pintarCusto();
+  toast('📁 Vídeo novo = projeto novo. O anterior, com o vídeo pronto, continua guardado em Resultados.');
+  return true;
+}
 function invalidarCenas(){
   const feitas = cenas.filter(s=>s.video_url).length;
-  if(!feitas) return true;                       // nada gerado ainda: segue sem perguntar
+  if(!feitas){ separarSeJaPronto(); return true; }   // nada gerado ainda: segue sem perguntar
   const ok = confirm('Você já tem um vídeo gerado com o personagem ATUAL.\n\n' +
     'Mudando a imagem, ele será descartado e terá que ser gerado de novo ' +
     '('+custoVideoTxt(contarPalavras((cenas[0]||{}).fala))+').\n\nContinuar?');
   if(!ok) return false;
+  separarSeJaPronto();
   limparCenas();
   toast('🗑️ Vídeo antigo descartado — clique em GERAR VÍDEO pra refazer com o personagem novo.');
   return true;
@@ -1596,6 +1617,7 @@ async function gerarRoteiro(ajuste, silencioso){
     if(!d.ok && d.recusa){ somaCusto(d.aiCostUSD); const er = new Error(d.error); er.recusa = true; throw er; }
     if(!d.ok) throw new Error(d.error||'Erro');
     if(pareceRecusa(d.fala)) { const er = new Error('🚫 A IA não escreve este comercial. Nenhum vídeo foi gerado. Ajuste as informações do cliente — sem ataques ou estereótipos contra pessoas ou grupos — e gere de novo.'); er.recusa = true; throw er; }
+    separarSeJaPronto();   // (05/11) texto novo num projeto que já tem vídeo pronto → projeto novo (o anterior fica intacto)
     campanha = { marca: d.marca||'', tom: d.tom||'', sexoVoz: sexoVoz };
     cenas = [{ numero:1, papel:'texto corrido', fala: organizaTexto(d.fala), legenda: organizaTexto(d.legenda||d.fala), palavras: d.palavras,
                video_url:'', video_status:'', video_error:'' }];
