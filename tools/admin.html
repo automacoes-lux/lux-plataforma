@@ -2006,11 +2006,11 @@ function renderBalanceador(d) {
               : d.faixa === 'depois' ? '<span class="eq-selo">fora do expediente</span>' : '';
   html += '<section class="eq-bloco"><div class="eq-bloco-cab">' +
     '<h3><i></i>' + (fds ? 'Fim de semana' : 'Das ' + hr.inicio + 'h às ' + hr.fim + 'h') + '</h3>' +
-    '<span class="eq-resumo">' + (fds ? 'Dia inteiro' : 'Todas as equipes') + ' · ' + s.leads + (s.leads === 1 ? ' lead' : ' leads') +
+    '<span class="eq-resumo">' + (fds ? 'Dia inteiro' : 'Todas as equipes') + ' · ' + s.leads + (s.leads === 1 ? ' lead do anúncio' : ' leads do anúncio') +
       ' · <span class="bal-rmk-grupo">' + s.rmk + ' remarketing</span>' +
       (fds ? '' : ' · ' + qtd7 + (qtd7 === 1 ? ' entra' : ' entram') + ' às ' + hr.inicioCedo + 'h') + '</span>' +
     selo8 + '</div>' +
-    '<div class="eq-colunas"><span>Equipe</span><span>Leads por pessoa' + (fds ? '' : ' desde as ' + hr.inicio + 'h') + '</span><span></span>' +
+    '<div class="eq-colunas"><span>Equipe</span><span>Leads do anúncio por pessoa' + (fds ? '' : ' desde as ' + hr.inicio + 'h') + '</span><span></span>' +
       '<span>Peso</span><span>Entrada</span><span>Roleta</span></div>' +
     eq.map(e => linha(e, s, n8, pp8, e.anuncio8BRL !== undefined ? e.anuncio8BRL : e.anuncioBRL, true)).join('') +
   '</section>';
@@ -2047,7 +2047,7 @@ function renderBalanceador(d) {
         (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
       '</div>' +
       '<div class="bal-num"><b>' + eqNum(valor) + '</b>' +
-        '<span>' + leads + (leads === 1 ? ' lead' : ' leads') + (e.peso === 2 ? ' · dupla' : '') +
+        '<span title="conversas novas que vieram do anúncio — a base da roleta e do rateio do anúncio (05/11)">' + leads + (leads === 1 ? ' lead do anúncio' : ' leads do anúncio') + (e.peso === 2 ? ' · dupla' : '') +
           (anuncio != null ? ' · <i class="bal-anun" title="parte do anúncio do dia pelos leads deste bloco (a mesma conta do fechamento)">' + reais(anuncio) + '</i>' : '') + '</span>' +
       '</div>' +
       (controles ? controlesDe(e, cedo) : '<div class="bal-extra"></div>') +
