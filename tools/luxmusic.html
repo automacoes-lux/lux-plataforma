@@ -649,6 +649,10 @@
           <label class="politico">
             <input type="checkbox" id="ehPolitica"/> Jingle político
           </label>
+          <!-- 05/11/2026: padrão = letra para música de ~1 minuto; marcado = letra completa (treinamento Maestro na íntegra) -->
+          <label class="politico" title="Desmarcado: letra para música de cerca de 1 minuto. Marcado: música completa, com mais versos, ponte e solo.">
+            <input type="checkbox" id="letraExtensa"/> Letra extensa
+          </label>
         </div>
       </div>
 
@@ -831,6 +835,9 @@ const RITMOS = [
 ];
 
 let vozEscolhida   = 'male';   // masculina por padrão
+// 05/11/2026: Exclude/Weirdness/Influence que a IA da letra devolve; vão
+// junto no "Criar música" (o servidor confere de novo). null = padrão do gerador.
+let ajustesLetra   = null;
 let taskAtual      = null;
 let pollTimer      = null;
 let inicioGeracao  = null;
@@ -1541,6 +1548,8 @@ function zerarTela(){
   $('letra').value  = '';
   $('titulo').value = '';
   $('ehPolitica').checked = false;
+  $('letraExtensa').checked = false;
+  ajustesLetra = null;
   contarLetra();
   escolherVoz('male');
 
@@ -1577,7 +1586,9 @@ async function gerarLetra(){
         briefing,
         ritmo: $('estilo').value.trim(),      // opcional
         instrucoes: $('instrucoes').value.trim(),
-        tipo: $('ehPolitica').checked ? 'politica' : 'empresa'
+        tipo: $('ehPolitica').checked ? 'politica' : 'empresa',
+        extensa: $('letraExtensa').checked,
+        voz: vozEscolhida
       })
     });
     const d = await r.json();
@@ -1585,6 +1596,7 @@ async function gerarLetra(){
 
     const res = d.result || {};
     $('letra').value = res.lyrics || '';
+    ajustesLetra = res.ajustes || null;
     contarLetra();
     // o RITMO é escolha do atendente: a letra não preenche esse campo
     if(res.musica_nome) $('titulo').value = String(res.musica_nome).slice(0,80);
@@ -1633,6 +1645,7 @@ async function criarMusica(){
   };
   if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
   else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
+  else if(ajustesLetra) corpo.ajustes = ajustesLetra;   // só música nova (o cover tem ajustes fixos)
 
   try{
     const r = await window.__luxFetch(WORKER + (ehCover ? '/cover' : '/gerarMusica'), {
@@ -2318,6 +2331,7 @@ async function continuarRascunho(id){
     $('estilo').value     = d.estilo     || '';
     $('titulo').value     = d.titulo     || '';
     $('ehPolitica').checked = !!d.politica;
+    ajustesLetra = null;      // rascunho não guarda os ajustes: o gerador usa o padrão dele
     escolherVoz(d.genero || '');
     contarLetra();
     esqueceDesfazer();
@@ -2490,6 +2504,7 @@ async function editarPedido(taskId){
     $('estilo').value     = d.estilo || '';
     $('titulo').value     = d.titulo || '';
     $('ehPolitica').checked = !!d.politica;
+    ajustesLetra = d.ajustes || null;   // os mesmos ajustes do pedido original
     escolherVoz(d.genero || '');
     contarLetra();
     esqueceDesfazer();
