@@ -646,9 +646,6 @@
 
         <div class="btn-row" style="margin-top:14px">
           <button class="btn btn-gold dourado" id="btnGerarLetra" onclick="gerarLetra()" style="flex:1">Gerar letra</button>
-          <label class="politico">
-            <input type="checkbox" id="ehPolitica"/> Jingle político
-          </label>
           <!-- 05/11/2026: padrão = letra para música de ~1 minuto; marcado = letra completa (treinamento Maestro na íntegra) -->
           <label class="politico" title="Desmarcado: letra para música de cerca de 1 minuto. Marcado: música completa, com mais versos, ponte e solo.">
             <input type="checkbox" id="letraExtensa"/> Letra extensa
@@ -701,7 +698,6 @@
         <div class="voz" id="voz">
           <button data-voz="male"   onclick="escolherVoz('male')" class="on"><span class="ic">♂</span>Masculina</button>
           <button data-voz="female" onclick="escolherVoz('female')"><span class="ic">♀</span>Feminina</button>
-          <button data-voz=""       onclick="escolherVoz('')"><span class="ic">✧</span>A IA escolhe</button>
         </div>
 
         <div style="margin-top:16px">
@@ -1547,7 +1543,6 @@ function zerarTela(){
   limparCamposDoProjeto();
   $('letra').value  = '';
   $('titulo').value = '';
-  $('ehPolitica').checked = false;
   $('letraExtensa').checked = false;
   ajustesLetra = null;
   contarLetra();
@@ -1586,7 +1581,7 @@ async function gerarLetra(){
         briefing,
         ritmo: $('estilo').value.trim(),      // opcional
         instrucoes: $('instrucoes').value.trim(),
-        tipo: $('ehPolitica').checked ? 'politica' : 'empresa',
+        tipo: 'empresa',            // 05/11/2026: o Jingle político saiu da tela
         extensa: $('letraExtensa').checked,
         voz: vozEscolhida
       })
@@ -1641,7 +1636,7 @@ async function criarMusica(){
     // devolver tudo depois — não só a letra
     briefing:   $('briefing').value.trim(),
     instrucoes: $('instrucoes').value.trim(),
-    politica:   $('ehPolitica').checked
+    politica:   false
   };
   if(coverUploadUrl) corpo.uploadUrl = coverUploadUrl;
   else if(coverDeTask){ corpo.taskId = coverDeTask.taskId; corpo.indice = coverDeTask.indice; }
@@ -2249,7 +2244,7 @@ function telaAtual(){
     letra:      $('letra').value,
     estilo:     $('estilo').value.trim(),
     genero:     vozEscolhida,
-    politica:   $('ehPolitica').checked,
+    politica:   false,
     tipo:       (coverUploadUrl || coverDeTask) ? 'cover' : 'novo'
   };
 }
@@ -2330,9 +2325,8 @@ async function continuarRascunho(id){
     $('letra').value      = d.letra      || '';
     $('estilo').value     = d.estilo     || '';
     $('titulo').value     = d.titulo     || '';
-    $('ehPolitica').checked = !!d.politica;
     ajustesLetra = null;      // rascunho não guarda os ajustes: o gerador usa o padrão dele
-    escolherVoz(d.genero || '');
+    escolherVoz(d.genero === 'female' ? 'female' : 'male');   // pedido antigo sem voz → masculina
     contarLetra();
     esqueceDesfazer();
 
@@ -2503,9 +2497,8 @@ async function editarPedido(taskId){
     $('letra').value      = d.letra  || '';
     $('estilo').value     = d.estilo || '';
     $('titulo').value     = d.titulo || '';
-    $('ehPolitica').checked = !!d.politica;
     ajustesLetra = d.ajustes || null;   // os mesmos ajustes do pedido original
-    escolherVoz(d.genero || '');
+    escolherVoz(d.genero === 'female' ? 'female' : 'male');   // pedido antigo sem voz → masculina
     contarLetra();
     esqueceDesfazer();
 
