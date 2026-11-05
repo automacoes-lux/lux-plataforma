@@ -79,6 +79,10 @@ body{
 }
 .tipo-btn .tipo-emoji{font-size:16px;line-height:1}
 .tipo-hint{font-size:12.5px;color:var(--text-dim);line-height:1.45;padding-left:2px}
+/* 05/11/2026: padrão = letra p/ música de ~1 minuto; marcado = letra completa (igual à Lux Music) */
+.extensa-opt{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;color:var(--text);cursor:pointer;user-select:none}
+.extensa-opt input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+.extensa-opt small{color:var(--text-dim);font-size:12px}
 @media(max-width:430px){
   .tipo-btn{font-size:12.5px;padding:12px 6px;gap:5px}
   .tipo-hint{font-size:12px}
@@ -626,6 +630,9 @@ body{
           </button>
         </div>
         <div class="tipo-hint" id="tipoHint"></div>
+        <label class="extensa-opt" id="extensaWrap" title="Desmarcado: letra para música de cerca de 1 minuto. Marcado: música completa, com mais versos, ponte e solo.">
+          <input type="checkbox" id="letraExtensa"/> Letra extensa <small>(desmarcado = música de ~1 minuto)</small>
+        </label>
       </div>
 
       <div class="field">
@@ -813,6 +820,9 @@ function setTipoMusica(novo) {
   const bf   = document.getElementById('briefing');
   if (hint) hint.innerHTML   = ui.hint;
   if (bf)   bf.placeholder   = ui.placeholder;
+  // jingle político tem tamanho próprio: a opção "Letra extensa" só vale para empresa
+  const ext = document.getElementById('extensaWrap');
+  if (ext) ext.style.display = (tipoMusica === 'politica') ? 'none' : '';
 }
 
 document.querySelectorAll('.tipo-btn').forEach(btn => {
@@ -1276,7 +1286,8 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
   status.textContent = 'Gerando letra com IA... pode levar até 30 segundos.';
 
   try {
-    const body = { briefing, ritmo, instrucoes, tipo: tipoMusica };
+    const extensa = tipoMusica === 'empresa' && document.getElementById('letraExtensa').checked;
+    const body = { briefing, ritmo, instrucoes, tipo: tipoMusica, extensa };
     if (compressedImage) {
       body.imageBase64 = compressedImage.base64;
       body.imageMime   = compressedImage.mime;
@@ -1304,6 +1315,7 @@ document.getElementById('btnGerar').addEventListener('click', async () => {
       clientName: data.result.nome_negocio || '',
       result:     data.result,
       tipo:       tipoMusica,
+      extensa,
       hasImage:   !!compressedImage,
       costBRL:    data.costBRL ?? null
     };
@@ -1390,6 +1402,7 @@ function renderLyrics(order) {
         <span><strong>Weirdness:</strong> <b class="num-white" id="styleWeirdness">${r.weirdness ?? '-'}</b></span>
         <span><strong>Style Influence:</strong> <b class="num-white" id="styleInfluence">${r.style_influence ?? '-'}</b></span>
       </div>
+      ${r.exclude_styles ? `<div class="style-box-meta"><span><strong>Exclude Styles:</strong> <b class="num-white" id="styleExclude">${escapeHtml(r.exclude_styles)}</b></span></div>` : ''}
       <div class="style-restyle">
         <div class="style-restyle-hint style-restyle-hint-lg">Gere um novo prompt informando o ritmo e as características desejadas</div>
         <div class="style-restyle-row">
@@ -1439,7 +1452,8 @@ function renderLyrics(order) {
 
     <div class="lyrics-actions" style="margin-top:1.5rem">
       <div class="copy-row">
-        <button class="btn-secondary" id="btnCopyLyrics">📋 Copiar Letra</button>
+        <button class="btn-secondary" id="btnCopyLyrics" title="Com as tags de voz e arranjo — para colar no gerador">📋 Copiar Letra</button>
+        <button class="btn-secondary" id="btnCopyCliente" title="Sem as tags técnicas — para mandar ao cliente aprovar">💬 Copiar para o cliente</button>
         <button class="btn-secondary" id="btnCopyPrompt">🎼 Copiar Prompt</button>
       </div>
       <button class="btn-refazer-letra" id="btnRefazerLetra">🔄 Refazer Letra</button>
@@ -1470,6 +1484,7 @@ function renderLyrics(order) {
   });
 
   document.getElementById('btnCopyLyrics').addEventListener('click', copyLyricsOnly);
+  document.getElementById('btnCopyCliente').addEventListener('click', copyParaCliente);
   document.getElementById('btnCopyPrompt').addEventListener('click', copyPromptOnly);
   document.getElementById('btnNew').addEventListener('click', () => {
     document.querySelector('[data-tab="new"]').click();
@@ -1525,10 +1540,13 @@ function parseLyrics(text) {
 
   // Quebra em blocos a cada linha que começa com [
   const rawParts = text.split(/\n(?=\[)/);
+  // 05/11/2026: a tag pode trazer voz/arranjo ("Verse, Male Vocal, warm"); `base` é o tipo do
+  // bloco sem isso e sem número ("verse"), e é por ele que os botões Verse/Chorus/... acham o bloco.
+  const baseDe = (nome) => nome.split(',')[0].trim().replace(/\s*\d+$/, '').toLowerCase();
   const blocks = rawParts.map(block => {
     const m = block.match(/^\[([^\]]+)\]\s*\n?([\s\S]*)$/);
-    if (!m) return { name: 'Section', body: block.trim() };
-    return { name: m[1].trim(), body: m[2].trim() };
+    if (!m) return { name: 'Section', base: 'section', body: block.trim() };
+    return { name: m[1].trim(), base: baseDe(m[1]), body: m[2].trim() };
   });
 
   // Funde [Spoken Word ...] dentro do [Outro] que vem antes
@@ -1539,7 +1557,7 @@ function parseLyrics(text) {
     const isSpoken = nameLower.startsWith('spoken') || nameLower.includes('locuç');
 
     if (isSpoken && merged.length > 0 &&
-        merged[merged.length - 1].name.toLowerCase() === 'outro') {
+        merged[merged.length - 1].base === 'outro') {
       // Funde com o Outro anterior
       const prev = merged[merged.length - 1];
       const spokenContent = `[${b.name}]\n${b.body}`.trim();
@@ -1571,7 +1589,7 @@ function getCombinedInstructions() {
 async function regenerateBlock(blockName, btn) {
   if (!currentOrder) return;
   const sections = parseLyrics(currentOrder.result.lyrics);
-  const idx = sections.findIndex(s => s.name.toLowerCase() === blockName.toLowerCase());
+  const idx = sections.findIndex(s => s.base === blockName.toLowerCase());
   if (idx === -1) {
     showToast('Esta letra não tem bloco "' + blockName + '".', true);
     return;
@@ -1591,7 +1609,7 @@ async function regenerateBlock(blockName, btn) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         orderId:     currentOrder.orderId,
-        sectionName: sections[idx].name,
+        sectionName: blockName,          // o servidor só aceita Verse/Chorus/Bridge/Outro (a tag completa fica na letra)
         lyrics:      currentOrder.result.lyrics,
         briefing:    currentOrder.briefing,
         tipo:        currentOrder.tipo || 'empresa',
@@ -1844,8 +1862,9 @@ function redoOrder() {
   document.getElementById('instrucoes').value = currentOrder.instrucoes || '';
   document.getElementById('ritmo').value      = currentOrder.ritmo      || '';
 
-  // Reaplica o tipo do pedido antigo (empresa/política)
+  // Reaplica o tipo do pedido antigo (empresa/política) e o tamanho (Letra extensa)
   setTipoMusica(currentOrder.tipo || 'empresa');
+  document.getElementById('letraExtensa').checked = !!currentOrder.extensa;
 
   // Atualiza estado visual do botão ⭐ (favoritos)
   if (typeof updateSaveButtonState === 'function') updateSaveButtonState();
@@ -1920,6 +1939,26 @@ function copyLyricsOnly() {
     .catch(() => showToast('Erro ao copiar', true));
 }
 
+// 05/11/2026: a letra que o CLIENTE lê — sem as tags de voz/arranjo (instrução pro gerador).
+// Fica só o nome da seção ([Verse], [Chorus]…) e a locução; [Intro]/[End]/solos somem.
+// Mesma regra do letraParaCliente do lux-song (a prévia automática manda assim).
+function copyParaCliente() {
+  if (!currentOrder) return;
+  const SECAO = /^\[\s*(verse|chorus|bridge|outro|pre-chorus|hook)\b/i;
+  const linhas = String(currentOrder.result.lyrics || '').split('\n').map(l => {
+    const t = l.trim();
+    if (!/^\[[^\]]*\]$/.test(t)) return l;
+    if (/spoken word/i.test(t)) return /^\[\s*outro\b/i.test(t) ? '[Outro]\n[Spoken Word – locução]' : '[Spoken Word – locução]';
+    if (!SECAO.test(t)) return null;
+    return '[' + t.slice(1, -1).split(',')[0].trim() + ']';
+  }).filter(l => l !== null).join('\n').split('\n');
+  const text = linhas.filter((l, i) => !(/^\[/.test(l.trim()) && l.trim() === (linhas[i - 1] || '').trim()))
+    .join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('✓ Letra copiada para mandar ao cliente!'))
+    .catch(() => showToast('Erro ao copiar', true));
+}
+
 // Copia só o style prompt (sem weirdness/style_influence)
 function copyPromptOnly() {
   if (!currentOrder) return;
@@ -1935,6 +1974,7 @@ function resetForm() {
   document.getElementById('instrucoes').value = '';
   document.getElementById('ritmo').value = '';
   setTipoMusica('empresa'); // volta pro padrão
+  document.getElementById('letraExtensa').checked = false;
   compressedImage = null;
   imageInput.value = '';
   imagePreview.classList.remove('has-img');
@@ -2078,6 +2118,7 @@ async function openHistoryOrder(orderId) {
       clientName: o.clientName,
       result:     o.result,
       tipo:       o.tipo || 'empresa',
+      extensa:    !!o.extensa,
       hasImage:   !!o.hasImage,
       costBRL:    o.costBRL ?? null
     };
