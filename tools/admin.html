@@ -2037,6 +2037,9 @@ function renderBalanceador(d) {
         '<span class="bal-luz ' + luz + '" title="' + tituloLuz + '"></span>' +
         '<b title="' + escapeAttr(e.email) + '">' + escapeHtml(e.nome) + '</b>' +
         (controles && cedo ? '<span class="bal-tag cedo" title="Entra às ' + hr.inicioCedo + 'h">' + hr.inicioCedo + 'h</span>' : '') +
+        // 05/11 (Thiago): hora do último lead do anúncio — no empate, recebe primeiro quem está há mais tempo sem lead
+        (controles && e.ultimoLeadAnuncio ? '<span class="bal-tag" title="Último lead do anúncio desta equipe. Empatadas no número de leads, recebe primeiro quem está há mais tempo sem receber.">último ' +
+          String(Math.floor(e.ultimoLeadAnuncio / 60)).padStart(2, '0') + 'h' + String(e.ultimoLeadAnuncio % 60).padStart(2, '0') + '</span>' : '') +
         (controles && e.remarketing ? '<span class="bal-tag rmk" title="' + e.remarketing + ' remarketing enviado hoje pelo WhatsApp desta equipe">' + EQ_IC_RMK + e.remarketing + '</span>' : '') +
         (e.estimado ? '<span class="bal-tag" title="WhatsApp parou de gravar: ' + (e.capturados != null ? e.capturados + ' conversas gravadas em ' + e.cliques + ' cliques; ' : '') + 'o resto foi estimado pelos cliques">estimado</span>' : '') +
         (controles && !e.ativo && e.voltaEm ? '<span class="bal-tag volta" title="Religada depois das ' + hr.fim + 'h: volta à roleta à meia-noite de ' + eqDataCurta(e.voltaEm) + '. Até lá não recebe lead.">' + eqVoltaTexto(e.voltaEm) + '</span>' : '') +
@@ -2047,7 +2050,7 @@ function renderBalanceador(d) {
         (media > 0 ? '<div class="bal-media" style="left:' + mediaPct + '%"></div>' : '') +
       '</div>' +
       '<div class="bal-num"><b>' + eqNum(valor) + '</b>' +
-        '<span title="conversas novas que vieram do anúncio — a base da roleta e do rateio do anúncio (05/11)">' + leads + (leads === 1 ? ' lead do anúncio' : ' leads do anúncio') + (e.peso === 2 ? ' · dupla' : '') +
+        '<span title="conversas novas que vieram do anúncio — a base da roleta e do rateio do anúncio (05/11). No empate, recebe primeiro quem está há mais tempo sem lead.">' + leads + (leads === 1 ? ' lead do anúncio' : ' leads do anúncio') + (e.peso === 2 ? ' · dupla' : '') +
           (anuncio != null ? ' · <i class="bal-anun" title="parte do anúncio do dia pelos leads deste bloco (a mesma conta do fechamento)">' + reais(anuncio) + '</i>' : '') + '</span>' +
       '</div>' +
       (controles ? controlesDe(e, cedo) : '<div class="bal-extra"></div>') +
