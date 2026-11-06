@@ -126,6 +126,11 @@ button.pj-th:hover{border-color:var(--gold)}
 .pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
 .pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* (06/11) custo discriminado: no card do projeto e embaixo do vídeo gerado */
+.pj-custo{font-size:11.5px;color:var(--text-mid);margin-top:.2rem;line-height:1.45}
+.pj-custo-it{color:var(--text-dim);margin-top:.05rem}
+.custo-itens{display:flex;flex-wrap:wrap;gap:.2rem .9rem;margin-top:.35rem;font-size:12px;color:var(--text-dim)}
+.custo-itens b{color:var(--text-mid);font-weight:600}
 .pj-cat{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
   color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);
   border-radius:999px;padding:.12rem .5rem;margin-bottom:.25rem}
@@ -610,6 +615,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
       <button class="btn-gold" id="btnFinal" onclick="finalizar()" style="margin-top:.6rem">🎬 MONTAR O VÍDEO</button>
       <div class="soon-note" id="notaMontagem"></div>
+      <!-- (06/11) custo discriminado do que já foi gerado, antes mesmo de montar -->
+      <div class="soon-note" id="custoParcial" style="margin-top:.5rem"></div>
     </div>
   </div>
 
@@ -722,10 +729,19 @@ const PVS_TRAVA_MIN = 40, PVS_TRAVA_MAX = 100;   // fora disso o GERAR VÍDEO n�
 // (o Worker aceita o mesmo: PVS_TEXTO_MAX). Fica salva no projeto.
 const PVS_LONGO_MAX = 330, PVS_LONGO_CHARS = 2600, PVS_CURTO_CHARS = 1200;
 let textoLongo = false;
-function tetoPalavras(){ return textoLongo ? PVS_LONGO_MAX : PVS_TRAVA_MAX; }
-function tetoChars(){ return textoLongo ? PVS_LONGO_CHARS : PVS_CURTO_CHARS; }
+// (06/11) Thiago: SEM mínimo (a Laís faz 3 cenas curtas para editar no CapCut) e SEM trava de 30 s — passando de 30 s só
+// AVISA que o custo cresce com o tempo. A chave "Texto longo" saiu: o teto agora é sempre o técnico (~2 min, 2.600
+// caracteres, o mesmo que o servidor aceita). PVS_TRAVA_MIN/MAX ficaram só como histórico.
+function tetoPalavras(){ return PVS_LONGO_MAX; }
+function tetoChars(){ return PVS_LONGO_CHARS; }
 const PVS_SEG_POR_PALAVRA = 0.37;
-const PVS_USD_POR_SEG = 0.53 * 0.0607;           // 11 créditos em 20,75s × US$ 0,0607 por crédito
+const PVS_USD_POR_SEG = 0.04;                    // (06/11) motor atual: US$ 0,034–0,040 por segundo medidos (voz + vídeo + emenda)
+// aviso (amarelo, não trava) para texto acima de ~30 s, com a estimativa em reais
+function avisoMais30(n){
+  const seg = Math.round(n * PVS_SEG_POR_PALAVRA);
+  return '⚠️ <b>'+n+' palavras</b>: o vídeo vai passar de 30 segundos (~'+seg+'s). Pode gerar normalmente, só o custo aumenta '+
+    'um pouco, conforme o tempo (estimativa deste vídeo: <b>~R$ '+(seg * PVS_USD_POR_SEG * 5.18).toFixed(2).replace('.', ',')+'</b>).';
+}
 const PVS_VOZ_PADRAO = { masculina: 'Locução para Propaganda', feminina: 'Raquel - Expressive and Energetic' };
 let vozes = [], vozId = '';                      // vozId vazio = usa a padrão do sexo escolhido no passo 1
 let vozesTrocadas = {};                          // (02/10) clone apagado → substituto (vem do /pvsVozes)
@@ -844,8 +860,32 @@ let videoFinalUrl = '', custoUSD = 0, custoLancadoUSD = 0;
 let custoPor = {}, custoPorLancado = {}, meuEmail = '', projetoDeOutro = false;
 // TODO custo passa por aqui: entra no total do projeto e, se sou admin mexendo em projeto de
 // outro, TAMBÉM no meu balde — que a montagem cobra de mim, não do atendente.
-function somaCusto(x){
+// (06/11) Thiago: o custo tem que aparecer DISCRIMINADO (cada vídeo gerado, personagem, texto…), também antes de montar e
+// na aba Projetos. Cada valor que entra no total vira um item { r: rótulo, u: US$, h: 'dd/mm hh:mm' } salvo no projeto.
+let custoItens = [];
+function registraItem(x, rotulo){
   x = Number(x) || 0; if(!x) return;
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  custoItens.push({ r: String(rotulo || 'Outros').slice(0, 24), u: Number(x.toFixed(4)),
+    h: z(d.getDate())+'/'+z(d.getMonth()+1)+' '+z(d.getHours())+':'+z(d.getMinutes()) });
+  if(custoItens.length > 60) custoItens = custoItens.slice(-60);
+}
+// itens agrupados para mostrar: cada vídeo gerado numerado (Vídeo 1, Vídeo 2…); o resto somado por rótulo.
+// O que entrou no total ANTES deste detalhamento existir (projeto antigo) aparece como "Antes do detalhamento".
+function custoAgrupado(){
+  const out = [], grupos = {}; let nv = 0, soma = 0;
+  custoItens.forEach(function(it){
+    soma += Number(it.u) || 0;
+    if(it.r === 'Vídeo'){ nv++; out.push({ r: 'Vídeo ' + nv + (it.h ? ' (' + it.h.slice(-5) + ')' : ''), u: Number(it.u) || 0, v: true }); }
+    else { if(!grupos[it.r]){ grupos[it.r] = { r: it.r, u: 0 }; out.push(grupos[it.r]); } grupos[it.r].u += Number(it.u) || 0; }
+  });
+  const resto = Number((custoUSD - soma).toFixed(4));
+  if(resto > 0.005 && out.length) out.push({ r: 'Antes do detalhamento', u: resto });   // sem itens = só o total
+  return out;
+}
+function somaCusto(x, rotulo){
+  x = Number(x) || 0; if(!x) return;
+  registraItem(x, rotulo);
   custoUSD += x;
   if(souAdmin && projetoDeOutro && meuEmail){
     custoPor[meuEmail] = Number(((custoPor[meuEmail] || 0) + x).toFixed(4));
@@ -996,7 +1036,8 @@ function estadoAtual(){
     legendaY: legendaY,   // (11/09) a altura escolhida pro texto no vídeo
     transicoes: transicoes,   // (21/09) chave de transição entre as cenas
     custoUSD: custoUSD, custoLancadoUSD: custoLancadoUSD,
-    custoPor: custoPor, custoPorLancado: custoPorLancado, videoUrl: videoFinalUrl||''
+    custoPor: custoPor, custoPorLancado: custoPorLancado, videoUrl: videoFinalUrl||'',
+    custoItens: custoItens   // (06/11) custo discriminado
   };
 }
 async function salvarProjeto(silencioso){
@@ -1085,6 +1126,15 @@ function pjCard(p, tipo){
   const atr = (souAdmin && !p.arquivo) ? '<button title="Atribuir a outro atendente" onclick="abrirAtribuir(\''+p.projectId+'\')">👤 Atribuir</button>' : '';
   const lixo = podeMexer ? '<button onclick="apagarProjeto(\''+p.projectId+'\')">🗑️</button>' : '';
   const cat = p.categoria ? '<div class="pj-cat">'+esc(p.categoria)+'</div>' : '';
+  // (06/11) Thiago: projeto em andamento com custo (ex.: vídeo gerado e ainda não finalizado) mostra o valor, discriminado
+  const reais = function(v){ return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ','); };
+  const custoLn = (tipo!=='res' && p.custoBRL > 0)
+    ? ('<div class="pj-custo">💰 <b>' + reais(p.custoBRL) + '</b>' +
+       (p.pendenteBRL > 0.004 ? ' · ' + reais(p.pendenteBRL) + ' ainda não lançado' : '') +
+       ((Array.isArray(p.custoItens) && p.custoItens.length)
+         ? '<div class="pj-custo-it">' + p.custoItens.map(function(x){ return esc(x[0]) + ': ' + reais(Number(x[1]) * 5.18); }).join(' · ') + '</div>'
+         : '') + '</div>')
+    : '';
   // (01/10) estrela "Postar?" só nos vídeos prontos
   const estrela = (tipo==='res' && !p.arquivo)
     ? ('<button class="estrela'+(p.estrela?' on':'')+'" data-id="'+escA(p.projectId)+'" onclick="alternaEstrela(this)">'+
@@ -1093,7 +1143,7 @@ function pjCard(p, tipo){
     : '';
   return '<div class="pj">'+th+
     '<div class="pj-in">'+cat+'<div class="pj-nm">'+esc(p.cliente||'(sem nome)')+'</div>'+
-      '<div class="pj-sb">'+sub+'</div>'+quem+'</div>'+estrela+
+      '<div class="pj-sb">'+sub+'</div>'+quem+custoLn+'</div>'+estrela+
     '<div class="pj-bt">'+bts+atr+lixo+'</div></div>';
 }
 // (01/10) Estrela "Postar?": acende na hora e grava no servidor; se falhar, volta como estava.
@@ -1124,7 +1174,10 @@ async function carregarProjetos(){
       const eu = { projectId: projectId, cliente: clienteNome(), passo: passoAtual, passoMax: passoMax,
                    atualizadoEm: 'agora mesmo', criadoEm: '', videoUrl: videoFinalUrl || null,
                    thumb: personagemImg || null, atendente: '',
-                   custoBRL: Number((custoUSD * 5.18).toFixed(2)) };
+                   custoBRL: Number((custoUSD * 5.18).toFixed(2)),
+                   // (06/11) o mesmo formato que o servidor manda: [rótulo, US$] já agrupado + o que falta lançar
+                   custoItens: custoAgrupado().map(function(it){ return [it.r, Number(it.u.toFixed(4))]; }),
+                   pendenteBRL: Number((Math.max(0, custoUSD - custoLancadoUSD) * 5.18).toFixed(2)) };
       (videoFinalUrl ? d.resultados : d.projetos).unshift(eu);
     }
     _projetosLista = d.projetos || [];
@@ -1274,6 +1327,7 @@ async function abrirProjeto(id){
     custoLancadoUSD = (p.custoLancadoUSD===undefined) ? custoUSD : (Number(p.custoLancadoUSD)||0);
     custoPor = (p.custoPor && typeof p.custoPor==='object') ? p.custoPor : {};
     custoPorLancado = (p.custoPorLancado && typeof p.custoPorLancado==='object') ? p.custoPorLancado : {};
+    custoItens = Array.isArray(p.custoItens) ? p.custoItens : [];   // (06/11) projeto antigo: vazio → "Antes do detalhamento"
     projetoDeOutro = (d.meu === false);          // o servidor sabe de quem é: o que eu gastar aqui vai pro meu balde
     if(d.email) meuEmail = String(d.email).toLowerCase();
     trilhaSel = p.trilha||null; musica=null;
@@ -1301,8 +1355,8 @@ async function abrirProjeto(id){
     }
     if(videoFinalUrl){
       document.getElementById('videoFinal').src = videoFinalUrl;
-      document.getElementById('custoFinal').innerHTML='💰 Custo até aqui: <b>~R$'+(custoUSD*5.22).toFixed(2)+'</b>.';
     }
+    pintarCusto();   // (06/11) custo discriminado embaixo do vídeo já gerado, mesmo sem montar (era só o total, e só com o vídeo pronto)
     passoMax = Math.max(1, p.passoMax||1);
     abrirAba('criar'); checarSalvar();
     irPara(Math.max(1, Math.min(passoMax, p.passo||1)));
@@ -1432,7 +1486,7 @@ async function gerarPersonagem(silencioso){
       ajuste: ajuste, imagemAnterior: ((ajuste || personagemMontado) && personagemImg) ? personagemImg : '' }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'Falha ao gerar o personagem');
-    personagemImg = d.base64; somaCusto(d.custoUSD);
+    personagemImg = d.base64; somaCusto(d.custoUSD, 'Personagem');
     pintarPersonagem();
     if(nota) nota.innerHTML='';
     if(!silencioso){ toast('✅ Personagem pronto!'); rolarPara('boxPersonagem'); }
@@ -1476,6 +1530,7 @@ function separarSeJaPronto(){
   projectId = 'promo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   custoUSD = Number((pend.aLancar + somaOutros).toFixed(4)); custoLancadoUSD = 0;
   custoPor = pend.outros; custoPorLancado = {};
+  custoItens = custoUSD > 0 ? [{ r: 'Do projeto anterior', u: custoUSD, h: '' }] : [];   // (06/11) o pendente que veio junto
   videoFinalUrl = '';
   const v=document.getElementById('videoFinal'); if(v) v.removeAttribute('src');
   const bx=document.getElementById('telaFinal'); if(bx) bx.classList.add('hide');
@@ -1598,14 +1653,14 @@ async function gerarRoteiro(ajuste, silencioso){
       briefing: briefTexto(), ajuste: String(ajuste||'') }) });   // sem imagem: o texto é só texto
     const d = await r.json();
     // (02/10) a IA recusou o briefing: a leitura foi paga, mas NADA mais é gerado — e o motivo fica na tela
-    if(!d.ok && d.recusa){ somaCusto(d.aiCostUSD); const er = new Error(d.error); er.recusa = true; throw er; }
+    if(!d.ok && d.recusa){ somaCusto(d.aiCostUSD, 'Texto'); const er = new Error(d.error); er.recusa = true; throw er; }
     if(!d.ok) throw new Error(d.error||'Erro');
     if(pareceRecusa(d.fala)) { const er = new Error('🚫 A IA não escreve este comercial. Nenhum vídeo foi gerado. Ajuste as informações do cliente — sem ataques ou estereótipos contra pessoas ou grupos — e gere de novo.'); er.recusa = true; throw er; }
     separarSeJaPronto();   // (05/11) texto novo num projeto que já tem vídeo pronto → projeto novo (o anterior fica intacto)
     campanha = { marca: d.marca||'', tom: d.tom||'', sexoVoz: sexoVoz };
     cenas = [{ numero:1, papel:'texto corrido', fala: organizaTexto(d.fala), legenda: organizaTexto(d.legenda||d.fala), palavras: d.palavras,
                video_url:'', video_status:'', video_error:'' }];
-    somaCusto(d.aiCostUSD);
+    somaCusto(d.aiCostUSD, 'Texto');
     const nrOk=document.getElementById('notaRoteiro'); if(nrOk) nrOk.innerHTML='';   // tira a recusa anterior
     if(!silencioso){ renderRoteiro(); liberar(2); toast('✅ Texto pronto! (IA ~R$'+(d.aiCostBRL||0).toFixed(2)+')'); }
     return true;
@@ -1700,25 +1755,13 @@ function renderTextoUnico(){
   }
   box.innerHTML =
     '<div class="step"><div class="step-head"><div class="step-title">O texto do personagem</div></div>'+
-    '<div class="step-hint">É o que o personagem fala, do começo ao fim, num vídeo só. Ideal: <b>'+PVS_MIN+' a '+PVS_MAX+' palavras</b> (~30 segundos). Pode editar à vontade.</div>'+
+    '<div class="step-hint">É o que o personagem fala, do começo ao fim, num vídeo só. Pode ter o tamanho que precisar, curto ou longo. '+
+      'Até ~<b>'+PVS_MAX+' palavras</b> (~30 segundos) é o tamanho padrão; passando disso o vídeo sai normalmente, só custa um pouco mais.</div>'+
     '<div class="cena-rot"><textarea data-fa="0" maxlength="'+tetoChars()+'" style="min-height:190px">'+esc(s.fala||'')+'</textarea>'+
     '<div class="soon-note" data-cont="0" style="text-align:right;margin-top:.25rem"></div>'+
     '<div class="alerta hide" data-al="0"></div>'+
-    // (16/10) chave do texto longo — mesma aparência da chave de transição
-    '<label class="chave" for="chkLongo" style="margin-top:.7rem">'+
-      '<input type="checkbox" id="chkLongo"'+(textoLongo?' checked':'')+'/>'+
-      '<span class="chave-trilho" aria-hidden="true"></span>'+
-      '<span class="chave-texto">Texto longo — vídeo de até 2 minutos</span>'+
-    '</label>'+
-    '<div class="soon-note" style="margin-top:.25rem">Só pra cliente que pediu vídeo maior. Ligada, aceita até <b>'+PVS_LONGO_MAX+' palavras</b>. O custo cresce junto com o tamanho (~US$ 0,03 por segundo).</div>'+
+    // (06/11) a chave "Texto longo" saiu: não existe mais trava de 30 s, só o aviso de custo
     '</div></div>';
-  const ck = box.querySelector('#chkLongo');
-  ck.addEventListener('change', function(){
-    textoLongo = ck.checked;
-    document.querySelectorAll('[data-fa],[data-faed]').forEach(function(t){ if(!ehLegado()) t.maxLength = tetoChars(); });
-    alertaFala(0); alertaFalaEditor(0); atualizarBotaoVideo();
-    salvarProjeto(true);
-  });
   const el = box.querySelector('[data-fa="0"]');
   el.addEventListener('input', function(){
     s.fala = el.value; s.palavras = contarPalavras(el.value); s._legendaSuja = true;
@@ -1785,8 +1828,8 @@ function alertaFalaEditor(i){
   if(!ehLegado()){   // (02/10) vídeo único: mesmo espírito — aviso amarelo, nunca trava
     // a única exceção: a recusa da IA não é texto do atendente, é a IA dizendo não (o Refazer barra)
     if(pareceRecusa(cenas[i].fala)){ el.className='alerta'; el.innerHTML=MSG_TEXTO_RECUSA; return; }
-    if(n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto grande (<b>'+n+' palavras</b>) — o vídeo vai passar de 30 segundos (~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s). Não impede fazer o vídeo.'; return; }
-    if(n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ Texto curto (<b>'+n+' palavras</b>) — o vídeo fica com ~'+Math.round(n*PVS_SEG_POR_PALAVRA)+'s. Não impede fazer o vídeo.'; return; }
+    // (06/11) texto curto não avisa mais nada; acima de ~30 s, só o aviso de custo
+    if(n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML=avisoMais30(n); return; }
     el.className='alerta hide'; el.innerHTML=''; return;
   }
   // ⚠️ (08/09) NADA de vermelho e NADA de ⛔ aqui — no passo 3 nenhum tamanho de texto impede o
@@ -1803,20 +1846,15 @@ function alertaFala(i){
   if(!ehLegado()){
     const cont = document.querySelector('[data-cont="'+i+'"]');
     const seg = Math.round(n * PVS_SEG_POR_PALAVRA);
-    if(cont){ cont.textContent = n+' palavras · ~'+seg+'s de vídeo'; cont.style.color = (n>=PVS_MIN && n<=PVS_MAX) ? 'var(--gold)' : ''; }
+    if(cont){ cont.textContent = n+' palavras · ~'+seg+'s de vídeo'; cont.style.color = (n>0 && n<=PVS_MAX) ? 'var(--gold)' : ''; }
     if(pareceRecusa(cenas[i].fala)){ el.className='alerta'; el.innerHTML=MSG_TEXTO_RECUSA; return; }
+    // (06/11) sem mínimo e sem trava de 30 s: só o teto técnico (~2 min) trava; acima de 30 s é aviso de custo
     if(n > tetoPalavras()){
       el.className='alerta';
-      el.innerHTML = textoLongo
-        ? ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). Mesmo com o texto longo ligado, o máximo é <b>'+PVS_LONGO_MAX+'</b> (~2 minutos).')
-        : ('⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo é <b>'+PVS_TRAVA_MAX+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'. '+
-           '<b>Se o cliente pediu um vídeo maior, ligue o texto longo:</b>'+
-           (n <= PVS_LONGO_MAX ? ' <button type="button" class="btn-ghost" style="margin-top:.4rem" onclick="ligarTextoLongo()">📏 Ligar texto longo</button>' : ''));
+      el.innerHTML = '⛔ Texto longo demais: <b>'+n+' palavras</b> (~'+seg+'s). O máximo que o sistema faz num vídeo é <b>'+PVS_LONGO_MAX+' palavras</b> (~2 minutos).';
       return;
     }
-    if(n < PVS_TRAVA_MIN){ el.className='alerta'; el.innerHTML='⛔ Texto curto demais: <b>'+n+' palavras</b>. O mínimo é <b>'+PVS_TRAVA_MIN+'</b>. O ideal é '+PVS_MIN+' a '+PVS_MAX+'.'; return; }
-    if(textoLongo && n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML='📏 Texto longo ligado: <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s.'; return; }
-    if(n > PVS_MAX || n < PVS_MIN){ el.className='alerta aviso'; el.innerHTML='⚠️ <b>'+n+' palavras</b> — o vídeo fica com ~'+seg+'s. O ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras (~30s). Não impede gerar.'; return; }
+    if(n > PVS_MAX){ el.className='alerta aviso'; el.innerHTML=avisoMais30(n); return; }
     el.className='alerta hide'; el.innerHTML=''; return;
   }
   if(n > PALAVRAS_MAX){ el.className='alerta'; el.innerHTML='⛔ Fala longa: <b>'+n+' palavras</b>. O máximo é <b>'+PALAVRAS_MAX+'</b> — cada palavra leva meio segundo, e passando disso a fala é cortada no meio no vídeo.'; if(card) card.classList.remove('ok'); return; }
@@ -1825,7 +1863,8 @@ function alertaFala(i){
 }
 // (02/10) texto que impede gerar: no vídeo único só os extremos travam; no Veo, a faixa 13–15
 function falasRuins(){
-  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PVS_TRAVA_MIN || n>tetoPalavras() || pareceRecusa(s.fala); }).length;
+  // (06/11) sem mínimo: só o texto VAZIO, o teto técnico (~2 min) e a recusa da IA impedem gerar
+  if(!ehLegado()) return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<1 || n>tetoPalavras() || pareceRecusa(s.fala); }).length;
   return cenas.filter(s=>{ const n=contarPalavras(s.fala); return n<PALAVRAS_MIN || n>PALAVRAS_MAX; }).length;
 }
 function atualizarBotaoVideo(){
@@ -2008,7 +2047,7 @@ async function acompanharVs(i, videoId){
           s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
         }
         // custo real (créditos + transcrição), UMA vez por vídeo — reconsultar não soma de novo
-        if(s._custoDe !== d.videoId){ s._custoDe = d.videoId; somaCusto(d.custoUSD); }
+        if(s._custoDe !== d.videoId){ s._custoDe = d.videoId; somaCusto(d.custoUSD, 'Vídeo'); }
         renderVideos(); pintarCusto();
         await salvarProjeto(true);
         toast('✅ Vídeo pronto!');
@@ -2074,7 +2113,7 @@ async function dispararCena(i){
     sexoVoz: sexoVoz || (campanha && campanha.sexoVoz) || 'masculina' }) });
   const d = await r.json();
   if(!d.ok) throw new Error(d.error||'Falha ao disparar a cena');
-  somaCusto(d.custoUSD);
+  somaCusto(d.custoUSD, 'Cenas (motor antigo)');
   return d.predictionId;
 }
 // (24/09) o aviso de "está demorando". Chamado a cada volta do laço de propósito: quando outra
@@ -2150,7 +2189,7 @@ async function acompanharVideo(i, predictionId){
           s._inicioFala= Number(d.transcricao.inicioFala||0);
           s._palavra   = d.transcricao.palavra||'';
           s._marcacoes = Array.isArray(d.transcricao.marcacoes) ? d.transcricao.marcacoes : [];
-          somaCusto(d.transcricao.custoUSD);
+          somaCusto(d.transcricao.custoUSD, 'Legenda');
           // ⚠️ NÃO corta sozinho (05/09). As alças nascem nas pontas e quem escolhe o trecho
           // é o atendente. A transcrição fica só pela legenda e pelo início da fala.
         }
@@ -2414,7 +2453,7 @@ async function corrigirPronuncia(){
     const r = await apiRetry('/rotPronuncia', { method:'POST', body: JSON.stringify({ palavra: palavra }) });
     const d = await r.json();
     if(!d.ok) throw new Error(d.error||'não consegui corrigir esta palavra');
-    somaCusto(d.custoUSD); pintarCusto();
+    somaCusto(d.custoUSD, 'Pronúncia'); pintarCusto();
     pronAtual = d.fonetica;
     document.getElementById('pronSaida').textContent = d.fonetica;
     document.getElementById('boxPronRes').classList.remove('hide');
@@ -2784,13 +2823,22 @@ async function aplicarCorteTrilha(){
 // qual cena falhou e por quê.
 // O valor embaixo do vídeo tem que acompanhar cada refazer, na hora. Antes só era escrito no fim
 // da montagem, então o atendente refazia 3 cenas (US$ 1,20) e continuava lendo o preço antigo.
+// (06/11) pinta nos DOIS lugares: embaixo do MONTAR O VÍDEO (vídeo gerado, ainda não finalizado) e embaixo do vídeo pronto,
+// com a lista discriminada (Vídeo 1, Vídeo 2, Personagem, Texto, Montagem…)
+function custoDetalheHtml(){
+  const g = custoAgrupado(); if(!g.length) return '';
+  return '<div class="custo-itens">' + g.map(function(it){
+    return '<span>' + esc(it.r) + ': <b>R$' + (it.u * 5.18).toFixed(2).replace('.', ',') + '</b></span>';
+  }).join('') + '</div>';
+}
 function pintarCusto(){
-  const el=document.getElementById('custoFinal'); if(!el) return;
   const falta = Math.max(0, Number((custoUSD - custoLancadoUSD).toFixed(4)));
-  el.innerHTML = '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2)+'</b> '+
-    '<span style="color:var(--text-dim)">(tudo incluído: cenas, refeitas e montagens'+
-    (falta>0 ? ' — R$'+(falta*5.18).toFixed(2)+' entram no seu financeiro na próxima montagem' : ' — lançado no seu financeiro')+
-    ').</span>';
+  const html = !(custoUSD > 0) ? '' :
+    '💰 Custo deste vídeo: <b>~R$'+(custoUSD*5.18).toFixed(2).replace('.', ',')+'</b> '+
+    '<span style="color:var(--text-dim)">(tudo incluído: vídeos gerados, refeitos e montagens'+
+    (falta>0 ? ' — R$'+(falta*5.18).toFixed(2).replace('.', ',')+' entram no seu financeiro quando o vídeo for montado ou baixado' : ' — lançado no seu financeiro')+
+    ').</span>' + custoDetalheHtml();
+  ['custoFinal', 'custoParcial'].forEach(function(id){ const el=document.getElementById(id); if(el) el.innerHTML = html; });
 }
 
 function pintarProgresso(){
@@ -2829,7 +2877,7 @@ async function esperarVoz(i, tentativa){
       const r = await api('/promoVozStatus', { method:'POST', body: JSON.stringify({ vozId:s._vozId, projectId, cena:i+1 }) });
       const d = await r.json();
       if(d.ok && d.status==='done' && d.url){
-        s._vozUrl = d.url; s._vozErro=''; somaCusto(d.custoUSD);
+        s._vozUrl = d.url; s._vozErro=''; somaCusto(d.custoUSD, 'Voz');
         pintarCusto(); salvarProjeto(true);
         return;
       }
@@ -2880,7 +2928,7 @@ async function sincronizarTextos(i){
   try{
     const r = await apiRetry('/rotLegenda', { method:'POST', body: JSON.stringify({ fala: fala }) });
     const d = await r.json();
-    if(d.ok){ falaNova = String(d.fala||'').trim(); legNova = String(d.legenda||'').trim(); somaCusto(d.aiCostUSD); }
+    if(d.ok){ falaNova = String(d.fala||'').trim(); legNova = String(d.legenda||'').trim(); somaCusto(d.aiCostUSD, 'Texto'); }
   }catch(e){ /* sem servidor: a legenda vira a própria fala, SEM recibo (tenta de novo na próxima) */ }
   if(!cenas[i] || cenas[i] !== s) return;                 // a cena foi refeita/trocada no meio
   if(String(s.fala||'').trim() !== fala) return;          // o atendente continuou digitando: esta resposta já é velha
@@ -3259,7 +3307,7 @@ async function umCorte(s,i){
       s._inicioFala = Number(d.inicioFala||0);   // ~0 = o Veo começou a falar no primeiro quadro
       s._marcacoes = Array.isArray(d.marcacoes) ? d.marcacoes : [];   // alimenta a legenda automática
       s._palavra = d.palavra || '';
-      somaCusto(d.custoUSD);
+      somaCusto(d.custoUSD, 'Legenda');
     }catch(e){
       s._fimFala = (s._audio ? s._audio.fimFala : null);   // cai na medição por energia
       s._porEnergia = true;
@@ -3384,7 +3432,8 @@ async function refazerCena(i){
   if(!String(s.fala||'').trim()){ toast('✍️ Escreva o texto antes de refazer.'); return; }
   if(pareceRecusa(s.fala)){ toast('🚫 Este texto é a recusa da IA, não um comercial. Reescreva antes de refazer.'); return; }
   const seg = Math.round(np * PVS_SEG_POR_PALAVRA);
-  const risco = (np > PVS_MAX || np < PVS_MIN) ? ('⚠️ O texto tem '+np+' palavras: o vídeo vai ter ~'+seg+'s (o ideal é '+PVS_MIN+' a '+PVS_MAX+' palavras, ~30s).\n\n') : '';
+  // (06/11) texto curto não avisa; acima de ~30 s avisa que o custo cresce com o tempo
+  const risco = (np > PVS_MAX) ? ('⚠️ O texto tem '+np+' palavras: o vídeo vai passar de 30 segundos (~'+seg+'s), por isso custa um pouco mais.\n\n') : '';
   const vozNova = (s._vozUsada && !vozIgual(s._vozUsada, vozAtual())) ? ('Voz nova: '+nomeVoz(vozAtual())+'\n\n') : '';
   if(!confirm(risco+vozNova+'Refazer o VÍDEO com o texto e a voz de agora?\n\nCusta '+custoVideoTxt(np)+'. O vídeo atual será substituído.')) return;
   const bt=document.querySelector('#boxCortes [data-refaz="'+i+'"]'); const old=bt?bt.innerHTML:'';
@@ -3594,6 +3643,7 @@ async function finalizar(){
         videoFinalUrl = d2.url;
         // o render do Shotstack é calculado no servidor e cobrado em TODA montagem — entra no total
         custoUSD += Number(d2.montagemUSD||0);
+        registraItem(d2.montagemUSD, 'Montagem');   // (06/11) só o item do detalhamento; a soma segue como era
         custoLancadoUSD = custoUSD;                 // daqui pra frente, só o que for novo é lançado
         custoPorLancado = JSON.parse(JSON.stringify(custoPor));   // idem pro balde de cada pessoa
         document.getElementById('videoFinal').src = d2.url;
