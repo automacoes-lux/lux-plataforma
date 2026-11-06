@@ -299,12 +299,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
         <span class="rot">Trilha de fundo</span>
         <div class="trilhas" id="trilhas"></div>
         <input type="file" id="inMusica" accept="audio/*,.mp3,.wav,.m4a" class="hide"/>
-        <span class="rot">Volume da trilha</span>
-        <div class="chips" id="chipsVolume">
-          <button type="button" class="chip" data-v="0.06">Baixo</button>
-          <button type="button" class="chip on" data-v="0.12">Padrão</button>
-          <button type="button" class="chip" data-v="0.2">Alto</button>
-        </div>
+        <!-- (06/11) volume da trilha SEM escolha (pedido do Thiago): o servidor nivela cada trilha no mesmo ponto abaixo da voz -->
         <span class="rot">Legenda</span>
         <div class="chips" id="chipsLegenda">
           <button type="button" class="chip on" data-v="1">Com legenda</button>
@@ -428,7 +423,7 @@ function ligaChips(id, cb){
 function marcaChip(id, v){ $(id).querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.v === String(v))); }
 ligaChips('chipsEstilo', v => { estilo = v; pintarDicaPessoa(); });
 ligaChips('chipsModo', v => { modo = Number(v); pintarSlots(); });
-ligaChips('chipsVolume', v => { volume = Number(v); });
+// (06/11) volume fixo: a escolha da trilha saiu da tela (o servidor nivela)
 ligaChips('chipsLegenda', v => { legendas = v === '1'; });
 ligaChips('chipsTransicao', v => { transicoes = v === '1'; });
 

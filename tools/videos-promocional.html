@@ -545,24 +545,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
           <div class="cut-progress" id="cutProgress"></div>
         </div>
 
-        <!-- volume da trilha. Cada opção traz a descrição do que ela faz, porque "12%" não diz
-             nada pro atendente — o que ele precisa saber é COMO vai soar. -->
-        <div class="mini" style="margin-top:1rem">Volume da música</div>
-        <div class="step-hint">A voz do personagem fica sempre à frente. Isto ajusta só a música de fundo.</div>
-        <div class="vol-opts" id="volTrilha">
-          <button type="button" class="vol-opt on" data-vol="0.12">
-            <b>Volume padrão</b>
-            <span>A música acompanha a fala sem disputar. Serve pra quase todo vídeo.</span>
-          </button>
-          <button type="button" class="vol-opt" data-vol="0.08">
-            <b>Volume médio</b>
-            <span>Quase ambiente: dá clima e deixa a voz totalmente na frente.</span>
-          </button>
-          <button type="button" class="vol-opt" data-vol="0.05">
-            <b>Volume baixo</b>
-            <span>Discreta. Só preenche o silêncio entre uma fala e outra.</span>
-          </button>
-        </div>
+        <!-- (06/11) volume da música SEM escolha (pedido do Thiago): sempre o padrão; o servidor nivela cada trilha
+             no mesmo ponto abaixo da voz. As opções padrão/médio/baixo saíram. -->
       </div>
 
       <!-- (21/09) TRANSIÇÃO ENTRE AS CENAS: ligada de praxe (o fade rápido de sempre). Desligada,
@@ -2288,7 +2272,7 @@ function pintarTransicao(){
 
 // volume da música
 function marcarVolume(v){
-  volumeTrilha = Number(v);
+  volumeTrilha = 0.12;   // (06/11) sempre o padrão: projeto antigo salvo com médio/baixo também volta para o padrão
   document.querySelectorAll('#volTrilha .vol-opt').forEach(function(b){
     b.classList.toggle('on', Number(b.dataset.vol) === volumeTrilha);
   });
