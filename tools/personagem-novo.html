@@ -342,9 +342,13 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .pers-card .pers-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:14px;font-weight:700;margin-bottom:.5rem}
 .pers-card .pers-rm{position:absolute;top:.5rem;right:.5rem;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:14px}
 .pers-card .pers-rm:hover{color:#E87070}
-.slot{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
-.slot .slot-th{width:54px;aspect-ratio:3/4;border-radius:8px;background:#0c0c0c;border:.5px dashed var(--border-bright);overflow:hidden;flex-shrink:0;display:grid;place-items:center;color:var(--text-dim);font-size:18px}
+.slot{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;cursor:pointer;border-radius:10px;padding:.2rem;-webkit-tap-highlight-color:transparent}
+.slot:hover .slot-th{border-color:var(--gold)}
+.slot .slot-th{width:54px;aspect-ratio:3/4;border-radius:8px;background:#0c0c0c;border:.5px dashed var(--border-bright);overflow:hidden;flex-shrink:0;display:grid;place-items:center;color:var(--gold);transition:border-color .15s}
+.slot .slot-th svg{width:28px;height:28px;opacity:.85}
 .slot .slot-th img{width:100%;height:100%;object-fit:cover;display:block}
+.slot .slot-acao{display:inline-block;margin-top:.25rem;font-size:12px;color:var(--gold)}
+.pers-opc{font-family:'DM Sans',sans-serif;font-weight:400;font-size:11.5px;color:var(--text-dim);letter-spacing:0}
 .slot .slot-info{flex:1;min-width:0}
 .slot .slot-nome{font-size:12.5px;color:var(--text-mid);font-weight:600}
 .slot .slot-sub{font-size:11px;color:var(--text-dim);line-height:1.35}
@@ -404,7 +408,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="p1">
   <div class="step">
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
-    <div class="step-hint">Cliente e categoria só nomeiam o projeto nas abas Projetos e Resultados — não entram no roteiro nem na imagem.</div>
     <div class="mini">Categoria</div>
     <input type="text" id="fCategoria" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica · Loja de roupa" list="catSugestoes"/>
     <datalist id="catSugestoes">
@@ -421,7 +424,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
 
     <div class="mini" style="margin-top:.9rem">Estilo da imagem *</div>
-    <div class="step-hint">Pessoa real: sai como foto. Animação: vira personagem 3D.</div>
     <div class="chips" id="chipsEstilo" role="radiogroup" aria-label="Estilo da imagem">
       <div class="chip on" data-v="real" role="radio"><span class="est-bola"></span>Pessoa real</div>
       <div class="chip" data-v="animado" role="radio"><span class="est-bola"></span>Animação</div>
@@ -430,13 +432,11 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <div class="step">
     <div class="step-head"><div class="step-title">Personagens <span style="color:var(--gold)">*</span></div></div>
-    <div class="step-hint">O personagem 1 é obrigatório; o 2 e o 3 são opcionais. O personagem 1 faz a cena 1, o 2 a cena 2, o 3 a cena 3; com menos personagens, eles se revezam.</div>
     <div class="pers-grid" id="boxPers"></div>
   </div>
 
   <div class="step">
     <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
-    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta o comercial: o que vende, o diferencial, a oferta e o contato.</div>
     <textarea id="fBriefing" maxlength="1500" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, pedidos pelo whatsapp"></textarea>
     <div class="soon-note" id="contBriefing" style="text-align:right;margin-top:.25rem">0 / 1500</div>
   </div>
@@ -613,16 +613,20 @@ document.querySelectorAll('#chipsEstilo .chip').forEach(c => c.addEventListener(
 }));
 $('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; });
 // (07/11, Thiago) os 3 cards ficam SEMPRE na tela; cada um só com "Personagem" e "Ambiente", sem descrição. Card vazio não conta.
+// (07/11, Thiago) ícone desenhado (rosto / paisagem) no lugar do emoji, e o card INTEIRO abre a escolha da foto (igual ao "+ Enviar")
+const IC_ROSTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/></svg>';
+const IC_AMBIENTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/><circle cx="6.5" cy="6.5" r="2" fill="currentColor"/></svg>';
 function pintarPers(){
   while (pers.length < 3) pers.push({});
   $('boxPers').innerHTML = pers.map((p, k) => {
     const foto = p.fotoNova || p.fotoUrl, amb = p.ambNova || (p.ambTirar ? '' : p.ambUrl);
     const slot = (tipo, src, nome) =>
-      '<div class="slot"><div class="slot-th">' + (src ? '<img src="' + esc(src) + '" alt=""/>' : (tipo === 'foto' ? '👤' : '🏠')) + '</div>' +
+      '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'' + tipo + '\')"/>' +
+      '<div class="slot-th">' + (src ? '<img src="' + esc(src) + '" alt=""/>' : (tipo === 'foto' ? IC_ROSTO : IC_AMBIENTE)) + '</div>' +
       '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
-      '<label>' + (src ? 'Trocar' : '+ Enviar') + '<input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'' + tipo + '\')"/></label>' +
-      (tipo === 'amb' && src && k > 0 ? ' · <label onclick="tirarAmb(' + k + ')">Tirar</label>' : '') + '</div></div>';
-    return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + '</div>' +
+      '<span class="slot-acao">' + (src ? 'Trocar' : '+ Enviar') + '</span>' +
+      (tipo === 'amb' && src && k > 0 ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
+    return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       (k > 0 && (foto || amb) ? '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>' : '') +
       slot('foto', foto, 'Personagem' + (k === 0 ? ' *' : '')) +
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
