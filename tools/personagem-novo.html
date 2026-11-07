@@ -430,9 +430,8 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <div class="step">
     <div class="step-head"><div class="step-title">Personagens <span style="color:var(--gold)">*</span></div></div>
-    <div class="step-hint">Até 3. Cada personagem tem a <b>foto do personagem</b> e a <b>foto do ambiente</b> onde ele vai aparecer. O personagem 1 faz a cena 1, o 2 a cena 2, o 3 a cena 3; com menos personagens, eles se revezam. Só um personagem? Envie a foto dele e a do ambiente.</div>
+    <div class="step-hint">O personagem 1 é obrigatório; o 2 e o 3 são opcionais. O personagem 1 faz a cena 1, o 2 a cena 2, o 3 a cena 3; com menos personagens, eles se revezam.</div>
     <div class="pers-grid" id="boxPers"></div>
-    <button type="button" class="btn-ghost" id="btnAddPers" onclick="addPers()" style="width:100%">+ Adicionar personagem</button>
   </div>
 
   <div class="step">
@@ -566,7 +565,7 @@ const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).leng
 // ── estado ──
 let proj = null;                 // o projeto como o servidor devolveu
 let estilo = 'real';
-let pers = [{}];                 // passo 1: [{ fotoNova, ambNova, fotoUrl, ambUrl, ambTirar }]
+let pers = [{}, {}, {}];         // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }]
 let gestos = [];
 let trilhas = [], trilhaSel = null, legendas = true;
 let ocupado = false, timer = null, audioTeste = null;
@@ -613,25 +612,27 @@ document.querySelectorAll('#chipsEstilo .chip').forEach(c => c.addEventListener(
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x === c));
 }));
 $('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; });
+// (07/11, Thiago) os 3 cards ficam SEMPRE na tela; cada um só com "Personagem" e "Ambiente", sem descrição. Card vazio não conta.
 function pintarPers(){
+  while (pers.length < 3) pers.push({});
   $('boxPers').innerHTML = pers.map((p, k) => {
     const foto = p.fotoNova || p.fotoUrl, amb = p.ambNova || (p.ambTirar ? '' : p.ambUrl);
-    const slot = (tipo, src, nome, sub) =>
+    const slot = (tipo, src, nome) =>
       '<div class="slot"><div class="slot-th">' + (src ? '<img src="' + esc(src) + '" alt=""/>' : (tipo === 'foto' ? '👤' : '🏠')) + '</div>' +
-      '<div class="slot-info"><div class="slot-nome">' + nome + '</div><div class="slot-sub">' + sub + '</div>' +
+      '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
       '<label>' + (src ? 'Trocar' : '+ Enviar') + '<input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'' + tipo + '\')"/></label>' +
       (tipo === 'amb' && src && k > 0 ? ' · <label onclick="tirarAmb(' + k + ')">Tirar</label>' : '') + '</div></div>';
     return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + '</div>' +
-      (k > 0 ? '<button type="button" class="pers-rm" title="Tirar este personagem" onclick="tirarPers(' + k + ')">✕</button>' : '') +
-      slot('foto', foto, 'Foto do personagem *', 'A pessoa, criança, pet ou mascote.') +
-      slot('amb', amb, 'Foto do ambiente' + (k === 0 ? ' *' : ''), k === 0 ? 'O lugar onde ele aparece.' : 'Sem foto, usa o ambiente do personagem 1.') +
+      (k > 0 && (foto || amb) ? '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>' : '') +
+      slot('foto', foto, 'Personagem' + (k === 0 ? ' *' : '')) +
+      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
       '</div>';
   }).join('');
-  $('btnAddPers').classList.toggle('hide', pers.length >= 3);
 }
-function addPers(){ if (pers.length < 3) { pers.push({}); pintarPers(); } }
-function tirarPers(k){ pers.splice(k, 1); pintarPers(); }
+function limparPers(k){ pers[k] = {}; pintarPers(); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); }
+const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl));
+const temAmb = (p) => !!(p && (p.ambNova || (p.ambUrl && !p.ambTirar)));
 // foto → JPEG de até 1600 px (o servidor recebe base64)
 function lerImagem(file){
   return new Promise((ok, erro) => {
@@ -665,8 +666,10 @@ async function gerarTudo(){
   if (ocupado) return;
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
-  if (pers.some(p => !(p.fotoNova || p.fotoUrl))) return toast('📷 Cada personagem precisa da foto do personagem.');
-  if (!(pers[0].ambNova || (pers[0].ambUrl && !pers[0].ambTirar))) return toast('🏠 Envie a foto do ambiente do personagem 1.');
+  if (!temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
+  if (!temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
+  const semFoto = pers.findIndex(p => !temFoto(p) && temAmb(p));
+  if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
   if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
   ocupado = true;
   const bt = $('btnTudo'); bt.disabled = true;
@@ -674,7 +677,10 @@ async function gerarTudo(){
     bt.textContent = '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo,
-      personagens: pers.map(p => ({ foto: p.fotoNova || undefined, ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined) })) };
+      // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
+      personagens: pers.filter(temFoto).map(p => ({
+        foto: p.fotoNova || undefined, fotoKey: p.fotoNova ? undefined : p.fotoKey,
+        ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined })) };
     let d = await chama('/pn/roteiro', corpo);
     if (!d.ok) throw new Error(d.error || 'não consegui escrever o texto');
     recebe(d.projeto);
@@ -693,8 +699,9 @@ async function gerarTudo(){
 // o projeto que voltou do servidor vira o estado da tela (as fotos já enviadas viram endereço)
 function recebe(p){
   proj = p;
-  pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, ambUrl: s.ambiente && s.ambiente.url }));
-  if (!pers.length) pers = [{}];
+  pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
+    ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key }));
+  while (pers.length < 3) pers.push({});
   $('notaSalvo').textContent = '💾 Salvo automaticamente · ' + (p.cliente || '');
   pintarWz();
 }
