@@ -574,7 +574,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
           <input type="text" id="v2Empresa" maxlength="60" placeholder="Ex: Padaria Pão Dourado"/>
         </div>
         <div class="field">
-          <label for="v2Whats">WhatsApp <span class="v2-destaque">(aparece no final do vídeo)</span> <span style="color:var(--gold)">*</span></label>
+          <label for="v2Whats">WhatsApp — opcional <span class="v2-destaque">(aparece no final do vídeo; em branco, o final mostra só o nome da empresa)</span></label>
           <input type="text" id="v2Whats" maxlength="30" inputmode="tel" autocomplete="tel" placeholder="Ex: (31) 99999-0000"/>
         </div>
         <div class="field">
@@ -1314,7 +1314,7 @@ async function continuarProjeto(pid) {
     window.scrollTo(0, 0);
     rascAviso('💾 Projeto aberto · continue de onde parou');
     toast(projetoAntigo && cartoonB64
-      ? '▶ "' + (e.clientName || 'Projeto') + '" está de volta. O Avatar 150 mudou: escolha Pessoa real ou Animação e gere o personagem de novo (Passo 2). Preencha também o nome da empresa e o WhatsApp.'
+      ? '▶ "' + (e.clientName || 'Projeto') + '" está de volta. O Avatar 150 mudou: escolha Pessoa real ou Animação e gere o personagem de novo (Passo 2). Preencha também o nome da empresa (WhatsApp e endereço são opcionais).'
       : '▶ "' + (e.clientName || 'Projeto') + '" está de volta no Criar clipe.');
   } catch (err) {
     toast('⚠️ Não consegui abrir o projeto: ' + err.message);
@@ -3396,9 +3396,8 @@ function validar() {
   const clientName = document.getElementById('clientName').value.trim();
   if (!clientName) return 'Preencha o nome do cliente (Passo 1).';
   if (!((document.getElementById('fCategoria') || {}).value || '').trim()) return 'Preencha a categoria do cliente (Passo 1).';
-  if (modoV2) {   // (31/10) 150 novo: o nome da empresa abre o vídeo e o WhatsApp fecha (01/11: na edição também)
+  if (modoV2) {   // (31/10) 150 novo: o nome da empresa abre o vídeo (01/11: na edição também). (06/11) WhatsApp e endereço são OPCIONAIS
     if (!document.getElementById('v2Empresa').value.trim()) return 'Preencha o nome da empresa (Passo 1) — ele aparece no vídeo.';
-    if (!document.getElementById('v2Whats').value.trim()) return 'Preencha o WhatsApp (Passo 1) — ele aparece no final do vídeo.';
   }
   if (editState) {   // modo edição: avatar reaproveitado → valida só as fotos/vídeos (música é mantida ou trocada)
     // destravou o avatar/a música mas não concluiu a troca → não deixa salvar pela metade
@@ -4207,7 +4206,7 @@ function aplicarModoV2(on) {
   renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
   const gn = document.getElementById('avatarGenNote'); if (gn) gn.textContent = 'A IA cria o personagem do quadril para cima, sem microfone, num fundo liso. Se não gostar, é só gerar de novo.';
   const h = document.getElementById('avatarHint');
-  if (h) h.innerHTML = 'Escolha o estilo e envie <b>1 imagem</b> — a pessoa (ou personagem, produto, animal) que vai virar o cantor. A IA cria o personagem <b>do quadril para cima</b>, sem microfone, num fundo liso. O vídeo é montado sozinho, com efeitos, a letra e o WhatsApp no final. Pode <b>colar</b> (Ctrl+V).';
+  if (h) h.innerHTML = 'Escolha o estilo e envie <b>1 imagem</b> — a pessoa (ou personagem, produto, animal) que vai virar o cantor. A IA cria o personagem <b>do quadril para cima</b>, sem microfone, num fundo liso. O vídeo é montado sozinho, com efeitos, a letra e o WhatsApp no final (se preenchido). Pode <b>colar</b> (Ctrl+V).';
 }
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
