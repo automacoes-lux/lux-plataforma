@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<!-- (07/11/2026) PERSONAGEM ANIMADO NOVO: visual copiado do Personagem antigo (tools/videos-promocional.html, que NÃO muda); servidor src/personagem-novo.js -->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lux — Personagem Animado 🐱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../css/theme.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg-card:#121212;--bg-input:#1C1C1C;--bg-hover:#222;--text-mid:#B0A080}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;
+  background-image:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 110%,rgba(201,168,76,0.04) 0%,transparent 60%)}
+.container{max-width:760px;margin:0 auto;padding:1.6rem 1.2rem 5rem}
+.page-head{margin-bottom:1.2rem}
+.page-title{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.page-sub{color:var(--text-dim);font-size:13.5px;margin-top:.4rem;line-height:1.5}
+.step{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.2rem;margin-bottom:1.1rem}
+.step-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.step-num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));color:#141414;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif}
+.step-title{font-weight:600;font-size:15.5px;color:var(--text)}
+.step-hint{color:var(--text-dim);font-size:12.5px;margin:-.4rem 0 .8rem 0;line-height:1.45}
+input[type=text],textarea,select{width:100%;background:var(--bg-input);border:.5px solid var(--border);color:var(--text);border-radius:var(--radius);padding:.75rem .9rem;font-family:inherit;font-size:14.5px;outline:none}
+textarea{min-height:88px;resize:vertical;line-height:1.5}
+input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:999px;padding:.55rem 1rem;font-size:14px;cursor:pointer;transition:all .15s;user-select:none}
+.chip.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* (22/10) ESTILO DA IMAGEM: 2 botões com bolinha (igual ao Avatar 97), escolha OBRIGATÓRIA */
+#chipsEstilo .chip{display:inline-flex;align-items:center;gap:.5rem;border:2px solid var(--gold);color:#fff}
+#chipsEstilo .chip.on{background:#0b0b0d;color:#fff;box-shadow:0 0 10px rgba(201,168,76,.55),inset 0 0 7px rgba(201,168,76,.22)}
+#chipsEstilo .est-bola{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;display:grid;place-items:center}
+#chipsEstilo .chip.on .est-bola::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold)}
+/* (21/09) chave liga/desliga. O checkbox de verdade fica por baixo: funciona no teclado e no leitor de tela */
+.chave{position:relative;display:flex;align-items:center;gap:.7rem;min-height:44px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.chave input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.chave-trilho{position:relative;flex:0 0 auto;width:48px;height:28px;border-radius:999px;background:var(--bg-input);border:.5px solid var(--border);transition:background .18s,border-color .18s}
+.chave-trilho::after{content:'';position:absolute;top:2.5px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--text-mid);transition:transform .18s,background .18s}
+.chave input:checked + .chave-trilho{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));border-color:transparent}
+.chave input:checked + .chave-trilho::after{transform:translateX(20px);background:#141414}
+.chave input:focus-visible + .chave-trilho{outline:2px solid rgba(201,168,76,.75);outline-offset:2px}
+.chave-texto{font-size:14px;color:var(--text-mid);line-height:1.35}
+/* (24/09) Corretor de pronúncia. AZUL de propósito: as cenas são douradas e escuras, e o
+   atendente não pode confundir este bloco com uma cena. */
+.bloco-pron{background:rgba(56,189,248,.06);border:.5px solid rgba(56,189,248,.35)}
+.bloco-pron .step-title{color:#7FD3F7}
+.pron-linha{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.pron-linha input[type=text]{flex:1 1 200px;width:auto;min-width:0}
+.pron-linha input[type=text]:focus{border-color:rgba(56,189,248,.7)}
+.btn-pron{flex:0 0 auto;background:rgba(56,189,248,.18);border:.5px solid rgba(56,189,248,.5);color:#BEE9FB;
+  border-radius:999px;padding:.7rem 1.1rem;font-size:13.5px;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-pron:hover{background:rgba(56,189,248,.3)}
+.btn-pron:disabled{opacity:.6;cursor:wait}
+.pron-res{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:.8rem;
+  background:rgba(0,0,0,.28);border-radius:var(--radius);padding:.7rem .8rem}
+.pron-saida{flex:1 1 160px;font-size:17px;letter-spacing:.4px;color:#EAF7FE;word-break:break-word}
+/* (01/10) prompt do personagem: recolhido por padrão dentro do cartão da cena */
+.prompt-cena{margin-top:.7rem;border:.5px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,.02);padding:.55rem .7rem}
+.prompt-cena summary{cursor:pointer;font-size:13px;color:var(--text-mid);list-style:none;user-select:none;min-height:28px;display:flex;align-items:center;flex-wrap:wrap;gap:.3rem}
+.prompt-cena summary::-webkit-details-marker{display:none}
+.prompt-cena summary::before{content:'▸';color:var(--gold)}
+.prompt-cena[open] summary::before{content:'▾'}
+.prompt-cena summary span{color:var(--text-dim)}
+.pv-tag{font-size:11px;font-weight:600;color:#141414;background:var(--gold);border-radius:999px;padding:.1rem .5rem}
+.btn-gold{width:100%;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);padding:.95rem 1rem;font-size:15px;cursor:pointer;transition:filter .15s}
+.btn-gold:hover{filter:brightness(1.07)}
+.btn-gold:disabled{opacity:.55;cursor:not-allowed}
+.btn-ghost{flex:1;background:transparent;color:var(--text-mid);border:.5px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;font-size:14px;cursor:pointer}
+.btn-ghost:disabled{opacity:.5;cursor:not-allowed}
+.btn-row{display:flex;gap:.6rem;flex-wrap:wrap}
+.up-btn{display:inline-block;background:var(--bg-input);border:.5px dashed var(--border-bright);color:var(--text-mid);border-radius:var(--radius);padding:.7rem 1rem;font-size:13.5px;cursor:pointer;text-align:center;width:100%}
+/* Personagem MONTADO: o cliente já mandou a arte pronta, com fundo e tudo. Precisa saltar aos
+   olhos porque é um caminho DIFERENTE — aqui a IA não desenha nada. Dourado sombreado. */
+.up-btn.montado{background:linear-gradient(180deg,rgba(201,168,76,.16),rgba(201,168,76,.07));
+  border:1px solid rgba(201,168,76,.55);color:#E8C97A;font-weight:600;
+  box-shadow:0 2px 10px rgba(201,168,76,.12), inset 0 1px 0 rgba(255,255,255,.06)}
+.up-btn.montado:hover{background:linear-gradient(180deg,rgba(201,168,76,.24),rgba(201,168,76,.10));
+  border-color:rgba(201,168,76,.8)}
+.cx-montado{margin-top:1rem;padding:.9rem;border-radius:var(--radius);
+  background:rgba(201,168,76,.05);border:1px dashed rgba(201,168,76,.35)}
+.cx-montado .tit{font-size:13.5px;color:#E8C97A;font-weight:600;margin-bottom:.25rem}
+.cx-montado .sub{font-size:12.5px;color:var(--text-dim);line-height:1.45;margin-bottom:.6rem}
+.up-cat{margin-bottom:.9rem}
+.up-cat-head{font-size:12.5px;color:var(--text-mid);margin-bottom:.4rem}
+.thumbs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.thumb{position:relative;width:66px;height:88px;border-radius:8px;overflow:hidden;border:.5px solid var(--border)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1}
+.mini{font-size:11.5px;color:var(--text-dim);margin:.55rem 0 .2rem}
+.soon-note{font-size:12px;color:var(--text-dim);margin-top:.5rem;line-height:1.45}
+/* abas Criar / Projetos / Resultados */
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem;overflow-x:auto}
+.tabbtn{flex:1;min-width:104px;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:var(--radius);padding:.65rem .5rem;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tabbtn.on{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:600}
+/* salvar o projeto (branco com letra preta, no topo) */
+.btn-salvar{width:100%;background:#fff;color:#111;border:none;border-radius:var(--radius);padding:.8rem 1rem;font-size:14.5px;font-weight:600;cursor:pointer;margin-bottom:.7rem}
+.btn-salvar:hover{filter:brightness(.94)}
+.btn-salvar:disabled{opacity:.6;cursor:not-allowed}
+/* cards de projeto salvo / resultado */
+.pj{display:flex;gap:.75rem;background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:.8rem;margin-bottom:.7rem;align-items:center}
+/* (28/10) miniatura em 9:16 (era 56×74, cortava): a imagem inteira, sem cortar. Nos vídeos prontos vira botão
+   que abre a prévia — o atendente confere o vídeo antes de baixar. */
+.pj-th{position:relative;width:54px;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:#000;flex-shrink:0;
+  border:.5px solid var(--border);padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:inherit}
+img.pj-th,.pj-th img,.pj-th video{object-fit:contain}
+.pj-th img,.pj-th video{width:100%;height:100%;display:block;pointer-events:none}
+button.pj-th{cursor:pointer}
+button.pj-th:hover{border-color:var(--gold)}
+.pj-th .mini-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.55);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;padding-left:2px;pointer-events:none}
+/* prévia do vídeo (modal) */
+.prev-fundo{display:none;position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.86);align-items:center;justify-content:center;padding:1rem}
+.prev-fundo.show{display:flex}
+.prev-cx{display:flex;flex-direction:column;align-items:center;gap:.75rem;max-width:100%}
+.prev-cx video{display:block;height:min(72vh,640px);aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;border:.5px solid var(--border-bright)}
+.prev-nome{font-size:13.5px;font-weight:600;color:var(--text);text-align:center;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prev-bts{display:flex;gap:.6rem;justify-content:center}
+.prev-bts button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.55rem 1rem;font-size:13px;cursor:pointer}
+.prev-bts button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+.pj-in{flex:1;min-width:0}
+.pj-nm{font-weight:600;font-size:14.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pj-sb{font-size:11.5px;color:var(--text-dim);margin-top:.15rem;line-height:1.45}
+.pj-at{font-size:11.5px;color:var(--gold);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* (06/11) custo discriminado: no card do projeto e embaixo do vídeo gerado */
+.pj-custo{font-size:11.5px;color:var(--text-mid);margin-top:.2rem;line-height:1.45}
+.pj-custo-it{color:var(--text-dim);margin-top:.05rem}
+.custo-itens{display:flex;flex-wrap:wrap;gap:.2rem .9rem;margin-top:.35rem;font-size:12px;color:var(--text-dim)}
+.custo-itens b{color:var(--text-mid);font-weight:600}
+.pj-cat{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);
+  border-radius:999px;padding:.12rem .5rem;margin-bottom:.25rem}
+/* busca da vitrine de resultados */
+.busca{display:flex;align-items:center;gap:.5rem;background:var(--bg-input);border:.5px solid var(--border);
+  border-radius:var(--radius);padding:.15rem .7rem;margin-bottom:.9rem}
+.busca input{border:none;background:transparent;padding:.6rem 0;flex:1;color:var(--text);font-size:14px;outline:none}
+.busca .lupa{font-size:14px;opacity:.7}
+.busca button{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;padding:.2rem .3rem}
+.busca button:hover{color:var(--gold)}
+.busca-cont{font-size:11.5px;color:var(--text-dim);margin:-.5rem 0 .8rem}
+/* aviso que NÃO trava: entre 14 e 20 palavras a fala aperta, mas o atendente pode seguir */
+.alerta.aviso{background:rgba(201,168,76,.10);border-color:rgba(201,168,76,.45);color:#E8C97A}
+/* (11/09) palco da posição da legenda: uma prévia 9:16 com a legenda de exemplo arrastável */
+#palcoLeg{position:relative;width:min(232px,62vw);aspect-ratio:9/16;margin:.6rem auto;border-radius:12px;
+  overflow:hidden;background:#0d0d0f;border:1px solid rgba(255,255,255,.12);touch-action:none;user-select:none}
+#palcoLegImg{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
+#legFantasma{position:absolute;left:4%;width:92%;transform:translateY(-50%);text-align:center;cursor:grab;
+  font-weight:800;font-size:12px;line-height:1.30;letter-spacing:.5px;color:#fff;
+  text-shadow:0 0 3px #000,0 0 3px #000,0 2px 5px #000}
+#legFantasma.arrastando{cursor:grabbing}
+/* frase já corrigida pela IA: avisar sem resolver joga o trabalho pro atendente, que é
+   justamente quem não sabe qual palavra escapa da armadilha */
+/* seletor de atendente (só admin) — usado pra devolver o projeto pra quem pediu ajuda */
+.atr-fundo{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:90}
+.atr-cx{background:var(--bg-card);border:.5px solid var(--border-bright);border-radius:var(--radius-lg);padding:1.1rem;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column}
+.atr-tit{font-weight:600;font-size:15px;color:var(--text);margin-bottom:.2rem}
+.atr-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:.8rem;line-height:1.45}
+.atr-lista{overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem}
+.atr-item{background:var(--bg-input);border:.5px solid var(--border);color:var(--text);border-radius:8px;padding:.6rem .8rem;font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit}
+.atr-item:hover{border-color:var(--gold);color:var(--gold)}
+.atr-item.dono{border-color:var(--gold);color:var(--gold)}
+.atr-item small{display:block;color:var(--text-dim);font-size:11px;margin-top:.15rem}
+.atr-fechar{background:transparent;border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.55rem;font-size:13px;cursor:pointer;font-family:inherit}
+.pj-bt{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
+/* ESTRELA "Postar?" (01/10) — marca o vídeo para os Stories */
+.estrela{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;padding:2px 4px;cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.estrela .est-lbl{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:.02em;line-height:1}
+.estrela svg{width:26px;height:26px;fill:rgba(255,255,255,.32);stroke:rgba(255,255,255,.55);stroke-width:1;transition:fill .2s,filter .2s,transform .15s}
+.estrela:hover svg{transform:scale(1.08)}
+.estrela.on svg{fill:#F5C542;stroke:#FFE08A;filter:drop-shadow(0 0 6px rgba(245,197,66,.85))}
+.estrela.on .est-lbl{color:#F5C542}
+.estrela:disabled{opacity:.5;cursor:wait}
+.pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+.pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
+/* refazer 1 cena no editor de cortes */
+/* refazendo: vermelho com letra branca, pra não passar despercebido */
+.btn-refaz.refazendo{background:#C0392B;border-color:#C0392B;color:#fff;font-weight:600}
+.btn-refaz.refazendo .spin{border-color:rgba(255,255,255,.35);border-top-color:#fff}
+/* volume da trilha: três cartões explicativos, o escolhido ganha borda dourada */
+.vol-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.5rem}
+.vol-opt{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);
+  padding:.7rem .75rem;cursor:pointer;text-align:left;font-family:inherit;
+  display:flex;flex-direction:column;gap:.25rem;transition:border-color .15s,background .15s}
+.vol-opt b{color:var(--text-mid);font-size:13px;font-weight:600}
+.vol-opt span{color:var(--text-dim);font-size:11px;line-height:1.4}
+.vol-opt:hover{border-color:var(--border-bright)}
+.vol-opt.on{border-color:var(--gold);background:rgba(201,168,76,.10)}
+.vol-opt.on b{color:var(--text)}
+.vol-opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:520px){ .vol-opts{grid-template-columns:1fr} }
+
+/* paleta da palavra em destaque: bolinhas de cor, a escolhida ganha anel dourado */
+.cores{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.cor{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);
+  cursor:pointer;padding:0;position:relative;transition:transform .12s}
+.cor:hover{transform:scale(1.12)}
+.cor.on{box-shadow:0 0 0 3px var(--gold);border-color:transparent}
+.cor:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.cor-livre{display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:conic-gradient(#EF4444,#F97316,#FFD700,#22C55E,#38BDF8,#EC4899,#EF4444)}
+.cor-livre input[type=color]{opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
+
+/* erro de cena: vermelho de verdade, pra não passar batido no meio da tela escura */
+.alerta.erro-forte{background:rgba(192,57,43,.14);border:1px solid #C0392B;color:#F5B7B1;line-height:1.5}
+.btn-refaz{flex:1;min-width:0;background:transparent;border:.5px solid var(--border-bright);color:var(--gold);border-radius:var(--radius);padding:.6rem;font-size:13px;cursor:pointer}
+.sec-title{font-family:'Cinzel',serif;color:var(--gold);font-size:18px;text-align:center;margin:1.6rem 0 .4rem}
+/* aviso "Construindo história…" — verde com letra branca, igual ao passo concluído */
+.aviso-ok{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-radius:var(--radius);padding:.8rem .9rem;margin-top:.8rem;font-size:13.5px;line-height:1.5}
+.aviso-ok b{color:#fff}
+/* cards de conceito */
+.cc{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
+.cc.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
+.cc-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:16px;font-weight:700;margin:.5rem 0}
+.cc-lin{font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:.35rem}
+.cc-lin b{color:var(--text-dim);font-weight:500}
+/* voz da campanha: campo discreto, menor que os do formulário — é conferência, não digitação */
+/* storyboard */
+.sb{background:var(--bg-card);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.9rem}
+.sb.ok{border-color:rgba(90,190,120,.5)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+.sb-n{font-family:'Cinzel',serif;color:var(--gold);font-size:15px;font-weight:700}
+.badge{display:inline-block;border-radius:6px;padding:.18rem .5rem;font-size:11px;font-weight:600}
+.badge-fn{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid)}
+.cont{font-size:12px;font-weight:600;padding:.18rem .5rem;border-radius:6px;display:inline-block}
+.c-curta{background:rgba(230,120,90,.16);color:#E8916E}
+.c-ok{background:rgba(201,168,76,.16);color:var(--gold)}
+.c-ideal{background:rgba(90,190,120,.16);color:#6FD08C}
+.c-longa{background:rgba(230,90,90,.16);color:#E87070}
+.est{font-size:11.5px;color:var(--text-dim);background:var(--bg-input);border-radius:6px;padding:.4rem .55rem;margin-top:.4rem;line-height:1.45;word-break:break-word}
+.alerta{background:rgba(230,90,90,.12);border:.5px solid rgba(230,90,90,.5);color:#E87070;border-radius:var(--radius);padding:.55rem .7rem;margin-top:.5rem;font-size:12.5px;line-height:1.45}
+.prog-item{display:flex;align-items:center;gap:.6rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .7rem;margin-bottom:.45rem;font-size:13px;color:var(--text-mid)}
+/* editor de corte da cena — barra de tempo com alças arrastáveis */
+.trim{margin-top:.7rem}
+.trim-bar{position:relative;height:48px;background:repeating-linear-gradient(90deg,var(--bg-input) 0 9px,rgba(255,255,255,.03) 9px 10px);border:.5px solid var(--border);border-radius:8px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
+/* onda do audio dentro da barra de corte (25/08) */
+/* cenas do roteiro dentro de um bloco unico (25/08) */
+.cena-rot{border-top:.5px solid var(--border);padding-top:.8rem;margin-top:.8rem}
+.cena-rot:first-of-type{border-top:none;padding-top:0;margin-top:.2rem}
+.cena-rot.ok .sb-n{color:var(--gold)}
+.trim-onda{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+/* ajuste fino do corte, em passos de 0,1s */
+.fino{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+.fino-rot{font-size:11.5px;color:var(--text-dim)}
+.fino button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.35rem .6rem;font-size:12.5px;cursor:pointer;font-family:inherit}
+.fino button:hover{border-color:var(--gold-dim);color:var(--text)}
+.trim-fora{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.62)}
+.trim-sel{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,rgba(201,168,76,.30),rgba(201,168,76,.14));border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
+.trim-h{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:3}
+.trim-h.na-ponta-ini{margin-left:0;justify-content:flex-start}   /* colada no 0:00 */
+.trim-h.na-ponta-fim{margin-left:-22px;justify-content:flex-end} /* colada no último quadro */
+.trim-h::after{content:'';width:7px;height:64%;background:var(--gold);border-radius:4px;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
+.trim-cur{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.9;pointer-events:none;z-index:2}
+.trim-lab{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--gold);font-weight:600;margin-top:.4rem;gap:.5rem;flex-wrap:wrap}
+.trim-dur{color:var(--text-mid);font-weight:500}
+/* barra de passos do wizard (horizontal, com setinhas) */
+.wzbar{display:flex;align-items:center;gap:.25rem;overflow-x:auto;padding:.1rem 0 .7rem;margin-bottom:.4rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.wzbar::-webkit-scrollbar{display:none}
+.wzp{display:flex;align-items:center;gap:.4rem;flex:0 0 auto;background:var(--bg-card);border:.5px solid var(--border);color:var(--text-dim);border-radius:999px;padding:.4rem .75rem;font-size:12.5px;cursor:default;white-space:nowrap;transition:all .15s}
+.wzp.liberado{cursor:pointer;color:var(--text-mid);border-color:var(--border-bright)}
+.wzp.atual{background:linear-gradient(135deg,rgba(201,168,76,.9),rgba(154,122,56,.9));color:#141414;border-color:transparent;font-weight:700}
+.wzp.feito{background:linear-gradient(135deg,#5CBE7C,#3E9E5C);color:#fff;border-color:transparent;font-weight:600;cursor:pointer}
+.wzn{font-family:'Cinzel',serif;font-weight:700}
+.wzseta{flex:0 0 auto;color:var(--text-dim);font-size:13px}
+/* imagens/vídeos */
+.cena-img{width:100%;max-width:190px;border-radius:10px;border:.5px solid var(--border);display:block;margin:0 auto .4rem;background:var(--bg-input)}
+.cena-ph{width:100%;max-width:190px;aspect-ratio:2/3;border-radius:10px;border:.5px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;text-align:center;padding:.5rem;margin:0 auto .4rem}
+.stt{font-size:11.5px;font-weight:600;border-radius:6px;padding:.18rem .5rem;display:inline-block}
+.s-wait{background:var(--bg-input);color:var(--text-dim)}
+.s-run{background:rgba(201,168,76,.16);color:var(--gold)}
+.s-ok{background:rgba(90,190,120,.16);color:#6FD08C}
+.s-err{background:rgba(230,90,90,.16);color:#E87070}
+.adv{margin-top:.6rem;border-top:.5px solid var(--border);padding-top:.5rem}
+.adv summary{cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none}
+.adv textarea{min-height:90px;font-size:11.5px;margin-top:.4rem}
+video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem auto 0;background:#000}
+/* o vídeo pronto precisa SALTAR aos olhos no meio da tela de edição */
+.step.pronto{border:1.5px solid var(--gold);box-shadow:0 0 0 4px rgba(201,168,76,.10),0 8px 30px rgba(0,0,0,.45);background:linear-gradient(180deg,rgba(201,168,76,.07),transparent 40%)}
+.trilhas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin-bottom:.7rem}
+.trilha-item{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem;cursor:pointer;font-size:13px;color:var(--text-mid)}
+.trilha-item.sel{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--text)}
+/* trilha = nome + botão de ouvir. O play é um botão separado de propósito: clicar no
+   corpo do item SELECIONA, clicar no ▶ só OUVE — senão não dá pra comparar sem trocar a escolha. */
+.trilha-item{display:flex;align-items:center;gap:.5rem;justify-content:space-between}
+.trilha-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trilha-play{flex:none;width:26px;height:26px;border-radius:50%;border:.5px solid var(--border);
+  background:var(--bg-card);color:var(--text-mid);font-size:11px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.trilha-play:hover{border-color:var(--gold);color:var(--gold)}
+.trilha-item.sel .trilha-play{border-color:var(--gold);color:var(--gold)}
+.trilha-play.tocando{background:var(--gold);color:#141414;border-color:transparent}
+/* ── editor de corte da trilha (portado do Vídeo Avatar) ─────────────────── */
+.cut-editor{display:none;background:var(--bg-input);border:.5px solid var(--border-bright);border-radius:var(--radius);padding:14px;margin-top:.8rem}
+.cut-editor.show{display:block}
+.cut-title{font-size:13px;color:#E8A84C;font-weight:600;margin-bottom:10px;line-height:1.5}
+#waveCanvas{width:100%;height:84px;display:block;border-radius:6px;background:#0d0d0d;margin-bottom:12px;cursor:pointer;touch-action:manipulation}
+.cut-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);margin-bottom:6px;gap:10px}
+.cut-row b{color:var(--gold);font-size:13px;white-space:nowrap}
+.cut-editor input[type=range]{width:100%;accent-color:var(--gold);height:28px;padding:0;background:transparent;border:none}
+.fades-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.fade-box{flex:1;min-width:150px}
+.cut-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btn-preview{flex:1;min-width:150px;padding:10px 14px;border-radius:var(--radius);background:transparent;border:.5px solid var(--border-bright);color:var(--text-mid);cursor:pointer;font-size:13px}
+.btn-preview:hover{border-color:var(--gold);color:var(--gold)}
+.btn-cut{flex:1;min-width:150px;padding:10px 14px;border-radius:var(--radius);border:none;background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;font-weight:700;font-size:13px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.05em}
+.btn-cut:disabled{opacity:.5;cursor:not-allowed}
+.cut-progress{display:none;font-size:12px;color:var(--text-dim);margin-top:10px}
+.cut-progress.show{display:block}
+.cut-mini{display:flex;gap:8px;margin-top:8px;justify-content:center;flex-wrap:wrap}
+.cut-mini button{background:var(--bg-card);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer}
+.cut-mini button:hover{border-color:var(--gold);color:var(--gold)}
+
+/* "Adicionar Trilha" é AÇÃO, não é uma faixa: botão branco de texto preto, destacado das 10 */
+.trilha-item.custom{background:#fff;border-color:#fff;color:#141414;font-weight:600;justify-content:center}
+.trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414}
+.trilha-item.custom.sel{background:#fff;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+/* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
+   Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
+@media(max-width:520px){
+  .trilhas-grid{grid-template-columns:1fr;gap:.35rem}
+  .trilha-item{padding:.45rem .55rem;font-size:12.5px}
+  .trilha-play{width:24px;height:24px}
+}
+.btn-baixar{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);
+  border-radius:var(--radius);padding:.3rem .7rem;font-size:12px;cursor:pointer;margin-left:.5rem}
+.btn-baixar:hover{border-color:var(--gold);color:var(--gold)}
+.prog-item{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.tsep{text-align:center;color:var(--text-dim);font-size:12px;margin:.6rem 0}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(20,20,20,.3);border-top-color:#141414;border-radius:50%;animation:sp .7s linear infinite;margin-right:7px;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120%);background:var(--bg-card);border:.5px solid var(--border-bright);color:var(--text);padding:.8rem 1.1rem;border-radius:var(--radius);font-size:13.5px;z-index:90;transition:transform .25s;max-width:92vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.hide{display:none}
+/* ══ (07/11) PERSONAGEM ANIMADO NOVO — o visual é o do Personagem antigo (classes copiadas acima); daqui para baixo só o que é novo ══ */
+.pers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem;margin-bottom:.8rem}
+.pers-card{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.75rem;position:relative}
+.pers-card .pers-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:14px;font-weight:700;margin-bottom:.5rem}
+.pers-card .pers-rm{position:absolute;top:.5rem;right:.5rem;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:14px}
+.pers-card .pers-rm:hover{color:#E87070}
+.slot{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.slot .slot-th{width:54px;aspect-ratio:3/4;border-radius:8px;background:#0c0c0c;border:.5px dashed var(--border-bright);overflow:hidden;flex-shrink:0;display:grid;place-items:center;color:var(--text-dim);font-size:18px}
+.slot .slot-th img{width:100%;height:100%;object-fit:cover;display:block}
+.slot .slot-info{flex:1;min-width:0}
+.slot .slot-nome{font-size:12.5px;color:var(--text-mid);font-weight:600}
+.slot .slot-sub{font-size:11px;color:var(--text-dim);line-height:1.35}
+.slot label{display:inline-block;margin-top:.25rem;font-size:12px;color:var(--gold);cursor:pointer}
+.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem}
+.pp-card{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem}
+.pp-card img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block;background:#000;cursor:zoom-in}
+.pp-card .pp-sem{width:100%;aspect-ratio:9/16;border-radius:8px;background:#0c0c0c;display:grid;place-items:center;color:var(--text-dim);font-size:12.5px;text-align:center;padding:1rem}
+.pp-card .pp-tit{font-size:13px;font-weight:600;color:var(--text);margin:.5rem 0 .15rem}
+.pp-card .pp-sub{font-size:11.5px;color:var(--text-dim);margin-bottom:.45rem}
+.pp-card input{font-size:12.5px;padding:.5rem .6rem}
+.pp-card .btn-ghost{width:100%;margin-top:.4rem;padding:.55rem .6rem;font-size:13px}
+.cena{position:relative}
+.cena-grid{display:grid;grid-template-columns:150px 1fr;gap:.9rem;align-items:start}
+.cena-media{position:relative}
+.cena-media video,.cena-media img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block;background:#000}
+.cena-media .cena-espera{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);border-radius:8px;color:var(--gold);font-size:12.5px;text-align:center;padding:.6rem}
+.cena select,.cena textarea,.cena input{width:100%}
+.cena textarea{min-height:92px}
+.selo{margin-left:auto;font-size:11px;border-radius:999px;padding:.2rem .6rem;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-dim);white-space:nowrap}
+.selo.ok{background:rgba(92,190,124,.14);border-color:rgba(92,190,124,.5);color:#7FD99A}
+.selo.gerando{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.5);color:#E8C97A}
+.selo.atencao{background:rgba(230,90,90,.12);border-color:rgba(230,90,90,.5);color:#E87070}
+.gesto-desc{font-size:11.5px;color:var(--text-dim);margin-top:.25rem;line-height:1.4}
+.gesto-ia{color:var(--gold)}
+.cena .btn-ghost{margin-top:.6rem;width:100%}
+.ampliar{display:none;position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:1rem}
+.ampliar.show{display:flex}
+.ampliar img{max-height:88vh;max-width:100%;border-radius:10px}
+@media(max-width:600px){
+  .cena-grid{grid-template-columns:1fr}
+  .cena-media{max-width:220px;margin:0 auto}
+  .pers-grid,.pp-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="page-head">
+    <div class="page-title">🐱 Personagem Animado</div>
+    <div class="page-sub">Até 3 personagens → texto do comercial em <b>cenas de ~10 s</b> → vídeo de ~30 s. Você manda as fotos e as informações do cliente; a IA escreve as falas e sugere os gestos.</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tabbtn on" data-aba="criar" onclick="abrirAba('criar')">✨ Criar</button>
+    <button class="tabbtn" data-aba="projetos" onclick="abrirAba('projetos')">📁 Projetos</button>
+    <button class="tabbtn" data-aba="resultados" onclick="abrirAba('resultados')">🎬 Resultados</button>
+  </div>
+
+  <div id="abaCriar">
+  <div class="soon-note" id="notaSalvo"></div>
+  <div class="wzbar" id="wzbar"></div>
+
+  <!-- ══════════ PASSO 1 — BRIEFING ══════════ -->
+  <div id="p1">
+  <div class="step">
+    <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
+    <div class="step-hint">Cliente e categoria só nomeiam o projeto nas abas Projetos e Resultados — não entram no roteiro nem na imagem.</div>
+    <div class="mini">Categoria</div>
+    <input type="text" id="fCategoria" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica · Loja de roupa" list="catSugestoes"/>
+    <datalist id="catSugestoes">
+      <option value="Alimentação"></option><option value="Padaria e confeitaria"></option>
+      <option value="Açaí e sorveteria"></option><option value="Lanchonete"></option>
+      <option value="Restaurante"></option><option value="Móveis e marcenaria"></option>
+      <option value="Construção e reforma"></option><option value="Clínica e consultório"></option>
+      <option value="Odontologia"></option><option value="Moda e vestuário"></option>
+      <option value="Oficina e automotivo"></option><option value="Pet shop"></option>
+      <option value="Salão e barbearia"></option><option value="Academia"></option>
+      <option value="Mercado"></option><option value="Eventos e festa"></option>
+    </datalist>
+    <div class="mini" style="margin-top:.9rem">Cliente / empresa <span style="color:var(--gold)">*</span></div>
+    <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
+
+    <div class="mini" style="margin-top:.9rem">Estilo da imagem *</div>
+    <div class="step-hint">Pessoa real: sai como foto. Animação: vira personagem 3D.</div>
+    <div class="chips" id="chipsEstilo" role="radiogroup" aria-label="Estilo da imagem">
+      <div class="chip on" data-v="real" role="radio"><span class="est-bola"></span>Pessoa real</div>
+      <div class="chip" data-v="animado" role="radio"><span class="est-bola"></span>Animação</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="step-title">Personagens <span style="color:var(--gold)">*</span></div></div>
+    <div class="step-hint">Até 3. Cada personagem tem a <b>foto do personagem</b> e a <b>foto do ambiente</b> onde ele vai aparecer. O personagem 1 faz a cena 1, o 2 a cena 2, o 3 a cena 3; com menos personagens, eles se revezam. Só um personagem? Envie a foto dele e a do ambiente.</div>
+    <div class="pers-grid" id="boxPers"></div>
+    <button type="button" class="btn-ghost" id="btnAddPers" onclick="addPers()" style="width:100%">+ Adicionar personagem</button>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
+    <div class="step-hint">Escreva do jeito que o cliente mandou — pode ser bagunçado. A IA interpreta e monta o comercial: o que vende, o diferencial, a oferta e o contato.</div>
+    <textarea id="fBriefing" maxlength="1500" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, pedidos pelo whatsapp"></textarea>
+    <div class="soon-note" id="contBriefing" style="text-align:right;margin-top:.25rem">0 / 1500</div>
+  </div>
+
+  <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E TEXTO</button>
+  <div class="soon-note" id="notaTudo"></div>
+  </div><!-- /p1 -->
+
+  <!-- ══════════ PASSO 2 — PERSONAGENS E CENAS ══════════ -->
+  <div id="p2" class="hide">
+    <div class="sec-title">Passo 2 · 📝 Personagens e cenas</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Confira os personagens e o texto de cada cena. Cada cena vira um vídeo separado — se uma sair ruim, refaça só ela.</div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-title">Os personagens</div></div>
+      <div class="step-hint">Não gostou de algum? Escreva o que mudar e clique em <b>Refazer</b>.</div>
+      <div class="pp-grid" id="boxPersProntos"></div>
+    </div>
+
+    <div id="boxCenas"></div>
+
+    <div class="btn-row" style="margin-bottom:.9rem">
+      <button class="btn-ghost" onclick="copiarTexto()">📋 Copiar texto</button>
+      <button class="btn-ghost" onclick="outroTexto()">✨ Gerar outro texto</button>
+    </div>
+    <button class="btn-gold" id="btnGerarCenas" onclick="gerarCenas()">🎬 GERAR AS CENAS</button>
+    <div class="soon-note" id="notaCenas"></div>
+    <button class="btn-gold hide" id="btnIrMontar" onclick="irPara(3)" style="margin-top:.7rem">➡️ IR PARA A MONTAGEM</button>
+    <div class="soon-note" id="custoP2"></div>
+  </div>
+
+  <!-- ══════════ PASSO 3 — MONTAGEM ══════════ -->
+  <div id="p3" class="hide">
+    <div class="sec-title">Passo 3 · 🎵 Montagem</div>
+    <div class="step">
+      <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
+      <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>.</div>
+      <div class="trilhas-grid" id="trilhasGrid"></div>
+    </div>
+    <div class="step">
+      <div class="step-head"><div class="step-title">Legendas automáticas</div></div>
+      <label class="chave" for="chkLegenda">
+        <input type="checkbox" id="chkLegenda" checked/>
+        <span class="chave-trilho" aria-hidden="true"></span>
+        <span class="chave-texto" id="txtLegenda">Com legenda — a palavra falada aparece na tela</span>
+      </label>
+    </div>
+    <button class="btn-gold" id="btnMontar" onclick="montar()">🎬 MONTAR O VÍDEO</button>
+    <div class="soon-note" id="notaMontar"></div>
+
+    <div id="telaFinal" class="hide">
+      <div class="sec-title">✅ Vídeo pronto</div>
+      <div class="step pronto">
+        <video id="videoFinal" controls playsinline style="width:100%;border-radius:var(--radius)"></video>
+        <div class="btn-row" style="margin-top:.8rem">
+          <button class="btn-gold" onclick="baixarFinal()" style="width:100%">⬇️ Baixar vídeo</button>
+        </div>
+        <div class="soon-note" id="custoFinal"></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /abaCriar -->
+
+  <div id="abaProjetos" class="hide">
+    <div class="sec-title">📁 Projetos salvos</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Continua de onde você parou.</div>
+    <div class="busca"><span class="lupa">🔎</span><input type="text" id="buscaProj" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/></div>
+    <div id="listaProjetos"><div class="pj-vazio">Carregando…</div></div>
+  </div>
+
+  <div id="abaResultados" class="hide">
+    <div class="sec-title">🎬 Resultados</div>
+    <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos. Em "Editar" você muda uma cena e monta de novo.</div>
+    <div class="busca"><span class="lupa">🔎</span><input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/></div>
+    <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="prev-fundo" id="prevFundo" onclick="if(event.target===this)fechaPrevia()">
+  <div class="prev-cx">
+    <div class="prev-nome" id="prevNome"></div>
+    <video id="prevVid" controls playsinline preload="metadata"></video>
+    <div class="prev-bts">
+      <button type="button" class="ouro" id="prevBaixar">⬇️ Baixar</button>
+      <button type="button" onclick="fechaPrevia()">Fechar</button>
+    </div>
+  </div>
+</div>
+<div class="ampliar" id="ampliar" onclick="this.classList.remove('show')"><img id="ampliarImg" alt=""/></div>
+
+<script src="../js/auth-iframe.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// (07/11/2026) PERSONAGEM ANIMADO NOVO — pedido do Thiago: o visual do Personagem antigo, até 3 personagens (foto + ambiente de
+// cada um), roteiro em cenas de ~10 s (gpt-6.1-terra), gesto por cena (a IA sugere, a atendente troca), cena 1 = "Chegando"
+// (entra andando e para na frente da câmera), vídeo por cena (refaz só a que precisar) e montagem. Servidor: src/personagem-novo.js.
+// ════════════════════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://lux-videos-premium.plataformalux.workers.dev';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const SEG_POR_PALAVRA = 0.4;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 4500); }
+function api(path, opts){
+  const url = WORKER_URL + path;
+  if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
+  return fetch(url, opts);
+}
+// a rede caiu antes do pedido sair → tenta de novo (erro do servidor volta na hora: repetir pode cobrar 2 vezes)
+async function chama(path, corpo){
+  for (let k = 0; k < 3; k++) {
+    try {
+      const r = await api(path, corpo === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+      return await r.json().catch(() => ({ ok: false, error: 'Resposta inválida do servidor (' + r.status + ').' }));
+    } catch (e) {
+      if (!(e instanceof TypeError) || k === 2) break;
+      await new Promise(r => setTimeout(r, 1500 * (k + 1)));
+    }
+  }
+  return { ok: false, error: 'Sem conexão com o servidor. Confira a internet e clique de novo.' };
+}
+function nomeArquivo(s){ return String(s || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'video'; }
+const reais = (v) => 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).length;
+
+// ── estado ──
+let proj = null;                 // o projeto como o servidor devolveu
+let estilo = 'real';
+let pers = [{}];                 // passo 1: [{ fotoNova, ambNova, fotoUrl, ambUrl, ambTirar }]
+let gestos = [];
+let trilhas = [], trilhaSel = null, legendas = true;
+let ocupado = false, timer = null, audioTeste = null;
+let passo = 1, salvarT = {};
+let listaTodos = [];
+
+// ── abas e passos (mesmo jeito do Personagem antigo) ──
+function abrirAba(a){
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('on', b.dataset.aba === a));
+  $('abaCriar').classList.toggle('hide', a !== 'criar');
+  $('abaProjetos').classList.toggle('hide', a !== 'projetos');
+  $('abaResultados').classList.toggle('hide', a !== 'resultados');
+  if (a !== 'criar') carregarLista();
+}
+function passoLiberado(n){
+  if (n === 1) return true;
+  if (n === 2) return !!(proj && proj.roteiro);
+  if (n === 3) return !!(proj && proj.roteiro && proj.cenas && proj.roteiro.cenas.every((c, i) => proj.cenas[i] && proj.cenas[i].video));
+  return false;
+}
+function pintarWz(){
+  const nomes = ['Briefing', 'Personagens e cenas', 'Montagem'];
+  $('wzbar').innerHTML = nomes.map((n, i) => {
+    const k = i + 1, lib = passoLiberado(k);
+    const cls = k === passo ? 'atual' : (lib && k < passo ? 'feito' : (lib ? 'liberado' : ''));
+    return (i ? '<span class="wzseta">›</span>' : '') + '<div class="wzp ' + cls + '" ' + (lib ? 'onclick="irPara(' + k + ')"' : '') + '><span class="wzn">' + k + '</span> ' + n + '</div>';
+  }).join('');
+}
+function irPara(n){
+  if (!passoLiberado(n)) return;
+  passo = n;
+  $('p1').classList.toggle('hide', n !== 1);
+  $('p2').classList.toggle('hide', n !== 2);
+  $('p3').classList.toggle('hide', n !== 3);
+  if (n === 2) pintarPasso2();
+  if (n === 3) pintarPasso3();
+  pintarWz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── passo 1 ──
+document.querySelectorAll('#chipsEstilo .chip').forEach(c => c.addEventListener('click', () => {
+  estilo = c.dataset.v;
+  document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x === c));
+}));
+$('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; });
+function pintarPers(){
+  $('boxPers').innerHTML = pers.map((p, k) => {
+    const foto = p.fotoNova || p.fotoUrl, amb = p.ambNova || (p.ambTirar ? '' : p.ambUrl);
+    const slot = (tipo, src, nome, sub) =>
+      '<div class="slot"><div class="slot-th">' + (src ? '<img src="' + esc(src) + '" alt=""/>' : (tipo === 'foto' ? '👤' : '🏠')) + '</div>' +
+      '<div class="slot-info"><div class="slot-nome">' + nome + '</div><div class="slot-sub">' + sub + '</div>' +
+      '<label>' + (src ? 'Trocar' : '+ Enviar') + '<input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'' + tipo + '\')"/></label>' +
+      (tipo === 'amb' && src && k > 0 ? ' · <label onclick="tirarAmb(' + k + ')">Tirar</label>' : '') + '</div></div>';
+    return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + '</div>' +
+      (k > 0 ? '<button type="button" class="pers-rm" title="Tirar este personagem" onclick="tirarPers(' + k + ')">✕</button>' : '') +
+      slot('foto', foto, 'Foto do personagem *', 'A pessoa, criança, pet ou mascote.') +
+      slot('amb', amb, 'Foto do ambiente' + (k === 0 ? ' *' : ''), k === 0 ? 'O lugar onde ele aparece.' : 'Sem foto, usa o ambiente do personagem 1.') +
+      '</div>';
+  }).join('');
+  $('btnAddPers').classList.toggle('hide', pers.length >= 3);
+}
+function addPers(){ if (pers.length < 3) { pers.push({}); pintarPers(); } }
+function tirarPers(k){ pers.splice(k, 1); pintarPers(); }
+function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); }
+// foto → JPEG de até 1600 px (o servidor recebe base64)
+function lerImagem(file){
+  return new Promise((ok, erro) => {
+    const fr = new FileReader();
+    fr.onerror = () => erro(new Error('não consegui ler a foto'));
+    fr.onload = () => {
+      const im = new Image();
+      im.onerror = () => erro(new Error('foto inválida'));
+      im.onload = () => {
+        const m = Math.max(im.width, im.height), f = m > 1600 ? 1600 / m : 1;
+        const cv = document.createElement('canvas'); cv.width = Math.round(im.width * f); cv.height = Math.round(im.height * f);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        ok({ url: cv.toDataURL('image/jpeg', 0.88), lado: Math.min(im.width, im.height) });
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function escolher(ev, k, tipo){
+  const f = ev.target.files && ev.target.files[0]; if (!f) return;
+  try {
+    const r = await lerImagem(f);
+    if (tipo === 'foto') pers[k].fotoNova = r.url; else { pers[k].ambNova = r.url; pers[k].ambTirar = false; }
+    if (r.lado < 500) toast('⚠️ Foto pequena (' + r.lado + ' px). Se tiver uma maior, o personagem sai mais fiel.');
+    pintarPers();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function gerarTudo(){
+  if (ocupado) return;
+  const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
+  if (!cliente) return toast('✍️ Escreva o nome do cliente.');
+  if (pers.some(p => !(p.fotoNova || p.fotoUrl))) return toast('📷 Cada personagem precisa da foto do personagem.');
+  if (!(pers[0].ambNova || (pers[0].ambUrl && !pers[0].ambTirar))) return toast('🏠 Envie a foto do ambiente do personagem 1.');
+  if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
+  ocupado = true;
+  const bt = $('btnTudo'); bt.disabled = true;
+  try {
+    bt.textContent = '✍️ Escrevendo o texto…';
+    $('notaTudo').textContent = 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo,
+      personagens: pers.map(p => ({ foto: p.fotoNova || undefined, ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined) })) };
+    let d = await chama('/pn/roteiro', corpo);
+    if (!d.ok) throw new Error(d.error || 'não consegui escrever o texto');
+    recebe(d.projeto);
+    bt.textContent = '🎨 Criando os personagens…';
+    $('notaTudo').textContent = 'Criando a imagem de cada personagem no ambiente dele (~40 s).';
+    d = await chama('/pn/imagens', { id: proj.id });
+    if (!d.ok) throw new Error(d.error || 'não consegui criar os personagens');
+    recebe(d.projeto);
+    if (d.aviso) toast('⚠️ ' + d.aviso);
+    $('notaTudo').textContent = '';
+    irPara(2);
+  } catch (e) {
+    $('notaTudo').textContent = '⚠️ ' + e.message;
+  } finally { ocupado = false; bt.disabled = false; bt.textContent = '✨ GERAR PERSONAGEM E TEXTO'; }
+}
+// o projeto que voltou do servidor vira o estado da tela (as fotos já enviadas viram endereço)
+function recebe(p){
+  proj = p;
+  pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, ambUrl: s.ambiente && s.ambiente.url }));
+  if (!pers.length) pers = [{}];
+  $('notaSalvo').textContent = '💾 Salvo automaticamente · ' + (p.cliente || '');
+  pintarWz();
+}
+
+// ── passo 2: personagens prontos + cenas ──
+function pintarPasso2(){
+  if (!proj || !proj.roteiro) return;
+  $('boxPersProntos').innerHTML = proj.personagens.map((s, k) =>
+    '<div class="pp-card">' +
+      (s.img ? '<img src="' + esc(s.img.url) + '" alt="" onclick="ampliar(this.src)"/>' : '<div class="pp-sem">Sem imagem. Clique em Refazer.</div>') +
+      '<div class="pp-tit">Personagem ' + (k + 1) + '</div>' +
+      '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + ' · ' + (s.sexo === 'F' ? 'feminina' : 'masculina') + '</div>' +
+      '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
+      '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer personagem</button>' +
+    '</div>').join('');
+  pintarCenas();
+}
+function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
+async function refazerPers(k){
+  if (ocupado) return;
+  ocupado = true; toast('🎨 Refazendo o personagem ' + (k + 1) + ' (~40 s)…');
+  try {
+    const d = await chama('/pn/imagens', { id: proj.id, personagem: k + 1, ajuste: ($('ajP' + k) || {}).value || '' });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto); pintarPasso2();
+    toast(d.aviso ? '⚠️ ' + d.aviso : '✅ Personagem refeito. As cenas dele ficaram marcadas para refazer.');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui refazer')); }
+  finally { ocupado = false; }
+}
+function statusCena(i){
+  const c = (proj.cenas || [])[i] || {};
+  if (c.gerando) return { cls: 'gerando', txt: '⏳ Gerando…' };
+  if (c.erro) return { cls: 'atencao', txt: '⚠️ Erro' };
+  if (c.video && c.desatualizada) return { cls: 'atencao', txt: '✏️ Mudou: refaça' };
+  if (c.video) return { cls: 'ok', txt: '✅ Pronta' };
+  return { cls: '', txt: 'Não gerada' };
+}
+function pintarCenas(){
+  const n = proj.personagens.length;
+  $('boxCenas').innerHTML = proj.roteiro.cenas.map((rc, i) => {
+    const c = (proj.cenas || [])[i] || {}, s = proj.personagens[rc.p] || {};
+    const st = statusCena(i);
+    const media = c.video
+      ? '<video src="' + esc(c.video.url) + '#t=0.5" controls playsinline preload="metadata"></video>'
+      : (s.img ? '<img src="' + esc(s.img.url) + '" alt=""/>' : '<div class="pp-sem">Sem imagem</div>');
+    const g = gestos.find(x => x.id === rc.gesto) || {};
+    const opts = gestos.map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + esc(x.nome) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
+    const np = palavras(rc.fala);
+    return '<div class="step cena" data-i="' + i + '">' +
+      '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
+      '<div class="cena-grid"><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' +
+      '<div>' +
+        (n > 1 ? '<div class="mini">Personagem</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>Personagem ' + (k + 1) + '</option>').join('') + '</select>' : '') +
+        '<div class="mini">Fala</div><textarea data-campo="fala" maxlength="400">' + esc(rc.fala) + '</textarea>' +
+        '<div class="soon-note" data-cont>' + contTxt(np, rc.gesto) + '</div>' +
+        '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
+        '<select data-campo="gesto">' + opts + '</select>' +
+        '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
+        '<div class="gesto-desc">' + esc(g.desc || '') + '</div>' +
+        (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
+        '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
+      '</div></div></div>';
+  }).join('');
+  document.querySelectorAll('.cena [data-campo]').forEach(el => {
+    const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(ev, () => editouCena(+el.closest('.cena').dataset.i, el));
+  });
+  const prontas = proj.roteiro.cenas.every((x, i) => proj.cenas[i] && proj.cenas[i].video && !proj.cenas[i].desatualizada);
+  const gerando = (proj.cenas || []).some(c => c && c.gerando);
+  $('btnGerarCenas').disabled = gerando;
+  $('btnGerarCenas').classList.toggle('hide', prontas && !gerando);   // tudo pronto: o que sobra é Refazer em cada cena ou montar
+  $('btnGerarCenas').textContent = gerando ? '⏳ GERANDO AS CENAS…' : (proj.cenas.some(c => c && c.video) ? '🎬 GERAR AS CENAS QUE FALTAM' : '🎬 GERAR AS CENAS');
+  $('btnIrMontar').classList.toggle('hide', !prontas);
+  $('notaCenas').textContent = gerando ? 'Cada cena leva de 1 a 2 minutos. Pode esperar aqui: o vídeo aparece sozinho em cada cena.' : '';
+  $('custoP2').textContent = proj.custoBRL ? '💰 Custo até aqui: ' + reais(proj.custoBRL) + ' (entra no seu financeiro quando o vídeo for montado).' : '';
+}
+function contTxt(np, gesto){
+  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? 2.6 : 0.8));
+  const aviso = seg > 14 ? ' · ⚠️ passa de 14 s: encurte a fala' : '';
+  return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? ' (com a chegada)' : '') + aviso;
+}
+function editouCena(i, el){
+  const rc = proj.roteiro.cenas[i], campo = el.dataset.campo;
+  if (campo === 'p') rc.p = +el.value;
+  else if (campo === 'fala') { rc.fala = el.value; el.closest('.cena').querySelector('[data-cont]').textContent = contTxt(palavras(el.value), rc.gesto); }
+  else if (campo === 'gesto') {
+    rc.gesto = el.value;
+    const card = el.closest('.cena');
+    card.querySelector('[data-campo="gestoTexto"]').classList.toggle('hide', rc.gesto !== 'livre');
+    const g = gestos.find(x => x.id === rc.gesto) || {};
+    card.querySelector('.gesto-desc').textContent = g.desc || '';
+    card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
+  } else if (campo === 'gestoTexto') rc.gestoTexto = el.value;
+  clearTimeout(salvarT[i]);
+  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'gestoTexto' ? 900 : 50);
+}
+// o que vale é o que está ESCRITO na tela (dois salvamentos seguidos se atropelavam e o 2º mandava o texto antigo do servidor)
+function valoresDaCena(i){
+  const card = document.querySelector('.cena[data-i="' + i + '"]'), rc = proj.roteiro.cenas[i];
+  const v = (campo, padrao) => { const el = card && card.querySelector('[data-campo="' + campo + '"]'); return el ? el.value : padrao; };
+  return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), p: Number(v('p', rc.p)) };
+}
+async function salvarCena(i){
+  const d = await chama('/pn/salvar', { id: proj.id, cenas: [valoresDaCena(i)] });
+  if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui salvar'));
+  // atualiza só o estado (sem redesenhar a caixa que a atendente está digitando)
+  proj = d.projeto;
+  const card = document.querySelector('.cena[data-i="' + i + '"]');
+  if (card) { const st = statusCena(i); const selo = card.querySelector('.selo'); selo.className = 'selo ' + st.cls; selo.textContent = st.txt; }
+  const prontas = proj.roteiro.cenas.every((x, k) => proj.cenas[k] && proj.cenas[k].video && !proj.cenas[k].desatualizada);
+  $('btnIrMontar').classList.toggle('hide', !prontas);
+  $('btnGerarCenas').classList.toggle('hide', prontas);
+  pintarWz();
+}
+async function salvaPendentes(){
+  const ks = Object.keys(salvarT); if (!ks.length) return;
+  ks.forEach(k => clearTimeout(salvarT[k])); salvarT = {};
+  for (const k of ks) await salvarCena(+k);
+}
+async function gerarCena(i){ await gerar(i + 1); }
+async function gerarCenas(){ await gerar(0); }
+async function gerar(cena){
+  if (ocupado) return;
+  ocupado = true;
+  try {
+    await salvaPendentes();
+    const d = await chama('/pn/gerar', { id: proj.id, cena: cena || undefined });
+    if (!d.ok) throw new Error(d.error || 'não consegui gerar');
+    proj = d.projeto; pintarCenas(); acompanhar();
+    const erros = proj.cenas.filter(c => c && c.erro).length;
+    toast(erros ? '⚠️ Alguma cena não começou: veja o aviso nela.' : '🎬 Gerando… cada cena leva de 1 a 2 minutos.');
+  } catch (e) { toast('⚠️ ' + e.message); }
+  finally { ocupado = false; }
+}
+// acompanha as cenas na fila e a montagem
+function acompanhar(){
+  clearTimeout(timer);
+  const pendente = proj && ((proj.cenas || []).some(c => c && c.gerando) || (proj.montagem && !proj.montagem.pronto && !proj.montagem.erro));
+  if (!pendente) return;
+  timer = setTimeout(async () => {
+    const d = await chama('/pn/status', { id: proj.id });
+    if (d.ok) {
+      const antes = JSON.stringify((proj.cenas || []).map(c => [c.gerando, c.video && c.video.key, c.erro]));
+      proj = d.projeto;
+      const agora = JSON.stringify((proj.cenas || []).map(c => [c.gerando, c.video && c.video.key, c.erro]));
+      if (passo === 2 && antes !== agora) pintarCenas();
+      if (passo === 3) pintarFinal();
+      pintarWz();
+    }
+    acompanhar();
+  }, 6000);
+}
+function copiarTexto(){
+  const t = proj.roteiro.cenas.map((c, i) => 'CENA ' + (i + 1) + ': ' + c.fala).join('\n\n');
+  navigator.clipboard.writeText(t).then(() => toast('📋 Texto copiado!'), () => toast('⚠️ Não consegui copiar.'));
+}
+async function outroTexto(){
+  if (ocupado) return;
+  const ajuste = prompt('O que mudar no texto? (opcional — deixe em branco para outra versão)') ;
+  if (ajuste === null) return;
+  ocupado = true; toast('✍️ Escrevendo outro texto (~20 s)…');
+  try {
+    const d = await chama('/pn/roteiro', { id: proj.id, ajuste });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto);
+    const d2 = await chama('/pn/imagens', { id: proj.id });   // gestos sugeridos para o texto novo
+    if (d2.ok) recebe(d2.projeto);
+    pintarPasso2(); toast('✅ Texto novo. As cenas já geradas ficaram marcadas para refazer.');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui')); }
+  finally { ocupado = false; }
+}
+
+// ── passo 3: trilha + legenda + montagem ──
+async function pintarPasso3(){
+  if (!trilhas.length) { const d = await chama('/promoTrilhas'); if (d.ok) trilhas = d.trilhas || []; }
+  const sel = trilhaSel ? trilhaSel.id : '';
+  $('trilhasGrid').innerHTML = '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>' +
+    trilhas.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
+      '<button type="button" class="trilha-play" data-ouvir="' + esc(t.id) + '">▶</button></div>').join('');
+  $('trilhasGrid').querySelectorAll('.trilha-item').forEach(el => el.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-ouvir]')) return;
+    trilhaSel = el.dataset.id ? trilhas.find(t => t.id === el.dataset.id) : null;
+    pintarPasso3();
+  }));
+  $('trilhasGrid').querySelectorAll('[data-ouvir]').forEach(b => b.addEventListener('click', () => {
+    const t = trilhas.find(x => x.id === b.dataset.ouvir);
+    if (audioTeste) { audioTeste.pause(); if (audioTeste._id === t.id) { audioTeste = null; b.textContent = '▶'; return; } }
+    document.querySelectorAll('[data-ouvir]').forEach(x => x.textContent = '▶');
+    audioTeste = new Audio(t.url); audioTeste._id = t.id; audioTeste.volume = 0.7; audioTeste.play(); b.textContent = '⏸';
+    audioTeste.onended = () => { b.textContent = '▶'; };
+  }));
+  pintarFinal();
+}
+$('chkLegenda').addEventListener('change', () => {
+  legendas = $('chkLegenda').checked;
+  $('txtLegenda').textContent = legendas ? 'Com legenda — a palavra falada aparece na tela' : 'Sem legenda';
+});
+async function montar(){
+  if (ocupado) return;
+  ocupado = true; $('btnMontar').disabled = true; $('btnMontar').textContent = '⏳ MONTANDO…';
+  try {
+    if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+    const d = await chama('/pn/montar', { id: proj.id, musicUrl: trilhaSel ? trilhaSel.url : null, trilha: trilhaSel, legendas, transicoes: true });
+    if (!d.ok) throw new Error(d.error || 'não consegui montar');
+    proj = d.projeto;
+    $('notaMontar').textContent = 'Montando o vídeo com a música e a legenda (~1 a 2 min)…';
+    acompanhar();
+  } catch (e) { $('notaMontar').textContent = '⚠️ ' + e.message; $('btnMontar').disabled = false; $('btnMontar').textContent = '🎬 MONTAR O VÍDEO'; }
+  finally { ocupado = false; }
+}
+function pintarFinal(){
+  const m = proj && proj.montagem;
+  const montando = !!(m && !m.pronto && !m.erro);
+  $('btnMontar').disabled = montando;
+  $('btnMontar').textContent = montando ? '⏳ MONTANDO…' : (proj && proj.videoFinal ? '🎬 MONTAR DE NOVO' : '🎬 MONTAR O VÍDEO');
+  if (m && m.erro) $('notaMontar').textContent = '⚠️ ' + m.erro;
+  else if (!montando) $('notaMontar').textContent = '';
+  const v = proj && proj.videoFinal;
+  $('telaFinal').classList.toggle('hide', !v);
+  if (v && $('videoFinal').dataset.k !== v.key) { $('videoFinal').src = v.url; $('videoFinal').dataset.k = v.key; }
+  $('custoFinal').textContent = proj && proj.custoBRL ? '💰 Custo deste vídeo: ' + reais(proj.custoBRL) + ' (tudo incluído: personagens, cenas, refeitas e montagem).' : '';
+}
+function baixar(key, nome){
+  const a = document.createElement('a');
+  a.href = WORKER_URL + '/cenas/baixar?k=' + encodeURIComponent(key) + '&nome=' + encodeURIComponent(nomeArquivo(nome) + '.mp4');
+  a.download = nomeArquivo(nome) + '.mp4'; document.body.appendChild(a); a.click(); a.remove();
+}
+function baixarFinal(){ if (proj && proj.videoFinal) baixar(proj.videoFinal.key, proj.cliente); }
+
+// ── projetos e resultados ──
+async function carregarLista(){
+  const d = await chama('/pn/lista');
+  if (!d.ok) { $('listaProjetos').innerHTML = $('listaResultados').innerHTML = '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'; return; }
+  listaTodos = d.projetos || [];
+  pintarListas();
+}
+const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function filtra(lst, q){ const ps = semAcento(q).split(/\s+/).filter(Boolean); return lst.filter(p => { const t = semAcento([p.cliente, p.categoria, p.atendente].join(' ')); return ps.every(x => t.indexOf(x) >= 0); }); }
+function cardLista(p, pronto){
+  const data = p.atualizadoEm ? new Date(p.atualizadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const th = pronto && p.video
+    ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
+    : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
+  return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
+    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
+    (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
+    '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>' +
+    (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
+    '<button onclick="apagarProjeto(\'' + p.id + '\')">🗑️</button></div></div>';
+}
+function pintarListas(){
+  const rasc = filtra(listaTodos.filter(p => p.status !== 'pronto'), $('buscaProj').value);
+  const prontos = filtra(listaTodos.filter(p => p.status === 'pronto'), $('buscaRes').value);
+  $('listaProjetos').innerHTML = rasc.length ? rasc.map(p => cardLista(p, false)).join('') : '<div class="pj-vazio">Nenhum projeto em andamento.</div>';
+  $('listaResultados').innerHTML = prontos.length ? prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">Nenhum vídeo pronto ainda.</div>';
+}
+$('buscaProj').addEventListener('input', pintarListas);
+$('buscaRes').addEventListener('input', pintarListas);
+function abrePrevia(url, key, nome){
+  $('prevNome').textContent = nome; $('prevVid').src = url;
+  $('prevBaixar').onclick = () => baixar(key, nome);
+  $('prevFundo').classList.add('show'); const pr = $('prevVid').play(); if (pr && pr.catch) pr.catch(() => {});
+}
+function fechaPrevia(){ const v = $('prevVid'); v.pause(); v.removeAttribute('src'); v.load(); $('prevFundo').classList.remove('show'); }
+async function abrirProjeto(id){
+  const d = await chama('/pn/projeto?id=' + encodeURIComponent(id));
+  if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui abrir'));
+  const p = d.projeto;
+  recebe(p);
+  $('fCliente').value = p.cliente || ''; $('fCategoria').value = p.categoria || ''; $('fBriefing').value = p.briefing || '';
+  $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500';
+  estilo = p.estilo === 'animado' ? 'animado' : 'real';
+  document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
+  trilhaSel = p.trilha || null; legendas = p.legendas !== false; $('chkLegenda').checked = legendas;
+  pintarPers();
+  abrirAba('criar');
+  irPara(p.videoFinal ? 3 : (p.roteiro ? 2 : 1));
+  acompanhar();
+  toast('✅ Projeto aberto.');
+}
+async function apagarProjeto(id){
+  if (!confirm('Apagar este projeto? Não dá para desfazer.')) return;
+  const d = await chama('/pn/apagar', { id });
+  if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui apagar'));
+  if (proj && proj.id === id) location.reload();
+  carregarLista(); toast('🗑️ Projeto apagado.');
+}
+
+// ── início ──
+(async function(){
+  pintarPers(); pintarWz();
+  const d = await chama('/pn/gestos');
+  if (d.ok) gestos = d.gestos || [];
+  else if (d.error) $('notaTudo').textContent = '⚠️ ' + d.error;
+})();
+</script>
+</body>
+</html>

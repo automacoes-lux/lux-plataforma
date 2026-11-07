@@ -21,7 +21,7 @@ const TOOLS = {
   'videos-premium':  'tools/videos-premium.html',
   avatar97:          'tools/avatar97.html',
   'videos-promocional':'tools/videos-promocional.html',
-  'personagem-cenas':'tools/personagem-cenas.html',   // (01/11) motor novo do Personagem — só admin no menu
+  'personagem-cenas':'tools/personagem-novo.html',   // (07/11) "Personagem Animado" do admin = a tela NOVA (até 3 personagens, gestos); o protótipo de 01/11 (tools/personagem-cenas.html) saiu do menu
   atendimento:       'tools/atendimento.html',
   'financeiro-atendente': 'tools/financeiro-atendente.html',
   financeiro:        'tools/financeiro.html',
