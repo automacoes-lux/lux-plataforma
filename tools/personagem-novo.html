@@ -380,23 +380,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .gesto-desc{font-size:11.5px;color:var(--text-dim);margin-top:.25rem;line-height:1.4}
 .gesto-ia{color:var(--gold)}
 .cena .btn-ghost{margin-top:.6rem;width:100%}
-/* (08/11) card em destaque: a voz do próprio cliente */
-.voz-card{border:1px solid var(--gold);background:linear-gradient(180deg,rgba(201,168,76,.10),rgba(201,168,76,.03))}
-.voz-tit{display:flex;align-items:center;gap:.4rem;color:var(--gold)}
-.voz-tit svg,.voz-bt svg{width:15px;height:15px;vertical-align:-3px}
-.voz-aut{display:flex;align-items:center;gap:.55rem;font-size:13.5px;color:var(--text-mid);cursor:pointer;margin-bottom:.7rem}
-.voz-aut input{width:18px;height:18px;accent-color:var(--gold);flex-shrink:0}
-.voz-linha{display:flex;align-items:center;gap:.7rem;padding:.55rem 0;border-top:.5px solid var(--border)}
-.voz-linha img{width:44px;height:60px;object-fit:cover;border-radius:6px;background:#000;flex-shrink:0}
-.voz-info{flex:1;min-width:0}
-.voz-nome{font-size:13.5px;font-weight:600;color:var(--text)}
-.voz-est{font-size:12px;color:var(--text-dim);margin-top:.1rem}
-.voz-est.ok{color:#7FD99A}
-.voz-info audio{width:100%;height:32px;margin-top:.35rem}
-.voz-acoes{display:flex;flex-direction:column;gap:.35rem;flex-shrink:0}
-.voz-bt{display:inline-block;background:var(--bg-input);border:.5px solid var(--border-bright);color:var(--gold);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;text-align:center;white-space:nowrap}
-.voz-bt.fraco{color:var(--text-dim);border-color:var(--border)}
-.voz-bt[disabled],.voz-bt.ocupado{opacity:.55;pointer-events:none}
 /* (08/11) estilos de legenda (animação de cada um) */
 .leg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.4rem}
 .leg-op{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.45rem;cursor:pointer;text-align:center;transition:border-color .15s}
@@ -491,13 +474,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="step-head"><div class="step-title">Os personagens</div></div>
       <div class="step-hint">Não gostou de algum? Escreva o que mudar e clique em <b>Refazer</b>.</div>
       <div class="pp-grid" id="boxPersProntos"></div>
-    </div>
-
-    <!-- (08/11, Thiago) clonar a voz da pessoa: entra antes de gerar as cenas, que usam essa voz -->
-    <div class="step voz-card">
-      <div class="step-head"><div class="step-title voz-tit"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>Voz do cliente</div></div>
-      <label class="voz-aut"><input type="checkbox" id="chkAutorizou"/>O cliente autorizou o uso da voz dele</label>
-      <div id="listaVozes"></div>
     </div>
 
     <div id="boxCenas"></div>
@@ -836,53 +812,7 @@ function pintarPasso2(){
       '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
       '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer personagem</button>' +
     '</div>').join('');
-  pintarVozes();
   pintarCenas();
-}
-// (08/11, Thiago) a voz do próprio cliente: um áudio por personagem. As cenas já geradas ficam marcadas para refazer.
-let vozOcupada = -1;
-const IC_MIC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>';
-function pintarVozes(){
-  $('listaVozes').innerHTML = proj.personagens.map((s, k) => {
-    const c = s.vozClone, oc = vozOcupada === k;
-    return '<div class="voz-linha">' + (s.img ? '<img src="' + esc(s.img.url) + '" alt=""/>' : '') +
-      '<div class="voz-info"><div class="voz-nome">Personagem ' + (k + 1) + '</div>' +
-      '<div class="voz-est' + (c ? ' ok' : '') + '">' + (oc ? 'Clonando a voz…' : (c ? '✅ Voz do cliente' : 'Voz ' + esc(s.vozNome || 'automática'))) + '</div>' +
-      (c && !oc ? '<audio controls preload="none" src="' + esc(c.url) + '"></audio>' : '') + '</div>' +
-      '<div class="voz-acoes"><label class="voz-bt' + (oc || vozOcupada >= 0 ? ' ocupado' : '') + '">' + (c ? 'Trocar áudio' : IC_MIC + ' Enviar áudio') +
-        '<input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.opus,.mpeg" hidden onchange="enviarVoz(event,' + k + ')"/></label>' +
-      (c ? '<button type="button" class="voz-bt fraco" onclick="removerVoz(' + k + ')">Usar voz padrão</button>' : '') + '</div></div>';
-  }).join('');
-}
-function duracaoAudio(file){
-  return new Promise(ok => { const a = new Audio(), u = URL.createObjectURL(file); const fim = (d) => { URL.revokeObjectURL(u); ok(d); };
-    a.preload = 'metadata'; a.onloadedmetadata = () => fim(isFinite(a.duration) ? a.duration : 0); a.onerror = () => fim(0); a.src = u; });
-}
-function emBase64(file){ return new Promise((ok, erro) => { const fr = new FileReader(); fr.onerror = () => erro(new Error('não consegui ler o áudio')); fr.onload = () => ok(String(fr.result).split(',').pop()); fr.readAsDataURL(file); }); }
-async function enviarVoz(ev, k){
-  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
-  if (!f || vozOcupada >= 0) return;
-  if (!$('chkAutorizou').checked) return toast('✋ Marque que o cliente autorizou o uso da voz dele.');
-  if (f.size > 10 * 1024 * 1024) return toast('⚠️ Áudio grande demais (máximo 10 MB).');
-  const dur = await duracaoAudio(f);
-  if (dur && dur < 15) return toast('⚠️ Áudio muito curto (' + Math.round(dur) + ' s). Envie pelo menos 30 segundos.');
-  if (dur && dur < 30) toast('Áudio curto: a voz sai mais parecida com 30 segundos ou mais.');
-  vozOcupada = k; pintarVozes();
-  try {
-    const nome = String(f.name || '').toLowerCase();
-    const mime = f.type || (/\.(ogg|opus)$/.test(nome) ? 'audio/ogg' : /\.m4a$/.test(nome) ? 'audio/mp4' : /\.wav$/.test(nome) ? 'audio/wav' : 'audio/mpeg');
-    const d = await chama('/pn/voz/clonar', { id: proj.id, personagem: k, audio: await emBase64(f), mime, consentimento: true });
-    if (!d.ok) throw new Error(d.error || 'não consegui clonar a voz');
-    vozOcupada = -1; recebe(d.projeto); pintarPasso2();
-    toast('✅ Voz clonada! Gere (ou refaça) as cenas deste personagem.');
-  } catch (e) { vozOcupada = -1; pintarVozes(); toast('⚠️ ' + e.message); }
-}
-async function removerVoz(k){
-  if (vozOcupada >= 0) return;
-  const d = await chama('/pn/voz/remover', { id: proj.id, personagem: k });
-  if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui'));
-  recebe(d.projeto); pintarPasso2();
-  toast('Voz padrão de volta. Refaça as cenas deste personagem.');
 }
 function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
 async function refazerPers(k){
