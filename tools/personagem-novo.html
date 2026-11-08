@@ -380,6 +380,19 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .gesto-desc{font-size:11.5px;color:var(--text-dim);margin-top:.25rem;line-height:1.4}
 .gesto-ia{color:var(--gold)}
 .cena .btn-ghost{margin-top:.6rem;width:100%}
+/* (08/11) estilos de legenda (animação de cada um) */
+.leg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.4rem}
+.leg-op{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.45rem;cursor:pointer;text-align:center;transition:border-color .15s}
+.leg-op video{width:100%;aspect-ratio:54/25;object-fit:cover;display:block;border-radius:6px;background:#000;pointer-events:none}
+.leg-op .leg-nome{font-size:12.5px;color:var(--text-mid);margin-top:.35rem;font-weight:600}
+.leg-op .leg-padrao{display:block;font-size:10.5px;color:var(--text-dim);font-weight:400}
+.leg-op:hover{border-color:var(--border-bright)}
+.leg-op.on{border-color:var(--gold);box-shadow:0 0 0 1.5px var(--gold) inset;background:rgba(201,168,76,.08)}
+.leg-op.on .leg-nome{color:var(--gold)}
+@media(max-width:600px){ .leg-grid{grid-template-columns:repeat(2,1fr)} }
+/* (08/11) imagem do briefing para o cliente */
+#briefFundo .prev-cx{max-width:min(94vw,980px)}
+#briefImg{max-width:100%;max-height:72vh;border-radius:10px;border:.5px solid var(--border-bright);background:#000}
 /* (08/11, Thiago) a caixa de aviso escondida (empurrada para baixo) deixava a BORDA aparecendo no rodapé: invisível sem aviso */
 #toast:not(.show){opacity:0;visibility:hidden;pointer-events:none}
 #toast{transition:transform .25s,opacity .2s,visibility .2s}
@@ -466,7 +479,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div id="boxCenas"></div>
 
     <div class="btn-row" style="margin-bottom:.9rem">
-      <button class="btn-ghost" onclick="copiarTexto()">📋 Copiar texto</button>
+      <button class="btn-ghost" onclick="copiarBriefing()">📋 Copiar briefing</button>
       <button class="btn-ghost" onclick="outroTexto()">✨ Gerar outro texto</button>
     </div>
     <button class="btn-gold" id="btnGerarCenas" onclick="gerarCenas()">🎬 GERAR AS CENAS</button>
@@ -484,12 +497,29 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="trilhas-grid" id="trilhasGrid"></div>
     </div>
     <div class="step">
-      <div class="step-head"><div class="step-title">Legendas automáticas</div></div>
+      <div class="step-head"><div class="step-title">Legenda</div></div>
       <label class="chave" for="chkLegenda">
         <input type="checkbox" id="chkLegenda" checked/>
         <span class="chave-trilho" aria-hidden="true"></span>
-        <span class="chave-texto" id="txtLegenda">Com legenda — a palavra falada aparece na tela</span>
+        <span class="chave-texto" id="txtLegenda">Com legenda</span>
       </label>
+      <!-- (08/11, Thiago) 6 estilos dinâmicos, cada um com a sua animação; a cor vale para todos -->
+      <div id="boxEstiloLeg">
+        <div class="mini" style="margin-top:.9rem">Estilo da legenda</div>
+        <div class="leg-grid" id="gradeLegendas"></div>
+        <div class="mini" style="margin-top:.9rem">Cor da legenda</div>
+        <div class="cores" id="paletaLegenda">
+          <button type="button" class="cor" data-cor="#FFD400" style="background:#FFD400" title="Amarelo (padrão)"></button>
+          <button type="button" class="cor" data-cor="#ffffff" style="background:#ffffff" title="Branco"></button>
+          <button type="button" class="cor" data-cor="#D4AF37" style="background:#D4AF37" title="Dourado"></button>
+          <button type="button" class="cor" data-cor="#22C55E" style="background:#22C55E" title="Verde"></button>
+          <button type="button" class="cor" data-cor="#38BDF8" style="background:#38BDF8" title="Azul"></button>
+          <button type="button" class="cor" data-cor="#F97316" style="background:#F97316" title="Laranja"></button>
+          <button type="button" class="cor" data-cor="#EF4444" style="background:#EF4444" title="Vermelho"></button>
+          <button type="button" class="cor" data-cor="#EC4899" style="background:#EC4899" title="Rosa"></button>
+          <label class="cor cor-livre" title="Outra cor"><input type="color" id="corLivre" value="#FFD400"/></label>
+        </div>
+      </div>
     </div>
     <button class="btn-gold" id="btnMontar" onclick="montar()">🎬 MONTAR O VÍDEO</button>
     <div class="soon-note" id="notaMontar"></div>
@@ -534,6 +564,16 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 </div>
 <div class="ampliar" id="ampliar" onclick="this.classList.remove('show')"><img id="ampliarImg" alt=""/></div>
+<div class="prev-fundo" id="briefFundo" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="prev-cx">
+    <img id="briefImg" alt="Briefing do vídeo"/>
+    <div class="prev-bts">
+      <button type="button" class="ouro" id="briefCopiar">📋 Copiar imagem</button>
+      <button type="button" id="briefBaixar">⬇️ Baixar</button>
+      <button type="button" onclick="document.getElementById('briefFundo').classList.remove('show')">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <script src="../js/auth-iframe.js"></script>
 <script>
@@ -575,6 +615,12 @@ let estilo = 'real';
 let pers = [{}, {}, {}];         // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }]
 let gestos = [];
 let trilhas = [], trilhaSel = null, legendas = true;
+// (08/11) estilo e cor da legenda (padrão: Promocional, amarelo)
+const ESTILOS_LEG = [
+  { id: 'promocional', nome: 'Promocional' }, { id: 'crescendo', nome: 'Palavra crescendo' }, { id: 'karaoke', nome: 'Karaokê' },
+  { id: 'tarja', nome: 'Tarja' }, { id: 'destaque', nome: 'Destaque' }, { id: 'elegante', nome: 'Elegante' }];
+const LEG_PADRAO = 'promocional', COR_PADRAO = '#FFD400';
+let estiloLeg = LEG_PADRAO, corLeg = COR_PADRAO;
 let ocupado = false, timer = null, audioTeste = null;
 let passo = 1, salvarT = {};
 let listaTodos = [];
@@ -617,8 +663,44 @@ function irPara(n){
 document.querySelectorAll('#chipsEstilo .chip').forEach(c => c.addEventListener('click', () => {
   estilo = c.dataset.v;
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x === c));
+  agendaRascunho(50);
 }));
-$('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; });
+$('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; agendaRascunho(); });
+$('fCliente').addEventListener('input', () => agendaRascunho());
+$('fCategoria').addEventListener('input', () => agendaRascunho());
+// (08/11, Thiago: "todos os processos devem ser salvos automaticamente") o passo 1 vai para o servidor sozinho: campos e fotos.
+// Um salvamento por vez (o 1º cria o projeto); o que mudar no meio vai no seguinte. As fotos enviadas viram endereço.
+let rascT = null, rascRodando = null, rascDeNovo = false;
+function agendaRascunho(ms){ clearTimeout(rascT); rascT = setTimeout(salvarRascunho, ms == null ? 1200 : ms); }
+function salvarRascunho(){
+  if (rascRodando) { rascDeNovo = true; return rascRodando; }
+  if (ocupado) { agendaRascunho(2000); return null; }
+  const temAlgo = $('fCliente').value.trim() || $('fBriefing').value.trim() || pers.some(x => temFoto(x) || temAmb(x));
+  if (!temAlgo) return null;
+  rascRodando = (async () => {
+    const idxs = [], ents = [];
+    pers.forEach((x, k) => {
+      if (!(temFoto(x) || temAmb(x))) return;
+      idxs.push(k);
+      ents.push({ foto: x.fotoNova || undefined, fotoKey: x.fotoNova ? undefined : (x.fotoKey || undefined),
+        ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined });
+    });
+    $('notaSalvo').textContent = '💾 Salvando…';
+    const d = await chama('/pn/rascunho', { id: proj ? proj.id : undefined, cliente: $('fCliente').value.trim(), categoria: $('fCategoria').value.trim(),
+      briefing: $('fBriefing').value.trim(), estilo, personagens: ents });
+    if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
+    proj = d.projeto;
+    (proj.personagens || []).forEach((sv, j) => {
+      const c = pers[idxs[j]], e = ents[j]; if (!c || !sv) return;
+      if (e.foto && c.fotoNova === e.foto && sv.foto) { c.fotoNova = null; c.fotoKey = sv.foto.key; c.fotoUrl = sv.foto.url; }
+      if (e.ambiente && c.ambNova === e.ambiente && sv.ambiente) { c.ambNova = null; c.ambKey = sv.ambiente.key; c.ambUrl = sv.ambiente.url; }
+      if (e.ambiente === null && c.ambTirar) { c.ambTirar = false; c.ambKey = null; c.ambUrl = null; }
+    });
+    $('notaSalvo').textContent = '💾 Salvo automaticamente' + (proj.cliente ? ' · ' + proj.cliente : '');
+    pintarWz();
+  })().finally(() => { rascRodando = null; if (rascDeNovo) { rascDeNovo = false; salvarRascunho(); } });
+  return rascRodando;
+}
 // (07/11, Thiago) os 3 cards ficam SEMPRE na tela; cada um só com "Personagem" e "Ambiente", sem descrição. Card vazio não conta.
 // (07/11, Thiago) ícone desenhado (rosto / paisagem) no lugar do emoji, e o card INTEIRO abre a escolha da foto (igual ao "+ Enviar")
 const IC_ROSTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/></svg>';
@@ -640,8 +722,8 @@ function pintarPers(){
       '</div>';
   }).join('');
 }
-function limparPers(k){ pers[k] = {}; pintarPers(); }
-function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); }
+function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
+function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
 const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl));
 const temAmb = (p) => !!(p && (p.ambNova || (p.ambUrl && !p.ambTirar)));
 // foto → JPEG de até 1600 px (o servidor recebe base64)
@@ -670,6 +752,7 @@ async function escolher(ev, k, tipo){
     if (tipo === 'foto') pers[k].fotoNova = r.url; else { pers[k].ambNova = r.url; pers[k].ambTirar = false; }
     if (r.lado < 500) toast('⚠️ Foto pequena (' + r.lado + ' px). Se tiver uma maior, o personagem sai mais fiel.');
     pintarPers();
+    agendaRascunho(50);   // (08/11) a foto já sobe e fica salva
   } catch (e) { toast('⚠️ ' + e.message); }
 }
 
@@ -682,6 +765,8 @@ async function gerarTudo(){
   const semFoto = pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
   if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
+  clearTimeout(rascT);
+  if (rascRodando) await rascRodando;   // o salvamento automático termina antes (é ele que cria o projeto)
   ocupado = true;
   const bt = $('btnTudo'); bt.disabled = true;
   try {
@@ -759,7 +844,9 @@ function pintarCenas(){
       ? '<video src="' + esc(c.video.url) + '#t=0.5" controls playsinline preload="metadata"></video>'
       : (s.img ? '<img src="' + esc(s.img.url) + '" alt=""/>' : '<div class="pp-sem">Sem imagem</div>');
     const g = gestos.find(x => x.id === rc.gesto) || {};
-    const opts = gestos.map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + esc(x.nome) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
+    // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
+    const ordemG = gestos.filter(x => x.id === 'livre').concat(gestos.filter(x => x.id !== 'livre'));
+    const opts = ordemG.map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : esc(x.nome)) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
     const np = palavras(rc.fala);
     return '<div class="step cena" data-i="' + i + '">' +
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
@@ -801,7 +888,9 @@ function editouCena(i, el){
   else if (campo === 'gesto') {
     rc.gesto = el.value;
     const card = el.closest('.cena');
-    card.querySelector('[data-campo="gestoTexto"]').classList.toggle('hide', rc.gesto !== 'livre');
+    const gt = card.querySelector('[data-campo="gestoTexto"]');
+    gt.classList.toggle('hide', rc.gesto !== 'livre');
+    if (rc.gesto === 'livre') gt.focus();
     const g = gestos.find(x => x.id === rc.gesto) || {};
     card.querySelector('.gesto-desc').textContent = g.desc || '';
     card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
@@ -865,10 +954,66 @@ function acompanhar(){
     acompanhar();
   }, 6000);
 }
-function copiarTexto(){
-  const t = proj.roteiro.cenas.map((c, i) => 'CENA ' + (i + 1) + ': ' + c.fala).join('\n\n');
-  navigator.clipboard.writeText(t).then(() => toast('📋 Texto copiado!'), () => toast('⚠️ Não consegui copiar.'));
+// (08/11, Thiago) "Copiar briefing": UMA imagem com cada cena (a imagem do personagem + "Personagem N" + a fala), para a atendente
+// colar para o cliente entender como o vídeo vai ser montado. Sem gesto. As imagens vêm pela rota pública /cenas/baixar (tem CORS).
+function carregaImg(key){
+  return new Promise((ok, erro) => { const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => ok(im); im.onerror = () => erro(new Error('não consegui abrir a imagem do personagem'));
+    im.src = WORKER_URL + '/cenas/baixar?k=' + encodeURIComponent(key); });
 }
+function quebraLinhas(ctx, texto, larg){
+  const ws = String(texto || '').split(/\s+/).filter(Boolean), ls = []; let l = '';
+  ws.forEach(w => { const t = l ? l + ' ' + w : w; if (ctx.measureText(t).width > larg && l) { ls.push(l); l = w; } else l = t; });
+  if (l) ls.push(l);
+  return ls;
+}
+let briefBlob = null;
+async function copiarBriefing(){
+  if (!proj || !proj.roteiro) return;
+  toast('🖼️ Montando a imagem do briefing…');
+  try {
+    try { await document.fonts.ready; } catch (e) {}
+    const cenas = proj.roteiro.cenas, n = cenas.length;
+    const COL = 520, GAP = 40, PAD = 64, IMG_H = Math.round(COL * 16 / 9), FONTE = '500 31px "DM Sans", Arial, sans-serif';
+    const imgs = await Promise.all(cenas.map(rc => { const sp = proj.personagens[rc.p] || {}; return sp.img ? carregaImg(sp.img.key).catch(() => null) : null; }));
+    const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+    ctx.font = FONTE;
+    const linhas = cenas.map(rc => quebraLinhas(ctx, rc.legenda || rc.fala, COL));
+    const maxL = Math.max.apply(null, linhas.map(l => l.length));
+    const W = PAD * 2 + n * COL + (n - 1) * GAP, TOPO = PAD + 118, H = TOPO + IMG_H + 30 + 48 + maxL * 44 + PAD;
+    cv.width = W; cv.height = H;
+    ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0, 0, W, H);
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#C9A84C'; ctx.font = '700 50px Cinzel, Georgia, serif'; ctx.fillText(proj.cliente || 'Seu comercial', PAD, PAD);
+    ctx.fillStyle = '#9B9BA3'; ctx.font = '400 28px "DM Sans", Arial, sans-serif'; ctx.fillText('Como o vídeo vai ser montado · ' + n + ' cenas', PAD, PAD + 66);
+    cenas.forEach((rc, i) => {
+      const x = PAD + i * (COL + GAP);
+      ctx.save(); ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, TOPO, COL, IMG_H, 20); else ctx.rect(x, TOPO, COL, IMG_H);
+      ctx.clip();
+      if (imgs[i]) ctx.drawImage(imgs[i], x, TOPO, COL, IMG_H); else { ctx.fillStyle = '#1C1C1C'; ctx.fillRect(x, TOPO, COL, IMG_H); }
+      ctx.restore();
+      ctx.fillStyle = '#C9A84C'; ctx.font = '700 32px "DM Sans", Arial, sans-serif';
+      ctx.fillText('Cena ' + (i + 1) + ' · Personagem ' + (rc.p + 1), x, TOPO + IMG_H + 30);
+      ctx.fillStyle = '#F2F2F3'; ctx.font = FONTE;
+      linhas[i].forEach((l, k) => ctx.fillText(l, x, TOPO + IMG_H + 30 + 48 + k * 44));
+    });
+    briefBlob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    $('briefImg').src = URL.createObjectURL(briefBlob);
+    $('briefFundo').classList.add('show');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui montar a imagem')); }
+}
+$('briefCopiar').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': briefBlob })]);
+    toast('📋 Imagem copiada! Cole na conversa do cliente.');
+  } catch (e) { toast('⚠️ Este aparelho não deixa copiar imagem. Use Baixar (ou segure o dedo na imagem e copie).'); }
+});
+$('briefBaixar').addEventListener('click', () => {
+  if (!briefBlob) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(briefBlob); a.download = 'briefing-' + nomeArquivo(proj && proj.cliente) + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+});
 async function outroTexto(){
   if (ocupado) return;
   const ajuste = prompt('O que mudar no texto? (opcional — deixe em branco para outra versão)') ;
@@ -895,7 +1040,7 @@ async function pintarPasso3(){
   $('trilhasGrid').querySelectorAll('.trilha-item').forEach(el => el.addEventListener('click', (ev) => {
     if (ev.target.closest('[data-ouvir]')) return;
     trilhaSel = el.dataset.id ? trilhas.find(t => t.id === el.dataset.id) : null;
-    pintarPasso3();
+    pintarPasso3(); salvarMontagem();
   }));
   $('trilhasGrid').querySelectorAll('[data-ouvir]').forEach(b => b.addEventListener('click', () => {
     const t = trilhas.find(x => x.id === b.dataset.ouvir);
@@ -904,18 +1049,45 @@ async function pintarPasso3(){
     audioTeste = new Audio(t.url); audioTeste._id = t.id; audioTeste.volume = 0.7; audioTeste.play(); b.textContent = '⏸';
     audioTeste.onended = () => { b.textContent = '▶'; };
   }));
+  pintarLegenda();
   pintarFinal();
 }
-$('chkLegenda').addEventListener('change', () => {
-  legendas = $('chkLegenda').checked;
-  $('txtLegenda').textContent = legendas ? 'Com legenda — a palavra falada aparece na tela' : 'Sem legenda';
-});
+$('chkLegenda').addEventListener('change', () => { legendas = $('chkLegenda').checked; pintarLegenda(); salvarMontagem(); });
+function pintarLegenda(){
+  $('chkLegenda').checked = legendas;
+  $('txtLegenda').textContent = legendas ? 'Com legenda' : 'Sem legenda';
+  $('boxEstiloLeg').classList.toggle('hide', !legendas);
+  if (!$('gradeLegendas').children.length) {
+    $('gradeLegendas').innerHTML = ESTILOS_LEG.map(e => '<div class="leg-op" data-leg="' + e.id + '">' +
+      '<video src="https://arquivos.plataformalux.com.br/premium-cenas/_legendas/' + e.id + '.mp4" autoplay muted loop playsinline preload="auto"></video>' +
+      '<div class="leg-nome">' + esc(e.nome) + (e.id === LEG_PADRAO ? '<span class="leg-padrao">padrão</span>' : '') + '</div></div>').join('');
+    $('gradeLegendas').querySelectorAll('.leg-op').forEach(el => el.addEventListener('click', () => { estiloLeg = el.dataset.leg; pintarLegenda(); salvarMontagem(); }));
+  }
+  $('gradeLegendas').querySelectorAll('.leg-op').forEach(el => el.classList.toggle('on', el.dataset.leg === estiloLeg));
+  let achou = false;
+  document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(b => { const on = b.dataset.cor.toLowerCase() === corLeg.toLowerCase(); b.classList.toggle('on', on); if (on) achou = true; });
+  const livre = $('corLivre').parentElement; livre.classList.toggle('on', !achou);
+  if (!achou) $('corLivre').value = corLeg;
+}
+document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(b => b.addEventListener('click', () => { corLeg = b.dataset.cor; pintarLegenda(); salvarMontagem(); }));
+$('corLivre').addEventListener('input', () => { corLeg = $('corLivre').value; pintarLegenda(); salvarMontagem(); });
+// (08/11) as escolhas do passo 3 ficam salvas no projeto
+let montT = null;
+function salvarMontagem(){
+  if (!proj) return;
+  clearTimeout(montT);
+  montT = setTimeout(async () => {
+    const d = await chama('/pn/salvar', { id: proj.id, montagem: { trilha: trilhaSel, legendas, cor: corLeg, estiloLegenda: estiloLeg } });
+    if (d.ok) proj = d.projeto;
+  }, 400);
+}
 async function montar(){
   if (ocupado) return;
   ocupado = true; $('btnMontar').disabled = true; $('btnMontar').textContent = '⏳ MONTANDO…';
   try {
     if (audioTeste) { audioTeste.pause(); audioTeste = null; }
-    const d = await chama('/pn/montar', { id: proj.id, musicUrl: trilhaSel ? trilhaSel.url : null, trilha: trilhaSel, legendas, transicoes: true });
+    const d = await chama('/pn/montar', { id: proj.id, musicUrl: trilhaSel ? trilhaSel.url : null, trilha: trilhaSel, legendas, transicoes: true,
+      corDestaque: corLeg, estiloLegenda: estiloLeg });
     if (!d.ok) throw new Error(d.error || 'não consegui montar');
     proj = d.projeto;
     $('notaMontar').textContent = 'Montando o vídeo com a música e a legenda (~1 a 2 min)…';
@@ -986,7 +1158,10 @@ async function abrirProjeto(id){
   $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500';
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
-  trilhaSel = p.trilha || null; legendas = p.legendas !== false; $('chkLegenda').checked = legendas;
+  const cfg = p.cfgMontagem || {};
+  trilhaSel = cfg.trilha || p.trilha || null; legendas = (cfg.legendas !== undefined ? cfg.legendas : p.legendas) !== false;
+  corLeg = cfg.cor || COR_PADRAO; estiloLeg = cfg.estiloLegenda || LEG_PADRAO;
+  pintarLegenda();
   pintarPers();
   abrirAba('criar');
   irPara(p.videoFinal ? 3 : (p.roteiro ? 2 : 1));
