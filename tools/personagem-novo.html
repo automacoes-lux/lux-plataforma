@@ -924,7 +924,7 @@ function pintarCenas(){
   $('custoP2').textContent = proj.custoBRL ? '💰 Custo até aqui: ' + reais(proj.custoBRL) + ' (entra no seu financeiro quando o vídeo for montado).' : '';
 }
 function contTxt(np, gesto){
-  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 5.2 : 2.6) : 0.8));
+  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 4.2 : 2.6) : 0.8));
   const aviso = seg > 14 ? ' · ⚠️ passa de 14 s: encurte a fala' : '';
   return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? (natal() ? ' (com o trenó)' : ' (com a chegada)') : '') + aviso;
 }
