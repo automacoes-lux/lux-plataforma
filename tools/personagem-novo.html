@@ -36,6 +36,11 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 #chipsEstilo .chip.on{background:#0b0b0d;color:#fff;box-shadow:0 0 10px rgba(201,168,76,.55),inset 0 0 7px rgba(201,168,76,.22)}
 #chipsEstilo .est-bola{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;display:grid;place-items:center}
 #chipsEstilo .chip.on .est-bola::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold)}
+/* (08/11, Thiago) Animação em LARANJA: borda, círculo e bolinha; Pessoa real continua dourado */
+#chipsEstilo .chip[data-v="animado"]{border-color:#F28C28}
+#chipsEstilo .chip[data-v="animado"] .est-bola{border-color:#F28C28}
+#chipsEstilo .chip[data-v="animado"].on{box-shadow:0 0 10px rgba(242,140,40,.55),inset 0 0 7px rgba(242,140,40,.22)}
+#chipsEstilo .chip[data-v="animado"].on .est-bola::after{background:#F28C28}
 /* (21/09) chave liga/desliga. O checkbox de verdade fica por baixo: funciona no teclado e no leitor de tela */
 .chave{position:relative;display:flex;align-items:center;gap:.7rem;min-height:44px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .chave input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
@@ -375,6 +380,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .gesto-desc{font-size:11.5px;color:var(--text-dim);margin-top:.25rem;line-height:1.4}
 .gesto-ia{color:var(--gold)}
 .cena .btn-ghost{margin-top:.6rem;width:100%}
+/* (08/11, Thiago) a caixa de aviso escondida (empurrada para baixo) deixava a BORDA aparecendo no rodapé: invisível sem aviso */
+#toast:not(.show){opacity:0;visibility:hidden;pointer-events:none}
+#toast{transition:transform .25s,opacity .2s,visibility .2s}
 .ampliar{display:none;position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:1rem}
 .ampliar.show{display:flex}
 .ampliar img{max-height:88vh;max-width:100%;border-radius:10px}
@@ -391,7 +399,6 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 <div class="container">
   <div class="page-head">
     <div class="page-title">🐱 Personagem Animado</div>
-    <div class="page-sub">Até 3 personagens → texto do comercial em <b>cenas de ~10 s</b> → vídeo de ~30 s. Você manda as fotos e as informações do cliente; a IA escreve as falas e sugere os gestos.</div>
   </div>
 
   <div class="tabs">
@@ -409,7 +416,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div class="step">
     <div class="step-head"><div class="step-title" style="font-family:'Cinzel',serif;color:var(--gold);font-size:17px">Passo 1 · Briefing</div></div>
     <div class="mini">Categoria</div>
-    <input type="text" id="fCategoria" placeholder="Ex: Açaí e sorveteria · Clínica · Oficina mecânica · Loja de roupa" list="catSugestoes"/>
+    <input type="text" id="fCategoria" list="catSugestoes"/>
     <datalist id="catSugestoes">
       <option value="Alimentação"></option><option value="Padaria e confeitaria"></option>
       <option value="Açaí e sorveteria"></option><option value="Lanchonete"></option>
@@ -421,7 +428,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <option value="Mercado"></option><option value="Eventos e festa"></option>
     </datalist>
     <div class="mini" style="margin-top:.9rem">Cliente / empresa <span style="color:var(--gold)">*</span></div>
-    <input type="text" id="fCliente" placeholder="Ex: Degusta Açaí"/>
+    <input type="text" id="fCliente"/>
 
     <div class="mini" style="margin-top:.9rem">Estilo da imagem *</div>
     <div class="chips" id="chipsEstilo" role="radiogroup" aria-label="Estilo da imagem">
@@ -437,7 +444,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <div class="step">
     <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
-    <textarea id="fBriefing" maxlength="1500" style="min-height:150px" placeholder="Ex: açaí do forte, temos de 300ml, 500ml e 700ml, mais de 20 acompanhamentos, fazemos entrega na região, pedidos pelo whatsapp"></textarea>
+    <textarea id="fBriefing" maxlength="1500" style="min-height:150px"></textarea>
     <div class="soon-note" id="contBriefing" style="text-align:right;margin-top:.25rem">0 / 1500</div>
   </div>
 
