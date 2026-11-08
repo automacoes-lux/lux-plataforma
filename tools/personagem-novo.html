@@ -404,11 +404,18 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   .cena-media{max-width:220px;margin:0 auto}
   .pers-grid,.pp-grid{grid-template-columns:1fr}
 }
-.modo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:1.4rem}
+.modo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-top:1.4rem}
 .modo-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;min-height:190px;padding:1.2rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);color:var(--text);font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:border-color .15s,transform .15s}
 .modo-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .modo-card svg{width:52px;height:52px;color:var(--gold)}
 .modo-card.natal svg{color:#E5484D}
+.modo-card.bf svg{color:#ff1f2d}
+.bf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:.5rem}
+.bf-foto{position:relative;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:var(--bg-input)}
+.bf-foto img{width:100%;height:100%;object-fit:cover;display:block}
+.bf-foto button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:11px;cursor:pointer}
+.bf-mais{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:var(--radius);border:.5px dashed var(--border);color:var(--text-mid);font-size:13px;cursor:pointer;text-align:center;padding:.3rem}
+.bf-img{display:block;width:100%;max-width:240px;margin:0 auto .7rem;border-radius:var(--radius);cursor:zoom-in}
 .voltar-modo{background:none;border:0;color:var(--text-dim);font:inherit;font-size:13px;cursor:pointer;padding:.2rem 0;margin-bottom:.4rem}
 .voltar-modo:hover{color:var(--gold)}
 .gesto-fixo{font-size:13px;color:var(--text-mid);padding:.35rem 0 .7rem}
@@ -432,8 +439,9 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   <div id="abaCriar">
   <div id="telaModo">
     <div class="modo-grid">
-      <button type="button" class="modo-card" onclick="escolherModo('padrao')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>Editor padrão</button>
-      <button type="button" class="modo-card natal" onclick="escolherModo('natal')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l4 6h-2.2l3.7 5h-2.3l4.3 6H13v3h-2v-3H4.5l4.3-6H6.5l3.7-5H8l4-6z"/></svg>Editor Natal</button>
+      <button type="button" class="modo-card" onclick="escolherModo('padrao')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>Padrão</button>
+      <button type="button" class="modo-card natal" onclick="escolherModo('natal')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l4 6h-2.2l3.7 5h-2.3l4.3 6H13v3h-2v-3H4.5l4.3-6H6.5l3.7-5H8l4-6z"/></svg>Natal</button>
+      <button type="button" class="modo-card bf" onclick="escolherModo('blackfriday')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>Black Friday</button>
     </div>
   </div>
   <div id="areaEditor" class="hide">
@@ -474,6 +482,11 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="pers-grid" id="boxPers"></div>
   </div>
 
+  <div class="step hide" id="blocoFotosBF">
+    <div class="step-head"><div class="step-title">Fotos <span style="color:var(--gold)">*</span></div><span class="soon-note" id="contFotosBF">0 / 20</span></div>
+    <div class="bf-grid" id="gradeFotosBF"></div>
+  </div>
+
   <div class="step">
     <div class="step-head"><div class="step-title">Informações do cliente <span style="color:var(--gold)">*</span></div></div>
     <textarea id="fBriefing" maxlength="1500" style="min-height:150px"></textarea>
@@ -508,6 +521,30 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 
   <!-- ══════════ PASSO 3 — MONTAGEM ══════════ -->
+  <div id="p2bf" class="hide">
+    <div class="sec-title">Passo 2 · 📝 Personagem e fala</div>
+    <div class="step">
+      <div id="bfImgBox"></div>
+      <input type="text" id="bfAjuste" placeholder="O que mudar? (opcional)"/>
+      <button class="btn-ghost" onclick="refazerImgBF()" style="margin-top:.5rem">🔄 Refazer imagem</button>
+    </div>
+    <div class="step">
+      <div class="mini">Fala</div>
+      <textarea id="bfFala" maxlength="900" style="min-height:170px"></textarea>
+      <div class="soon-note" id="bfCont"></div>
+      <button class="btn-ghost" onclick="outroTextoBF()" style="margin-top:.5rem">✍️ Outro texto</button>
+    </div>
+    <div class="step">
+      <div class="mini">Título</div><input type="text" id="bfChamada" maxlength="50"/>
+      <div class="mini" style="margin-top:.8rem">Ofertas (uma por linha)</div><textarea id="bfOfertas" style="min-height:90px"></textarea>
+      <div class="mini" style="margin-top:.8rem">Nome</div><input type="text" id="bfNome" maxlength="60"/>
+      <div class="mini" style="margin-top:.8rem">WhatsApp</div><input type="text" id="bfWhatsapp" maxlength="30"/>
+      <div class="mini" style="margin-top:.8rem">Endereço</div><input type="text" id="bfEndereco" maxlength="90"/>
+      <div class="mini" style="margin-top:.8rem">Validade</div><input type="text" id="bfValidade" maxlength="40"/>
+    </div>
+    <button class="btn-gold" onclick="irPara(3)">➡️ IR PARA A MONTAGEM</button>
+  </div><!-- /p2bf -->
+
   <div id="p3" class="hide">
     <div class="sec-title">Passo 3 · 🎵 Montagem</div>
     <div class="step">
@@ -515,7 +552,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>.</div>
       <div class="trilhas-grid" id="trilhasGrid"></div>
     </div>
-    <div class="step">
+    <div class="step" id="stepLegenda">
       <div class="step-head"><div class="step-title">Legenda</div></div>
       <label class="chave" for="chkLegenda">
         <input type="checkbox" id="chkLegenda" checked/>
@@ -646,21 +683,25 @@ let listaTodos = [];
 // (08/11, Thiago) a ferramenta abre escolhendo o editor. Natal = o personagem é sempre o Papai Noel; o atendente só manda os ambientes.
 let modo = null, trilhasDe = null;
 const natal = () => modo === 'natal';
+const bf = () => modo === 'blackfriday';
+let fotosBF = [];   // [{ nova (base64) | key, url }]
 const rotuloTudo = () => natal() ? '✨ GERAR PAPAI NOEL E TEXTO' : '✨ GERAR PERSONAGEM E TEXTO';
 function aplicarModo(){
   $('telaModo').classList.toggle('hide', !!modo);
   $('areaEditor').classList.toggle('hide', !modo);
-  $('blocoEstilo').classList.toggle('hide', natal());
-  $('tituloPers').textContent = natal() ? 'Ambientes' : 'Personagens';
+  $('blocoEstilo').classList.toggle('hide', natal() || bf());
+  $('blocoFotosBF').classList.toggle('hide', !bf());
+  $('stepLegenda').classList.toggle('hide', bf());
+  $('tituloPers').textContent = natal() ? 'Ambientes' : (bf() ? 'Personagem' : 'Personagens');
   $('tituloP2').textContent = natal() ? 'Papai Noel e cenas' : 'Personagens e cenas';
   $('btnTudo').textContent = rotuloTudo();
-  pintarPers(); pintarWz();
+  pintarPers(); pintarFotosBF(); pintarWz();
 }
 function escolherModo(m){ modo = m; aplicarModo(); window.scrollTo({ top: 0 }); }
 function voltarModos(){
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
   clearTimeout(rascT); clearTimeout(timer);
-  proj = null; pers = []; modo = null; trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  proj = null; pers = []; fotosBF = []; modo = null; trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
   $('telaFinal').classList.add('hide');
@@ -678,12 +719,13 @@ function abrirAba(a){
 }
 function passoLiberado(n){
   if (n === 1) return true;
+  if (bf()) return n === 2 ? !!(proj && proj.bf) : !!(proj && proj.bf && proj.personagens[0] && proj.personagens[0].img);
   if (n === 2) return !!(proj && proj.roteiro);
   if (n === 3) return !!(proj && proj.roteiro && proj.cenas && proj.roteiro.cenas.every((c, i) => proj.cenas[i] && proj.cenas[i].video));
   return false;
 }
 function pintarWz(){
-  const nomes = ['Briefing', natal() ? 'Papai Noel e cenas' : 'Personagens e cenas', 'Montagem'];
+  const nomes = ['Briefing', natal() ? 'Papai Noel e cenas' : (bf() ? 'Personagem e fala' : 'Personagens e cenas'), 'Montagem'];
   $('wzbar').innerHTML = nomes.map((n, i) => {
     const k = i + 1, lib = passoLiberado(k);
     const cls = k === passo ? 'atual' : (lib && k < passo ? 'feito' : (lib ? 'liberado' : ''));
@@ -694,7 +736,8 @@ function irPara(n){
   if (!passoLiberado(n)) return;
   passo = n;
   $('p1').classList.toggle('hide', n !== 1);
-  $('p2').classList.toggle('hide', n !== 2);
+  $('p2').classList.toggle('hide', n !== 2 || bf());
+  $('p2bf').classList.toggle('hide', n !== 2 || !bf());
   $('p3').classList.toggle('hide', n !== 3);
   if (n === 2) pintarPasso2();
   if (n === 3) pintarPasso3();
@@ -718,7 +761,7 @@ function agendaRascunho(ms){ clearTimeout(rascT); rascT = setTimeout(salvarRascu
 function salvarRascunho(){
   if (rascRodando) { rascDeNovo = true; return rascRodando; }
   if (ocupado) { agendaRascunho(2000); return null; }
-  const temAlgo = $('fCliente').value.trim() || $('fBriefing').value.trim() || pers.some(x => temFoto(x) || temAmb(x));
+  const temAlgo = $('fCliente').value.trim() || $('fBriefing').value.trim() || pers.some(x => temFoto(x) || temAmb(x)) || fotosBF.length;
   if (!temAlgo) return null;
   rascRodando = (async () => {
     const idxs = [], ents = [];
@@ -729,10 +772,12 @@ function salvarRascunho(){
         ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined });
     });
     $('notaSalvo').textContent = '💾 Salvando…';
-    const d = await chama('/pn/rascunho', { id: proj ? proj.id : undefined, cliente: $('fCliente').value.trim(), categoria: $('fCategoria').value.trim(),
-      briefing: $('fBriefing').value.trim(), estilo, modo: natal() ? 'natal' : undefined, personagens: ents });
+    const fotosEnv = fotosBF.slice(), fotosCorpo = bf() ? corpoFotosBF(fotosEnv) : undefined;
+    const d = await chama('/pn/rascunho', { fotosBF: fotosCorpo, id: proj ? proj.id : undefined, cliente: $('fCliente').value.trim(), categoria: $('fCategoria').value.trim(),
+      briefing: $('fBriefing').value.trim(), estilo, modo: natal() ? 'natal' : (bf() ? 'blackfriday' : undefined), personagens: ents });
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
+    if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (x.nova && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
     (proj.personagens || []).forEach((sv, j) => {
       const c = pers[idxs[j]], e = ents[j]; if (!c || !sv) return;
       if (e.foto && c.fotoNova === e.foto && sv.foto) { c.fotoNova = null; c.fotoKey = sv.foto.key; c.fotoUrl = sv.foto.url; }
@@ -758,6 +803,7 @@ function pintarPers(){
       '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
       '<span class="slot-acao">' + (src ? 'Trocar' : '+ Enviar') + '</span>' +
       (tipo === 'amb' && src && k > 0 ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
+    if (bf()) return k > 0 ? '' : '<div class="pers-card"><div class="pers-tit">Personagem</div>' + slot('foto', foto, 'Foto *') + '</div>';
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) + '</div>';
     return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
@@ -766,6 +812,18 @@ function pintarPers(){
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
       '</div>';
   }).join('');
+}
+function corpoFotosBF(l){ return l.map(x => x.key ? { key: x.key } : { base64: x.nova }); }
+function pintarFotosBF(){
+  $('contFotosBF').textContent = fotosBF.length + ' / 20';
+  $('gradeFotosBF').innerHTML = fotosBF.map((x, i) => '<div class="bf-foto"><img src="' + esc(x.nova || x.url) + '" alt=""/><button type="button" title="Tirar" onclick="tirarFotoBF(' + i + ')">✕</button></div>').join('') +
+    (fotosBF.length < 20 ? '<label class="bf-mais"><input type="file" accept="image/*" multiple hidden onchange="addFotosBF(event)"/>+ Enviar</label>' : '');
+}
+function tirarFotoBF(i){ fotosBF.splice(i, 1); pintarFotosBF(); agendaRascunho(50); }
+async function addFotosBF(ev){
+  const fs = Array.from(ev.target.files || []).slice(0, 20 - fotosBF.length);
+  for (const f of fs) { try { const r = await lerImagem(f); fotosBF.push({ nova: r.url }); pintarFotosBF(); } catch (e) { toast('⚠️ ' + e.message); } }
+  agendaRascunho(50);
 }
 function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
@@ -805,10 +863,12 @@ async function gerarTudo(){
   if (ocupado) return;
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
+  if (bf() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem.');
+  if (bf() && !fotosBF.length) return toast('📷 Envie as fotos.');
   if (natal() && !pers.some(temAmb)) return toast('🏠 Envie a foto de pelo menos um ambiente.');
-  if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
-  if (!natal() && !temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
-  const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
+  if (!natal() && !bf() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
+  if (!natal() && !bf() && !temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
+  const semFoto = (natal() || bf()) ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
   if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
   clearTimeout(rascT);
@@ -818,7 +878,7 @@ async function gerarTudo(){
   try {
     bt.textContent = '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
-    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined,
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : (bf() ? 'blackfriday' : undefined), fotosBF: bf() ? corpoFotosBF(fotosBF) : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
       personagens: pers.filter(natal() ? temAmb : temFoto).map(p => ({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
@@ -826,7 +886,7 @@ async function gerarTudo(){
     let d = await chama('/pn/roteiro', corpo);
     if (!d.ok) throw new Error(d.error || 'não consegui escrever o texto');
     recebe(d.projeto);
-    bt.textContent = natal() ? '🎨 Colocando o Papai Noel…' : '🎨 Criando os personagens…';
+    bt.textContent = natal() ? '🎨 Colocando o Papai Noel…' : (bf() ? '🎨 Criando o personagem…' : '🎨 Criando os personagens…');
     $('notaTudo').textContent = natal() ? 'Colocando o Papai Noel em cada ambiente (~40 s).' : 'Criando a imagem de cada personagem no ambiente dele (~40 s).';
     d = await chama('/pn/imagens', { id: proj.id });
     if (!d.ok) throw new Error(d.error || 'não consegui criar os personagens');
@@ -841,6 +901,7 @@ async function gerarTudo(){
 // o projeto que voltou do servidor vira o estado da tela (as fotos já enviadas viram endereço)
 function recebe(p){
   proj = p;
+  if (p.modo === 'blackfriday') fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url }));
   pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
     ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key }));
   while (pers.length < 3) pers.push({});
@@ -849,7 +910,39 @@ function recebe(p){
 }
 
 // ── passo 2: personagens prontos + cenas ──
+function pintarPasso2BF(){
+  const b = proj.bf, s = proj.personagens[0] || {};
+  $('bfImgBox').innerHTML = s.img ? '<img class="bf-img" src="' + esc(s.img.url) + '" alt="" onclick="ampliar(this.src)"/>' : '<div class="pp-sem">Sem imagem. Clique em Refazer.</div>';
+  $('bfFala').value = b.fala || ''; $('bfChamada').value = b.chamada || ''; $('bfOfertas').value = (b.ofertas || []).join('\n'); $('bfNome').value = b.nome || '';
+  $('bfWhatsapp').value = b.whatsapp || ''; $('bfEndereco').value = b.endereco || ''; $('bfValidade').value = b.validade || '';
+  contaBF();
+}
+function contaBF(){ const n = palavras($('bfFala').value), seg = Math.round(n * 0.42); $('bfCont').textContent = n + ' palavras · ~' + seg + ' s' + (seg > 45 ? ' · ⚠️ passa de 45 s: encurte a fala' : ''); }
+let bfT = null;
+function salvarBF(){
+  clearTimeout(bfT);
+  bfT = setTimeout(async () => {
+    const d = await chama('/pn/salvar', { id: proj.id, bf: { fala: $('bfFala').value, chamada: $('bfChamada').value, ofertas: $('bfOfertas').value.split('\n'), nome: $('bfNome').value, whatsapp: $('bfWhatsapp').value, endereco: $('bfEndereco').value, validade: $('bfValidade').value } });
+    if (d.ok) proj = d.projeto;
+  }, 700);
+}
+['bfFala', 'bfChamada', 'bfOfertas', 'bfNome', 'bfWhatsapp', 'bfEndereco', 'bfValidade'].forEach(id => $(id).addEventListener('input', () => { if (id === 'bfFala') contaBF(); salvarBF(); }));
+async function refazerImgBF(){
+  if (ocupado) return;
+  ocupado = true; toast('🎨 Refazendo a imagem (~40 s)…');
+  try { const d = await chama('/pn/imagens', { id: proj.id, personagem: 1, ajuste: $('bfAjuste').value }); if (!d.ok) throw new Error(d.error); recebe(d.projeto); pintarPasso2BF(); $('bfAjuste').value = ''; toast('✅ Imagem refeita.'); }
+  catch (e) { toast('⚠️ ' + (e.message || 'não consegui refazer')); } finally { ocupado = false; }
+}
+async function outroTextoBF(){
+  if (ocupado) return;
+  const ajuste = prompt('O que mudar no texto? (opcional)');
+  if (ajuste === null) return;
+  ocupado = true; toast('✍️ Escrevendo outro texto (~20 s)…');
+  try { const d = await chama('/pn/roteiro', { id: proj.id, ajuste }); if (!d.ok) throw new Error(d.error); recebe(d.projeto); pintarPasso2BF(); toast('✅ Texto novo.'); }
+  catch (e) { toast('⚠️ ' + (e.message || 'não consegui')); } finally { ocupado = false; }
+}
 function pintarPasso2(){
+  if (bf()) return proj && proj.bf ? pintarPasso2BF() : undefined;
   if (!proj || !proj.roteiro) return;
   $('boxPersProntos').innerHTML = proj.personagens.map((s, k) =>
     '<div class="pp-card">' +
@@ -986,7 +1079,7 @@ async function gerar(cena){
 // acompanha as cenas na fila e a montagem
 function acompanhar(){
   clearTimeout(timer);
-  const pendente = proj && ((proj.cenas || []).some(c => c && c.gerando) || (proj.montagem && !proj.montagem.pronto && !proj.montagem.erro));
+  const pendente = proj && ((proj.cenas || []).some(c => c && c.gerando) || (proj.montagem && !proj.montagem.pronto && !proj.montagem.erro) || (proj.bfJob && !proj.bfJob.pronto && !proj.bfJob.erro));
   if (!pendente) return;
   timer = setTimeout(async () => {
     const d = await chama('/pn/status', { id: proj.id });
@@ -1079,9 +1172,10 @@ async function outroTexto(){
 
 // ── passo 3: trilha + legenda + montagem ──
 async function pintarPasso3(){
-  if (!trilhas.length || trilhasDe !== modo) { const d = await chama(natal() ? '/pn/trilhas-natal' : '/promoTrilhas'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
+  if (!trilhas.length || trilhasDe !== modo) { const d = await chama(natal() ? '/pn/trilhas-natal' : (bf() ? '/pn/trilhas-bf' : '/promoTrilhas')); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
+  if (bf() && !trilhaSel && trilhas[0]) { trilhaSel = trilhas[0]; salvarMontagem(); }
   const sel = trilhaSel ? trilhaSel.id : '';
-  $('trilhasGrid').innerHTML = '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>' +
+  $('trilhasGrid').innerHTML = (bf() ? '' : '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>') +
     trilhas.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
       '<button type="button" class="trilha-play" data-ouvir="' + esc(t.id) + '">▶</button></div>').join('');
   $('trilhasGrid').querySelectorAll('.trilha-item').forEach(el => el.addEventListener('click', (ev) => {
@@ -1132,6 +1226,19 @@ function salvarMontagem(){
 }
 async function montar(){
   if (ocupado) return;
+  if (bf()) {
+    ocupado = true; $('btnMontar').disabled = true; $('btnMontar').textContent = '⏳ GERANDO…';
+    try {
+      if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+      clearTimeout(bfT);
+      await chama('/pn/salvar', { id: proj.id, bf: { fala: $('bfFala').value, chamada: $('bfChamada').value, ofertas: $('bfOfertas').value.split('\n'), nome: $('bfNome').value, whatsapp: $('bfWhatsapp').value, endereco: $('bfEndereco').value, validade: $('bfValidade').value } });
+      const d = await chama('/pn/bf-gerar', { id: proj.id, trilha: trilhaSel });
+      if (!d.ok) throw new Error(d.error || 'não consegui gerar');
+      proj = d.projeto; pintarFinal(); acompanhar();
+    } catch (e) { $('notaMontar').textContent = '⚠️ ' + e.message; $('btnMontar').disabled = false; $('btnMontar').textContent = '🎬 GERAR O VÍDEO'; }
+    finally { ocupado = false; }
+    return;
+  }
   ocupado = true; $('btnMontar').disabled = true; $('btnMontar').textContent = '⏳ MONTANDO…';
   try {
     if (audioTeste) { audioTeste.pause(); audioTeste = null; }
@@ -1145,12 +1252,17 @@ async function montar(){
   finally { ocupado = false; }
 }
 function pintarFinal(){
-  const m = proj && proj.montagem;
-  const montando = !!(m && !m.pronto && !m.erro);
+  const m = proj && proj.montagem, jb = proj && proj.bfJob;
+  const montando = bf() ? !!(jb && !jb.pronto && !jb.erro) : !!(m && !m.pronto && !m.erro);
   $('btnMontar').disabled = montando;
+  if (bf()) {
+    $('btnMontar').textContent = montando ? '⏳ GERANDO…' : (proj && proj.videoFinal ? '🎬 GERAR DE NOVO' : '🎬 GERAR O VÍDEO');
+    $('notaMontar').textContent = jb && jb.erro ? '⚠️ ' + jb.erro : (montando ? (jb.msg || 'Gerando') + '. Pode levar de 5 a 10 minutos.' : '');
+  } else {
   $('btnMontar').textContent = montando ? '⏳ MONTANDO…' : (proj && proj.videoFinal ? '🎬 MONTAR DE NOVO' : '🎬 MONTAR O VÍDEO');
   if (m && m.erro) $('notaMontar').textContent = '⚠️ ' + m.erro;
   else if (!montando) $('notaMontar').textContent = '';
+  }
   const v = proj && proj.videoFinal;
   $('telaFinal').classList.toggle('hide', !v);
   if (v && $('videoFinal').dataset.k !== v.key) { $('videoFinal').src = v.url; $('videoFinal').dataset.k = v.key; }
@@ -1178,7 +1290,7 @@ function cardLista(p, pronto){
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
-    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (p.natal ? 'Natal · ' : '') + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
+    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : '')) + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
     '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>' +
     (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
@@ -1202,7 +1314,7 @@ async function abrirProjeto(id){
   const d = await chama('/pn/projeto?id=' + encodeURIComponent(id));
   if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui abrir'));
   const p = d.projeto;
-  modo = p.modo === 'natal' ? 'natal' : 'padrao';
+  modo = p.modo === 'natal' ? 'natal' : (p.modo === 'blackfriday' ? 'blackfriday' : 'padrao');
   recebe(p);
   aplicarModo();
   $('fCliente').value = p.cliente || ''; $('fCategoria').value = p.categoria || ''; $('fBriefing').value = p.briefing || '';
@@ -1215,7 +1327,7 @@ async function abrirProjeto(id){
   pintarLegenda();
   pintarPers();
   abrirAba('criar');
-  irPara(p.videoFinal ? 3 : (p.roteiro ? 2 : 1));
+  irPara(p.videoFinal ? 3 : ((p.roteiro || p.bf) ? 2 : 1));
   acompanhar();
   toast('✅ Projeto aberto.');
 }
