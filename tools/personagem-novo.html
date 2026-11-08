@@ -507,17 +507,15 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       <div id="boxEstiloLeg">
         <div class="mini" style="margin-top:.9rem">Estilo da legenda</div>
         <div class="leg-grid" id="gradeLegendas"></div>
-        <div class="mini" style="margin-top:.9rem">Cor da legenda</div>
+        <!-- (08/11, Thiago) só estas cores; branco = sem destaque. Ao clicar, as amostras dos 6 estilos mudam para a cor escolhida -->
+        <div class="mini" style="margin-top:.9rem">Cor de destaque</div>
         <div class="cores" id="paletaLegenda">
           <button type="button" class="cor" data-cor="#FFD400" style="background:#FFD400" title="Amarelo (padrão)"></button>
-          <button type="button" class="cor" data-cor="#ffffff" style="background:#ffffff" title="Branco"></button>
-          <button type="button" class="cor" data-cor="#D4AF37" style="background:#D4AF37" title="Dourado"></button>
-          <button type="button" class="cor" data-cor="#22C55E" style="background:#22C55E" title="Verde"></button>
           <button type="button" class="cor" data-cor="#38BDF8" style="background:#38BDF8" title="Azul"></button>
-          <button type="button" class="cor" data-cor="#F97316" style="background:#F97316" title="Laranja"></button>
+          <button type="button" class="cor" data-cor="#22C55E" style="background:#22C55E" title="Verde"></button>
           <button type="button" class="cor" data-cor="#EF4444" style="background:#EF4444" title="Vermelho"></button>
           <button type="button" class="cor" data-cor="#EC4899" style="background:#EC4899" title="Rosa"></button>
-          <label class="cor cor-livre" title="Outra cor"><input type="color" id="corLivre" value="#FFD400"/></label>
+          <button type="button" class="cor" data-cor="#ffffff" style="background:#ffffff" title="Branco (sem destaque)"></button>
         </div>
       </div>
     </div>
@@ -620,6 +618,7 @@ const ESTILOS_LEG = [
   { id: 'promocional', nome: 'Promocional' }, { id: 'crescendo', nome: 'Palavra crescendo' }, { id: 'karaoke', nome: 'Karaokê' },
   { id: 'tarja', nome: 'Tarja' }, { id: 'destaque', nome: 'Destaque' }, { id: 'elegante', nome: 'Elegante' }];
 const LEG_PADRAO = 'promocional', COR_PADRAO = '#FFD400';
+const COR_ARQ = { '#ffd400': 'amarelo', '#38bdf8': 'azul', '#22c55e': 'verde', '#ef4444': 'vermelho', '#ec4899': 'rosa', '#ffffff': 'branco' };
 let estiloLeg = LEG_PADRAO, corLeg = COR_PADRAO;
 let ocupado = false, timer = null, audioTeste = null;
 let passo = 1, salvarT = {};
@@ -1059,18 +1058,20 @@ function pintarLegenda(){
   $('boxEstiloLeg').classList.toggle('hide', !legendas);
   if (!$('gradeLegendas').children.length) {
     $('gradeLegendas').innerHTML = ESTILOS_LEG.map(e => '<div class="leg-op" data-leg="' + e.id + '">' +
-      '<video src="https://arquivos.plataformalux.com.br/premium-cenas/_legendas/' + e.id + '.mp4" autoplay muted loop playsinline preload="auto"></video>' +
+      '<video autoplay muted loop playsinline preload="auto"></video>' +
       '<div class="leg-nome">' + esc(e.nome) + (e.id === LEG_PADRAO ? '<span class="leg-padrao">padrão</span>' : '') + '</div></div>').join('');
     $('gradeLegendas').querySelectorAll('.leg-op').forEach(el => el.addEventListener('click', () => { estiloLeg = el.dataset.leg; pintarLegenda(); salvarMontagem(); }));
   }
-  $('gradeLegendas').querySelectorAll('.leg-op').forEach(el => el.classList.toggle('on', el.dataset.leg === estiloLeg));
-  let achou = false;
-  document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(b => { const on = b.dataset.cor.toLowerCase() === corLeg.toLowerCase(); b.classList.toggle('on', on); if (on) achou = true; });
-  const livre = $('corLivre').parentElement; livre.classList.toggle('on', !achou);
-  if (!achou) $('corLivre').value = corLeg;
+  if (!COR_ARQ[corLeg.toLowerCase()]) corLeg = COR_PADRAO;   // projeto antigo com cor que saiu da paleta
+  $('gradeLegendas').querySelectorAll('.leg-op').forEach(el => {
+    el.classList.toggle('on', el.dataset.leg === estiloLeg);
+    // a amostra acompanha a cor de destaque escolhida
+    const v = el.querySelector('video'), url = 'https://arquivos.plataformalux.com.br/premium-cenas/_legendas/' + el.dataset.leg + '-' + COR_ARQ[corLeg.toLowerCase()] + '.mp4';
+    if (v.dataset.src !== url) { v.dataset.src = url; v.src = url; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
+  });
+  document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(b => b.classList.toggle('on', b.dataset.cor.toLowerCase() === corLeg.toLowerCase()));
 }
 document.querySelectorAll('#paletaLegenda .cor[data-cor]').forEach(b => b.addEventListener('click', () => { corLeg = b.dataset.cor; pintarLegenda(); salvarMontagem(); }));
-$('corLivre').addEventListener('input', () => { corLeg = $('corLivre').value; pintarLegenda(); salvarMontagem(); });
 // (08/11) as escolhas do passo 3 ficam salvas no projeto
 let montT = null;
 function salvarMontagem(){
