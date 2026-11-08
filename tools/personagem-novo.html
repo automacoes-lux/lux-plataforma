@@ -404,6 +404,15 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   .cena-media{max-width:220px;margin:0 auto}
   .pers-grid,.pp-grid{grid-template-columns:1fr}
 }
+.modo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:1.4rem}
+.modo-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;min-height:190px;padding:1.2rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);color:var(--text);font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:border-color .15s,transform .15s}
+.modo-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.modo-card svg{width:52px;height:52px;color:var(--gold)}
+.modo-card.natal svg{color:#E5484D}
+.voltar-modo{background:none;border:0;color:var(--text-dim);font:inherit;font-size:13px;cursor:pointer;padding:.2rem 0;margin-bottom:.4rem}
+.voltar-modo:hover{color:var(--gold)}
+.gesto-fixo{font-size:13px;color:var(--text-mid);padding:.35rem 0 .7rem}
+@media(max-width:520px){ .modo-grid{grid-template-columns:1fr} .modo-card{min-height:130px} }
 </style>
 </head>
 
@@ -421,6 +430,14 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
   </div>
 
   <div id="abaCriar">
+  <div id="telaModo">
+    <div class="modo-grid">
+      <button type="button" class="modo-card" onclick="escolherModo('padrao')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>Editor padrão</button>
+      <button type="button" class="modo-card natal" onclick="escolherModo('natal')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l4 6h-2.2l3.7 5h-2.3l4.3 6H13v3h-2v-3H4.5l4.3-6H6.5l3.7-5H8l4-6z"/></svg>Editor Natal</button>
+    </div>
+  </div>
+  <div id="areaEditor" class="hide">
+  <button type="button" class="voltar-modo" onclick="voltarModos()">‹ Trocar editor</button>
   <div class="soon-note" id="notaSalvo"></div>
   <div class="wzbar" id="wzbar"></div>
 
@@ -443,15 +460,17 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
     <div class="mini" style="margin-top:.9rem">Cliente / empresa <span style="color:var(--gold)">*</span></div>
     <input type="text" id="fCliente"/>
 
+    <div id="blocoEstilo">
     <div class="mini" style="margin-top:.9rem">Estilo da imagem *</div>
     <div class="chips" id="chipsEstilo" role="radiogroup" aria-label="Estilo da imagem">
       <div class="chip on" data-v="real" role="radio"><span class="est-bola"></span>Pessoa real</div>
       <div class="chip" data-v="animado" role="radio"><span class="est-bola"></span>Animação</div>
     </div>
+    </div>
   </div>
 
   <div class="step">
-    <div class="step-head"><div class="step-title">Personagens <span style="color:var(--gold)">*</span></div></div>
+    <div class="step-head"><div class="step-title"><span id="tituloPers">Personagens</span> <span style="color:var(--gold)">*</span></div></div>
     <div class="pers-grid" id="boxPers"></div>
   </div>
 
@@ -467,7 +486,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
   <!-- ══════════ PASSO 2 — PERSONAGENS E CENAS ══════════ -->
   <div id="p2" class="hide">
-    <div class="sec-title">Passo 2 · 📝 Personagens e cenas</div>
+    <div class="sec-title">Passo 2 · 📝 <span id="tituloP2">Personagens e cenas</span></div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Confira os personagens e o texto de cada cena. Cada cena vira um vídeo separado — se uma sair ruim, refaça só ela.</div>
 
     <div class="step">
@@ -533,6 +552,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
       </div>
     </div>
   </div>
+  </div><!-- /areaEditor -->
   </div><!-- /abaCriar -->
 
   <div id="abaProjetos" class="hide">
@@ -623,6 +643,30 @@ let estiloLeg = LEG_PADRAO, corLeg = COR_PADRAO;
 let ocupado = false, timer = null, audioTeste = null;
 let passo = 1, salvarT = {};
 let listaTodos = [];
+// (08/11, Thiago) a ferramenta abre escolhendo o editor. Natal = o personagem é sempre o Papai Noel; o atendente só manda os ambientes.
+let modo = null, trilhasDe = null;
+const natal = () => modo === 'natal';
+const rotuloTudo = () => natal() ? '✨ GERAR PAPAI NOEL E TEXTO' : '✨ GERAR PERSONAGEM E TEXTO';
+function aplicarModo(){
+  $('telaModo').classList.toggle('hide', !!modo);
+  $('areaEditor').classList.toggle('hide', !modo);
+  $('blocoEstilo').classList.toggle('hide', natal());
+  $('tituloPers').textContent = natal() ? 'Ambientes' : 'Personagens';
+  $('tituloP2').textContent = natal() ? 'Papai Noel e cenas' : 'Personagens e cenas';
+  $('btnTudo').textContent = rotuloTudo();
+  pintarPers(); pintarWz();
+}
+function escolherModo(m){ modo = m; aplicarModo(); window.scrollTo({ top: 0 }); }
+function voltarModos(){
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  clearTimeout(rascT); clearTimeout(timer);
+  proj = null; pers = []; modo = null; trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
+  document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
+  $('telaFinal').classList.add('hide');
+  pintarLegenda();
+  passo = 1; irPara(1); aplicarModo();
+}
 
 // ── abas e passos (mesmo jeito do Personagem antigo) ──
 function abrirAba(a){
@@ -639,7 +683,7 @@ function passoLiberado(n){
   return false;
 }
 function pintarWz(){
-  const nomes = ['Briefing', 'Personagens e cenas', 'Montagem'];
+  const nomes = ['Briefing', natal() ? 'Papai Noel e cenas' : 'Personagens e cenas', 'Montagem'];
   $('wzbar').innerHTML = nomes.map((n, i) => {
     const k = i + 1, lib = passoLiberado(k);
     const cls = k === passo ? 'atual' : (lib && k < passo ? 'feito' : (lib ? 'liberado' : ''));
@@ -679,14 +723,14 @@ function salvarRascunho(){
   rascRodando = (async () => {
     const idxs = [], ents = [];
     pers.forEach((x, k) => {
-      if (!(temFoto(x) || temAmb(x))) return;
+      if (natal() ? !temAmb(x) : !(temFoto(x) || temAmb(x))) return;
       idxs.push(k);
-      ents.push({ foto: x.fotoNova || undefined, fotoKey: x.fotoNova ? undefined : (x.fotoKey || undefined),
+      ents.push({ foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
         ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined });
     });
     $('notaSalvo').textContent = '💾 Salvando…';
     const d = await chama('/pn/rascunho', { id: proj ? proj.id : undefined, cliente: $('fCliente').value.trim(), categoria: $('fCategoria').value.trim(),
-      briefing: $('fBriefing').value.trim(), estilo, personagens: ents });
+      briefing: $('fBriefing').value.trim(), estilo, modo: natal() ? 'natal' : undefined, personagens: ents });
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
     (proj.personagens || []).forEach((sv, j) => {
@@ -714,6 +758,8 @@ function pintarPers(){
       '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
       '<span class="slot-acao">' + (src ? 'Trocar' : '+ Enviar') + '</span>' +
       (tipo === 'amb' && src && k > 0 ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
+    if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
+      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) + '</div>';
     return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       (k > 0 && (foto || amb) ? '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>' : '') +
       slot('foto', foto, 'Personagem' + (k === 0 ? ' *' : '')) +
@@ -759,9 +805,10 @@ async function gerarTudo(){
   if (ocupado) return;
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
-  if (!temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
-  if (!temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
-  const semFoto = pers.findIndex(p => !temFoto(p) && temAmb(p));
+  if (natal() && !pers.some(temAmb)) return toast('🏠 Envie a foto de pelo menos um ambiente.');
+  if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
+  if (!natal() && !temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
+  const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
   if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
   clearTimeout(rascT);
@@ -771,16 +818,16 @@ async function gerarTudo(){
   try {
     bt.textContent = '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
-    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo,
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
-      personagens: pers.filter(temFoto).map(p => ({
-        foto: p.fotoNova || undefined, fotoKey: p.fotoNova ? undefined : p.fotoKey,
+      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => ({
+        foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
         ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined })) };
     let d = await chama('/pn/roteiro', corpo);
     if (!d.ok) throw new Error(d.error || 'não consegui escrever o texto');
     recebe(d.projeto);
-    bt.textContent = '🎨 Criando os personagens…';
-    $('notaTudo').textContent = 'Criando a imagem de cada personagem no ambiente dele (~40 s).';
+    bt.textContent = natal() ? '🎨 Colocando o Papai Noel…' : '🎨 Criando os personagens…';
+    $('notaTudo').textContent = natal() ? 'Colocando o Papai Noel em cada ambiente (~40 s).' : 'Criando a imagem de cada personagem no ambiente dele (~40 s).';
     d = await chama('/pn/imagens', { id: proj.id });
     if (!d.ok) throw new Error(d.error || 'não consegui criar os personagens');
     recebe(d.projeto);
@@ -789,7 +836,7 @@ async function gerarTudo(){
     irPara(2);
   } catch (e) {
     $('notaTudo').textContent = '⚠️ ' + e.message;
-  } finally { ocupado = false; bt.disabled = false; bt.textContent = '✨ GERAR PERSONAGEM E TEXTO'; }
+  } finally { ocupado = false; bt.disabled = false; bt.textContent = rotuloTudo(); }
 }
 // o projeto que voltou do servidor vira o estado da tela (as fotos já enviadas viram endereço)
 function recebe(p){
@@ -807,22 +854,22 @@ function pintarPasso2(){
   $('boxPersProntos').innerHTML = proj.personagens.map((s, k) =>
     '<div class="pp-card">' +
       (s.img ? '<img src="' + esc(s.img.url) + '" alt="" onclick="ampliar(this.src)"/>' : '<div class="pp-sem">Sem imagem. Clique em Refazer.</div>') +
-      '<div class="pp-tit">Personagem ' + (k + 1) + '</div>' +
-      '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + ' · ' + (s.sexo === 'F' ? 'feminina' : 'masculina') + '</div>' +
+      '<div class="pp-tit">' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</div>' +
+      '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + (natal() ? '' : ' · ' + (s.sexo === 'F' ? 'feminina' : 'masculina')) + '</div>' +
       '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
-      '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer personagem</button>' +
+      '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>' +
     '</div>').join('');
   pintarCenas();
 }
 function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
 async function refazerPers(k){
   if (ocupado) return;
-  ocupado = true; toast('🎨 Refazendo o personagem ' + (k + 1) + ' (~40 s)…');
+  ocupado = true; toast('🎨 Refazendo ' + (natal() ? 'a imagem do ambiente ' : 'o personagem ') + (k + 1) + ' (~40 s)…');
   try {
     const d = await chama('/pn/imagens', { id: proj.id, personagem: k + 1, ajuste: ($('ajP' + k) || {}).value || '' });
     if (!d.ok) throw new Error(d.error);
     recebe(d.projeto); pintarPasso2();
-    toast(d.aviso ? '⚠️ ' + d.aviso : '✅ Personagem refeito. As cenas dele ficaram marcadas para refazer.');
+    toast(d.aviso ? '⚠️ ' + d.aviso : (natal() ? '✅ Imagem refeita. As cenas dela ficaram marcadas para refazer.' : '✅ Personagem refeito. As cenas dele ficaram marcadas para refazer.'));
   } catch (e) { toast('⚠️ ' + (e.message || 'não consegui refazer')); }
   finally { ocupado = false; }
 }
@@ -845,19 +892,20 @@ function pintarCenas(){
     const g = gestos.find(x => x.id === rc.gesto) || {};
     // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
     const ordemG = gestos.filter(x => x.id === 'livre').concat(gestos.filter(x => x.id !== 'livre'));
-    const opts = ordemG.map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : esc(x.nome)) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
+    const opts = ordemG.filter(x => !(natal() && x.id === 'chegando')).map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : esc(x.nome)) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
     const np = palavras(rc.fala);
     return '<div class="step cena" data-i="' + i + '">' +
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
       '<div class="cena-grid"><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' +
       '<div>' +
-        (n > 1 ? '<div class="mini">Personagem</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>Personagem ' + (k + 1) + '</option>').join('') + '</select>' : '') +
+        (n > 1 && !(natal() && i === 0) ? '<div class="mini">' + (natal() ? 'Ambiente' : 'Personagem') + '</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</option>').join('') + '</select>' : '') +
         '<div class="mini">Fala</div><textarea data-campo="fala" maxlength="400">' + esc(rc.fala) + '</textarea>' +
         '<div class="soon-note" data-cont>' + contTxt(np, rc.gesto) + '</div>' +
+        (natal() && i === 0 ? '<div class="mini">Gesto</div><div class="gesto-fixo">Chega de trenó</div>' :
         '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
         '<select data-campo="gesto">' + opts + '</select>' +
         '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
-        '<div class="gesto-desc">' + esc(g.desc || '') + '</div>' +
+        '<div class="gesto-desc">' + esc(g.desc || '') + '</div>') +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
       '</div></div></div>';
@@ -876,9 +924,9 @@ function pintarCenas(){
   $('custoP2').textContent = proj.custoBRL ? '💰 Custo até aqui: ' + reais(proj.custoBRL) + ' (entra no seu financeiro quando o vídeo for montado).' : '';
 }
 function contTxt(np, gesto){
-  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? 2.6 : 0.8));
+  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 5.8 : 2.6) : 0.8));
   const aviso = seg > 14 ? ' · ⚠️ passa de 14 s: encurte a fala' : '';
-  return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? ' (com a chegada)' : '') + aviso;
+  return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? (natal() ? ' (com o trenó)' : ' (com a chegada)') : '') + aviso;
 }
 function editouCena(i, el){
   const rc = proj.roteiro.cenas[i], campo = el.dataset.campo;
@@ -993,7 +1041,7 @@ async function copiarBriefing(){
       if (imgs[i]) ctx.drawImage(imgs[i], x, TOPO, COL, IMG_H); else { ctx.fillStyle = '#1C1C1C'; ctx.fillRect(x, TOPO, COL, IMG_H); }
       ctx.restore();
       ctx.fillStyle = '#C9A84C'; ctx.font = '700 32px "DM Sans", Arial, sans-serif';
-      ctx.fillText('Cena ' + (i + 1) + ' · Personagem ' + (rc.p + 1), x, TOPO + IMG_H + 30);
+      ctx.fillText('Cena ' + (i + 1) + ' · ' + (natal() ? 'Ambiente ' : 'Personagem ') + (rc.p + 1), x, TOPO + IMG_H + 30);
       ctx.fillStyle = '#F2F2F3'; ctx.font = FONTE;
       linhas[i].forEach((l, k) => ctx.fillText(l, x, TOPO + IMG_H + 30 + 48 + k * 44));
     });
@@ -1031,7 +1079,7 @@ async function outroTexto(){
 
 // ── passo 3: trilha + legenda + montagem ──
 async function pintarPasso3(){
-  if (!trilhas.length) { const d = await chama('/promoTrilhas'); if (d.ok) trilhas = d.trilhas || []; }
+  if (!trilhas.length || trilhasDe !== modo) { const d = await chama(natal() ? '/pn/trilhas-natal' : '/promoTrilhas'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
   const sel = trilhaSel ? trilhaSel.id : '';
   $('trilhasGrid').innerHTML = '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>' +
     trilhas.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
@@ -1130,7 +1178,7 @@ function cardLista(p, pronto){
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
-    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
+    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (p.natal ? 'Natal · ' : '') + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
     '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>' +
     (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
@@ -1154,7 +1202,9 @@ async function abrirProjeto(id){
   const d = await chama('/pn/projeto?id=' + encodeURIComponent(id));
   if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui abrir'));
   const p = d.projeto;
+  modo = p.modo === 'natal' ? 'natal' : 'padrao';
   recebe(p);
+  aplicarModo();
   $('fCliente').value = p.cliente || ''; $('fCategoria').value = p.categoria || ''; $('fBriefing').value = p.briefing || '';
   $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500';
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
