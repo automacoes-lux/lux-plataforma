@@ -655,6 +655,28 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
 #anuLtZoom.on{opacity:1;transform:scale(1)}
 #anuLtZoom img{width:100%;height:100%;object-fit:cover;display:block}
 #anuLtZoom span{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:12px;font-weight:600;color:#fff;background:linear-gradient(transparent,#000C)}
+/* 09/11/2026: miniatura com play abre o vídeo do criativo por cima da tela */
+.anu-play{position:relative;display:block;width:100%;height:100%;padding:0;border:0;border-radius:inherit;background:none;color:inherit;font:inherit;cursor:pointer;overflow:hidden}
+.anu-play:focus-visible{outline:2px solid #F2F2F3;outline-offset:-2px}
+.anu-play-ic{position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:#000000A6;color:#fff;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.anu-play-ic svg{width:16px;height:16px;fill:currentColor}
+.anu-play:hover .anu-play-ic{background:#F2F2F3;color:#0D0D0F}
+.anu-play.mini{flex:0 0 auto;width:34px;height:52px;border-radius:7px}
+.anu-play.mini .anu-play-ic{width:20px;height:20px;margin:-10px 0 0 -10px}
+.anu-play.mini .anu-play-ic svg{width:12px;height:12px}
+.anu-play img.anu-lt-thumb{cursor:pointer}
+#anuVc{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;background:#000000D9;font-family:Inter,system-ui,sans-serif}
+#anuVc.on{display:flex}
+.anu-vc-trava{overflow:hidden}
+.anu-vc-caixa{display:flex;flex-direction:column;gap:10px;width:min(420px,100%,calc((100vh - 92px)*.5625));width:min(420px,100%,calc((100dvh - 92px)*.5625))}
+.anu-vc-topo{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.anu-vc-topo b{min-width:0;font-size:14.5px;font-weight:600;color:#F2F2F3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anu-vc-x{flex:0 0 auto;width:40px;height:40px;padding:0;border:0;border-radius:999px;background:#2A2B30;color:#F2F2F3;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.anu-vc-x svg{width:20px;height:20px;fill:currentColor}
+.anu-vc-x:hover{background:#3A3B41}
+.anu-vc-tela{position:relative;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#191A1D}
+.anu-vc-tela video,.anu-vc-tela img{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.anu-vc-msg{position:absolute;left:16px;right:16px;bottom:16px;padding:10px 14px;border-radius:12px;background:#000000B3;color:#F2F2F3;font-size:13px;text-align:center}
 .anu-lt-nome b{font-size:13px;font-weight:600;display:block;color:var(--a-txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .anu-lt-nome small{font-size:11px;color:var(--a-txt3)}
 .anu-lt-cel{text-align:center;padding:10px 0}
@@ -752,7 +774,7 @@ img.anu-lt-thumb:hover{box-shadow:0 0 0 2px #F2F2F3AA}
   .anu-fn-et{grid-template-columns:1fr;gap:3px 0}
   .anu-fn-et-l{margin-bottom:8px}
   .anu-fn-g{grid-template-columns:118px repeat(8,74px) 84px;min-width:0}
-  .anu-fn-nome .anu-lt-thumb{display:none}
+  .anu-fn-nome .anu-lt-thumb,.anu-fn-nome .anu-play.mini{display:none}
   .anu-fn-sec{position:sticky;left:0}
 }
 .anu-kpis-nota{font-size:12.5px;color:var(--a-txt2);margin:0 0 8px 2px}   /* 20/10: o topo conta só os criativos ativos */
@@ -2617,6 +2639,8 @@ async function anuAtualizarDados() {
 }
 
 const ANU_IC = {
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+  fechar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
   atualizar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
   copiar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
 };
@@ -3035,6 +3059,56 @@ function anuEscolheuCampanha() {
 // LINHA DO TEMPO DOS TESTES (24/10/2026, esboço aprovado pelo Thiago): só criativos de teste ATIVOS; régua de 10 dias
 // úteis (5 até o último dia útil + 5 de projeção); em cima, seguem ▶ e cortados ✂ de cada dia; em cada linha, D1–D5 na
 // data real com o ROAS do dia (verde 1,5+, laranja 1,0–1,5, vermelho abaixo de 1,0) e o ROAS real do teste no fim.
+// ver o criativo (09/11/2026, Thiago): o toque na miniatura abre o vídeo por cima da tela. O endereço do vídeo é pedido
+// na hora porque expira em alguns dias.
+function anuBtnCriativo(i, miolo, cls) {
+  const nome = escapeHtml(i.nome || 'este criativo');
+  return '<button type="button" class="anu-play' + (cls ? ' ' + cls : '') + '" data-ad="' + escapeHtml(String(i.ad)) + '" data-nome="' + nome + '" aria-label="Ver o vídeo de ' + nome + '" onclick="anuVerCriativo(event,this)" onkeydown="event.stopPropagation()">' + miolo + '<span class="anu-play-ic">' + ANU_IC.play + '</span></button>';
+}
+let anuVcPedido = 0, anuVcOrigem = null;
+async function anuVerCriativo(ev, el) {
+  ev.preventDefault(); ev.stopPropagation(); anuLtZoom(null);
+  const pedido = ++anuVcPedido;
+  let m = document.getElementById('anuVc');
+  if (!m) {
+    m = document.createElement('div'); m.id = 'anuVc'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="anu-vc-caixa"><div class="anu-vc-topo"><b></b><button type="button" class="anu-vc-x" aria-label="Fechar">' + ANU_IC.fechar + '</button></div><div class="anu-vc-tela"></div></div>';
+    m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('.anu-vc-x')) anuFecharCriativo(); });
+    document.body.appendChild(m);
+  }
+  const nome = el.getAttribute('data-nome') || '', img = el.querySelector('img'), capa = img ? img.src : '';
+  const tela = m.querySelector('.anu-vc-tela');
+  const erro = '<span class="anu-vc-msg">Não consegui abrir este vídeo agora. Tente de novo em instantes.</span>';
+  m.querySelector('b').textContent = nome; m.setAttribute('aria-label', nome);
+  tela.innerHTML = (capa ? '<img src="' + escapeHtml(capa) + '" alt="" referrerpolicy="no-referrer"/>' : '') + '<span class="anu-vc-msg">Carregando o vídeo…</span>';
+  m.classList.add('on'); document.documentElement.classList.add('anu-vc-trava');
+  anuVcOrigem = el; m.querySelector('.anu-vc-x').focus();
+  let j = null;
+  try {
+    const r = await window.__luxFetch(ANUNCIOS_URL + '/anuncios/video?ad=' + encodeURIComponent(el.getAttribute('data-ad')));
+    j = await r.json();
+  } catch (e) { j = null; }
+  if (pedido !== anuVcPedido) return; // fechou ou abriu outro enquanto carregava
+  if (!j || !j.ok || !j.url) { tela.innerHTML = erro; return; }
+  if (j.tipo === 'imagem') { tela.innerHTML = '<img src="' + escapeHtml(j.url) + '" alt="" referrerpolicy="no-referrer"/>'; return; }
+  const v = document.createElement('video');
+  v.controls = true; v.playsInline = true; v.preload = 'auto'; if (capa) v.poster = capa;
+  v.addEventListener('error', function () { if (pedido === anuVcPedido) tela.innerHTML = erro; });
+  v.src = j.url;
+  tela.innerHTML = ''; tela.appendChild(v);
+  const p = v.play(); if (p && p.catch) p.catch(function () {}); // navegador barrou o som automático: fica o botão de play do próprio vídeo
+}
+function anuFecharCriativo() {
+  const m = document.getElementById('anuVc');
+  if (!m || !m.classList.contains('on')) return;
+  anuVcPedido++;
+  const v = m.querySelector('video'); if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+  m.querySelector('.anu-vc-tela').innerHTML = '';
+  m.classList.remove('on'); document.documentElement.classList.remove('anu-vc-trava');
+  if (anuVcOrigem && anuVcOrigem.focus) anuVcOrigem.focus();
+  anuVcOrigem = null;
+}
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') anuFecharCriativo(); });
 // capa ampliada (25/10/2026): um quadro só, fixo na tela, ao lado do mouse; no celular abre/fecha com um toque
 function anuLtZoom(img, ev) {
   let z = document.getElementById('anuLtZoom');
@@ -3200,7 +3274,7 @@ function anuFunil(d) {
       const sairia = retrato && retrato.sairiam.indexOf(i.ad) >= 0;
       const sub = (e.fim ? (v ? 'no último corte: ' + v.pos + 'º' + (v.protegido ? ' · protegido' : '') : 'ficou até o fim') : (v ? 'saiu em ' + v.pos + 'º de ' + Object.keys(ult.visto).length : 'saiu às ' + e.h + 'h')) +
         (sairia ? ' · <em>sairia às ' + retrato.hora + 'h</em>' : '');
-      h += '<div class="anu-fn-nome" title="' + escapeHtml(i.nome) + '">' + (i.thumb ? '<img class="anu-lt-thumb" src="' + escapeHtml(i.thumb) + '" alt="" data-nome="' + escapeHtml(i.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)"/>' : '<span class="anu-lt-thumb"></span>') +
+      h += '<div class="anu-fn-nome" title="' + escapeHtml(i.nome) + '">' + (i.thumb ? anuBtnCriativo(i, '<img class="anu-lt-thumb" src="' + escapeHtml(i.thumb) + '" alt="" data-nome="' + escapeHtml(i.nome) + '" referrerpolicy="no-referrer" loading="lazy" onmouseenter="anuLtZoom(this,event)" onmousemove="anuLtZoom(this,event)" onmouseleave="anuLtZoom(null)"/>', 'mini') : '<span class="anu-lt-thumb"></span>') +
         '<div><b>' + escapeHtml(i.nome) + '</b><small>' + sub + '</small></div></div>';
       H.forEach(function (x) { h += celula(i, x); });
       const mtT = d.temMeta && i.tot.meta;
@@ -3550,7 +3624,7 @@ function anuCardV4(i, c, d, simples) {
   const reco = !simples && (ativo || final) ? '<span class="anu-reco ' + (ANU_RECO_COR[x.recomendacao] || 'cinza') + '" title="Recomendação do motor. Nada é pausado sem você confirmar.">' + escapeHtml(x.recomendacao) + '</span>' : '';
   const gastoCard = P ? P.gastoBRL : x.gasto;
   const dir = '<div class="anu-v3-dir"><div><span>Gasto ' + (P ? rotP : c.teste ? 'no lote' : 'no período') + '</span><b>' + anuR(gastoCard) + '</b><small>' + anuUS(gastoCard / cambio, 0) + '</small></div>' + reco + '</div>';
-  const thumb = i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : 'sem imagem';
+  const thumb = anuBtnCriativo(i, i.thumb ? '<img src="' + escapeHtml(i.thumb) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>' : '');
 
   // jornada: ícone + uma palavra + nota, um número e no máximo uma linha
   const tile = function (k, nota, valor, sub, cls) {
