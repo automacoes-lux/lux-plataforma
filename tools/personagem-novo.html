@@ -1663,17 +1663,28 @@ function pintarFinal(){
 }
 function baixar(key, nome){
   const a = document.createElement('a');
-  a.href = WORKER_URL + '/cenas/baixar?k=' + encodeURIComponent(key) + '&nome=' + encodeURIComponent(nomeArquivo(nome) + '.mp4');
+  a.href = /^https?:/.test(key) ? WORKER_URL + '/promoBaixar?u=' + encodeURIComponent(key) + '&nome=' + encodeURIComponent(nomeArquivo(nome) + '.mp4')
+    : WORKER_URL + '/cenas/baixar?k=' + encodeURIComponent(key) + '&nome=' + encodeURIComponent(nomeArquivo(nome) + '.mp4');
   a.download = nomeArquivo(nome) + '.mp4'; document.body.appendChild(a); a.click(); a.remove();
 }
 function baixarFinal(){ if (proj && proj.videoFinal) baixar(proj.videoFinal.key, proj.cliente); }
 
 // ── projetos e resultados ──
+// (09/11, Thiago) os vídeos do Personagem antigo aparecem em Resultados com a etiqueta Padrão: só ver e baixar (não têm edição aqui)
+let antigos = null;
+const urlRapida = (u) => String(u || '').replace('https://pub-2385c1507e84414f9df2410953ac4af1.r2.dev/', 'https://arquivos.plataformalux.com.br/');
+async function carregaAntigos(){
+  if (antigos) return;
+  const d = await chama('/histProjetos');
+  if (!d.ok) return;
+  antigos = (d.resultados || []).filter(r => r.videoUrl).map(r => ({ id: 'antigo-' + r.projectId, antigo: true, cliente: r.cliente || '', categoria: r.categoria || '', thumb: urlRapida(r.thumb), video: urlRapida(r.videoUrl),
+    videoKey: r.videoUrl, atendente: r.atendente || '', status: 'pronto', atualizadoEm: Number(r.ts) || 0, natal: false, bf: false, gerando: '', falhou: false }));
+}
 async function carregarLista(){
-  const d = await chama('/pn/lista');
+  const [d] = await Promise.all([chama('/pn/lista'), carregaAntigos()]);
   if (!d.ok) { $('listaProjetos').innerHTML = $('listaResultados').innerHTML = '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'; vigiaLista(); return; }
   const antes = new Set(listaTodos.filter(p => p.gerando).map(p => p.id));
-  listaTodos = juntaProducao(d.projetos || []);
+  listaTodos = juntaProducao(d.projetos || []).concat(antigos || []).sort((a, b) => b.atualizadoEm - a.atualizadoEm);
   listaTodos.forEach(p => {
     if (!antes.has(p.id) || p.gerando) return;
     if (p.falhou) toast('⚠️ Não consegui gerar o vídeo de "' + p.cliente + '".'); else if (p.status === 'pronto') toast('✅ Vídeo de "' + p.cliente + '" pronto!');
@@ -1712,15 +1723,17 @@ const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''
 function filtra(lst, q){ const ps = semAcento(q).split(/\s+/).filter(Boolean); return lst.filter(p => { const t = semAcento([p.cliente, p.categoria, p.atendente].join(' ')); return ps.every(x => t.indexOf(x) >= 0); }); }
 function cardLista(p, pronto){
   const data = p.atualizadoEm ? new Date(p.atualizadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-  const th = pronto && p.video
+  const th = p.antigo
+    ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">' + (p.thumb ? '<img loading="lazy" src="' + esc(p.thumb) + '" alt=""/>' : '') + '<span class="mini-play">▶</span></button>'
+    : pronto && p.video
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
     '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + (pronto ? etiquetaCat(p) : '') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : ''))) + esc(data) + '</div>' +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
-    '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>' +
+    '<div class="pj-bt">' + (p.antigo ? '' : '<button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>') +
     (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
-    '<button onclick="apagarProjeto(\'' + p.id + '\')">🗑️</button></div></div>';
+    (p.antigo ? '' : '<button onclick="apagarProjeto(\'' + p.id + '\')">🗑️</button>') + '</div></div>';
 }
 function pintarListas(){
   const rasc = filtra(listaTodos.filter(p => p.status !== 'pronto' && !p.gerando), $('buscaProj').value);
