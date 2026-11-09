@@ -72,7 +72,7 @@
 </style>
 
 <!-- ⬇️ TROQUE ESTE NÚMERO a cada atualização de tela no GitHub (força o navegador a baixar a versão nova) -->
-<script>window.__LUX_VERSION = '20261109h';</script>
+<script>window.__LUX_VERSION = '20261109i';</script>
 <script type="module" src="js/auth.js?v=20260904a"></script>
 </head>
 <body>
@@ -159,11 +159,8 @@
            antiga até o Thiago aprovar. Liberar para todas = tirar o data-role-required dos dois itens "Personagem Animado"
            (o novo vale para todos e o antigo sai) + KV config:cenas:liberado=sim. Backup da antiga:
            tools/videos-promocional.html.bak-tela-antiga-2026-11-01 e index.html.bak-antes-troca-personagem. -->
-      <a class="nav-item" data-tool="videos-promocional" href="#" data-role-required="atendente" style="display:none">
-        <div class="nav-icon">🐱</div> Personagem Animado
-        <span class="nav-badge badge-live">LIVE</span>
-      </a>
-      <a class="nav-item" data-tool="personagem-cenas" href="#" data-role-required="admin" style="display:none">
+      <!-- (09/11, Thiago) a tela NOVA vale para todos; o Personagem antigo fica só para o admin consultar. Atendente não começa nada novo nele: KV personagem:maintenance -->
+      <a class="nav-item" data-tool="personagem-cenas" href="#">
         <div class="nav-icon">🐱</div> Personagem Animado
         <span class="nav-badge badge-new">NOVO</span>
       </a>
@@ -343,18 +340,7 @@
           </div>
         </div>
 
-        <div class="tool-card" data-card-tool="videos-promocional" onclick="loadTool('videos-promocional')" data-role-required="atendente" style="display:none">
-          <div class="tool-card-icon">🐱</div>
-          <div class="tool-card-name">PERSONAGEM ANIMADO</div>
-          <div class="tool-card-desc">O produto do cliente vira um personagem 3D que fala. Você manda a foto e as informações; a IA monta o personagem, o roteiro de 4 cenas e o vídeo final.</div>
-          <div class="tool-card-footer">
-            <span class="status-live">● Disponível</span>
-            <span class="tool-arrow">→</span>
-          </div>
-        </div>
-
-        <!-- (01/11) o admin abre a tela NOVA pelo card também -->
-        <div class="tool-card" data-card-tool="personagem-cenas" onclick="loadTool('personagem-cenas')" data-role-required="admin" style="display:none">
+        <div class="tool-card" data-card-tool="personagem-cenas" onclick="loadTool('personagem-cenas')">
           <div class="tool-card-icon">🐱</div>
           <div class="tool-card-name">PERSONAGEM ANIMADO</div>
           <div class="tool-card-desc">O personagem do cliente (pessoa real ou animação) em até 3 ambientes: roteiro de venda de 30 s em 3 cenas, com 1 personagem ou 2 conversando.</div>
@@ -471,7 +457,7 @@
     </div>
 
     <!-- PERSONAGEM EM CENAS (01/11 — motor novo, só admin enquanto testa) -->
-    <div id="view-personagem-cenas" class="tool-panel" data-role-required="admin" style="display:none">
+    <div id="view-personagem-cenas" class="tool-panel">
       <div class="tool-panel-header">
         <button class="btn-back" onclick="showDashboard()">← Voltar</button>
         <span class="tool-panel-title">🐱 PERSONAGEM ANIMADO</span>
