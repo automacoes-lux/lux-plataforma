@@ -665,10 +665,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <div class="field"><label for="bfOferta">Oferta <span class="ouro">*</span></label><textarea id="bfOferta" maxlength="1500" rows="4" placeholder="Ex: Até 40% de desconto em pães e bolos, de 24/11 a 30/11. Pão francês quentinho o dia todo."></textarea></div>
       <button type="button" class="btn-mini" id="bfBtnFala" onclick="escreverFalaBF()">Escrever a fala</button>
       <div id="bfBlocoFala" class="hide" style="margin-top:14px">
-        <div class="field"><label for="bfFala">Fala do personagem</label><textarea id="bfFala" maxlength="900" rows="7"></textarea><div class="conta" id="bfCont"></div></div>
-        <div class="field"><label for="bfChamada">Título</label><input type="text" id="bfChamada" maxlength="50"/></div>
-        <div class="field"><label for="bfOfertas">Cartazes (um por linha)</label><textarea id="bfOfertas" rows="3"></textarea></div>
-        <div class="field" style="margin-bottom:0"><label for="bfValidade">Validade</label><input type="text" id="bfValidade" maxlength="40"/></div>
+        <div class="field" style="margin-bottom:0"><label for="bfFala">Fala do personagem</label><textarea id="bfFala" maxlength="900" rows="7"></textarea><div class="conta" id="bfCont"></div></div>
       </div>
     </div>
 
@@ -842,7 +839,7 @@ function voltarModos(){
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
   clearTimeout(rascT); clearTimeout(timer);
   proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null;
-  ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfChamada', 'bfOfertas', 'bfValidade', 'bfAjuste'].forEach(id => { $(id).value = ''; });
+  ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
   if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
@@ -1038,7 +1035,7 @@ function pintarBFFala(){
   const b = proj && proj.bf;
   $('bfBlocoFala').classList.toggle('hide', !b);
   $('bfBtnFala').textContent = b ? 'Escrever outra fala' : 'Escrever a fala';
-  if (b) { $('bfFala').value = b.fala || ''; $('bfChamada').value = b.chamada || ''; $('bfOfertas').value = (b.ofertas || []).join('\n'); $('bfValidade').value = b.validade || ''; }
+  if (b) $('bfFala').value = b.fala || '';
   contaBF();
 }
 const SEG_POR_PALAVRA_BF = 0.36;
@@ -1050,10 +1047,10 @@ function contaBF(){
   const brl = n ? ((seg + 1.2) * preco + 0.35) * ((proj && proj.cotacao) || 5.3) : 0;
   $('bfCusto').innerHTML = brl ? '≈ R$ ' + brl.toFixed(2).replace('.', ',') + ' <small>por vídeo</small>' : '';
 }
-const corpoFalaBF = () => ({ fala: $('bfFala').value, chamada: $('bfChamada').value, ofertas: $('bfOfertas').value.split('\n'), validade: $('bfValidade').value });
+const corpoFalaBF = () => ({ fala: $('bfFala').value });   // (09/11, Thiago) título, cartazes e validade saíram da tela: o servidor mantém o que a IA tirou da Oferta
 let bfT = null;
 function salvarFalaBF(){ clearTimeout(bfT); bfT = setTimeout(async () => { if (!proj || !proj.bf) return; const d = await chama('/pn/salvar', { id: proj.id, bf: corpoFalaBF() }); if (d.ok) proj = d.projeto; }, 700); }
-['bfFala', 'bfChamada', 'bfOfertas', 'bfValidade'].forEach(id => $(id).addEventListener('input', () => { if (id === 'bfFala') contaBF(); salvarFalaBF(); }));
+$('bfFala').addEventListener('input', () => { contaBF(); salvarFalaBF(); });
 ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta'].forEach(id => $(id).addEventListener('input', () => { bfEtapas(); agendaRascunho(); }));
 async function escreverFalaBF(pedirAjuste){
   if (ocupado) { toast('⏳ Espere terminar o que está em andamento.'); return false; }
