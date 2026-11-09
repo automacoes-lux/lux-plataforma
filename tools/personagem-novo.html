@@ -1431,6 +1431,8 @@ async function outroTexto(){
 // ── passo 3: trilha + legenda + montagem ──
 async function pintarPasso3(){
   if (!trilhas.length || trilhasDe !== modo) { const d = await chama(natal() ? '/pn/trilhas-natal' : '/promoTrilhas'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
+  // (09/11, Thiago) no Natal a trilha Noel já vem marcada; só vale para quem ainda não escolheu nada, então "Sem música" continua respeitado
+  if (natal() && trilhasDe === modo && proj && !proj.cfgMontagem && !trilhaSel) { proj.cfgMontagem = {}; trilhaSel = trilhas.find(t => t.id === 'noel') || null; if (trilhaSel) salvarMontagem(); }
   const sel = trilhaSel ? trilhaSel.id : '';
   $('trilhasGrid').innerHTML = '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>' +
     trilhas.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
