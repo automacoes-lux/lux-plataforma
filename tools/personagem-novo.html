@@ -432,7 +432,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
   .cena-media{max-width:220px;margin:0 auto}
   .pers-grid,.pp-grid{grid-template-columns:1fr}
 }
-.modo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-top:1.4rem}
+.modo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.9rem;margin-top:1.4rem}
+.modo-card.hide,.filtro-cat button.hide{display:none}
+.modo-card.promo svg{color:#F28C28}
+.etq-promo{background:#F28C28;color:#000}
+.filtro-cat button[data-cat="promo"].on{background:#F28C28;color:#000;border-color:#F28C28}
 .modo-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;min-height:190px;padding:1.2rem;background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);color:var(--text);font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:border-color .15s,transform .15s}
 .modo-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .modo-card svg{width:52px;height:52px;color:var(--gold)}
@@ -536,6 +540,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <button type="button" class="modo-card" onclick="escolherModo('padrao')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>Padrão</button>
       <button type="button" class="modo-card natal" onclick="escolherModo('natal')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l4 6h-2.2l3.7 5h-2.3l4.3 6H13v3h-2v-3H4.5l4.3-6H6.5l3.7-5H8l4-6z"/></svg>Natal</button>
       <button type="button" class="modo-card bf" onclick="escolherModo('blackfriday')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6 2.8H4.8c-1.1 0-2 .9-2 2v7.8c0 .5.2 1 .6 1.4l7.7 7.7c.8.8 2 .8 2.8 0l7.8-7.8c.8-.8.8-2 0-2.8L14 3.4c-.4-.4-.9-.6-1.4-.6z" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="7" r="1.5" fill="#fff"/><path d="M15.6 9.8l-5.5 5.5" stroke="#FFD400" stroke-width="1.9" stroke-linecap="round"/><circle cx="10.9" cy="10.6" r="1.5" fill="#FFD400"/><circle cx="14.8" cy="14.5" r="1.5" fill="#FFD400"/></svg>Black Friday</button>
+      <button type="button" class="modo-card promo hide" id="cardPromo" onclick="escolherModo('promo')"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/></svg>Promo</button>
     </div>
   </div>
   <div id="areaEditor" class="hide">
@@ -740,6 +745,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <button type="button" data-cat="padrao" onclick="filtrarCat('padrao')">Padrão</button>
       <button type="button" data-cat="natal" onclick="filtrarCat('natal')">Natal</button>
       <button type="button" data-cat="bf" onclick="filtrarCat('bf')">Black Friday</button>
+      <button type="button" data-cat="promo" class="hide" id="filtroPromo" onclick="filtrarCat('promo')">Promo</button>
     </div>
     <div class="busca"><span class="lupa">🔎</span><input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/></div>
     <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
@@ -824,7 +830,7 @@ const producao = new Map();      // vídeos recém-enviados, até a lista do ser
 // (08/11, Thiago) a ferramenta abre escolhendo o editor. Natal = o personagem é sempre o Papai Noel; o atendente só manda os ambientes.
 let modo = null, trilhasDe = null;
 const natal = () => modo === 'natal';
-const bf = () => modo === 'blackfriday';
+const bf = () => modo === 'blackfriday' || modo === 'promo';   // (09/11, Thiago) o Promo usa o mesmo painel do Black Friday; a montagem é a do Avatar 150
 let fotosBF = [];          // [{ nova (base64) | clipKey + tipo:'video' | key, url, local }]
 let bfEstiloOk = false;    // o estilo é escolha obrigatória, igual ao Avatar 150
 const vCliente = () => (bf() ? $('bfEmpresa') : $('fCliente')).value.trim();
@@ -1007,7 +1013,7 @@ async function enviarVozCliente(ev){
     clearTimeout(rascT); if (rascRodando) await rascRodando;
     if (!proj) await salvarRascunho();
     vozBusy = 'Lendo o que o cliente falou (~15 s)…'; pintarVozCli();
-    const d = await chama('/pn/audio-cliente', { id: proj ? proj.id : undefined, modo: bf() ? 'blackfriday' : undefined, cliente: vCliente(), mp3: r.base64, seg: r.seg, pausas: r.pausas });
+    const d = await chama('/pn/audio-cliente', { id: proj ? proj.id : undefined, modo: bf() ? modo : undefined, cliente: vCliente(), mp3: r.base64, seg: r.seg, pausas: r.pausas });
     if (!d.ok) throw new Error(d.error || 'não consegui ler o áudio');
     proj = d.projeto;
     vozBusy = '';
@@ -1033,7 +1039,7 @@ function salvarRascunho(){
     $('notaSalvo').textContent = '💾 Salvando…';
     const fotosEnv = fotosBF.slice();
     const d = await chama('/pn/rascunho', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(),
-      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? 'blackfriday' : undefined), personagens: ents }, dadosBF()));
+      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), personagens: ents }, dadosBF()));
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
     if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (!x.key && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
@@ -1186,7 +1192,7 @@ async function escreverFalaBF(pedirAjuste){
   ocupado = true;
   const b = $('bfBtnFala'); b.disabled = true; b.textContent = 'Escrevendo a fala (~20 s)…';
   try {
-    const d = await chama('/pn/roteiro', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(), briefing: vBriefing(), estilo, modo: 'blackfriday', ajuste,
+    const d = await chama('/pn/roteiro', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(), briefing: vBriefing(), estilo, modo, ajuste,
       personagens: pers.filter(temFoto).map(p => ({ foto: p.fotoNova || undefined, fotoKey: p.fotoNova ? undefined : p.fotoKey })) }, dadosBF()));
     if (!d.ok) throw new Error(d.error || 'não consegui escrever a fala');
     recebe(d.projeto); pintarBFFala(); pintarBFPers(); pintarBFFotos();
@@ -1250,7 +1256,7 @@ async function gerarVideoBF(){
     // (09/11, Thiago) igual ao Avatar 97: vai para Resultados, o vídeo anda sozinho no servidor e o formulário fica limpo para o próximo
     proj = d.projeto;
     producao.set(proj.id, { desde: proj.atualizadoEm || 0, cliente: proj.cliente || '', categoria: proj.categoria || '', thumb: (s0.img || {}).url || '', msg: (proj.bfJob || {}).msg || 'Gerando' });
-    ocupado = false; voltarModos(); escolherModo('blackfriday');
+    ocupado = false; const modoAtual = modo; voltarModos(); escolherModo(modoAtual);
     toast('🎬 Produção iniciada! Pode gerar outro vídeo enquanto este fica pronto.');
     abrirAba('resultados');
   } catch (e) { $('bfNota').textContent = '⚠️ ' + e.message; $('bfBtnGerar').disabled = false; $('bfBtnGerar').textContent = 'Gerar o vídeo'; }
@@ -1332,7 +1338,7 @@ async function gerarTudo(){
 // o projeto que voltou do servidor vira o estado da tela (as fotos já enviadas viram endereço)
 function recebe(p){
   proj = p;
-  if (p.modo === 'blackfriday') { const pend = fotosBF.filter(x => !x.key); fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url, tipo: f.tipo })).concat(pend); }
+  if (p.modo === 'blackfriday' || p.modo === 'promo') { const pend = fotosBF.filter(x => !x.key); fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url, tipo: f.tipo })).concat(pend); }
   pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
     ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key }));
   while (pers.length < 3) pers.push({});
@@ -1704,8 +1710,8 @@ function juntaProducao(lst){
 function vigiaLista(){ clearTimeout(listaT); if (listaTodos.some(p => p.gerando)) listaT = setTimeout(carregarLista, 15000); }
 // (09/11, Thiago) categoria do vídeo: etiqueta ao lado do nome e botões em cima da busca (clicar de novo mostra todos)
 let catRes = '';
-const catDe = (p) => p.natal ? 'natal' : (p.bf ? 'bf' : 'padrao');
-const NOME_CAT = { padrao: 'Padrão', natal: 'Natal', bf: 'Black Friday' };
+const catDe = (p) => p.natal ? 'natal' : (p.bf ? 'bf' : (p.promo ? 'promo' : 'padrao'));
+const NOME_CAT = { padrao: 'Padrão', natal: 'Natal', bf: 'Black Friday', promo: 'Promo' };
 const etiquetaCat = (p) => '<span class="etq etq-' + catDe(p) + '">' + NOME_CAT[catDe(p)] + '</span>';
 function filtrarCat(c){
   catRes = catRes === c ? '' : c;
@@ -1729,7 +1735,7 @@ function cardLista(p, pronto){
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
-    '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + (pronto ? etiquetaCat(p) : '') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : ''))) + esc(data) + '</div>' +
+    '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + (pronto ? etiquetaCat(p) : '') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : (p.promo ? 'Promo · ' : '')))) + esc(data) + '</div>' +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
     '<div class="pj-bt">' + (p.antigo ? '' : '<button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>') +
     (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
@@ -1756,7 +1762,7 @@ async function abrirProjeto(id){
   const d = await chama('/pn/projeto?id=' + encodeURIComponent(id));
   if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui abrir'));
   const p = d.projeto;
-  modo = p.modo === 'natal' ? 'natal' : (p.modo === 'blackfriday' ? 'blackfriday' : 'padrao');
+  modo = p.modo === 'natal' ? 'natal' : (p.modo === 'blackfriday' || p.modo === 'promo' ? p.modo : 'padrao');
   if (bf()) fotosBF = [];
   recebe(p);
   aplicarModo();
@@ -1832,7 +1838,7 @@ async function apagarProjeto(id){
 (async function(){
   pintarPers(); pintarWz();
   const d = await chama('/pn/gestos');
-  if (d.ok) gestos = d.gestos || [];
+  if (d.ok) { gestos = d.gestos || []; if (d.promo) ['cardPromo', 'filtroPromo'].forEach(id => $(id).classList.remove('hide')); }   // (09/11) Promo: só para quem o servidor liberar
   else if (d.error) $('notaTudo').textContent = '⚠️ ' + d.error;
 })();
 </script>
