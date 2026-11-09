@@ -182,6 +182,9 @@ button.pj-th:hover{border-color:var(--gold)}
 .estrela:disabled{opacity:.5;cursor:wait}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+.pj-prod{display:flex;align-items:center;gap:.45rem;font-size:12.5px;font-weight:600;color:var(--gold);margin-top:.2rem}
+.pj-giro{flex:none;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+.pj-erro{font-size:12.5px;color:#F26D6D;margin-top:.2rem}
 .pj-vazio{text-align:center;color:var(--text-dim);font-size:13px;padding:2rem 1rem;line-height:1.6}
 /* refazer 1 cena no editor de cortes */
 /* refazendo: vermelho com letra branca, pra não passar despercebido */
@@ -788,7 +791,8 @@ const COR_ARQ = { '#ffd400': 'amarelo', '#38bdf8': 'azul', '#22c55e': 'verde', '
 let estiloLeg = LEG_PADRAO, corLeg = COR_PADRAO;
 let ocupado = false, timer = null, audioTeste = null;
 let passo = 1, salvarT = {};
-let listaTodos = [];
+let listaTodos = [], listaT = null;
+const producao = new Map();      // vídeos recém-enviados, até a lista do servidor alcançar (ela pode atrasar até 1 min)
 // (08/11, Thiago) a ferramenta abre escolhendo o editor. Natal = o personagem é sempre o Papai Noel; o atendente só manda os ambientes.
 let modo = null, trilhasDe = null;
 const natal = () => modo === 'natal';
@@ -1079,7 +1083,7 @@ function pintarBFFinal(){
   const rodando = !!(jb && !jb.pronto && !jb.erro);
   $('bfBtnGerar').disabled = rodando;
   $('bfBtnGerar').textContent = rodando ? 'Gerando…' : (v ? 'Gerar de novo' : 'Gerar o vídeo');
-  $('bfNota').textContent = jb && jb.erro ? '⚠️ ' + jb.erro : (rodando ? (jb.msg || 'Gerando') + '. Pode levar de 5 a 10 minutos. Mantenha esta tela aberta.' : '');
+  $('bfNota').textContent = jb && jb.erro ? '⚠️ ' + jb.erro : (rodando ? (jb.msg || 'Gerando') + '. Pode levar de 5 a 10 minutos. Pode fechar esta tela: o vídeo aparece em Resultados.' : '');
   $('bfFinal').classList.toggle('hide', !v);
   if (v && $('bfVideo').dataset.k !== v.key) { $('bfVideo').src = v.url; $('bfVideo').dataset.k = v.key; }
   $('bfCustoFinal').textContent = v && proj.custoBRL ? 'Custo deste vídeo: ' + reais(proj.custoBRL) : '';
@@ -1103,7 +1107,12 @@ async function gerarVideoBF(){
     await chama('/pn/salvar', { id: proj.id, bf: corpoFalaBF() });
     const d = await chama('/pn/bf-gerar', { id: proj.id, trilha: trilhaSel });
     if (!d.ok) throw new Error(d.error || 'não consegui gerar');
-    proj = d.projeto; pintarBFFinal(); acompanhar();
+    // (09/11, Thiago) igual ao Avatar 97: vai para Resultados, o vídeo anda sozinho no servidor e o formulário fica limpo para o próximo
+    proj = d.projeto;
+    producao.set(proj.id, { desde: proj.atualizadoEm || 0, cliente: proj.cliente || '', categoria: proj.categoria || '', thumb: (s0.img || {}).url || '', msg: (proj.bfJob || {}).msg || 'Gerando' });
+    ocupado = false; voltarModos(); escolherModo('blackfriday');
+    toast('🎬 Produção iniciada! Pode gerar outro vídeo enquanto este fica pronto.');
+    abrirAba('resultados');
   } catch (e) { $('bfNota').textContent = '⚠️ ' + e.message; $('bfBtnGerar').disabled = false; $('bfBtnGerar').textContent = 'Gerar o vídeo'; }
   finally { ocupado = false; }
 }
@@ -1519,9 +1528,32 @@ function baixarFinal(){ if (proj && proj.videoFinal) baixar(proj.videoFinal.key,
 // ── projetos e resultados ──
 async function carregarLista(){
   const d = await chama('/pn/lista');
-  if (!d.ok) { $('listaProjetos').innerHTML = $('listaResultados').innerHTML = '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'; return; }
-  listaTodos = d.projetos || [];
-  pintarListas();
+  if (!d.ok) { $('listaProjetos').innerHTML = $('listaResultados').innerHTML = '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'; vigiaLista(); return; }
+  const antes = new Set(listaTodos.filter(p => p.gerando).map(p => p.id));
+  listaTodos = juntaProducao(d.projetos || []);
+  listaTodos.forEach(p => {
+    if (!antes.has(p.id) || p.gerando) return;
+    if (p.falhou) toast('⚠️ Não consegui gerar o vídeo de "' + p.cliente + '".'); else if (p.status === 'pronto') toast('✅ Vídeo de "' + p.cliente + '" pronto!');
+  });
+  pintarListas(); vigiaLista();
+}
+function juntaProducao(lst){
+  producao.forEach((x, id) => {
+    const it = lst.find(p => p.id === id);
+    if (it && it.atualizadoEm >= x.desde) { producao.delete(id); return; }   // a lista já alcançou: daqui em diante vale o servidor
+    if (it) { it.gerando = x.msg; it.falhou = false; }
+    else lst.unshift({ id, cliente: x.cliente, categoria: x.categoria, thumb: x.thumb, status: 'rascunho', atualizadoEm: x.desde, bf: true, gerando: x.msg });
+  });
+  return lst;
+}
+// enquanto houver vídeo em produção, a etapa não fica congelada na tela e o aviso de "pronto" chega
+function vigiaLista(){ clearTimeout(listaT); if (listaTodos.some(p => p.gerando)) listaT = setTimeout(carregarLista, 15000); }
+function cardProducao(p){
+  return '<div class="pj"><div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div><div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
+    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' +
+    (p.gerando ? '<div class="pj-prod"><span class="pj-giro"></span>' + esc(p.gerando) + '</div><div class="pj-sb">Black Friday · leva de 5 a 10 minutos. Pode gerar outro vídeo enquanto isso.</div>' : '<div class="pj-erro">⚠️ Não consegui gerar este vídeo.</div>') +
+    (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
+    (p.gerando ? '' : '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">▶ Abrir</button></div>') + '</div>';
 }
 const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 function filtra(lst, q){ const ps = semAcento(q).split(/\s+/).filter(Boolean); return lst.filter(p => { const t = semAcento([p.cliente, p.categoria, p.atendente].join(' ')); return ps.every(x => t.indexOf(x) >= 0); }); }
@@ -1538,10 +1570,12 @@ function cardLista(p, pronto){
     '<button onclick="apagarProjeto(\'' + p.id + '\')">🗑️</button></div></div>';
 }
 function pintarListas(){
-  const rasc = filtra(listaTodos.filter(p => p.status !== 'pronto'), $('buscaProj').value);
-  const prontos = filtra(listaTodos.filter(p => p.status === 'pronto'), $('buscaRes').value);
+  const rasc = filtra(listaTodos.filter(p => p.status !== 'pronto' && !p.gerando), $('buscaProj').value);
+  const prontos = filtra(listaTodos.filter(p => p.status === 'pronto' && !p.gerando), $('buscaRes').value);
+  // em produção ou que falhou nas últimas 24 h: no topo, só quando não há busca (igual ao Avatar 97)
+  const topo = $('buscaRes').value.trim() ? '' : listaTodos.filter(p => p.gerando || (p.falhou && Date.now() - p.atualizadoEm < 86400000)).map(cardProducao).join('');
   $('listaProjetos').innerHTML = rasc.length ? rasc.map(p => cardLista(p, false)).join('') : '<div class="pj-vazio">Nenhum projeto em andamento.</div>';
-  $('listaResultados').innerHTML = prontos.length ? prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">Nenhum vídeo pronto ainda.</div>';
+  $('listaResultados').innerHTML = (topo || prontos.length) ? topo + prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">Nenhum vídeo pronto ainda.</div>';
 }
 $('buscaProj').addEventListener('input', pintarListas);
 $('buscaRes').addEventListener('input', pintarListas);
