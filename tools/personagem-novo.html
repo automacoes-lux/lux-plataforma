@@ -195,6 +195,15 @@ button.pj-th:hover{border-color:var(--gold)}
 .etq-padrao{background:#fff;color:#000}
 .etq-natal{background:#D9262C;color:#fff}
 .etq-bf{background:#FFD21F;color:#000}
+/* (09/11, Thiago) áudio do cliente */
+.voz-tit{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:.5rem}
+.voz-op{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.voz-bt{min-height:42px;background:var(--bg-input);border:.5px solid var(--border);border-radius:999px;color:var(--text-mid);font-size:13.5px;font-weight:600;cursor:pointer;padding:.4rem .5rem}
+.voz-bt.on{background:#F2F2F3;color:#0D0D0F;border-color:#F2F2F3}
+.voz-env{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:.6rem;background:var(--bg-input);border:1px dashed var(--border-bright);border-radius:12px;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;padding:.5rem}
+.voz-info{font-size:12px;color:var(--text-dim);margin-top:.4rem;line-height:1.45}
+.voz-status{display:flex;align-items:center;gap:.45rem;margin-top:.6rem;font-size:13px;font-weight:600;color:var(--gold)}
+.voz-cx audio{display:block;width:100%;height:42px;margin-top:.6rem}
 .pj-prod{display:flex;align-items:center;gap:.45rem;font-size:12.5px;font-weight:600;color:var(--gold);margin-top:.2rem}
 .pj-giro{flex:none;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
 .pj-erro{font-size:12.5px;color:#F26D6D;margin-top:.2rem}
@@ -573,6 +582,8 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
     <div class="soon-note" id="contBriefing" style="text-align:right;margin-top:.25rem">0 / 1500</div>
   </div>
 
+  <div class="step" id="stepVozP1"><div id="vozP1" class="voz-cx"></div></div>
+
   <button class="btn-gold" id="btnTudo" onclick="gerarTudo()">✨ GERAR PERSONAGEM E TEXTO</button>
   <div class="soon-note" id="notaTudo"></div>
   </div><!-- /p1 -->
@@ -663,6 +674,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <div class="field"><label for="bfWhats">WhatsApp — opcional <span class="destaque">(aparece no final do vídeo; em branco, o final mostra só o nome da empresa)</span></label><input type="text" id="bfWhats" maxlength="30" inputmode="tel" autocomplete="tel" placeholder="Ex: (31) 99999-0000"/></div>
       <div class="field"><label for="bfEndereco">Endereço — opcional <span class="destaque">(aparece no final do vídeo)</span></label><input type="text" id="bfEndereco" maxlength="140" placeholder="Ex: Rua das Flores, 123 — Centro, Belo Horizonte"/></div>
       <div class="field"><label for="bfOferta">Oferta <span class="ouro">*</span></label><textarea id="bfOferta" maxlength="1500" rows="4" placeholder="Ex: Até 40% de desconto em pães e bolos, de 24/11 a 30/11. Pão francês quentinho o dia todo."></textarea></div>
+      <div id="vozBF" class="voz-cx" style="margin-bottom:12px"></div>
       <button type="button" class="btn-mini" id="bfBtnFala" onclick="escreverFalaBF()">Escrever a fala</button>
       <div id="bfBlocoFala" class="hide" style="margin-top:14px">
         <div class="field" style="margin-bottom:0"><label for="bfFala">Fala do personagem</label><textarea id="bfFala" maxlength="900" rows="7"></textarea><div class="conta" id="bfCont"></div></div>
@@ -757,6 +769,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <script src="../js/auth-iframe.js"></script>
 <script>
 // ════════════════════════════════════════════════════════════════════════════
@@ -820,6 +833,7 @@ const vBriefing = () => (bf() ? $('bfOferta') : $('fBriefing')).value.trim();
 const dadosBF = () => bf() ? { contato: $('bfContato').value.trim(), bfWhats: $('bfWhats').value.trim(), bfEnd: $('bfEndereco').value.trim(), fotosBF: corpoFotosBF(fotosBF) } : {};
 const rotuloTudo = () => natal() ? '✨ GERAR PAPAI NOEL E TEXTO' : '✨ GERAR PERSONAGEM E TEXTO';
 function aplicarModo(){
+  $('stepVozP1').classList.toggle('hide', natal());
   $('telaModo').classList.toggle('hide', !!modo);
   $('areaEditor').classList.toggle('hide', !modo);
   $('blocoEstilo').classList.toggle('hide', natal());
@@ -832,13 +846,13 @@ function aplicarModo(){
   $('tituloPers').textContent = natal() ? 'Ambientes' : 'Personagens';
   $('tituloP2').textContent = natal() ? 'Papai Noel e cenas' : 'Personagens e cenas';
   $('btnTudo').textContent = rotuloTudo();
-  pintarPers(); pintarWz();
+  pintarPers(); pintarWz(); pintarVozCli();
 }
 function escolherModo(m){ modo = m; aplicarModo(); window.scrollTo({ top: 0 }); }
 function voltarModos(){
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
   clearTimeout(rascT); clearTimeout(timer);
-  proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null;
+  proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null; vozModo = 'ia'; vozBusy = '';
   ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
   if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
@@ -895,6 +909,113 @@ $('fCategoria').addEventListener('input', () => agendaRascunho());
 // (08/11, Thiago: "todos os processos devem ser salvos automaticamente") o passo 1 vai para o servidor sozinho: campos e fotos.
 // Um salvamento por vez (o 1º cria o projeto); o que mudar no meio vai no seguinte. As fotos enviadas viram endereço.
 let rascT = null, rascRodando = null, rascDeNovo = false;
+// (09/11, Thiago) ÁUDIO DO CLIENTE (Padrão e Black Friday): o personagem fala com a gravação do cliente, no lugar da voz gerada
+let vozModo = 'ia', vozBusy = '';
+const temVozCliente = () => !!(proj && proj.vozCliente);
+const vozMax = () => (bf() ? 45 : 50);
+const INPUT_VOZ = '<input type="file" accept="audio/*,.mp3,.ogg,.oga,.opus,.m4a,.wav,.aac,.mp4" hidden onchange="enviarVozCliente(event)"/>';
+function pintarVozCli(){
+  $('vozBF').innerHTML = ''; $('vozP1').innerHTML = '';
+  if (!modo || natal()) return;
+  const vc = proj && proj.vozCliente;
+  let corpo = '';
+  if (vozModo === 'cliente') {
+    if (vozBusy) corpo = '<div class="voz-status"><span class="pj-giro"></span>' + esc(vozBusy) + '</div>';
+    else if (vc) corpo = '<audio controls preload="metadata" src="' + esc(vc.url) + '"></audio><div class="voz-info">' + Math.round(vc.seg) + ' s. O personagem vai falar com este áudio.</div><label class="voz-env">Trocar o áudio' + INPUT_VOZ + '</label>';
+    else corpo = '<label class="voz-env">Enviar o áudio do cliente' + INPUT_VOZ + '</label><div class="voz-info">MP3, áudio do WhatsApp, M4A ou WAV, até ' + vozMax() + ' s.' + (bf() ? '' : ' Com o áudio, as informações do cliente ficam opcionais.') + '</div>';
+  }
+  (bf() ? $('vozBF') : $('vozP1')).innerHTML = '<div class="voz-tit">Voz do personagem</div><div class="voz-op">' +
+    '<button type="button" class="voz-bt' + (vozModo === 'ia' ? ' on' : '') + '" onclick="trocaVoz(\'ia\')">Voz gerada</button>' +
+    '<button type="button" class="voz-bt' + (vozModo === 'cliente' ? ' on' : '') + '" onclick="trocaVoz(\'cliente\')">Áudio do cliente</button></div>' + corpo;
+}
+async function trocaVoz(m){
+  if (vozBusy || m === vozModo) return;
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  vozModo = m;
+  if (m === 'ia' && temVozCliente()) {
+    vozBusy = 'Tirando o áudio…'; pintarVozCli();
+    const d = await chama('/pn/audio-cliente', { id: proj.id, remover: true });
+    vozBusy = '';
+    if (d.ok) proj = d.projeto; else { vozModo = 'cliente'; toast('⚠️ ' + (d.error || 'não consegui tirar o áudio')); }
+  }
+  pintarVozCli();
+  if (bf()) pintarBFFala();
+}
+// deixa a gravação no padrão da voz gerada: sem silêncio nas pontas, volume igual e a lista das pausas (é nelas que o áudio é cortado)
+function nivelaVoz(x, SR){
+  const J = Math.round(SR * 0.02), n = Math.floor(x.length / J), rms = new Float32Array(n);
+  for (let k = 0; k < n; k++) { let s = 0; for (let i = 0; i < J; i++) { const v = x[k * J + i]; s += v * v; } rms[k] = Math.sqrt(s / J); }
+  const pico = Array.from(rms).sort((a, b) => a - b)[Math.floor(n * 0.95)] || 0;
+  if (pico < 0.002) throw new Error('Este áudio parece estar mudo.');
+  const ativo = pico * 0.1, quieto = pico * 0.06;
+  let a = 0, b = n - 1;
+  while (a < n && rms[a] < ativo) a++;
+  while (b > a && rms[b] < ativo) b--;
+  const iniF = Math.max(0, a - 3), fimF = Math.min(n, b + 7);
+  let soma = 0, cont = 0;
+  for (let k = iniF; k < fimF; k++) if (rms[k] >= ativo) { soma += rms[k] * rms[k]; cont++; }
+  const ganho = Math.pow(10, VOZ_ALVO_DB / 20) / Math.sqrt(soma / Math.max(1, cont));
+  const ini = iniF * J, tam = (fimF - iniF) * J, sai = new Int16Array(tam), L = 0.85;
+  for (let i = 0; i < tam; i++) {
+    let v = x[ini + i] * ganho; const m = Math.abs(v);
+    if (m > L) v = Math.sign(v) * (L + (1 - L) * Math.tanh((m - L) / (1 - L)));
+    sai[i] = Math.max(-32768, Math.min(32767, Math.round(v * 32767)));
+  }
+  const pausas = [];
+  let p0 = -1;
+  for (let k = iniF; k <= fimF; k++) {
+    const q = k < fimF && rms[k] < quieto;
+    if (q && p0 < 0) p0 = k;
+    if (!q && p0 >= 0) { if (k - p0 >= 6 && p0 > iniF && k < fimF) pausas.push([Number((((p0 - iniF) * J) / SR).toFixed(3)), Number((((k - iniF) * J) / SR).toFixed(3))]); p0 = -1; }
+  }
+  return { pcm: sai, seg: tam / SR, pausas };
+}
+const VOZ_ALVO_DB = -18;   // calibrado com áudio real de WhatsApp: dá ≈ −19 LUFS, o nível da voz gerada
+async function prepararVozCliente(file){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  let bruto;
+  try { bruto = await ctx.decodeAudioData(await file.arrayBuffer()); }
+  catch (e) { throw new Error('Não consegui abrir este áudio. Envie em MP3 ou M4A.'); }
+  finally { try { ctx.close(); } catch (e) {} }
+  const SR = 44100;
+  const off = new OfflineAudioContext(1, Math.ceil(bruto.duration * SR), SR);
+  const src = off.createBufferSource(); src.buffer = bruto;
+  const hp = off.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 70;
+  src.connect(hp); hp.connect(off.destination); src.start();
+  const r = nivelaVoz((await off.startRendering()).getChannelData(0), SR);
+  const enc = new lamejs.Mp3Encoder(1, SR, 128), partes = [];
+  for (let i = 0; i < r.pcm.length; i += 1152) { const b = enc.encodeBuffer(r.pcm.subarray(i, i + 1152)); if (b.length) partes.push(new Uint8Array(b)); }
+  const f = enc.flush(); if (f.length) partes.push(new Uint8Array(f));
+  const tudo = new Uint8Array(partes.reduce((s, x) => s + x.length, 0));
+  let o = 0; partes.forEach(x => { tudo.set(x, o); o += x.length; });
+  let bin = '';
+  for (let i = 0; i < tudo.length; i += 8192) bin += String.fromCharCode.apply(null, tudo.subarray(i, i + 8192));
+  return { base64: btoa(bin), seg: r.seg, pausas: r.pausas };
+}
+async function enviarVozCliente(ev){
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if (!f) return;
+  if (ocupado || vozBusy) return toast('⏳ Espere terminar o que está em andamento.');
+  if (f.size > 40 * 1048576) return toast('⚠️ Este arquivo é muito grande.');
+  if (typeof lamejs === 'undefined') return toast('⚠️ O conversor de áudio não carregou. Recarregue a página.');
+  vozBusy = 'Preparando o áudio…'; pintarVozCli();
+  try {
+    const r = await prepararVozCliente(f);
+    if (r.seg < 3) throw new Error('O áudio é muito curto.');
+    if (r.seg > vozMax() + 0.3) throw new Error('O áudio tem ' + Math.round(r.seg) + ' s. O máximo aqui é ' + vozMax() + ' s.');
+    clearTimeout(rascT); if (rascRodando) await rascRodando;
+    if (!proj) await salvarRascunho();
+    vozBusy = 'Lendo o que o cliente falou (~15 s)…'; pintarVozCli();
+    const d = await chama('/pn/audio-cliente', { id: proj ? proj.id : undefined, modo: bf() ? 'blackfriday' : undefined, cliente: vCliente(), mp3: r.base64, seg: r.seg, pausas: r.pausas });
+    if (!d.ok) throw new Error(d.error || 'não consegui ler o áudio');
+    proj = d.projeto;
+    vozBusy = '';
+    if (bf()) { pintarBFFala(); if (vCliente()) await escreverFalaBF(false); }
+    toast('✅ Áudio pronto.');
+  } catch (e) { toast('⚠️ ' + e.message); }
+  finally { vozBusy = ''; pintarVozCli(); if (bf()) bfEtapas(); }
+}
 function agendaRascunho(ms){ clearTimeout(rascT); rascT = setTimeout(salvarRascunho, ms == null ? 1200 : ms); }
 function salvarRascunho(){
   if (rascRodando) { rascDeNovo = true; return rascRodando; }
@@ -957,7 +1078,7 @@ function corpoFotosBF(l){ return l.map(x => x.key ? { key: x.key } : (x.clipKey 
 function pintarBF(){ pintarBFPers(); pintarBFFotos(); pintarBFFala(); pintarBFFaixas(); pintarBFFinal(); bfEtapas(); }
 function bfEtapas(){
   const s0 = proj && proj.personagens && proj.personagens[0];
-  const ok = { bfCardCliente: !!(vCategoria() && vCliente() && vBriefing()), bfCardPersonagem: !!(s0 && s0.img), bfCardTrilha: !!trilhaSel, bfCardFotos: fotosBF.length > 0 };
+  const ok = { bfCardCliente: !!(vCategoria() && vCliente() && (vBriefing() || temVozCliente())), bfCardPersonagem: !!(s0 && s0.img), bfCardTrilha: !!trilhaSel, bfCardFotos: fotosBF.length > 0 };
   let marcou = false;
   document.querySelectorAll('#bfTrilha button').forEach(b => {
     const feito = ok[b.dataset.alvo]; b.classList.toggle('feito', feito);
@@ -1035,13 +1156,16 @@ function pintarBFFala(){
   const b = proj && proj.bf;
   $('bfBlocoFala').classList.toggle('hide', !b);
   $('bfBtnFala').textContent = b ? 'Escrever outra fala' : 'Escrever a fala';
+  $('bfBtnFala').classList.toggle('hide', vozModo === 'cliente');
+  document.querySelector('label[for="bfFala"]').textContent = temVozCliente() ? 'O que o cliente falou (corrija só o texto escrito na tela)' : 'Fala do personagem';
   if (b) $('bfFala').value = b.fala || '';
   contaBF();
 }
 const SEG_POR_PALAVRA_BF = 0.36;
 function contaBF(){
-  const n = palavras($('bfFala').value), seg = Math.round(n * SEG_POR_PALAVRA_BF);
-  $('bfCont').textContent = n + ' palavras · ~' + seg + ' s' + (seg > 45 ? ' · ⚠️ passa de 45 s: encurte a fala' : '');
+  const vcS = temVozCliente() ? Math.round(proj.vozCliente.seg) : 0;
+  const n = palavras($('bfFala').value), seg = vcS || Math.round(n * SEG_POR_PALAVRA_BF);
+  $('bfCont').textContent = vcS ? vcS + ' s de áudio do cliente' : (n + ' palavras · ~' + seg + ' s' + (seg > 45 ? ' · ⚠️ passa de 45 s: encurte a fala' : ''));
   $('bfDur').textContent = n ? '~' + Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0') : '—';
   const preco = Date.now() < Date.UTC(2026, 10, 16, 3) ? 0.028 : 0.04;
   const brl = n ? ((seg + 1.2) * preco + 0.35) * ((proj && proj.cotacao) || 5.3) : 0;
@@ -1055,7 +1179,7 @@ $('bfFala').addEventListener('input', () => { contaBF(); salvarFalaBF(); });
 async function escreverFalaBF(pedirAjuste){
   if (ocupado) { toast('⏳ Espere terminar o que está em andamento.'); return false; }
   if (!vCliente()) { toast('✍️ Escreva o nome da empresa.'); $('bfEmpresa').focus(); return false; }
-  if (vBriefing().length < 15) { toast('✍️ Escreva a oferta do cliente.'); $('bfOferta').focus(); return false; }
+  if (vBriefing().length < 15 && !temVozCliente()) { toast('✍️ Escreva a oferta do cliente.'); $('bfOferta').focus(); return false; }
   let ajuste = '';
   if (proj && proj.bf && pedirAjuste !== false) { ajuste = prompt('O que mudar na fala? (opcional)'); if (ajuste === null) return false; }
   clearTimeout(rascT); if (rascRodando) await rascRodando;
@@ -1108,7 +1232,8 @@ async function gerarVideoBF(){
   const vai = (id, msg, campo) => { toast(msg); $(id).scrollIntoView({ behavior: 'smooth', block: 'start' }); if (campo) $(campo).focus(); };
   if (!vCategoria()) return vai('bfCardCliente', '✍️ Escreva a categoria.', 'bfCategoria');
   if (!vCliente()) return vai('bfCardCliente', '✍️ Escreva o nome da empresa.', 'bfEmpresa');
-  if (vBriefing().length < 15) return vai('bfCardCliente', '✍️ Escreva a oferta do cliente.', 'bfOferta');
+  if (vozModo === 'cliente' && !temVozCliente()) return vai('bfCardCliente', '🎙️ Envie o áudio do cliente.');
+  if (vBriefing().length < 15 && !temVozCliente()) return vai('bfCardCliente', '✍️ Escreva a oferta do cliente.', 'bfOferta');
   const s0 = proj && proj.personagens && proj.personagens[0];
   if (!s0 || !s0.img) return vai('bfCardPersonagem', '🎨 Gere o personagem antes.');
   if (!trilhaSel) return vai('bfCardTrilha', '🎵 Escolha a trilha sonora.');
@@ -1175,14 +1300,15 @@ async function gerarTudo(){
   if (!natal() && !temAmb(pers[0])) return toast('🏠 Envie o ambiente do personagem 1.');
   const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
-  if (briefing.length < 15) return toast('✍️ Escreva as informações do cliente.');
+  if (vozModo === 'cliente' && !temVozCliente()) return toast('🎙️ Envie o áudio do cliente.');
+  if (briefing.length < 15 && !temVozCliente()) return toast('✍️ Escreva as informações do cliente.');
   clearTimeout(rascT);
   if (rascRodando) await rascRodando;   // o salvamento automático termina antes (é ele que cria o projeto)
   ocupado = true;
   const bt = $('btnTudo'); bt.disabled = true;
   try {
-    bt.textContent = '✍️ Escrevendo o texto…';
-    $('notaTudo').textContent = 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
+    bt.textContent = temVozCliente() ? '🎙️ Dividindo o áudio em cenas…' : '✍️ Escrevendo o texto…';
+    $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
       personagens: pers.filter(natal() ? temAmb : temFoto).map(p => ({
@@ -1265,8 +1391,8 @@ function pintarCenas(){
       '<div class="cena-grid"><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' +
       '<div>' +
         (n > 1 && !(natal() && i === 0) ? '<div class="mini">' + (natal() ? 'Ambiente' : 'Personagem') + '</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</option>').join('') + '</select>' : '') +
-        '<div class="mini">Fala</div><textarea data-campo="fala" maxlength="400">' + esc(rc.fala) + '</textarea>' +
-        '<div class="soon-note" data-cont>' + contTxt(np, rc.gesto) + '</div>' +
+        '<div class="mini">' + (rc.audioCliente ? 'Texto na tela (o áudio do cliente não muda)' : 'Fala') + '</div><textarea data-campo="fala" maxlength="400">' + esc(rc.audioCliente ? (rc.legenda || rc.fala) : rc.fala) + '</textarea>' +
+        '<div class="soon-note" data-cont>' + (rc.audioCliente ? Math.round(rc.audioCliente.ate - rc.audioCliente.de) + ' s do áudio do cliente' : contTxt(np, rc.gesto)) + '</div>' +
         '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
         '<select data-campo="gesto">' + opts + '</select>' +
         '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
@@ -1281,6 +1407,7 @@ function pintarCenas(){
   });
   const prontas = proj.roteiro.cenas.every((x, i) => proj.cenas[i] && proj.cenas[i].video && !proj.cenas[i].desatualizada);
   const gerando = (proj.cenas || []).some(c => c && c.gerando);
+  document.querySelector('[onclick="outroTexto()"]').classList.toggle('hide', proj.roteiro.cenas.some(c => c.audioCliente));   // com áudio do cliente, o texto é o que ele falou
   $('btnGerarCenas').disabled = gerando;
   $('btnGerarCenas').classList.toggle('hide', prontas && !gerando);   // tudo pronto: o que sobra é Refazer em cada cena ou montar
   $('btnGerarCenas').textContent = gerando ? '⏳ GERANDO AS CENAS…' : (proj.cenas.some(c => c && c.video) ? '🎬 GERAR AS CENAS QUE FALTAM' : '🎬 GERAR AS CENAS');
@@ -1297,6 +1424,7 @@ function contTxt(np, gesto){
 function editouCena(i, el){
   const rc = proj.roteiro.cenas[i], campo = el.dataset.campo;
   if (campo === 'p') rc.p = +el.value;
+  else if (campo === 'fala' && rc.audioCliente) rc.legenda = el.value;
   else if (campo === 'fala') { rc.fala = el.value; el.closest('.cena').querySelector('[data-cont]').textContent = contTxt(palavras(el.value), rc.gesto); }
   else if (campo === 'gesto') {
     rc.gesto = el.value;
@@ -1306,7 +1434,7 @@ function editouCena(i, el){
     if (rc.gesto === 'livre') gt.focus();
     const g = gestos.find(x => x.id === rc.gesto) || {};
     card.querySelector('.gesto-desc').textContent = descGesto(g);
-    card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
+    if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
   } else if (campo === 'gestoTexto') rc.gestoTexto = el.value;
   clearTimeout(salvarT[i]);
   salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'gestoTexto' ? 900 : 50);
@@ -1624,6 +1752,7 @@ async function abrirProjeto(id){
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
   const cfg = p.cfgMontagem || {};
+  vozModo = p.vozCliente ? 'cliente' : 'ia'; vozBusy = '';
   trilhaSel = cfg.trilha || p.trilha || null; legendas = (cfg.legendas !== undefined ? cfg.legendas : p.legendas) !== false;
   corLeg = cfg.cor || COR_PADRAO; estiloLeg = cfg.estiloLegenda || LEG_PADRAO;
   if (bf()) {
@@ -1634,6 +1763,7 @@ async function abrirProjeto(id){
   }
   pintarLegenda();
   pintarPers();
+  pintarVozCli();
   abrirAba('criar');
   irPara(p.videoFinal ? 3 : (p.roteiro ? 2 : 1));
   acompanhar();
@@ -1650,7 +1780,7 @@ async function apagarProjeto(id){
 // (09/11, Thiago) nos 3 editores, o botão responde NA HORA: o giro aparece no clique e fica até a ação terminar; enquanto gira, um 2º clique não vale.
 // Fica de fora o que já muda na hora na tela (abas, cores, ouvir trilha, tirar foto, Fechar). Toda função async chamada no clique entra sozinha: o giro dura o tempo dela.
 (function(){
-  const SEM_GIRO = '.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
+  const SEM_GIRO = '.voz-bt,.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
   const TETO_MS = 180000;   // nenhum botão fica travado para sempre
   const ativos = new Map();  // chave do botão → quantas coisas ainda seguram o giro
   let noClique = null;
