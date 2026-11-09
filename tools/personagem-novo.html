@@ -182,6 +182,18 @@ button.pj-th:hover{border-color:var(--gold)}
 .estrela:disabled{opacity:.5;cursor:wait}
 .pj-bt button{background:var(--bg-input);border:.5px solid var(--border);color:var(--text-mid);border-radius:8px;padding:.45rem .7rem;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .pj-bt button.ouro{background:linear-gradient(135deg,#D9BC6E,#C9A84C 55%,#A8893B);color:#141414;border-color:transparent;font-weight:600}
+/* (09/11, Thiago) Resultados: botões por categoria e etiqueta ao lado do nome */
+.filtro-cat{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.7rem}
+.filtro-cat button{min-height:42px;background:var(--bg-input);border:.5px solid var(--border);border-radius:999px;color:var(--text-mid);font-size:13.5px;font-weight:600;cursor:pointer;padding:.4rem .5rem}
+.filtro-cat button[data-cat="padrao"].on{background:#fff;color:#000;border-color:#fff}
+.filtro-cat button[data-cat="natal"].on{background:#D9262C;color:#fff;border-color:#D9262C}
+.filtro-cat button[data-cat="bf"].on{background:#FFD21F;color:#000;border-color:#FFD21F}
+.pj-lin{display:flex;align-items:center;gap:.45rem;min-width:0}
+.pj-lin .pj-nm{min-width:0}
+.etq{flex:none;font-size:10.5px;font-weight:700;line-height:1.3;padding:.14rem .5rem;border-radius:4px;white-space:nowrap}
+.etq-padrao{background:#fff;color:#000}
+.etq-natal{background:#D9262C;color:#fff}
+.etq-bf{background:#FFD21F;color:#000}
 .pj-prod{display:flex;align-items:center;gap:.45rem;font-size:12.5px;font-weight:600;color:var(--gold);margin-top:.2rem}
 .pj-giro{flex:none;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
 .pj-erro{font-size:12.5px;color:#F26D6D;margin-top:.2rem}
@@ -714,6 +726,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
   <div id="abaResultados" class="hide">
     <div class="sec-title">🎬 Resultados</div>
     <div class="soon-note" style="text-align:center;margin-bottom:.9rem">Vídeos prontos. Em "Editar" você muda uma cena e monta de novo.</div>
+    <div class="filtro-cat" id="filtroRes">
+      <button type="button" data-cat="padrao" onclick="filtrarCat('padrao')">Padrão</button>
+      <button type="button" data-cat="natal" onclick="filtrarCat('natal')">Natal</button>
+      <button type="button" data-cat="bf" onclick="filtrarCat('bf')">Black Friday</button>
+    </div>
     <div class="busca"><span class="lupa">🔎</span><input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/></div>
     <div id="listaResultados"><div class="pj-vazio">Carregando…</div></div>
   </div>
@@ -1548,10 +1565,20 @@ function juntaProducao(lst){
 }
 // enquanto houver vídeo em produção, a etapa não fica congelada na tela e o aviso de "pronto" chega
 function vigiaLista(){ clearTimeout(listaT); if (listaTodos.some(p => p.gerando)) listaT = setTimeout(carregarLista, 15000); }
+// (09/11, Thiago) categoria do vídeo: etiqueta ao lado do nome e botões em cima da busca (clicar de novo mostra todos)
+let catRes = '';
+const catDe = (p) => p.natal ? 'natal' : (p.bf ? 'bf' : 'padrao');
+const NOME_CAT = { padrao: 'Padrão', natal: 'Natal', bf: 'Black Friday' };
+const etiquetaCat = (p) => '<span class="etq etq-' + catDe(p) + '">' + NOME_CAT[catDe(p)] + '</span>';
+function filtrarCat(c){
+  catRes = catRes === c ? '' : c;
+  document.querySelectorAll('#filtroRes button').forEach(b => b.classList.toggle('on', b.dataset.cat === catRes));
+  pintarListas();
+}
 function cardProducao(p){
   return '<div class="pj"><div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div><div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
-    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' +
-    (p.gerando ? '<div class="pj-prod"><span class="pj-giro"></span>' + esc(p.gerando) + '</div><div class="pj-sb">Black Friday · leva de 5 a 10 minutos. Pode gerar outro vídeo enquanto isso.</div>' : '<div class="pj-erro">⚠️ Não consegui gerar este vídeo.</div>') +
+    '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + etiquetaCat(p) + '</div>' +
+    (p.gerando ? '<div class="pj-prod"><span class="pj-giro"></span>' + esc(p.gerando) + '</div><div class="pj-sb">Leva de 5 a 10 minutos. Pode gerar outro vídeo enquanto isso.</div>' : '<div class="pj-erro">⚠️ Não consegui gerar este vídeo.</div>') +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
     (p.gerando ? '' : '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">▶ Abrir</button></div>') + '</div>';
 }
@@ -1563,7 +1590,7 @@ function cardLista(p, pronto){
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
-    '<div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div><div class="pj-sb">' + (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : '')) + (pronto ? '🎬 vídeo pronto · ' : '') + esc(data) + '</div>' +
+    '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + (pronto ? etiquetaCat(p) : '') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : ''))) + esc(data) + '</div>' +
     (p.atendente ? '<div class="pj-at">👤 ' + esc(p.atendente) + '</div>' : '') + '</div>' +
     '<div class="pj-bt"><button class="ouro" onclick="abrirProjeto(\'' + p.id + '\')">' + (pronto ? '✏️ Editar' : '▶ Continuar') + '</button>' +
     (pronto ? '<button onclick="baixar(\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">⬇️ Baixar</button>' : '') +
@@ -1571,11 +1598,12 @@ function cardLista(p, pronto){
 }
 function pintarListas(){
   const rasc = filtra(listaTodos.filter(p => p.status !== 'pronto' && !p.gerando), $('buscaProj').value);
-  const prontos = filtra(listaTodos.filter(p => p.status === 'pronto' && !p.gerando), $('buscaRes').value);
+  const naCat = (p) => !catRes || catDe(p) === catRes;
+  const prontos = filtra(listaTodos.filter(p => p.status === 'pronto' && !p.gerando && naCat(p)), $('buscaRes').value);
   // em produção ou que falhou nas últimas 24 h: no topo, só quando não há busca (igual ao Avatar 97)
-  const topo = $('buscaRes').value.trim() ? '' : listaTodos.filter(p => p.gerando || (p.falhou && Date.now() - p.atualizadoEm < 86400000)).map(cardProducao).join('');
+  const topo = $('buscaRes').value.trim() ? '' : listaTodos.filter(p => naCat(p) && (p.gerando || (p.falhou && Date.now() - p.atualizadoEm < 86400000))).map(cardProducao).join('');
   $('listaProjetos').innerHTML = rasc.length ? rasc.map(p => cardLista(p, false)).join('') : '<div class="pj-vazio">Nenhum projeto em andamento.</div>';
-  $('listaResultados').innerHTML = (topo || prontos.length) ? topo + prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">Nenhum vídeo pronto ainda.</div>';
+  $('listaResultados').innerHTML = (topo || prontos.length) ? topo + prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">' + (catRes ? 'Nenhum vídeo nesta categoria.' : 'Nenhum vídeo pronto ainda.') + '</div>';
 }
 $('buscaProj').addEventListener('input', pintarListas);
 $('buscaRes').addEventListener('input', pintarListas);
@@ -1624,7 +1652,7 @@ async function apagarProjeto(id){
 // (09/11, Thiago) nos 3 editores, o botão responde NA HORA: o giro aparece no clique e fica até a ação terminar; enquanto gira, um 2º clique não vale.
 // Fica de fora o que já muda na hora na tela (abas, cores, ouvir trilha, tirar foto, Fechar). Toda função async chamada no clique entra sozinha: o giro dura o tempo dela.
 (function(){
-  const SEM_GIRO = '.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
+  const SEM_GIRO = '.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
   const TETO_MS = 180000;   // nenhum botão fica travado para sempre
   const ativos = new Map();  // chave do botão → quantas coisas ainda seguram o giro
   let noClique = null;
