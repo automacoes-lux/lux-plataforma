@@ -469,7 +469,7 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .bfp .faixa{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px 6px 7px;border:1.5px solid transparent;border-radius:999px;background:var(--lx-campo);cursor:pointer;font-size:13.5px;font-weight:500;color:var(--lx-txt2)}
 .bfp .faixa.sel{border-color:var(--lx-cta-b);color:var(--lx-txt)}
 .bfp .faixa .play{flex:none;display:grid;place-items:center;width:34px;height:34px;border:none;border-radius:50%;background:var(--lx-txt);color:#0D0D0F;font-size:12px;cursor:pointer}
-.bfp .faixa .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bfp .faixa .nome{flex:1;min-width:0;line-height:1.2}
 .bfp .resumo{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .bfp .resumo .tot{font-size:13px;color:var(--lx-txt2)}
 .bfp .resumo .tot b{color:var(--lx-txt)}
@@ -1051,7 +1051,7 @@ async function escreverFalaBF(pedirAjuste){
 async function pintarBFFaixas(){
   if (!trilhas.length || trilhasDe !== modo) { const d = await chama('/pn/trilhas-bf'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
   if (!bf()) return;
-  if (!trilhaSel && trilhas[0]) { trilhaSel = trilhas[0]; salvarMontagem(); }
+  if (trilhasDe === modo && trilhas[0] && (!trilhaSel || !trilhas.some(t => t.id === trilhaSel.id))) { trilhaSel = trilhas[0]; salvarMontagem(); }   // rascunho com trilha que saiu da lista passa para a primeira
   const sel = trilhaSel ? trilhaSel.id : '';
   $('bfFaixas').innerHTML = trilhas.map(t => '<div class="faixa' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><button type="button" class="play" data-ouvir="' + esc(t.id) + '" aria-label="Ouvir">▶</button><span class="nome">' + esc(t.titulo) + '</span></div>').join('');
   $('bfFaixas').querySelectorAll('.faixa').forEach(el => el.addEventListener('click', (ev) => {
