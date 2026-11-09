@@ -190,6 +190,7 @@ button.pj-th:hover{border-color:var(--gold)}
 .filtro-cat button[data-cat="bf"].on{background:#FFD21F;color:#000;border-color:#FFD21F}
 .pj-lin{display:flex;align-items:center;gap:.45rem;min-width:0}
 .pj-lin .pj-nm{min-width:0}
+@media (max-width:600px){.pj-lin{flex-wrap:wrap}.pj-lin .pj-nm{max-width:100%}}   /* no celular, se não couber ao lado, a etiqueta desce e o nome fica inteiro */
 .etq{flex:none;font-size:10.5px;font-weight:700;line-height:1.3;padding:.14rem .5rem;border-radius:4px;white-space:nowrap}
 .etq-padrao{background:#fff;color:#000}
 .etq-natal{background:#D9262C;color:#fff}
