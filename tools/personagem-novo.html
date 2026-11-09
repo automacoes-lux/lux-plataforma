@@ -679,11 +679,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <div class="field"><label for="bfWhats">WhatsApp — opcional <span class="destaque">(aparece no final do vídeo; em branco, o final mostra só o nome da empresa)</span></label><input type="text" id="bfWhats" maxlength="30" inputmode="tel" autocomplete="tel" placeholder="Ex: (31) 99999-0000"/></div>
       <div class="field"><label for="bfEndereco">Endereço — opcional <span class="destaque">(aparece no final do vídeo)</span></label><input type="text" id="bfEndereco" maxlength="140" placeholder="Ex: Rua das Flores, 123 — Centro, Belo Horizonte"/></div>
       <div class="field"><label for="bfOferta">Oferta <span class="ouro">*</span></label><textarea id="bfOferta" maxlength="1500" rows="4" placeholder="Ex: Até 40% de desconto em pães e bolos, de 24/11 a 30/11. Pão francês quentinho o dia todo."></textarea></div>
-      <div id="vozBF" class="voz-cx" style="margin-bottom:12px"></div>
       <button type="button" class="btn-mini" id="bfBtnFala" onclick="escreverFalaBF()">Escrever a fala</button>
       <div id="bfBlocoFala" class="hide" style="margin-top:14px">
         <div class="field" style="margin-bottom:0"><label for="bfFala">Fala do personagem</label><textarea id="bfFala" maxlength="900" rows="7"></textarea><div class="conta" id="bfCont"></div></div>
       </div>
+      <div id="vozBF" class="voz-cx" style="margin-top:16px"></div>
     </div>
 
     <div class="card" id="bfCardPersonagem">
@@ -1160,6 +1160,7 @@ async function addFotosBF(ev){
 }
 function pintarBFFala(){
   const b = proj && proj.bf;
+  (vozModo === 'cliente' ? $('vozBF') : $('bfBtnFala')).after($('bfBlocoFala'));   // (09/11, Thiago) o botão e a fala ficam logo abaixo da Oferta; o que o cliente falou fica abaixo do áudio dele
   $('bfBlocoFala').classList.toggle('hide', !b);
   $('bfBtnFala').textContent = b ? 'Escrever outra fala' : 'Escrever a fala';
   $('bfBtnFala').classList.toggle('hide', vozModo === 'cliente');
