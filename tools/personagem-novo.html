@@ -1409,7 +1409,7 @@ function pintarCenas(){
     const c = (proj.cenas || [])[i] || {}, s = proj.personagens[rc.p] || {};
     const st = statusCena(i);
     const media = c.video
-      ? '<video src="' + esc(c.video.url) + '#t=0.5" controls playsinline preload="metadata"></video>'
+      ? '<video src="' + esc(c.video.url) + '#t=0.5" controls playsinline preload="metadata"' + (Array.isArray(c.video.pedacos) && c.video.pedacos.length > 1 ? ' data-pedacos="' + esc(JSON.stringify(c.video.pedacos.map(x => x.url))) + '"' : '') + '></video>'
       : (s.img ? '<img src="' + esc(s.img.url) + '" alt=""/>' : '<div class="pp-sem">Sem imagem</div>');
     const g = gestos.find(x => x.id === rc.gesto) || {};
     // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
@@ -1438,6 +1438,12 @@ function pintarCenas(){
     const ev = el.tagName === 'SELECT' ? 'change' : 'input';
     el.addEventListener(ev, () => editouCena(+el.closest('.cena').dataset.i, el));
   });
+  // (10/11) cena longa sai em partes: a prévia toca uma depois da outra, como fica no vídeo final
+  document.querySelectorAll('.cena video[data-pedacos]').forEach(v => {
+    let urls = []; try { urls = JSON.parse(v.dataset.pedacos); } catch (e) {}
+    let k = 0;
+    v.addEventListener('ended', () => { k++; if (k < urls.length) { v.src = urls[k]; v.play().catch(() => {}); } else { k = 0; v.src = urls[0] + '#t=0.5'; } });
+  });
   const prontas = proj.roteiro.cenas.every((x, i) => proj.cenas[i] && proj.cenas[i].video && !proj.cenas[i].desatualizada);
   const gerando = (proj.cenas || []).some(c => c && c.gerando);
   document.querySelector('[onclick="outroTexto()"]').classList.toggle('hide', proj.roteiro.cenas.some(c => c.audioCliente));   // com áudio do cliente, o texto é o que ele falou
@@ -1451,7 +1457,7 @@ function pintarCenas(){
 const descGesto = (g) => (natal() && g.id === 'chegando') ? 'O trenó pousa, o Papai Noel desce e já fala com a câmera' : (g.desc || '');
 function contTxt(np, gesto){
   const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 4.2 : 2.6) : 0.8));
-  const aviso = seg > 14 ? ' · ⚠️ passa de 14 s: encurte a fala' : '';
+  const aviso = '';   // (10/11, Thiago) sem limite: cena longa é gerada em partes e emendada sozinha
   return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? (natal() ? ' (com o trenó)' : ' (com a chegada)') : '') + aviso;
 }
 function editouCena(i, el){
