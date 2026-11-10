@@ -401,6 +401,8 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .cena-media .cena-espera{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);border-radius:8px;color:var(--gold);font-size:12.5px;text-align:center;padding:.6rem}
 .cena select,.cena textarea,.cena input{width:100%}
 .cena textarea{min-height:92px}
+.cena textarea.cmd-cena{min-height:64px}
+.mini-obs{font-weight:400;opacity:.8}
 .selo{margin-left:auto;font-size:11px;border-radius:999px;padding:.2rem .6rem;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-dim);white-space:nowrap}
 .selo.ok{background:rgba(92,190,124,.14);border-color:rgba(92,190,124,.5);color:#7FD99A}
 .selo.gerando{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.5);color:#E8C97A}
@@ -1391,7 +1393,7 @@ function pintarCenas(){
     const g = gestos.find(x => x.id === rc.gesto) || {};
     // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
     const ordemG = gestos.filter(x => x.id === 'livre').concat(gestos.filter(x => x.id !== 'livre'));
-    const opts = ordemG.filter(x => !(natal() && x.id === 'chegando' && i > 0)).map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : (natal() && x.id === 'chegando' ? 'Chega de trenó' : esc(x.nome))) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
+    const opts = ordemG.filter(x => !(natal() && x.id === 'chegando' && i > 0) && (x.id !== 'livre' || rc.gesto === 'livre')).map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : (natal() && x.id === 'chegando' ? 'Chega de trenó' : esc(x.nome))) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
     const np = palavras(rc.fala);
     return '<div class="step cena" data-i="' + i + '">' +
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
@@ -1404,6 +1406,8 @@ function pintarCenas(){
         '<select data-campo="gesto">' + opts + '</select>' +
         '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
         '<div class="gesto-desc">' + esc(descGesto(g)) + '</div>' +
+        '<div class="mini">Prompt de comando <span class="mini-obs">(para alterar algo na cena)</span></div>' +
+        '<textarea data-campo="comando" maxlength="300" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>' +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
       '</div></div></div>';
@@ -1443,14 +1447,15 @@ function editouCena(i, el){
     card.querySelector('.gesto-desc').textContent = descGesto(g);
     if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
   } else if (campo === 'gestoTexto') rc.gestoTexto = el.value;
+  else if (campo === 'comando') rc.comando = el.value;
   clearTimeout(salvarT[i]);
-  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'gestoTexto' ? 900 : 50);
+  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'gestoTexto' || campo === 'comando' ? 900 : 50);
 }
 // o que vale é o que está ESCRITO na tela (dois salvamentos seguidos se atropelavam e o 2º mandava o texto antigo do servidor)
 function valoresDaCena(i){
   const card = document.querySelector('.cena[data-i="' + i + '"]'), rc = proj.roteiro.cenas[i];
   const v = (campo, padrao) => { const el = card && card.querySelector('[data-campo="' + campo + '"]'); return el ? el.value : padrao; };
-  return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), p: Number(v('p', rc.p)) };
+  return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), comando: v('comando', rc.comando || ''), p: Number(v('p', rc.p)) };
 }
 async function salvarCena(i){
   const d = await chama('/pn/salvar', { id: proj.id, cenas: [valoresDaCena(i)] });
