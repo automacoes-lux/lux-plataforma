@@ -274,6 +274,16 @@
     align-items:center;gap:5px;
   }
   .voz button .ic{font-size:18px;line-height:1}
+  /* 10/11/2026: marcações de voz pra colar na letra (voz mista) — ao lado do título "Letra" */
+  .card-head{flex-wrap:wrap}
+  .tags-voz{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .tag-voz{
+    display:inline-flex;align-items:center;gap:5px;background:var(--sup);border:none;border-radius:999px;
+    padding:5px 10px;color:var(--txt2);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .13s;
+  }
+  .tag-voz:hover{background:#35363C;color:var(--txt)}
+  .tag-voz.ok{color:var(--verde,#4ade80)}
+  .tag-voz .ic-sv{width:13px;height:13px}
   .voz button:hover{background:#35363C;color:var(--txt)}
   .voz button.on{background:var(--txt);color:#111;font-weight:600}
 
@@ -655,7 +665,14 @@
 
       <!-- 2. LETRA -->
       <div class="card">
-        <div class="card-head"><span class="titulo-secao">Letra</span></div>
+        <div class="card-head"><span class="titulo-secao">Letra</span>
+          <!-- 10/11/2026: voz MISTA — o atendente cola a marcação antes de cada trecho ("[Male Vocal]" / "[Female Vocal]",
+               o padrão do gerador). Copiar uma delas já passa a voz para Mista (a letra é quem manda). -->
+          <span class="tags-voz">
+            <button class="tag-voz" type="button" onclick="copiarTagVoz(this, '[Male Vocal]')" title="Copiar a marcação de voz masculina para colar na letra">[Male Vocal] <svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+            <button class="tag-voz" type="button" onclick="copiarTagVoz(this, '[Female Vocal]')" title="Copiar a marcação de voz feminina para colar na letra">[Female Vocal] <svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+          </span>
+        </div>
         <div class="campo">
           <div class="campo-acoes">
             <button class="btn-campo lixo" onclick="limpar('letra')" title="Apagar a letra"><svg class="ic-sv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
@@ -698,6 +715,8 @@
         <div class="voz" id="voz">
           <button data-voz="male"   onclick="escolherVoz('male')" class="on"><span class="ic">♂</span>Masculina</button>
           <button data-voz="female" onclick="escolherVoz('female')"><span class="ic">♀</span>Feminina</button>
+          <!-- 10/11/2026: Mista = nenhuma das duas; quem define a voz são as marcações [Male Vocal]/[Female Vocal] na letra -->
+          <button data-voz=""       onclick="escolherVoz('')" title="Voz definida pela letra: cole [Male Vocal] ou [Female Vocal] antes de cada trecho"><span class="ic">⚥</span>Mista</button>
         </div>
 
         <div style="margin-top:16px">
@@ -1018,6 +1037,31 @@ function limpar(campo){
     esqueceDesfazer();
   }
 }
+// 10/11/2026: copia a marcação de voz ([Male Vocal]/[Female Vocal]) pra colar na letra. Se a voz não estava
+// em Mista, passa pra Mista — com Masculina/Feminina marcada o servidor iguala todas as marcações àquela voz.
+async function copiarTagVoz(btn, tag){
+  const mudou = vozEscolhida !== '';
+  if(mudou) escolherVoz('');                       // marcação na letra = voz Mista
+  const sufixo = mudou ? ' A voz passou para Mista.' : '';
+  try{
+    await navigator.clipboard.writeText(tag);
+    btn.classList.add('ok');
+    setTimeout(() => btn.classList.remove('ok'), 1400);
+    sucesso('Copiado ' + tag + ' — cole antes do trecho da letra.' + sufixo, mudou ? 4000 : 2500);
+  }catch(e){
+    // navegador bloqueou a cópia (celular/permissão): põe a marcação direto na letra, onde está o cursor
+    const ta = $('letra');
+    const ini = ta.selectionStart ?? ta.value.length, fim = ta.selectionEnd ?? ini;
+    const antes = ta.value.slice(0, ini), depois = ta.value.slice(fim);
+    const pre = (antes && !antes.endsWith('\n')) ? '\n' : '';
+    ta.value = antes + pre + tag + '\n' + depois;
+    const pos = (antes + pre + tag + '\n').length;
+    ta.focus(); ta.setSelectionRange(pos, pos);
+    contarLetra();
+    sucesso(tag + ' colocado na letra, onde estava o cursor.' + sufixo, 4000);
+  }
+}
+
 async function copiarLetra(){
   const txt = $('letra').value;
   if(!txt.trim()){ erro('Não há letra para copiar.'); return; }
@@ -1583,7 +1627,7 @@ async function gerarLetra(){
         instrucoes: $('instrucoes').value.trim(),
         tipo: 'empresa',            // 05/11/2026: o Jingle político saiu da tela
         extensa: $('letraExtensa').checked,
-        voz: vozEscolhida
+        voz: vozEscolhida || 'mista'   // '' = Mista (10/11/2026)
       })
     });
     const d = await r.json();
@@ -2326,7 +2370,7 @@ async function continuarRascunho(id){
     $('estilo').value     = d.estilo     || '';
     $('titulo').value     = d.titulo     || '';
     ajustesLetra = null;      // rascunho não guarda os ajustes: o gerador usa o padrão dele
-    escolherVoz(d.genero === 'female' ? 'female' : 'male');   // pedido antigo sem voz → masculina
+    escolherVoz(d.genero === 'female' ? 'female' : d.genero === 'male' ? 'male' : '');   // sem voz = Mista
     contarLetra();
     esqueceDesfazer();
 
@@ -2498,7 +2542,7 @@ async function editarPedido(taskId){
     $('estilo').value     = d.estilo || '';
     $('titulo').value     = d.titulo || '';
     ajustesLetra = d.ajustes || null;   // os mesmos ajustes do pedido original
-    escolherVoz(d.genero === 'female' ? 'female' : 'male');   // pedido antigo sem voz → masculina
+    escolherVoz(d.genero === 'female' ? 'female' : d.genero === 'male' ? 'male' : '');   // sem voz = Mista
     contarLetra();
     esqueceDesfazer();
 
