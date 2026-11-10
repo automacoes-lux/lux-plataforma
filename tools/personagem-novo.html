@@ -581,6 +581,13 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
   <div class="step">
     <div class="step-head"><div class="step-title"><span id="tituloPers">Personagens</span> <span style="color:var(--gold)">*</span></div></div>
     <div class="pers-grid" id="boxPers"></div>
+    <div id="blocoConversa" class="hide">
+      <div class="mini">Como os personagens falam</div>
+      <div class="chips" id="chipsConversa" role="radiogroup" aria-label="Como os personagens falam">
+        <div class="chip on" data-v="cliente" role="radio">Com o cliente</div>
+        <div class="chip" data-v="conversa" role="radio">Conversa entre os personagens</div>
+      </div>
+    </div>
   </div>
 
   <div class="step">
@@ -815,7 +822,8 @@ const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).leng
 // ── estado ──
 let proj = null;                 // o projeto como o servidor devolveu
 let estilo = 'real';
-let pers = [{}, {}, {}];         // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }]
+let conversa = false;            // (10/11) Padrão com 2+ personagens: "Conversa entre os personagens"
+let pers = [{}, {}, {}];        // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }]
 let gestos = [];
 let trilhas = [], trilhaSel = null, legendas = true;
 // (08/11) estilo e cor da legenda (padrão: Promocional, amarelo)
@@ -862,7 +870,7 @@ function voltarModos(){
   clearTimeout(rascT); clearTimeout(timer);
   proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null; vozModo = 'ia'; vozBusy = '';
   ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
-  if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
   $('telaFinal').classList.add('hide');
@@ -911,6 +919,16 @@ document.querySelectorAll('#chipsEstilo .chip').forEach(c => c.addEventListener(
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x === c));
   agendaRascunho(50);
 }));
+document.querySelectorAll('#chipsConversa .chip').forEach(c => c.addEventListener('click', () => {
+  conversa = c.dataset.v === 'conversa';
+  pintarConversa();
+  agendaRascunho(50);
+}));
+function pintarConversa(){
+  const mostra = !!modo && !natal() && !bf() && vozModo !== 'cliente' && pers.filter(temFoto).length > 1;
+  $('blocoConversa').classList.toggle('hide', !mostra);
+  document.querySelectorAll('#chipsConversa .chip').forEach(x => x.classList.toggle('on', (x.dataset.v === 'conversa') === conversa));
+}
 $('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; agendaRascunho(); });
 $('fCliente').addEventListener('input', () => agendaRascunho());
 $('fCategoria').addEventListener('input', () => agendaRascunho());
@@ -924,6 +942,7 @@ const vozMax = () => (bf() ? 45 : 50);
 const INPUT_VOZ = '<input type="file" accept="audio/*,.mp3,.ogg,.oga,.opus,.m4a,.wav,.aac,.mp4" hidden onchange="enviarVozCliente(event)"/>';
 function pintarVozCli(){
   $('vozBF').innerHTML = ''; $('vozP1').innerHTML = '';
+  pintarConversa();   // com o áudio do cliente a fala é a gravação: não tem conversa para escrever
   if (!modo || natal()) return;
   const vc = proj && proj.vozCliente;
   let corpo = '';
@@ -1041,7 +1060,7 @@ function salvarRascunho(){
     $('notaSalvo').textContent = '💾 Salvando…';
     const fotosEnv = fotosBF.slice();
     const d = await chama('/pn/rascunho', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(),
-      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), personagens: ents }, dadosBF()));
+      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), conversa: (natal() || bf()) ? undefined : conversa, personagens: ents }, dadosBF()));
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
     if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (!x.key && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
@@ -1079,6 +1098,7 @@ function pintarPers(){
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
       '</div>';
   }).join('');
+  pintarConversa();
 }
 // ── BLACK FRIDAY: uma página só, como o Avatar 150 ──
 const IC_PESSOA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
@@ -1318,7 +1338,7 @@ async function gerarTudo(){
   try {
     bt.textContent = temVozCliente() ? '🎙️ Dividindo o áudio em cenas…' : '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
-    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined,
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
       personagens: pers.filter(natal() ? temAmb : temFoto).map(p => ({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
@@ -1776,6 +1796,7 @@ async function abrirProjeto(id){
   $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500';
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
+  conversa = !!p.conversa;
   const cfg = p.cfgMontagem || {};
   vozModo = p.vozCliente ? 'cliente' : 'ia'; vozBusy = '';
   trilhaSel = cfg.trilha || p.trilha || null; legendas = (cfg.legendas !== undefined ? cfg.legendas : p.legendas) !== false;
