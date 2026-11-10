@@ -1497,34 +1497,106 @@ function setAvatarTipo(t) {
   refreshAvatarUI();
 }
 
+// ── (10/11) IMAGEM EM 2º PLANO (Marcelo, pelo Thiago) ──────────────────────────────────────────────
+// No celular, sair da aba para responder no WhatsApp derrubava a imagem ("failed"): ela levava de 1 a 3 min numa
+// conexão só, e o navegador corta a conexão da aba que sai da tela. Agora a tela só ENTREGA as fotos, o servidor gera
+// numa fila (sem depender da tela) e a tela pergunta de tempos em tempos se ficou pronta. Voltou para a aba → pergunta
+// na hora. Se o celular recarregar a página, ao abrir o Avatar 97 de novo a tela reabre o projeto e pega a imagem.
+const IMGJOB_LS = 'a97_imgjob';   // { jobId, pid, t } da imagem que está sendo feita
+let avatarGerando = false;
+function imgJobGuarda(v) { try { if (v) localStorage.setItem(IMGJOB_LS, JSON.stringify(v)); else localStorage.removeItem(IMGJOB_LS); } catch (e) {} }
+// espera ms, ou menos se a aba voltar a aparecer (quem voltou do WhatsApp vê o resultado na hora)
+function esperaOuVolta(ms) {
+  return new Promise(res => {
+    let t = 0;
+    const fim = () => { clearTimeout(t); document.removeEventListener('visibilitychange', vis); res(); };
+    const vis = () => { if (document.visibilityState === 'visible') fim(); };
+    t = setTimeout(fim, ms);
+    document.addEventListener('visibilitychange', vis);
+  });
+}
+async function acompanhaImagem(jobId) {
+  let falhas = 0;
+  while (true) {
+    await esperaOuVolta(4000);
+    let s = null;
+    try { const r = await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId)); s = await r.json(); } catch (e) { s = null; }
+    if (s && s.status === 'pronto' && s.ok && s.cartoonBase64) return s;
+    if (s && s.status === 'erro') throw new Error(s.error || 'Falha ao gerar o avatar.');
+    if (s && s.status === 'gerando') { falhas = 0; continue; }
+    // sem resposta (aba no fundo, internet oscilou, login renovando): a imagem continua no servidor, só pergunta de novo
+    if (++falhas > 150) throw new Error('Não consegui falar com o servidor. Confira a internet e abra o projeto de novo.');
+  }
+}
+async function gerarAvatarNaFila(payload) {
+  const jobId = Date.now() + '-' + Math.random().toString(36).slice(2, 12).padEnd(8, '0');
+  payload.jobId = jobId;   // o servidor ignora a 2ª entrega com o mesmo id: repetir o envio não gera 2 imagens
+  const corpo = JSON.stringify(payload);
+  let j = null;
+  for (let k = 0; k < 5 && !j; k++) {
+    try { const r = await api('/avatarCartoonInicia', { method: 'POST', body: corpo }); j = await r.json(); }
+    catch (e) { if (k === 4) throw new Error('Sem conexão com o servidor. Confira a internet e clique de novo.'); await esperaOuVolta(2000 * (k + 1)); }
+  }
+  if (!j.ok || !j.jobId) throw new Error(j.error || 'Falha ao gerar o avatar.');
+  imgJobGuarda({ jobId: j.jobId, pid: rascunhoId, t: Date.now() });
+  try { return await acompanhaImagem(j.jobId); }
+  finally { imgJobGuarda(null); }
+}
+// A imagem chegou: mesmo tratamento de antes (preview, contagem da cobrança, aviso do motor reserva, salvar o projeto)
+function aplicaAvatarGerado(j) {
+  const normB64 = j.cartoonBase64;   /* (12/09) Avatar 97: a imagem JÁ é a cena final — recentralizar os pés estragaria o ambiente */
+  avatarPreview = { cartoonBase64: normB64, approved: true };   // (12/09) Avatar 97: sem aprovação, a imagem gerada já vale para o vídeo
+  avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
+  avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
+  document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
+  if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++; renderStoryboard();   // (11/09) cada geração é cobrada
+  if (j.passada) cartoonPassadas++;   // (19/10) a camada 2 só roda na geração SEM ajuste
+  rascSalvar();   // (23/09) imagem pronta → guarda o projeto
+  const avEl = document.getElementById('avatarMotorAviso');
+  if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
+  refreshAvatarUI();
+}
+// Abriu o Avatar 97 e havia uma imagem sendo feita (o celular recarregou a página): reabre o projeto e espera ela.
+async function retomaImagemPendente() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(IMGJOB_LS) || 'null'); } catch (e) {}
+  if (!p || !p.jobId) return;
+  if (avatarGerando) return;   // a geração está viva nesta mesma página
+  if (!p.pid || Date.now() - (Number(p.t) || 0) > 20 * 60 * 1000) { imgJobGuarda(null); return; }
+  await continuarProjeto(p.pid);
+  if (rascunhoId !== p.pid) return;   // não abriu (ou a atendente preferiu não trocar): a chave fica para a próxima vez
+  const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
+  btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando… pode sair da tela'; });
+  avatarGerando = true;
+  const foto = clientPhoto;
+  toast('⏳ A imagem que você pediu ainda está sendo feita. Ela aparece aqui quando ficar pronta.');
+  try {
+    const j = await acompanhaImagem(p.jobId);
+    if (clientPhoto === foto && rascunhoId === p.pid) { aplicaAvatarGerado(j); toast('✅ A imagem ficou pronta.'); }
+  } catch (err) { toast('⚠️ ' + err.message); }
+  finally { imgJobGuarda(null); avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+}
+
 async function gerarAvatar() {
+  if (avatarGerando) { toast('⏳ A imagem ainda está sendo feita. Pode sair da tela, ela continua.'); return; }
   if (!clientPhoto) { toast('Envie a foto do Personagem 1 primeiro.'); return; }
   if (imagemReal === null) { alertaEstilo(); return; }   // (22/10) escolha obrigatória
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
-  btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando…'; });
+  btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando… pode sair da tela'; });
+  avatarGerando = true;
+  const foto = clientPhoto;   // trocou a foto ou abriu outro projeto enquanto esperava → a imagem que chegar não é mais desta tela
   try {
     const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal === true, corpoInteiro: corpoInteiro };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
     if (clientPhoto2) payload.personagem2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.ambiente = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
-    const r = await api('/avatarCartoon', { method: 'POST', body: JSON.stringify(payload) });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'Falha ao gerar o avatar.');
-    const normB64 = j.cartoonBase64;   /* (12/09) Avatar 97: a imagem JÁ é a cena final — recentralizar os pés estragaria o ambiente */   // centraliza os pés + padroniza p/ cair sempre no centro do palco
-    avatarPreview = { cartoonBase64: normB64, approved: true };   // (12/09) Avatar 97: sem aprovação, a imagem gerada já vale para o vídeo
-    avatarCalib = { dx: 0, dy: 0, px: 0 };   // novo avatar → calibração de posição zerada
-    avScale = AVSCALE_MAX;            // novo avatar → tamanho volta ao padrão (100%)
-    document.getElementById('avatarPreviewImg').src = 'data:image/png;base64,' + normB64;
-    // (10/09) o Worker manda j.aviso quando o desenho saiu do MOTOR RESERVA. Antes ninguem mostrava,
-    // e o atendente aprovava sem saber. Ficou obrigatorio depois que o botao de subir arte pronta saiu.
-    if (j.motor === 'gemini') cartoonGensRes++; else cartoonGens++; renderStoryboard();   // (11/09) cada geração é cobrada
-    if (j.passada) cartoonPassadas++;   // (19/10) a camada 2 só roda na geração SEM ajuste
-    rascSalvar();   // (23/09) imagem pronta → guarda o projeto
-    const avEl = document.getElementById('avatarMotorAviso');
-    if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
-    refreshAvatarUI();
+    // (10/11) o projeto fica salvo ANTES (fotos e escolhas): se o celular recarregar a página, a tela reabre e pega a imagem
+    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await rascSalvarAgora(); } catch (e) {}
+    const j = await gerarAvatarNaFila(payload);
+    if (clientPhoto !== foto) { toast('A imagem ficou pronta, mas a foto mudou enquanto ela era feita. Gere de novo com a foto nova.'); return; }
+    aplicaAvatarGerado(j);
   } catch (err) { toast('⚠️ ' + err.message); }
-  finally { btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
 }
 
 // (10/09/2026) O botão "A Imagem 1 JÁ é o avatar pronto" foi REMOVIDO a pedido do Thiago: a arte
@@ -4545,6 +4617,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderStoryboard();
   checkPending();
   checkManutencao();
+  setTimeout(retomaImagemPendente, 800);   // (10/11) imagem que estava sendo feita quando o celular recarregou a página
   mostraProntaAdmin(); setTimeout(mostraProntaAdmin, 1500); setTimeout(mostraProntaAdmin, 5000);   // de novo, caso o login termine depois
 });
 window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
@@ -4559,7 +4632,7 @@ window.addEventListener('resize', () => { if (rawAudioBuffer) drawWave(); });
 function telaOcupada() {
   try {
     const nome = ((document.getElementById('clientName') || {}).value || '').trim();
-    return !!(nome || clientPhoto || clientPhoto2 || clientPhoto3 || avatarPreview || music ||
+    return !!(avatarGerando || nome || clientPhoto || clientPhoto2 || clientPhoto3 || avatarPreview || music ||
               rawAudioBuffer || (scenes && scenes.length) || editState ||
               getPending().length);
   } catch (e) { return true; }   // na dúvida, diz que está ocupada (nunca descarrega)
