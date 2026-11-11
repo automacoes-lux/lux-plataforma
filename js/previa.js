@@ -12,13 +12,13 @@
 //
 // O FORMATO foi calibrado pelo Thiago de ouvido ("ficou perfeito"):
 //   0,15 s  "A Lúx cria as melhores músicas!"   (sem música)
-//           a música entra e toca 40 s CHEIOS (20 s até 29/09/2026)
+//           a música entra e toca INTEIRA (desde 10/11/2026; era 40 s, e 20 s até 29/09)
 //   8 s     "Versão de teste Lúx."              ┐ tempos do PLAYER (desde
 //   18 s    "Impressione com a Lúx."            │ o começo do arquivo, não
 //   28 s    "Versão de teste Lúx."              │ da música); a música abaixa
-//   38 s    "Impressione com a Lúx."            ┘ um pouco e a voz vem mais baixa
+//   …       a cada 10 s, alternando, até o fim  ┘ um pouco e a voz vem mais baixa
 //           ("Isso é só o começo" saiu em 01/10/2026)
-//   fim dos 40 s: a música some e, em SILÊNCIO,
+//   fim da música: em SILÊNCIO,
 //           "Gostou? Ou deseja alguma alteração?"
 //
 // As falas vêm de UM arquivo: desde 27/09/2026 (2a troca) a gravacao "som de previa" do
@@ -49,11 +49,15 @@
       chamada:     { ini: 12.88, fim: 16.04 }   // frase final, em off
     },
     // tempo do ARQUIVO. Desde 01/10/2026: sem "Isso é só o começo" e uma fala
-    // a cada 10 s (antes: 3 falas a cada ~6,4 s, repetidas +19 s)
-    noMeio:        [['marca', 8], ['impressione', 18], ['marca', 28], ['impressione', 38]],
+    // a cada 10 s. Desde 10/11/2026 a música vai INTEIRA (era 40 s; 20 s até
+    // 29/09) e as falas se repetem até ela acabar — igual ao agente de prévia
+    // (lux-previa/previa-mix.mjs). A locução por baixo é a segurança.
+    primeiraFala:  8,      // 1ª fala do meio (s do arquivo)
+    intervalo:     10,     // e depois a cada 10 s
+    ordem:         ['marca', 'impressione'],
+    folgaFim:      1.0,    // a última fala termina pelo menos 1 s antes do fim da música
     respiroAntes:  0.15,   // silêncio antes da abertura
     respiroDepois: 0.35,   // entre a abertura e a música
-    musicaDura:    40,     // segundos de música (era 20 até 29/09/2026)
     someEm:        1.2,    // fade da música no fim
     silencio:      0.25,   // silêncio antes da chamada
     abaixaPara:    0.45,   // volume da música sob as falas (era 0,35 até 01/10/2026)
@@ -130,13 +134,18 @@
   async function mixar(musica, v){
     const P = PREVIA, taxa = musica.sampleRate;
     const tMus = P.respiroAntes + v.abertura.duration + P.respiroDepois;
-    const fimMusica = tMus + Math.min(P.musicaDura, musica.duration);
+    const fimMusica = tMus + musica.duration;            // 10/11/2026: a música INTEIRA (não corta mais)
     const tCta = fimMusica + P.someEm + P.silencio;
     const total = tCta + v.chamada.duration + 0.4;
-    // falas do meio em tempo do ARQUIVO; só as que cabem antes da música acabar
-    const meio = P.noMeio
-      .map(([nome, t]) => ({ nome, t, fim: t + v[nome].duration }))
-      .filter(m => m.t > tMus && m.fim < fimMusica);
+    // falas do meio em tempo do ARQUIVO: a 1ª aos 8 s e depois a cada 10 s,
+    // alternando, até `folgaFim` antes da música acabar
+    const meio = [];
+    for(let t = P.primeiraFala, i = 0; ; t += P.intervalo, i++){
+      const nome = P.ordem[i % P.ordem.length];
+      const fim = t + v[nome].duration;
+      if(fim > fimMusica - P.folgaFim) break;
+      if(t > tMus) meio.push({ nome, t, fim });
+    }
 
     // volume da música ponto a ponto (vale o MENOR pedido de cada momento)
     const R = P.rampa, D = P.abaixaPara;
