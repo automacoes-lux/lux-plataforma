@@ -521,12 +521,37 @@ function renderRanking(d){
 }
 
 // ── atualização ao vivo: o "hoje" entra dentro de "Sua conta" + "Recebimentos" (sem card separado) ──
-function liveRefresh(){
+// (11/11/2026) ECONOMIA NO CELULAR. Antes, depois de aberta uma vez, esta tela fazia ~5 consultas a cada 20 s e
+// redesenhava tudo PARA SEMPRE, mesmo escondida atrás de outra aba — e, como todas as abas dividem a mesma página,
+// isso travava as outras ferramentas. Agora:
+//   · só atualiza com a aba NA TELA (a plataforma avisa 'pausar'/'retomar'; celular com a tela apagada também pula);
+//   · não começa uma rodada nova enquanto a anterior não terminou (internet lenta não empilha consultas);
+//   · semana e mês (consultas pesadas, mudam devagar) vão a cada 2 min; o dia de hoje e o Mercado Pago seguem a cada 20 s;
+//   · escondida e sem nada digitado, avisa que está livre e a plataforma devolve a memória (volta limpa ao reabrir).
+let _livePausado=false, _liveRodando=false, _liveLento=Date.now();
+async function liveRefresh(){
+  if(_livePausado || document.hidden || _liveRodando) return;
+  _liveRodando=true;
   try{
-    loadWeek(); loadMonthWhite(); loadMp();
-    if(curTo && curTo >= ymd(new Date())) loadMe(true);   // só re-busca a conta se o período inclui hoje
+    const t=[loadMp()];
+    if(curTo && curTo >= ymd(new Date())) t.push(loadMe(true));   // só re-busca a conta se o período inclui hoje
+    if(Date.now()-_liveLento >= 120000){ _liveLento=Date.now(); t.push(loadWeek(), loadMonthWhite()); }
+    await Promise.all(t);
   }catch(_){}
+  finally{ _liveRodando=false; }
 }
+function telaOcupada(){
+  try{ return !!((document.getElementById('mpValor').value||'').trim() || (document.getElementById('mpCliente').value||'').trim()); }
+  catch(e){ return true; }   // na dúvida, ocupada (nunca descarrega)
+}
+window.addEventListener('message', (e) => {
+  const d = e && e.data;
+  if (!d || (d.lux !== 'pausar' && d.lux !== 'retomar')) return;
+  _livePausado = (d.lux === 'pausar');
+  if (!_livePausado) liveRefresh();   // voltou para a aba: atualiza na hora
+  try { parent.postMessage({ lux: 'estado', ocupado: telaOcupada() }, '*'); } catch (_) {}
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) liveRefresh(); });
 </script>
 </body>
 </html>
