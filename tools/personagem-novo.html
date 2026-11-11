@@ -392,6 +392,10 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .pp-card .pp-sem{width:100%;aspect-ratio:9/16;border-radius:8px;background:#0c0c0c;display:grid;place-items:center;color:var(--text-dim);font-size:12.5px;text-align:center;padding:1rem}
 .pp-card .pp-tit{font-size:13px;font-weight:600;color:var(--text);margin:.5rem 0 .15rem}
 .pp-card .pp-sub{font-size:11.5px;color:var(--text-dim);margin-bottom:.45rem}
+.pp-voz{display:flex;align-items:center;gap:.35rem;margin-bottom:.45rem}
+.pp-voz select{flex:1;min-width:0;font-size:12.5px;padding:.45rem .5rem}
+.pp-voz .pp-voz-lado{font-size:11.5px;color:var(--text-dim);flex-shrink:0}
+.pp-voz .pp-ouvir{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:.5px solid var(--border);background:#1b1b1d;color:var(--gold);font-size:12px;cursor:pointer;display:grid;place-items:center;padding:0}
 .pp-card input{font-size:12.5px;padding:.5rem .6rem}
 .pp-card .btn-ghost{width:100%;margin-top:.4rem;padding:.55rem .6rem;font-size:13px}
 .cena{position:relative}
@@ -1371,19 +1375,56 @@ function recebe(p){
 // ── passo 2: personagens prontos + cenas ──
 function pintarPasso2(){
   if (!proj || !proj.roteiro) return;
+  if (!vozesPN && !natal()) carregaVozes();
   $('boxPersProntos').innerHTML = proj.personagens.map((s, k) =>
     '<div class="pp-card">' +
       (s.img ? '<img src="' + esc(s.img.url) + '" alt="" onclick="ampliar(this.src)"/>' : '<div class="pp-sem">Sem imagem. Clique em Refazer.</div>') +
       '<div class="pp-tit">' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</div>' +
-      '<div class="pp-sub">' + (proj.dupla && k === 0 && s.dupla
-        ? 'Dupla · vozes ' + s.dupla.map((m, j) => esc(m.vozNome || 'automática') + ' (' + (j ? 'direita' : 'esquerda') + ')').join(' e ')
-        : 'Voz ' + esc(s.vozNome || 'automática') + (natal() ? '' : ' · ' + (s.sexo === 'F' ? 'feminina' : 'masculina'))) + '</div>' +
+      // (11/11, Thiago) a atendente escolhe a voz (sem escolher, é a automática); a mesma pessoa em outro card usa a mesma voz
+      (natal() ? '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + '</div>'
+        : proj.dupla && k === 0 && s.dupla ? s.dupla.map((m, j) => linhaVoz(k, j, m.sexo, m.voz, !m.vozManual, m.vozNome, j ? 'Direita' : 'Esquerda')).join('')
+        : (s.grupo !== undefined && s.grupo !== k) ? '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + ' · voz ' + esc(s.vozNome || '') + '</div>'
+        : linhaVoz(k, -1, s.sexo, s.voz, !s.vozManual, s.vozNome, '')) +
       '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
       '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>' +
     '</div>').join('');
   pintarCenas();
 }
 function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
+// ── voz de cada personagem (11/11) ──
+let vozesPN = null, vozesBusca = null, audioVoz = null;
+function carregaVozes(){
+  if (vozesBusca) return;
+  vozesBusca = chama('/pn/vozes').then(d => { if (d && d.ok) { vozesPN = d.vozes; if (passo === 2 && proj && proj.roteiro) pintarPasso2(); } else vozesBusca = null; }).catch(() => { vozesBusca = null; });
+}
+function linhaVoz(k, m, sexo, atual, auto, nome, rotulo){
+  if (!vozesPN) return '<div class="pp-sub">' + (rotulo ? rotulo + ' · ' : '') + 'Voz ' + esc(nome || 'automática') + '</div>';
+  const ord = vozesPN.filter(v => v.sexo === sexo).concat(vozesPN.filter(v => v.sexo !== sexo));
+  const opts = ord.map(v => '<option value="' + v.id + '"' + (v.id === atual ? ' selected' : '') + '>' + esc(v.nome) + ' · ' + (v.sexo === 'F' ? 'feminina' : 'masculina') + (auto && v.id === atual ? ' (automática)' : '') + '</option>').join('');
+  return '<div class="pp-voz">' + (rotulo ? '<span class="pp-voz-lado">' + rotulo + '</span>' : '') +
+    '<select aria-label="Voz" onchange="trocaVozPers(' + k + ',' + m + ',this.value)">' + opts + '</select>' +
+    '<button type="button" class="pp-ouvir" data-ouvir title="Ouvir esta voz" onclick="ouvirVoz(this.previousElementSibling.value,this)">▶</button></div>';
+}
+function ouvirVoz(id, b){
+  const v = (vozesPN || []).find(x => x.id === id);
+  if (!v || !v.amostra) return toast('A amostra desta voz ainda não está pronta.');
+  if (audioVoz && audioVoz._id === id && !audioVoz.paused) { audioVoz.pause(); b.textContent = '▶'; return; }
+  if (audioVoz) audioVoz.pause();
+  document.querySelectorAll('.pp-ouvir').forEach(x => { x.textContent = '▶'; });
+  audioVoz = new Audio(v.amostra); audioVoz._id = id; audioVoz.play().catch(() => {}); b.textContent = '❚❚';
+  audioVoz.onended = () => { b.textContent = '▶'; };
+}
+async function trocaVozPers(k, m, idVoz){
+  if (ocupado) { toast('⏳ Espere terminar o que está em andamento.'); pintarPasso2(); return; }
+  ocupado = true;
+  try {
+    const d = await chama('/pn/salvar', { id: proj.id, vozes: [{ k, m, voz: idVoz }] });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto); pintarPasso2();
+    toast('✅ Voz trocada' + ((proj.cenas || []).some(c => c && c.video) ? '. As cenas desse personagem ficaram marcadas para refazer.' : '.'));
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui trocar a voz')); pintarPasso2(); }
+  finally { ocupado = false; }
+}
 async function refazerPers(k){
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
   ocupado = true; toast('🎨 Refazendo ' + (natal() ? 'a imagem do ambiente ' : 'o personagem ') + (k + 1) + ' (~40 s)…');
