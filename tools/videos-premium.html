@@ -513,21 +513,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
 .leg-x{flex:none;width:34px;height:34px;border:none;border-radius:50%;background:var(--lx-sup);color:var(--lx-txt);font-size:14px;cursor:pointer}
 .leg-dica{font-size:12.5px;line-height:1.5;color:var(--lx-txt2)}
 .leg-linhas{flex:1;min-height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;-webkit-overflow-scrolling:touch}
-.leg-linha{display:flex;align-items:center;gap:8px}
-.leg-t{flex:none;width:38px;font:500 11.5px 'Inter',sans-serif;color:var(--lx-txt3);font-variant-numeric:tabular-nums;text-align:right}
-.leg-linha input{flex:1;min-width:0;background:var(--lx-campo);border:1px solid transparent;border-radius:10px;color:var(--lx-txt);font:500 14px 'Inter',sans-serif;padding:9px 11px}
-.leg-linha input:focus{outline:none;border-color:var(--lx-cta-a)}
-.leg-linha input.mudou{border-color:var(--lx-cta-b);background:rgba(240,206,104,.08)}
+.leg-linha{display:flex;align-items:flex-start;gap:8px}
+.leg-t{flex:none;width:38px;padding-top:10px;font:500 11.5px 'Inter',sans-serif;color:var(--lx-txt3);font-variant-numeric:tabular-nums;text-align:right}
+.leg-linha textarea{flex:1;min-width:0;resize:none;overflow:hidden;background:var(--lx-campo);border:1px solid transparent;border-radius:10px;color:var(--lx-txt);
+  font:500 14px/1.4 'Inter',sans-serif;padding:8px 11px}
+.leg-linha textarea:focus{outline:none;border-color:var(--lx-cta-a)}
+.leg-linha textarea.mudou{border-color:var(--lx-cta-b);background:rgba(240,206,104,.08)}
 .leg-msg{font-size:13px;line-height:1.5;color:var(--lx-txt2);text-align:center;padding:18px 6px}
 .leg-bts{display:flex;justify-content:flex-end;gap:8px}
 .leg-bts .btn-gold{padding:10px 18px}
 .leg-bts .btn-gold:disabled{opacity:.45;cursor:not-allowed}
-.leg-x:focus-visible,.leg-linha input:focus-visible{outline:2px solid var(--lx-cta-b);outline-offset:2px}
+.leg-x:focus-visible,.leg-linha textarea:focus-visible{outline:2px solid var(--lx-cta-b);outline-offset:2px}
 .order-leg-erro{font-size:11.5px;color:#FF9B9B;margin-top:3px}
 @media (max-width:560px){
   .leg-cx{padding:14px}
-  .leg-linha input{font-size:16px}   /* menor que 16px o iPhone dá zoom ao tocar */
-  .leg-bts{display:grid;grid-template-columns:1fr 1fr}
+  .leg-t{width:32px}
+  .leg-linha textarea{font-size:16px}   /* menor que 16px o iPhone dá zoom ao tocar */
+  .leg-bts{display:grid;grid-template-columns:auto 1fr}
 }
 </style>
 </head>
@@ -3825,10 +3827,16 @@ async function abreLegenda(orderId, nome) {
     if (d.legenda && d.legenda.estado === 'rodando') { box.innerHTML = '<div class="leg-msg">A legenda deste vídeo já está sendo refeita. Aguarde uns minutos.</div>'; return; }
     if (!d.restam) { box.innerHTML = '<div class="leg-msg">Este vídeo já teve todas as correções de legenda permitidas. Fale com o admin.</div>'; return; }
     _leg.linhas = (d.versos || []).map(v => v.texto);
+    // caixa que QUEBRA a linha e cresce sozinha (no celular a frase inteira não cabia numa linha só)
     box.innerHTML = (d.versos || []).map((v, i) =>
       '<label class="leg-linha"><span class="leg-t">' + tempo150(v.de) + '</span>' +
-      '<input type="text" data-i="' + i + '" value="' + escapeHtml(v.texto) + '" autocomplete="off" spellcheck="true" aria-label="Trecho em ' + tempo150(v.de) + '" ' +
-      'oninput="this.classList.toggle(\'mudou\', this.value.replace(/\\s+/g, \' \').trim() !== (_leg ? _leg.linhas[' + i + '] : this.value))"/></label>').join('');
+      '<textarea rows="1" data-i="' + i + '" autocomplete="off" spellcheck="true" aria-label="Trecho em ' + tempo150(v.de) + '">' + escapeHtml(v.texto) + '</textarea></label>').join('');
+    box.querySelectorAll('textarea').forEach(function (ta) {
+      const cresce = function () { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+      ta.addEventListener('input', function () { cresce(); ta.classList.toggle('mudou', ta.value.replace(/\s+/g, ' ').trim() !== (_leg ? _leg.linhas[+ta.dataset.i] : ta.value)); });
+      ta.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });   // cada caixa é UMA linha cantada
+      cresce();
+    });
     bt.disabled = false;
   } catch (e) {
     box.innerHTML = '<div class="leg-msg">Não consegui abrir a letra. Verifique a conexão e tente de novo.</div>';
@@ -3837,7 +3845,7 @@ async function abreLegenda(orderId, nome) {
 function fechaLegenda() { const f = document.getElementById('legFundo'); if (f) f.classList.remove('show'); _leg = null; }
 async function enviaLegenda() {
   if (!_leg || !_leg.linhas.length) return;
-  const linhas = Array.from(document.querySelectorAll('#legLinhas input')).map(x => x.value.replace(/\s+/g, ' ').trim());
+  const linhas = Array.from(document.querySelectorAll('#legLinhas textarea')).map(x => x.value.replace(/\s+/g, ' ').trim());
   if (linhas.some(l => !l)) { toast('Não deixe nenhuma linha vazia.'); return; }
   if (linhas.every((l, i) => l === _leg.linhas[i])) { toast('Nenhuma palavra foi alterada.'); return; }
   const bt = document.getElementById('legEnviar');
