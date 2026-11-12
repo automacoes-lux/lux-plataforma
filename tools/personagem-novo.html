@@ -1471,7 +1471,7 @@ function pintarCenas(){
         '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
         '<div class="gesto-desc">' + esc(descGesto(g)) + '</div>' +
         '<div class="mini">Prompt de comando <span class="mini-obs">(para alterar algo na cena)</span></div>' +
-        '<textarea data-campo="comando" maxlength="1000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>' +
+        '<textarea data-campo="comando" maxlength="2000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>' +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
       '</div></div></div>';
