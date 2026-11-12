@@ -1383,7 +1383,8 @@ function pintarPasso2(){
       // (11/11, Thiago) a atendente escolhe a voz (sem escolher, é a automática); a mesma pessoa em outro card usa a mesma voz
       (natal() ? '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + '</div>'
         : proj.dupla && k === 0 && s.dupla ? s.dupla.map((m, j) => linhaVoz(k, j, m.sexo, m.voz, !m.vozManual, m.vozNome, j ? 'Direita' : 'Esquerda')).join('')
-        : (s.grupo !== undefined && s.grupo !== k) ? '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + ' · voz ' + esc(s.vozNome || '') + '</div>'
+        // (12/11, Thiago) a IA pode errar: a lista fica sempre; trocar a voz aqui separa este card do personagem 1
+        : (s.grupo !== undefined && s.grupo !== k && !s.solto) ? linhaVoz(k, -1, s.sexo, s.voz, !(proj.personagens[s.grupo] || {}).vozManual, s.vozNome, '') + '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + '</div>'
         : linhaVoz(k, -1, s.sexo, s.voz, !s.vozManual, s.vozNome, '')) +
       '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
       '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>' +
