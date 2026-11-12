@@ -505,6 +505,30 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
   .card{padding:14px}
 }
 @media (prefers-reduced-motion:reduce){ .trilha button,.estilo-v2{transition:none} }
+/* (12/11) CORRIGIR LEGENDA: a letra do vídeo pronto, uma linha por trecho cantado */
+.leg-cx{width:min(560px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;gap:12px;background:var(--lx-card);border-radius:16px;padding:16px}
+.leg-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.leg-titulo{font:700 16px/1.3 'Inter',sans-serif;color:var(--lx-txt)}
+.leg-sub{font-size:12.5px;color:var(--lx-txt2);margin-top:2px}
+.leg-x{flex:none;width:34px;height:34px;border:none;border-radius:50%;background:var(--lx-sup);color:var(--lx-txt);font-size:14px;cursor:pointer}
+.leg-dica{font-size:12.5px;line-height:1.5;color:var(--lx-txt2)}
+.leg-linhas{flex:1;min-height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;-webkit-overflow-scrolling:touch}
+.leg-linha{display:flex;align-items:center;gap:8px}
+.leg-t{flex:none;width:38px;font:500 11.5px 'Inter',sans-serif;color:var(--lx-txt3);font-variant-numeric:tabular-nums;text-align:right}
+.leg-linha input{flex:1;min-width:0;background:var(--lx-campo);border:1px solid transparent;border-radius:10px;color:var(--lx-txt);font:500 14px 'Inter',sans-serif;padding:9px 11px}
+.leg-linha input:focus{outline:none;border-color:var(--lx-cta-a)}
+.leg-linha input.mudou{border-color:var(--lx-cta-b);background:rgba(240,206,104,.08)}
+.leg-msg{font-size:13px;line-height:1.5;color:var(--lx-txt2);text-align:center;padding:18px 6px}
+.leg-bts{display:flex;justify-content:flex-end;gap:8px}
+.leg-bts .btn-gold{padding:10px 18px}
+.leg-bts .btn-gold:disabled{opacity:.45;cursor:not-allowed}
+.leg-x:focus-visible,.leg-linha input:focus-visible{outline:2px solid var(--lx-cta-b);outline-offset:2px}
+.order-leg-erro{font-size:11.5px;color:#FF9B9B;margin-top:3px}
+@media (max-width:560px){
+  .leg-cx{padding:14px}
+  .leg-linha input{font-size:16px}   /* menor que 16px o iPhone dá zoom ao tocar */
+  .leg-bts{display:grid;grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -788,6 +812,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--lx-bg);background
     <div class="prev-bts">
       <a class="btn-baixar" id="prevBaixar" href="#" target="_blank" rel="noopener" download>⬇ Baixar</a>
       <button type="button" class="btn-editar" onclick="fechaPrevia()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- (12/11) CORRIGIR LEGENDA: a atendente corrige a palavra errada e o vídeo é montado de novo só com o texto novo -->
+<div class="prev-fundo" id="legFundo" onclick="if(event.target===this)fechaLegenda()">
+  <div class="leg-cx" role="dialog" aria-modal="true" aria-labelledby="legTitulo">
+    <div class="leg-topo">
+      <div>
+        <div class="leg-titulo" id="legTitulo">Corrigir legenda</div>
+        <div class="leg-sub" id="legNome"></div>
+      </div>
+      <button type="button" class="leg-x" onclick="fechaLegenda()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="leg-dica">Cada linha é um trecho cantado. Corrija só a palavra errada, do jeito que foi cantada. O vídeo é montado de novo com o mesmo personagem e as mesmas fotos (uns 5 minutos), sem custo para você. O vídeo atual continua disponível até o novo ficar pronto.</div>
+    <div class="leg-linhas" id="legLinhas"></div>
+    <div class="leg-bts">
+      <button type="button" class="btn-mini" onclick="fechaLegenda()">Cancelar</button>
+      <button type="button" class="btn-gold" id="legEnviar" onclick="enviaLegenda()" disabled>Refazer legenda</button>
     </div>
   </div>
 </div>
@@ -3645,6 +3688,7 @@ async function loadOrders() {
     _meus150 = (d.orders || []).filter(o => o.kind === 'avatar');
     try { const dv = rv ? await rv.json() : null; _vit150 = (dv && dv.ok) ? (dv.videos || []) : []; } catch (e) { _vit150 = []; }
     pintar150();
+    agendaLegenda150();   // (12/11) legenda sendo refeita → atualiza sozinho
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Não consegui carregar o histórico.<br/>Verifique a conexão e abra a aba de novo.</div>';
   }
@@ -3709,10 +3753,16 @@ function card150Vitrine(v, custoBRL) {
   const custo = (podeEditar && custoBRL != null) ? ' · R$ ' + Number(custoBRL).toFixed(2).replace('.', ',') : '';
   const quem = v.atendente ? '<div class="order-attendant">👤 ' + escapeHtml(v.atendente) + (v.meu ? ' · seu' : '') + '</div>' : '';
   const editar = podeEditar ? '<button class="btn-mini btn-editar-clip" onclick="editarClipe(\'' + (v.orderId || '') + '\')" title="Trazer tudo de volta pro Criar clipe (dados, personagem, música e fotos) para mudar o que precisar">✏️ Editar</button>' : '';
+  // (12/11) Corrigir legenda: só o dono ou o admin; enquanto refaz, mostra o aviso no lugar do botão
+  const leg = legenda150De(v.orderId);
+  const refazendo = !!(leg && leg.estado === 'rodando');
+  const btLeg = !podeEditar ? '' : refazendo ? '<span class="st-chip st-run">Refazendo legenda</span>'
+    : '<button class="btn-mini" data-id="' + escapeHtml(v.orderId || '') + '" data-n="' + escapeHtml(v.cliente || '') + '" onclick="abreLegenda(this.dataset.id, this.dataset.n)" title="Corrigir uma palavra errada na legenda do vídeo">Corrigir legenda</button>';
+  const legErro = (podeEditar && leg && leg.estado === 'erro' && leg.erro) ? '<div class="order-leg-erro">⚠️ ' + escapeHtml(leg.erro) + '</div>' : '';
   return '<div class="order-item">' + miniVideo150(v) + '<div class="order-info">' + cat + '<div class="order-client">' + escapeHtml(v.cliente || '—') + '</div>' + quem +
-    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div></div>' +
+    '<div class="order-meta">' + escapeHtml(v.quando || '') + dur + custo + '</div>' + legErro + '</div>' +
     '<div class="order-side"><span class="st-chip st-ok">Pronto</span>' +
-    '<a class="btn-baixar" href="' + escapeHtml(rapido150(v.videoUrl || '')) + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + '</div></div>';
+    '<a class="btn-baixar" href="' + escapeHtml(rapido150(v.videoUrl || '')) + '" target="_blank" rel="noopener" download>⬇ Baixar</a>' + editar + btLeg + '</div></div>';
 }
 // (01/11) MINIATURA + PRÉVIA (igual ao Avatar 97): um quadro do próprio vídeo; o clique abre a prévia, com o Baixar dentro.
 // O endereço de teste do armazenamento (r2.dev) é lento — troca pelo domínio próprio do mesmo armazenamento.
@@ -3755,9 +3805,74 @@ function fechaPrevia() {
   if (vd) { vd.pause(); vd.removeAttribute('src'); vd.load(); }
   if (f) f.classList.remove('show');
 }
+// ── (12/11) CORRIGIR LEGENDA (Thiago, depois do CEJAN): a atendente corrige a palavra e o vídeo é montado de novo ──
+let _leg = null, _legTimer = null;
+function legenda150De(orderId) { const o = _meus150.find(x => x.orderId === orderId); return (o && o.legenda) || null; }
+function tempo150(s) { s = Math.max(0, Math.round(+s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+async function abreLegenda(orderId, nome) {
+  const f = document.getElementById('legFundo'), box = document.getElementById('legLinhas'), bt = document.getElementById('legEnviar');
+  if (!f || !box || !bt) return;
+  _leg = { orderId: orderId, linhas: [] };
+  document.getElementById('legNome').textContent = nome || '';
+  box.innerHTML = '<div class="leg-msg">Carregando a letra…</div>';
+  bt.disabled = true;
+  f.classList.add('show');
+  try {
+    const r = await api('/a150Legenda?orderId=' + encodeURIComponent(orderId));
+    const d = await r.json();
+    if (!_leg || _leg.orderId !== orderId) return;   // fechou ou abriu outro enquanto carregava
+    if (!d.ok) { box.innerHTML = '<div class="leg-msg">' + escapeHtml(d.error || 'Não consegui abrir a letra.') + '</div>'; return; }
+    if (d.legenda && d.legenda.estado === 'rodando') { box.innerHTML = '<div class="leg-msg">A legenda deste vídeo já está sendo refeita. Aguarde uns minutos.</div>'; return; }
+    if (!d.restam) { box.innerHTML = '<div class="leg-msg">Este vídeo já teve todas as correções de legenda permitidas. Fale com o admin.</div>'; return; }
+    _leg.linhas = (d.versos || []).map(v => v.texto);
+    box.innerHTML = (d.versos || []).map((v, i) =>
+      '<label class="leg-linha"><span class="leg-t">' + tempo150(v.de) + '</span>' +
+      '<input type="text" data-i="' + i + '" value="' + escapeHtml(v.texto) + '" autocomplete="off" spellcheck="true" aria-label="Trecho em ' + tempo150(v.de) + '" ' +
+      'oninput="this.classList.toggle(\'mudou\', this.value.replace(/\\s+/g, \' \').trim() !== (_leg ? _leg.linhas[' + i + '] : this.value))"/></label>').join('');
+    bt.disabled = false;
+  } catch (e) {
+    box.innerHTML = '<div class="leg-msg">Não consegui abrir a letra. Verifique a conexão e tente de novo.</div>';
+  }
+}
+function fechaLegenda() { const f = document.getElementById('legFundo'); if (f) f.classList.remove('show'); _leg = null; }
+async function enviaLegenda() {
+  if (!_leg || !_leg.linhas.length) return;
+  const linhas = Array.from(document.querySelectorAll('#legLinhas input')).map(x => x.value.replace(/\s+/g, ' ').trim());
+  if (linhas.some(l => !l)) { toast('Não deixe nenhuma linha vazia.'); return; }
+  if (linhas.every((l, i) => l === _leg.linhas[i])) { toast('Nenhuma palavra foi alterada.'); return; }
+  const bt = document.getElementById('legEnviar');
+  bt.disabled = true; bt.textContent = 'Enviando…';
+  try {
+    const r = await api('/a150Legenda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: _leg.orderId, linhas: linhas }) });
+    const d = await r.json();
+    if (!d.ok) { toast(d.error || 'Não consegui enviar a correção.'); return; }
+    fechaLegenda();
+    toast('Legenda enviada. O vídeo novo fica pronto em uns 5 minutos.');
+    loadOrders();
+  } catch (e) {
+    toast('Não consegui enviar a correção. Verifique a conexão.');
+  } finally {
+    bt.disabled = false; bt.textContent = 'Refazer legenda';
+  }
+}
+// enquanto alguma legenda está sendo refeita, atualiza a lista a cada 30 s — só com a aba VISÍVEL (aba escondida consultando trava o celular)
+function agendaLegenda150() {
+  clearTimeout(_legTimer);
+  if (!_meus150.some(o => o.legenda && o.legenda.estado === 'rodando')) return;
+  _legTimer = setTimeout(function () {
+    if (!document.hidden) { loadOrders(); return; }
+    document.addEventListener('visibilitychange', function volta() {
+      if (document.hidden) return;
+      document.removeEventListener('visibilitychange', volta);
+      loadOrders();
+    });
+  }, 30000);
+}
 document.addEventListener('keydown', function (e) {
   const f = document.getElementById('prevFundo');
   if (e.key === 'Escape' && f && f.classList.contains('show')) fechaPrevia();
+  const lf = document.getElementById('legFundo');   // (12/11) Corrigir legenda
+  if (e.key === 'Escape' && lf && lf.classList.contains('show')) fechaLegenda();
 });
 (function ligaBusca150() {
   const liga = function () {
