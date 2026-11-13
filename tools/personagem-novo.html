@@ -386,6 +386,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .slot .slot-nome{font-size:12.5px;color:var(--text-mid);font-weight:600}
 .slot .slot-sub{font-size:11px;color:var(--text-dim);line-height:1.35}
 .slot label{display:inline-block;margin-top:.25rem;font-size:12px;color:var(--gold);cursor:pointer}
+/* (13/11) imagem pronta 9:16 */
+.slot .slot-th.th-916{aspect-ratio:9/16}
+.pronta-bt{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;margin-top:.15rem;padding:.55rem .7rem;border:.5px dashed var(--border-bright);border-radius:999px;color:var(--gold);font-size:12.5px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,background .15s}
+.pronta-bt:hover{border-color:var(--gold);background:rgba(201,147,47,.06)}
+.pronta-bt svg{width:16px;height:16px;flex-shrink:0}
 .pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem}
 .pp-card{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem}
 .pp-card img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block;background:#000;cursor:zoom-in}
@@ -827,7 +832,7 @@ const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).leng
 let proj = null;                 // o projeto como o servidor devolveu
 let estilo = 'real';
 let conversa = false;            // (10/11) Padrão com 2+ personagens: "Conversa entre os personagens"
-let pers = [{}, {}, {}];        // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }]
+let pers = [{}, {}, {}];        // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }] ou, com imagem pronta (13/11), [{ prontaNova, prontaUrl, prontaKey }]
 let gestos = [];
 let trilhas = [], trilhaSel = null, legendas = true;
 // (08/11) estilo e cor da legenda (padrão: Promocional, amarelo)
@@ -1058,7 +1063,7 @@ function salvarRascunho(){
     pers.forEach((x, k) => {
       if (natal() ? !temAmb(x) : !(temFoto(x) || temAmb(x))) return;
       idxs.push(k);
-      ents.push({ foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
+      ents.push(temPronta(x) ? entPronta(x) : { foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
         ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined });
     });
     $('notaSalvo').textContent = '💾 Salvando…';
@@ -1070,6 +1075,7 @@ function salvarRascunho(){
     if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (!x.key && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
     (proj.personagens || []).forEach((sv, j) => {
       const c = pers[idxs[j]], e = ents[j]; if (!c || !sv) return;
+      if (e.pronta && c.prontaNova === e.pronta && sv.pronta) { c.prontaNova = null; c.prontaKey = sv.pronta.key; c.prontaUrl = sv.pronta.url; }
       if (e.foto && c.fotoNova === e.foto && sv.foto) { c.fotoNova = null; c.fotoKey = sv.foto.key; c.fotoUrl = sv.foto.url; }
       if (e.ambiente && c.ambNova === e.ambiente && sv.ambiente) { c.ambNova = null; c.ambKey = sv.ambiente.key; c.ambUrl = sv.ambiente.url; }
       if (e.ambiente === null && c.ambTirar) { c.ambTirar = false; c.ambKey = null; c.ambUrl = null; }
@@ -1083,6 +1089,7 @@ function salvarRascunho(){
 // (07/11, Thiago) os 3 cards ficam SEMPRE na tela; cada um só com "Personagem" e "Ambiente", sem descrição. Card vazio não conta.
 // (07/11, Thiago) ícone desenhado (rosto / paisagem) no lugar do emoji, e o card INTEIRO abre a escolha da foto (igual ao "+ Enviar")
 const IC_ROSTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/></svg>';
+const IC_SUBIR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>';
 const IC_AMBIENTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/><circle cx="6.5" cy="6.5" r="2" fill="currentColor"/></svg>';
 function pintarPers(){
   while (pers.length < 3) pers.push({});
@@ -1096,10 +1103,20 @@ function pintarPers(){
       (tipo === 'amb' && src && (k > 0 || !natal()) ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) + '</div>';
-    return '<div class="pers-card"><div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
-      (k > 0 && (foto || amb) ? '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>' : '') +
+    const tit = '<div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>';
+    const rm = '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>';
+    // (13/11, Thiago) imagem pronta: a cena 9:16 já montada vai direto para o vídeo, sem a IA montar e sem custo de imagem
+    if (temPronta(p)) return '<div class="pers-card">' + tit + (k > 0 ? rm : '') +
+      '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolherPronta(event,' + k + ')"/>' +
+      '<div class="slot-th th-916"><img src="' + esc(p.prontaNova || p.prontaUrl) + '" alt=""/></div>' +
+      '<div class="slot-info"><div class="slot-nome">Imagem pronta (9:16)</div>' +
+      '<span class="slot-acao">Trocar</span> · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();limparPers(' + k + ')">Tirar</span>' +
+      '<div class="slot-sub">Vai direto para o vídeo, sem custo de imagem.</div></div></label></div>';
+    return '<div class="pers-card">' + tit + (k > 0 && (foto || amb) ? rm : '') +
       slot('foto', foto, 'Personagem' + (k === 0 ? ' *' : '')) +
       slot('amb', amb, 'Ambiente') +
+      '<label class="pronta-bt" title="Já tem a cena 9:16 montada? Suba aqui: ela vai direto para o vídeo, sem custo de imagem.">' +
+        '<input type="file" accept="image/*" hidden onchange="escolherPronta(event,' + k + ')"/>' + IC_SUBIR + 'Subir imagem pronta</label>' +
       '</div>';
   }).join('');
   pintarConversa();
@@ -1291,7 +1308,43 @@ async function gerarVideoBF(){
 }
 function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
-const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl));
+const temPronta = (p) => !!(p && (p.prontaNova || p.prontaUrl));
+const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl || temPronta(p)));   // (13/11) a imagem pronta vale como o personagem do card
+const entPronta = (p) => ({ pronta: p.prontaNova || undefined, prontaKey: p.prontaNova ? undefined : (p.prontaKey || undefined) });
+// (13/11) imagem pronta → 1008×1792 (9:16, o mesmo tamanho da imagem que a IA monta). Se não vier em 9:16, corta as sobras das bordas, pelo meio.
+function lerPronta(file){
+  return new Promise((ok, erro) => {
+    const fr = new FileReader();
+    fr.onerror = () => erro(new Error('não consegui ler a imagem'));
+    fr.onload = () => {
+      const im = new Image();
+      im.onerror = () => erro(new Error('imagem inválida'));
+      im.onload = () => {
+        const W = 1008, A = 1792, alvo = W / A, ar = im.width / im.height;
+        let sx = 0, sy = 0, sw = im.width, sh = im.height;
+        if (ar > alvo) { sw = Math.round(im.height * alvo); sx = Math.round((im.width - sw) / 2); }
+        else if (ar < alvo) { sh = Math.round(im.width / alvo); sy = Math.round((im.height - sh) / 2); }
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = A;
+        const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, A); ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(im, sx, sy, sw, sh, 0, 0, W, A);
+        ok({ url: cv.toDataURL('image/jpeg', 0.9), cortou: Math.abs(ar - alvo) / alvo > 0.03, largura: sw });
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function escolherPronta(ev, k){
+  const f = ev.target.files && ev.target.files[0]; if (!f) return;
+  try {
+    const r = await lerPronta(f);
+    pers[k] = { prontaNova: r.url };
+    if (r.cortou) toast('⚠️ A imagem não era 9:16: cortei as sobras das bordas. Confira se ficou bom.');
+    else if (r.largura < 600) toast('⚠️ Imagem pequena (' + r.largura + ' px de largura). Se tiver uma maior, o vídeo sai mais nítido.');
+    pintarPers();
+    agendaRascunho(50);
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
 const temAmb = (p) => !!(p && (p.ambNova || (p.ambUrl && !p.ambTirar)));
 // foto → JPEG de até 1600 px (o servidor recebe base64)
 function lerImagem(file){
@@ -1329,7 +1382,7 @@ async function gerarTudo(){
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
   if (natal() && !pers.some(temAmb)) return toast('🏠 Envie a foto de pelo menos um ambiente.');
-  if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1.');
+  if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1 (ou a imagem pronta).');
   const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
   if (vozModo === 'cliente' && !temVozCliente()) return toast('🎙️ Envie o áudio do cliente.');
@@ -1343,7 +1396,7 @@ async function gerarTudo(){
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
-      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => ({
+      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => temPronta(p) && !natal() ? entPronta(p) : ({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
         ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined })) };
     let d = await chama('/pn/roteiro', corpo);
@@ -1365,7 +1418,7 @@ async function gerarTudo(){
 function recebe(p){
   proj = p;
   if (p.modo === 'blackfriday' || p.modo === 'promo') { const pend = fotosBF.filter(x => !x.key); fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url, tipo: f.tipo })).concat(pend); }
-  pers = (p.personagens || []).map(s => ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
+  pers = (p.personagens || []).map(s => s.pronta ? { prontaUrl: s.pronta.url, prontaKey: s.pronta.key } : ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
     ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key }));
   while (pers.length < 3) pers.push({});
   $('notaSalvo').textContent = '💾 Salvo automaticamente · ' + (p.cliente || '');
@@ -1386,8 +1439,10 @@ function pintarPasso2(){
         // (12/11, Thiago) a IA pode errar: a lista fica sempre; trocar a voz aqui separa este card do personagem 1
         : (s.grupo !== undefined && s.grupo !== k && !s.solto) ? linhaVoz(k, -1, s.sexo, s.voz, !(proj.personagens[s.grupo] || {}).vozManual, s.vozNome, '') + '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + '</div>'
         : linhaVoz(k, -1, s.sexo, s.voz, !s.vozManual, s.vozNome, '')) +
-      '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
-      '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>' +
+      // (13/11) imagem pronta: não tem "Refazer" (a IA não monta nada); para trocar, envia outra no passo 1
+      (s.pronta ? '<div class="pp-sub">Imagem pronta enviada por você · sem custo de imagem. Para trocar, volte ao passo 1.</div>'
+        : '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
+          '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>') +
     '</div>').join('');
   pintarCenas();
 }
