@@ -64,6 +64,14 @@ input[type=text]:focus,textarea:focus{border-color:var(--gold-dim)}
 .pron-res{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:.8rem;
   background:rgba(0,0,0,.28);border-radius:var(--radius);padding:.7rem .8rem}
 .pron-saida{flex:1 1 160px;font-size:17px;letter-spacing:.4px;color:#EAF7FE;word-break:break-word}
+/* (13/11) Pronúncia do projeto: palavra no texto → como a voz fala (no celular: a palavra em cima, o resto embaixo) */
+.pron-par{display:grid;grid-template-columns:1fr auto 1fr auto auto;gap:.4rem;align-items:center;margin-bottom:.45rem}
+.pron-par input[type=text]{min-width:0;padding:.6rem .75rem;font-size:14px}
+.pron-par input[type=text]:focus{border-color:rgba(56,189,248,.7)}
+.pron-seta{color:#7FD3F7;font-size:14px}
+.pron-ouvir,.pron-tirar{width:36px;height:36px;border-radius:50%;border:.5px solid rgba(56,189,248,.5);background:rgba(56,189,248,.14);color:#BEE9FB;font-size:12px;cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit}
+.pron-tirar{border-color:var(--border);background:transparent;color:var(--text-dim)}
+@media(max-width:600px){.pron-par{grid-template-columns:1fr auto auto}.pron-par input[type=text]:first-child{grid-column:1/-1}.pron-seta{display:none}}
 /* (01/10) prompt do personagem: recolhido por padrão dentro do cartão da cena */
 .prompt-cena{margin-top:.7rem;border:.5px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,.02);padding:.55rem .7rem}
 .prompt-cena summary{cursor:pointer;font-size:13px;color:var(--text-mid);list-style:none;user-select:none;min-height:28px;display:flex;align-items:center;flex-wrap:wrap;gap:.3rem}
@@ -623,6 +631,14 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
     </div>
 
     <div id="boxCenas"></div>
+
+    <!-- (13/11, Thiago — Mariana/Rhoppe) PRONÚNCIA: a voz lê a troca, a legenda fica com o texto. Azul como o corretor do antigo: não é uma cena. -->
+    <div class="step bloco-pron" id="blocoPron">
+      <div class="step-head"><div class="step-title">Pronúncia <span class="mini-obs">(opcional)</span></div></div>
+      <div class="step-hint">A voz falou um nome errado? Escreva o nome como está no texto e, ao lado, como ela deve falar. A legenda continua com o nome certo.</div>
+      <div id="listaPron"></div>
+      <button type="button" class="btn-ghost" onclick="addPron()">+ Adicionar palavra</button>
+    </div>
 
     <div class="btn-row" style="margin-bottom:.9rem">
       <button class="btn-ghost" onclick="copiarBriefing()">📋 Copiar briefing</button>
@@ -1444,7 +1460,66 @@ function pintarPasso2(){
         : '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
           '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>') +
     '</div>').join('');
+  pintarPron();
   pintarCenas();
+}
+// ── (13/11, Thiago — Mariana/Rhoppe) PRONÚNCIA do projeto: "Rhoppe → Rópi". A voz lê a troca em todas as cenas; a legenda fica com o texto. ──
+let pronLocal = [], pronDe = null, pronT = null, audioPron = null;
+function pintarPron(){
+  const bl = $('blocoPron'); if (!bl) return;
+  const cs = (proj.roteiro && proj.roteiro.cenas) || [];
+  bl.classList.toggle('hide', !cs.length || cs.every(c => c.audioCliente));   // com o áudio do cliente não há voz gerada
+  if (pronDe !== proj.id) { pronDe = proj.id; pronLocal = (proj.pronuncias || []).map(x => ({ escrita: x.escrita, fala: x.fala })); }
+  if (!pronLocal.length) pronLocal.push({ escrita: '', fala: '' });
+  $('listaPron').innerHTML = pronLocal.map((x, k) => '<div class="pron-par">' +
+    '<input type="text" maxlength="60" placeholder="No texto · ex: Rhoppe" value="' + esc(x.escrita) + '" oninput="editaPron(' + k + ',0,this.value)"/>' +
+    '<span class="pron-seta">→</span>' +
+    '<input type="text" maxlength="80" placeholder="Como falar · ex: Rópi" value="' + esc(x.fala) + '" oninput="editaPron(' + k + ',1,this.value)"/>' +
+    '<button type="button" class="pron-ouvir" data-ouvir title="Ouvir como a voz fala" onclick="testarPron(' + k + ',this)">▶</button>' +
+    '<button type="button" class="pron-tirar" title="Tirar" onclick="tirarPron(' + k + ')">✕</button></div>').join('');
+}
+function editaPron(k, campo, v){
+  if (!pronLocal[k]) return;
+  pronLocal[k][campo ? 'fala' : 'escrita'] = v;
+  clearTimeout(pronT); pronT = setTimeout(salvarPron, 900);
+}
+function addPron(){
+  const ult = pronLocal[pronLocal.length - 1];
+  if (!ult || ult.escrita.trim() || ult.fala.trim()) pronLocal.push({ escrita: '', fala: '' });
+  pintarPron();
+  const ins = $('listaPron').querySelectorAll('input'); if (ins.length) ins[ins.length - 2].focus();
+}
+function tirarPron(k){ pronLocal.splice(k, 1); pintarPron(); salvarPron(); }
+const pronValidas = () => pronLocal.map(x => ({ escrita: x.escrita.trim(), fala: x.fala.trim() })).filter(x => x.escrita && x.fala && x.escrita !== x.fala);
+async function salvarPron(){
+  clearTimeout(pronT); pronT = null;
+  if (!proj || !proj.id) return;
+  const lista = pronValidas();
+  if (JSON.stringify(lista) === JSON.stringify(proj.pronuncias || [])) return;
+  await salvaPendentes();   // a cena que a atendente estava editando vai antes (o redesenho abaixo usa o que está no servidor)
+  const d = await chama('/pn/salvar', { id: proj.id, pronuncias: lista });
+  if (!d.ok) return toast('⚠️ ' + (d.error || 'não consegui salvar a pronúncia'));
+  const tinha = (proj.cenas || []).map(c => !!(c && c.desatualizada));
+  proj = d.projeto;
+  pintarCenas();
+  const marcou = (proj.cenas || []).some((c, i) => c && c.desatualizada && !tinha[i]);
+  toast(marcou ? '✅ Pronúncia salva. As cenas com essa palavra ficaram marcadas para refazer.' : '✅ Pronúncia salva.');
+}
+async function testarPron(k, b){
+  const x = pronLocal[k] || {}, esc1 = String(x.escrita || '').trim(), fal1 = String(x.fala || '').trim();
+  if (!esc1 || !fal1) return toast('✍️ Escreva o nome como está no texto e como a voz deve falar.');
+  if (audioPron && !audioPron.paused && audioPron._k === k) { audioPron.pause(); b.textContent = '▶'; return; }
+  if (audioPron) audioPron.pause();
+  document.querySelectorAll('.pron-ouvir').forEach(z => { z.textContent = '▶'; });
+  b.textContent = '…';
+  try {
+    const d = await chama('/pn/ouvir-pronuncia', { id: proj.id, escrita: esc1, fala: fal1 });
+    if (!d.ok) throw new Error(d.error);
+    audioPron = new Audio(d.audio); audioPron._k = k;
+    audioPron.onended = () => { b.textContent = '▶'; };
+    await audioPron.play().catch(() => {});
+    b.textContent = '❚❚';
+  } catch (e) { b.textContent = '▶'; toast('⚠️ ' + (e.message || 'não consegui gerar o áudio')); }
 }
 function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
 // (12/11) card com 2 pessoas na imagem: as pessoas (esquerda, direita) e o nome delas na tela ("Homem (esquerda)")
@@ -1644,6 +1719,7 @@ async function gerar(cena){
   ocupado = true;
   try {
     await salvaPendentes();
+    if (pronT) await salvarPron();   // (13/11) a pronúncia que ela acabou de escrever vale já nesta geração
     const d = await chama('/pn/gerar', { id: proj.id, cena: cena || undefined });
     if (!d.ok) throw new Error(d.error || 'não consegui gerar');
     proj = d.projeto; pintarCenas(); acompanhar();
