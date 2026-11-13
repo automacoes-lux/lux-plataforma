@@ -1449,6 +1449,27 @@ function pintarPasso2(){
 function ampliar(src){ $('ampliarImg').src = src; $('ampliar').classList.add('show'); }
 // (12/11) card com 2 pessoas na imagem: as pessoas (esquerda, direita) e o nome delas na tela ("Homem (esquerda)")
 const membrosCena = (rc) => { const s = (proj.personagens || [])[rc.p] || {}; return Array.isArray(s.membros) && s.membros.length === 2 ? s.membros : null; };
+// (13/11, Thiago — pedido da Giovana) CONVERSA na mesma cena: quem fala diz a fala e a outra pessoa responde. No "Quem fala" o valor é
+// 0/1 (uma pessoa só) ou c0/c1 (conversa: c0 = a da esquerda começa)
+const conversaCena = (rc) => !!(rc.conversa && membrosCena(rc) && !rc.audioCliente);
+function opcoesQuemFala(rc){
+  const ms = membrosCena(rc), q = rc.q ? 1 : 0, conv = conversaCena(rc);
+  const um = ms.map((x, k) => '<option value="' + k + '"' + (!conv && k === q ? ' selected' : '') + '>' + rotuloPessoa(ms, k, false) + '</option>').join('');
+  const duas = [0, 1].map(k => '<option value="c' + k + '"' + (conv && k === q ? ' selected' : '') + '>Conversa: ' + rotuloPessoa(ms, k, true) + ' fala, ' + rotuloPessoa(ms, 1 - k, true).toLowerCase() + ' responde</option>').join('');   // curto: cabe no celular
+  return um + duas;
+}
+const rotuloFala = (rc) => conversaCena(rc) ? 'Fala · ' + rotuloPessoa(membrosCena(rc), rc.q ? 1 : 0, false) : 'Fala';
+const rotuloResposta = (rc) => membrosCena(rc) ? 'Resposta · ' + rotuloPessoa(membrosCena(rc), rc.q ? 0 : 1, false) : 'Resposta';
+function contaCena(rc){ return palavras(rc.fala) + (conversaCena(rc) ? palavras(rc.resposta) : 0); }
+// troca entre uma pessoa e conversa sem redesenhar o card (a atendente pode estar no meio do texto)
+function ajustaConversa(card, rc){
+  const r = card.querySelector('[data-resp]');
+  if (r) r.classList.toggle('hide', !conversaCena(rc));
+  const rf = card.querySelector('[data-rot-fala]'); if (rf && !rc.audioCliente) rf.textContent = rotuloFala(rc);
+  const rr = card.querySelector('[data-rot-resp]'); if (rr) rr.textContent = rotuloResposta(rc);
+  if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(contaCena(rc), rc.gesto, conversaCena(rc));
+  if (conversaCena(rc) && r && !palavras(rc.resposta)) { const t = r.querySelector('textarea'); if (t) t.focus(); }
+}
 function rotuloPessoa(ms, j, curto){
   const nome = (m) => m.tipo === 'mascote' ? 'Personagem' : (m.sexo === 'F' ? 'Mulher' : 'Homem');
   const igual = nome(ms[0]) === nome(ms[1]), lado = j ? 'direita' : 'esquerda';
@@ -1525,10 +1546,13 @@ function pintarCenas(){
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
       '<div class="cena-grid"><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' +
       '<div>' +
-        (membrosCena(rc) ? '<div class="mini">Quem fala</div><select data-campo="q">' + membrosCena(rc).map((x, k) => '<option value="' + k + '"' + (k === (rc.q ? 1 : 0) ? ' selected' : '') + '>' + rotuloPessoa(membrosCena(rc), k, false) + '</option>').join('') + '</select>' : '') +
+        (membrosCena(rc) ? '<div class="mini">Quem fala</div><select data-campo="q">' + opcoesQuemFala(rc) + '</select>' : '') +
         (n > 1 && !(natal() && i === 0) ? '<div class="mini">' + (natal() ? 'Ambiente' : 'Personagem') + '</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</option>').join('') + '</select>' : '') +
-        '<div class="mini">' + (rc.audioCliente ? 'Texto na tela (o áudio do cliente não muda)' : 'Fala') + '</div><textarea data-campo="fala" maxlength="400">' + esc(rc.audioCliente ? (rc.legenda || rc.fala) : rc.fala) + '</textarea>' +
-        '<div class="soon-note" data-cont>' + (rc.audioCliente ? Math.round(rc.audioCliente.ate - rc.audioCliente.de) + ' s do áudio do cliente' : contTxt(np, rc.gesto)) + '</div>' +
+        '<div class="mini" data-rot-fala>' + (rc.audioCliente ? 'Texto na tela (o áudio do cliente não muda)' : rotuloFala(rc)) + '</div><textarea data-campo="fala" maxlength="400">' + esc(rc.audioCliente ? (rc.legenda || rc.fala) : rc.fala) + '</textarea>' +
+        // (13/11, Giovana) conversa na mesma cena: a resposta da outra pessoa
+        (membrosCena(rc) && !rc.audioCliente ? '<div data-resp class="' + (conversaCena(rc) ? '' : 'hide') + '"><div class="mini" data-rot-resp>' + rotuloResposta(rc) + '</div>' +
+          '<textarea data-campo="resposta" maxlength="400" placeholder="O que a outra pessoa responde">' + esc(rc.resposta || '') + '</textarea></div>' : '') +
+        '<div class="soon-note" data-cont>' + (rc.audioCliente ? Math.round(rc.audioCliente.ate - rc.audioCliente.de) + ' s do áudio do cliente' : contTxt(np + (conversaCena(rc) ? palavras(rc.resposta) : 0), rc.gesto, conversaCena(rc))) + '</div>' +
         '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
         '<select data-campo="gesto">' + opts + '</select>' +
         '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
@@ -1560,17 +1584,18 @@ function pintarCenas(){
   $('custoP2').textContent = proj.custoBRL ? '💰 Custo até aqui: ' + reais(proj.custoBRL) + ' (entra no seu financeiro quando o vídeo for montado).' : '';
 }
 const descGesto = (g) => (natal() && g.id === 'chegando') ? 'O trenó pousa, o Papai Noel desce e já fala com a câmera' : (g.desc || '');
-function contTxt(np, gesto){
-  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 4.2 : 2.6) : 0.8));
+function contTxt(np, gesto, conversa){
+  const seg = Math.round(np * SEG_POR_PALAVRA + (gesto === 'chegando' ? (natal() ? 4.2 : 2.6) : 0.8) + (conversa ? 0.7 : 0));
   const aviso = '';   // (10/11, Thiago) sem limite: cena longa é gerada em partes e emendada sozinha
   return np + ' palavras · ~' + seg + ' s de cena' + (gesto === 'chegando' ? (natal() ? ' (com o trenó)' : ' (com a chegada)') : '') + aviso;
 }
 function editouCena(i, el){
   const rc = proj.roteiro.cenas[i], campo = el.dataset.campo;
   if (campo === 'p') { rc.p = +el.value; repintarCena[i] = true; }   // (12/11) trocar o card pode mostrar/tirar o "Quem fala"
-  else if (campo === 'q') rc.q = +el.value;
+  else if (campo === 'q') { const qv = String(el.value); rc.conversa = qv.charAt(0) === 'c'; rc.q = +qv.slice(-1); ajustaConversa(el.closest('.cena'), rc); }
   else if (campo === 'fala' && rc.audioCliente) rc.legenda = el.value;
-  else if (campo === 'fala') { rc.fala = el.value; el.closest('.cena').querySelector('[data-cont]').textContent = contTxt(palavras(el.value), rc.gesto); }
+  else if (campo === 'fala') { rc.fala = el.value; el.closest('.cena').querySelector('[data-cont]').textContent = contTxt(contaCena(rc), rc.gesto, conversaCena(rc)); }
+  else if (campo === 'resposta') { rc.resposta = el.value; el.closest('.cena').querySelector('[data-cont]').textContent = contTxt(contaCena(rc), rc.gesto, conversaCena(rc)); }
   else if (campo === 'gesto') {
     rc.gesto = el.value;
     const card = el.closest('.cena');
@@ -1579,17 +1604,19 @@ function editouCena(i, el){
     if (rc.gesto === 'livre') gt.focus();
     const g = gestos.find(x => x.id === rc.gesto) || {};
     card.querySelector('.gesto-desc').textContent = descGesto(g);
-    if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(palavras(rc.fala), rc.gesto);
+    if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(contaCena(rc), rc.gesto, conversaCena(rc));
   } else if (campo === 'gestoTexto') rc.gestoTexto = el.value;
   else if (campo === 'comando') rc.comando = el.value;
   clearTimeout(salvarT[i]);
-  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'gestoTexto' || campo === 'comando' ? 900 : 50);
+  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'resposta' || campo === 'gestoTexto' || campo === 'comando' ? 900 : 50);
 }
 // o que vale é o que está ESCRITO na tela (dois salvamentos seguidos se atropelavam e o 2º mandava o texto antigo do servidor)
 function valoresDaCena(i){
   const card = document.querySelector('.cena[data-i="' + i + '"]'), rc = proj.roteiro.cenas[i];
   const v = (campo, padrao) => { const el = card && card.querySelector('[data-campo="' + campo + '"]'); return el ? el.value : padrao; };
-  return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), comando: v('comando', rc.comando || ''), p: Number(v('p', rc.p)), q: membrosCena(rc) ? Number(v('q', rc.q || 0)) : undefined };
+  const qv = String(v('q', (rc.conversa ? 'c' : '') + (rc.q ? 1 : 0)));   // (13/11) "c0"/"c1" = conversa
+  return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), comando: v('comando', rc.comando || ''), p: Number(v('p', rc.p)),
+    q: membrosCena(rc) ? Number(qv.slice(-1)) || 0 : undefined, conversa: membrosCena(rc) ? qv.charAt(0) === 'c' : undefined, resposta: v('resposta', rc.resposta || '') };
 }
 const repintarCena = {};
 async function salvarCena(i){
@@ -1678,7 +1705,7 @@ async function montaBriefing(){
     const imgs = await Promise.all(cenas.map(rc => { const sp = proj.personagens[rc.p] || {}; return sp.img ? carregaImg(sp.img.key).catch(() => null) : null; }));
     const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
     ctx.font = FONTE;
-    const linhas = cenas.map(rc => quebraLinhas(ctx, rc.legenda || rc.fala, COL));
+    const linhas = cenas.map(rc => quebraLinhas(ctx, (rc.legenda || rc.fala) + (conversaCena(rc) && palavras(rc.resposta) ? ' — ' + rc.resposta : ''), COL));   // (13/11) conversa: a resposta junto
     const maxL = Math.max.apply(null, linhas.map(l => l.length));
     const W = PAD * 2 + n * COL + (n - 1) * GAP, TOPO = PAD + 118, H = TOPO + IMG_H + 30 + 48 + maxL * 44 + PAD;
     cv.width = W; cv.height = H;
