@@ -419,6 +419,8 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .cena select,.cena textarea,.cena input{width:100%}
 .cena textarea{min-height:92px}
 .cena textarea.cmd-cena{min-height:64px}
+.cena textarea.acao-cena{min-height:170px;line-height:1.5}
+.cena .btn-acao{margin:.1rem 0 .7rem}
 .mini-obs{font-weight:400;opacity:.8}
 .selo{margin-left:auto;font-size:11px;border-radius:999px;padding:.2rem .6rem;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-dim);white-space:nowrap}
 .selo.ok{background:rgba(92,190,124,.14);border-color:rgba(92,190,124,.5);color:#7FD99A}
@@ -1628,12 +1630,19 @@ function pintarCenas(){
         (membrosCena(rc) && !rc.audioCliente ? '<div data-resp class="' + (conversaCena(rc) ? '' : 'hide') + '"><div class="mini" data-rot-resp>' + rotuloResposta(rc) + '</div>' +
           '<textarea data-campo="resposta" maxlength="400" placeholder="O que a outra pessoa responde">' + esc(rc.resposta || '') + '</textarea></div>' : '') +
         '<div class="soon-note" data-cont>' + (rc.audioCliente ? Math.round(rc.audioCliente.ate - rc.audioCliente.de) + ' s do áudio do cliente' : contTxt(np + (conversaCena(rc) ? palavras(rc.resposta) : 0), rc.gesto, conversaCena(rc))) + '</div>' +
-        '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
-        '<select data-campo="gesto">' + opts + '</select>' +
-        '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
-        '<div class="gesto-desc">' + esc(descGesto(g)) + '</div>' +
-        '<div class="mini">Prompt de comando <span class="mini-obs">(para alterar algo na cena)</span></div>' +
-        '<textarea data-campo="comando" maxlength="2000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>' +
+        // (13/11, Thiago) AÇÃO DA CENA: uma caixa só no lugar de Gesto + Prompt de comando. A IA escreve o passo a passo olhando a imagem;
+        // a atendente muda, apaga ou escreve a dela. Cena antiga (sem o campo) continua com Gesto + Prompt de comando.
+        (rc.acao !== undefined
+          ? '<div class="mini">Ação do personagem <span class="gesto-ia' + (rc.acao && rc.acao === rc.acaoIA ? '' : ' hide') + '" data-acao-ia>✨ escrita pela IA</span></div>' +
+            '<textarea data-campo="acao" maxlength="2000" class="cmd-cena acao-cena" placeholder="Escreva o passo a passo do que o personagem faz e em que parte da fala. Ex:&#10;1. Ao dizer &quot;venha conhecer&quot;: aponta com a mão direita aberta para a vitrine.&#10;2. Ao dizer &quot;o melhor preço&quot;: pega um perfume da prateleira e mostra para a câmera.">' + esc(rc.acao || '') + '</textarea>' +
+            '<div class="gesto-desc">O que o personagem faz enquanto fala, passo a passo. Pode mudar, apagar ou escrever a sua. Quanto mais detalhe (qual mão, para onde, em que palavra), melhor o vídeo obedece.</div>' +
+            '<button type="button" class="btn-ghost btn-acao" onclick="outraAcao(' + i + ')">✨ Escrever outra com a IA</button>'
+          : '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
+            '<select data-campo="gesto">' + opts + '</select>' +
+            '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
+            '<div class="gesto-desc">' + esc(descGesto(g)) + '</div>' +
+            '<div class="mini">Prompt de comando <span class="mini-obs">(para alterar algo na cena)</span></div>' +
+            '<textarea data-campo="comando" maxlength="2000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>') +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
       '</div></div></div>';
@@ -1682,8 +1691,13 @@ function editouCena(i, el){
     if (!rc.audioCliente) card.querySelector('[data-cont]').textContent = contTxt(contaCena(rc), rc.gesto, conversaCena(rc));
   } else if (campo === 'gestoTexto') rc.gestoTexto = el.value;
   else if (campo === 'comando') rc.comando = el.value;
+  else if (campo === 'acao') {   // (13/11) o selo "escrita pela IA" some quando ela muda o texto
+    rc.acao = el.value;
+    const selo = el.closest('.cena').querySelector('[data-acao-ia]');
+    if (selo) selo.classList.toggle('hide', el.value.trim() !== String(rc.acaoIA || '').trim());
+  }
   clearTimeout(salvarT[i]);
-  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'resposta' || campo === 'gestoTexto' || campo === 'comando' ? 900 : 50);
+  salvarT[i] = setTimeout(() => salvarCena(i), campo === 'fala' || campo === 'resposta' || campo === 'gestoTexto' || campo === 'comando' || campo === 'acao' ? 900 : 50);
 }
 // o que vale é o que está ESCRITO na tela (dois salvamentos seguidos se atropelavam e o 2º mandava o texto antigo do servidor)
 function valoresDaCena(i){
@@ -1691,7 +1705,21 @@ function valoresDaCena(i){
   const v = (campo, padrao) => { const el = card && card.querySelector('[data-campo="' + campo + '"]'); return el ? el.value : padrao; };
   const qv = String(v('q', (rc.conversa ? 'c' : '') + (rc.q ? 1 : 0)));   // (13/11) "c0"/"c1" = conversa
   return { n: i + 1, fala: v('fala', rc.fala), gesto: v('gesto', rc.gesto), gestoTexto: v('gestoTexto', rc.gestoTexto || ''), comando: v('comando', rc.comando || ''), p: Number(v('p', rc.p)),
-    q: membrosCena(rc) ? Number(qv.slice(-1)) || 0 : undefined, conversa: membrosCena(rc) ? qv.charAt(0) === 'c' : undefined, resposta: v('resposta', rc.resposta || '') };
+    q: membrosCena(rc) ? Number(qv.slice(-1)) || 0 : undefined, conversa: membrosCena(rc) ? qv.charAt(0) === 'c' : undefined, resposta: v('resposta', rc.resposta || ''),
+    acao: rc.acao !== undefined ? v('acao', rc.acao) : undefined };
+}
+// (13/11) "Escrever outra com a IA": uma versão nova da ação desta cena (olhando a imagem e as outras cenas)
+async function outraAcao(i){
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  ocupado = true; toast('✨ Escrevendo outra ação (~20 s)…');
+  try {
+    await salvaPendentes();
+    const d = await chama('/pn/acao', { id: proj.id, cena: i + 1 });
+    if (!d.ok) throw new Error(d.error || 'não consegui escrever');
+    proj = d.projeto; pintarCenas();
+    toast('✅ Ação nova na cena ' + (i + 1) + '. Se gostar, gere a cena de novo.');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui escrever')); }
+  finally { ocupado = false; }
 }
 const repintarCena = {};
 async function salvarCena(i){
