@@ -628,6 +628,15 @@ button.mini916:hover{border-color:var(--gold)}
       <div id="avatarPreview" style="display:none;margin-top:12px">
         <div id="avatarMotorAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.38);color:#ffd75e;font-size:12px;line-height:1.45"></div>
         <div id="prontaAviso" style="display:none;margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(80,200,120,.12);border:1px solid rgba(80,200,120,.35);color:#7ED9A0;font-size:12px;line-height:1.45">✅ Imagem pronta enviada — vai direto para o vídeo, <b>sem custo de geração de imagem</b>.</div>
+        <!-- (13/11) Diretor do canto, Fase 2: defeito que já vem da IMAGEM (mão no bolso, língua…) — avisa ANTES de gravar -->
+        <div id="avisoImagemBox" style="display:none;margin-bottom:10px;padding:11px 12px;border-radius:10px;background:rgba(255,152,0,.12);border:1px solid rgba(255,152,0,.45);color:#ffcf8a;font-size:12.5px;line-height:1.5">
+          <div style="font-weight:700;margin-bottom:4px">⚠️ Confira antes de gravar o vídeo</div>
+          <div id="avisoImagemTexto"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <button class="btn-mini" id="btnCorrigirImagem" onclick="corrigirImagem()" style="flex:1 1 170px;font-weight:600">✨ Corrigir a imagem</button>
+            <button class="btn-mini" id="btnIgnorarAviso" onclick="ignorarAvisoImagem()" style="flex:1 1 140px">Gravar assim mesmo</button>
+          </div>
+        </div>
         <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
@@ -1285,6 +1294,7 @@ async function setImagemProntaFromFile(file) {
     renderClientPhoto(); refreshAvatarUI(); renderStoryboard();
     if (typeof rascSalvar === 'function') rascSalvar();   // entra no projeto salvo, como as outras etapas
     toast('✅ Imagem pronta carregada (' + W + ' × ' + H + ') — sem custo de geração de imagem.');
+    conferirImagemAtual();   // (13/11) Fase 2: a imagem pronta também passa pela conferência
   } catch (err) {
     toast('⚠️ Não consegui ler essa imagem: ' + err.message);
   }
@@ -1391,6 +1401,52 @@ function refreshAvatarUI() {
   okBadge.style.display = 'none';   // (12/09) sem etapa de aprovação
   const pa = document.getElementById('prontaAviso');   // (29/09) imagem pronta 9:16: aviso verde de "sem custo"
   if (pa) pa.style.display = (hasPrev && avatarPreview.pronta) ? 'block' : 'none';
+  if (!hasPrev) { avisosImagem = []; const ab = document.getElementById('avisoImagemBox'); if (ab) ab.style.display = 'none'; }   // (13/11) sem imagem, sem aviso
+}
+
+// ── (13/11) DIRETOR DO CANTO — FASE 2: aviso de defeito que já vem da IMAGEM ─────────────────────────────────
+// Assim que a imagem chega (gerada, corrigida ou "imagem pronta"), o servidor confere e devolve os avisos (mão no bolso,
+// braços cruzados, língua de fora, boca pouco definida). Nenhum prompt conserta isso no vídeo (King Coco, Anjinhos): ou se
+// corrige a IMAGEM antes (edita só o problema, pela mesma fila da imagem — pode sair da tela) ou se grava assim mesmo.
+var avisosImagem = [], conferindoImagem = 0;   // var (não let): o refreshAvatarUI pode rodar antes desta linha
+async function conferirImagemAtual() {
+  if (!avatarPreview || !avatarPreview.cartoonBase64) return;
+  const alvo = avatarPreview.cartoonBase64, meu = ++conferindoImagem;
+  mostrarAvisoImagem([]);
+  try {
+    const r = await api('/a97ImagemConferir', { method: 'POST', body: JSON.stringify({ base64: alvo, mimeType: 'image/png' }) });
+    const j = await r.json();
+    if (meu !== conferindoImagem || !avatarPreview || avatarPreview.cartoonBase64 !== alvo) return;   // a imagem mudou enquanto conferia
+    mostrarAvisoImagem((j && j.avisos) || []);
+  } catch (e) {}   // sem resposta = sem aviso (nunca trava a atendente)
+}
+function mostrarAvisoImagem(avisos) {
+  avisosImagem = Array.isArray(avisos) ? avisos : [];
+  const box = document.getElementById('avisoImagemBox'), tx = document.getElementById('avisoImagemTexto');
+  if (!box || !tx) return;
+  if (!avisosImagem.length) { box.style.display = 'none'; return; }
+  tx.innerHTML = avisosImagem.map(a => '• ' + escapeHtml(a.texto)).join('<br>') +
+    '<div style="margin-top:6px;color:var(--text-mid)">Corrigindo agora você evita refazer o vídeo depois. A correção muda <b>só isso</b> na imagem.</div>';
+  box.style.display = '';
+}
+function ignorarAvisoImagem() { mostrarAvisoImagem([]); toast('Ok, segue com esta imagem.'); }
+async function corrigirImagem() {
+  if (avatarGerando) { toast('⏳ A imagem ainda está sendo feita. Pode sair da tela, ela continua.'); return; }
+  if (!avatarPreview || !avatarPreview.cartoonBase64 || !avisosImagem.length) return;
+  const btns = ['btnCorrigirImagem', 'btnIgnorarAviso', 'btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
+  btns.forEach(b => { b.disabled = true; b._txt = b.textContent; });
+  const bc = document.getElementById('btnCorrigirImagem'); if (bc) bc.textContent = '⏳ Corrigindo… pode sair da tela';
+  avatarGerando = true;
+  const foto = clientPhoto, eraPronta = !!avatarPreview.pronta;
+  try {
+    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await rascSalvarAgora(); } catch (e) {}
+    const j = await gerarAvatarNaFila({ corrigir: { base64: avatarPreview.cartoonBase64, codigos: avisosImagem.map(a => a.codigo) } });
+    if (clientPhoto !== foto) { toast('A imagem corrigida chegou, mas a foto mudou enquanto ela era feita. Gere de novo.'); return; }
+    aplicaAvatarGerado(j);   // conta como uma geração de imagem (mesmo custo do "Gerar de novo") e confere de novo
+    if (eraPronta && avatarPreview) { avatarPreview.pronta = true; refreshAvatarUI(); rascSalvar(); }   // continua sendo a cena final
+    toast('✅ Imagem corrigida. Confira antes de seguir.');
+  } catch (err) { toast('⚠️ ' + err.message); }
+  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
 }
 
 // Normaliza a posição do avatar: mede onde estão os PÉS (ignorando braços esticados) e
@@ -1555,6 +1611,7 @@ function aplicaAvatarGerado(j) {
   const avEl = document.getElementById('avatarMotorAviso');
   if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
   refreshAvatarUI();
+  conferirImagemAtual();   // (13/11) Fase 2: defeito que vem da imagem → aviso antes de gravar
 }
 // Abriu o Avatar 97 e havia uma imagem sendo feita (o celular recarregou a página): reabre o projeto e espera ela.
 async function retomaImagemPendente() {
@@ -1583,6 +1640,7 @@ async function gerarAvatar() {
   if (imagemReal === null) { alertaEstilo(); return; }   // (22/10) escolha obrigatória
   const noteEl = document.getElementById('avatarNote');
   const note = (noteEl && noteEl.value || '').trim();
+  mostrarAvisoImagem([]);   // (13/11) a imagem vai mudar: o aviso da anterior sai
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando… pode sair da tela'; });
   avatarGerando = true;
