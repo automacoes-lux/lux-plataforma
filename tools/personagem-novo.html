@@ -420,7 +420,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .cena textarea{min-height:92px}
 .cena textarea.cmd-cena{min-height:64px}
 .cena textarea.acao-cena{min-height:170px;line-height:1.5}
-.cena .btn-acao{margin:.1rem 0 .7rem}
+.cena .mic-linha{display:flex;gap:.5rem;margin:.1rem 0 .4rem}
+.cena .mic-linha .mic-acao{flex:1 1 auto;width:auto;min-width:0;margin:0}
+.cena .mic-linha .mic-cancela{flex:0 0 auto;width:auto;margin:0;padding-left:1rem;padding-right:1rem}
+.cena .mic-acao.gravando{background:rgba(242,109,109,.18);color:#F26D6D}
+.cena .pedido-acao{font-style:italic;margin-bottom:.7rem}
 .mini-obs{font-weight:400;opacity:.8}
 .selo{margin-left:auto;font-size:11px;border-radius:999px;padding:.2rem .6rem;background:var(--bg-input);border:.5px solid var(--border);color:var(--text-dim);white-space:nowrap}
 .selo.ok{background:rgba(92,190,124,.14);border-color:rgba(92,190,124,.5);color:#7FD99A}
@@ -1635,8 +1639,11 @@ function pintarCenas(){
         (rc.acao !== undefined
           ? '<div class="mini">Ação do personagem <span class="gesto-ia' + (rc.acao && rc.acao === rc.acaoIA ? '' : ' hide') + '" data-acao-ia>✨ escrita pela IA</span></div>' +
             '<textarea data-campo="acao" maxlength="2000" class="cmd-cena acao-cena" placeholder="Escreva o passo a passo do que o personagem faz e em que parte da fala. Ex:&#10;1. Ao dizer &quot;venha conhecer&quot;: aponta com a mão direita aberta para a vitrine.&#10;2. Ao dizer &quot;o melhor preço&quot;: pega um perfume da prateleira e mostra para a câmera.">' + esc(rc.acao || '') + '</textarea>' +
-            '<div class="gesto-desc">O que o personagem faz enquanto fala, passo a passo. Pode mudar, apagar ou escrever a sua. Quanto mais detalhe (qual mão, para onde, em que palavra), melhor o vídeo obedece.</div>' +
-            '<button type="button" class="btn-ghost btn-acao" onclick="outraAcao(' + i + ')">✨ Escrever outra com a IA</button>'
+            '<div class="gesto-desc">O que o personagem faz enquanto fala, passo a passo. Pode mudar ou apagar. Para pedir um movimento novo, aperte o microfone e explique com as suas palavras: a IA reescreve a ação para você.</div>' +
+            // (13/11, Thiago) pedido por ÁUDIO: a atendente fala o que o cliente quer e a IA reescreve a ação no padrão
+            '<div class="mic-linha"><button type="button" class="btn-ghost mic-acao" data-mic="' + i + '" onclick="micAcao(' + i + ')">🎤 Pedir mudança por áudio</button>' +
+              '<button type="button" class="btn-ghost mic-cancela hide" data-mic-x="' + i + '" onclick="micCancela()" title="Cancelar">✕</button></div>' +
+            (rc.ultimoPedido ? '<div class="gesto-desc pedido-acao">Último pedido: “' + esc(rc.ultimoPedido) + '”</div>' : '')
           : '<div class="mini">Gesto ' + (i > 0 && rc.gesto === rc.gestoIA ? '<span class="gesto-ia">✨ sugerido pela IA</span>' : '') + '</div>' +
             '<select data-campo="gesto">' + opts + '</select>' +
             '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
@@ -1666,6 +1673,7 @@ function pintarCenas(){
   $('btnIrMontar').classList.toggle('hide', !prontas);
   $('notaCenas').textContent = gerando ? 'Cada cena leva de 1 a 2 minutos. Pode esperar aqui: o vídeo aparece sozinho em cada cena.' : '';
   $('custoP2').textContent = proj.custoBRL ? '💰 Custo até aqui: ' + reais(proj.custoBRL) + ' (entra no seu financeiro quando o vídeo for montado).' : '';
+  micPinta();   // (13/11) a tela se redesenhou no meio de uma gravação: o botão continua mostrando o estado
 }
 const descGesto = (g) => (natal() && g.id === 'chegando') ? 'O trenó pousa, o Papai Noel desce e já fala com a câmera' : (g.desc || '');
 function contTxt(np, gesto, conversa){
@@ -1708,18 +1716,65 @@ function valoresDaCena(i){
     q: membrosCena(rc) ? Number(qv.slice(-1)) || 0 : undefined, conversa: membrosCena(rc) ? qv.charAt(0) === 'c' : undefined, resposta: v('resposta', rc.resposta || ''),
     acao: rc.acao !== undefined ? v('acao', rc.acao) : undefined };
 }
-// (13/11) "Escrever outra com a IA": uma versão nova da ação desta cena (olhando a imagem e as outras cenas)
-async function outraAcao(i){
+// (13/11, Thiago) PEDIDO POR ÁUDIO na cena: toca no microfone para gravar e toca de novo para enviar (até 90 s). O servidor transforma o
+// áudio em texto e a IA reescreve a ação da cena no padrão, passo a passo. O estado fica em "mic" (a tela pode se redesenhar enquanto grava).
+const MIC_MAX_SEG = 90;
+let mic = null;   // { i, rec, stream, chunks, t0, timer, cancelado, enviando }
+function micTempo(){ const s = Math.floor((Date.now() - mic.t0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function micPinta(){
+  document.querySelectorAll('.cena [data-mic]').forEach(b => {
+    const i = +b.dataset.mic, meu = !!(mic && mic.i === i), x = document.querySelector('.cena [data-mic-x="' + i + '"]');
+    b.classList.toggle('gravando', meu && !mic.enviando);
+    b.disabled = !!(mic && (!meu || mic.enviando));
+    b.textContent = !meu ? '🎤 Pedir mudança por áudio' : (mic.enviando ? '⏳ Entendendo o pedido…' : '⏹ Parar e enviar · ' + micTempo());
+    if (x) x.classList.toggle('hide', !(meu && !mic.enviando));
+  });
+}
+function micAcao(i){
+  if (mic && mic.i === i && !mic.enviando) { try { mic.rec.stop(); } catch (e) {} return; }
+  if (mic) return toast('⏳ Termine o áudio que está em andamento.');
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
-  ocupado = true; toast('✨ Escrevendo outra ação (~20 s)…');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') return toast('⚠️ Este navegador não grava áudio. Use o Chrome.');
+  micComeca(i);
+}
+function micCancela(){ if (mic && !mic.enviando) { mic.cancelado = true; try { mic.rec.stop(); } catch (e) {} } }
+async function micComeca(i){
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { return toast(e && e.name === 'NotAllowedError' ? '⚠️ O microfone está bloqueado. Libere o microfone para este site no navegador e tente de novo.' : '⚠️ Não consegui abrir o microfone.'); }
+  let tipo = '';
+  for (const c of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']) { if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) { tipo = c; break; } }
+  let rec;
+  try { rec = tipo ? new MediaRecorder(stream, { mimeType: tipo }) : new MediaRecorder(stream); }
+  catch (e) { stream.getTracks().forEach(t => t.stop()); return toast('⚠️ Não consegui começar a gravar.'); }
+  const m = mic = { i, rec, stream, chunks: [], t0: Date.now(), cancelado: false, enviando: false };
+  rec.addEventListener('dataavailable', ev => { if (ev.data && ev.data.size) m.chunks.push(ev.data); });
+  rec.addEventListener('stop', () => micParou(m));
+  rec.start(1000);
+  m.timer = setInterval(() => { if (mic !== m || m.enviando) return; if (Date.now() - m.t0 >= MIC_MAX_SEG * 1000) { try { m.rec.stop(); } catch (e) {} } else micPinta(); }, 500);
+  micPinta();
+  toast('🎤 Gravando. Explique o movimento que o cliente quer e aperte de novo para enviar.');
+}
+function blobParaBase64(blob){
+  return new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => { const s = String(r.result || ''); ok(s.slice(s.indexOf(',') + 1)); }; r.onerror = () => erro(r.error); r.readAsDataURL(blob); });
+}
+async function micParou(m){
+  clearInterval(m.timer);
+  try { m.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  if (m.cancelado) { mic = null; micPinta(); return; }
+  const blob = new Blob(m.chunks, { type: m.rec.mimeType || 'audio/webm' });
+  if (blob.size < 1500) { mic = null; micPinta(); return toast('⚠️ O áudio ficou curto demais. Aperte o microfone e explique de novo.'); }
+  m.enviando = true; micPinta(); ocupado = true;
+  toast('🎧 Entendendo o pedido e reescrevendo a ação (~20 s)…');
   try {
     await salvaPendentes();
-    const d = await chama('/pn/acao', { id: proj.id, cena: i + 1 });
-    if (!d.ok) throw new Error(d.error || 'não consegui escrever');
-    proj = d.projeto; pintarCenas();
-    toast('✅ Ação nova na cena ' + (i + 1) + '. Se gostar, gere a cena de novo.');
-  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui escrever')); }
-  finally { ocupado = false; }
+    const audio = await blobParaBase64(blob);
+    const d = await chama('/pn/acao', { id: proj.id, cena: m.i + 1, audio, mime: blob.type });
+    if (!d.ok) throw new Error(d.error || 'não consegui entender o pedido');
+    proj = d.projeto; mic = null; pintarCenas();
+    toast('✅ Ação da cena ' + (m.i + 1) + ' reescrita com o seu pedido. Confira e gere a cena de novo.');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui entender o pedido')); }
+  finally { mic = null; ocupado = false; micPinta(); }
 }
 const repintarCena = {};
 async function salvarCena(i){
@@ -2073,7 +2128,7 @@ async function apagarProjeto(id){
 // (09/11, Thiago) nos 3 editores, o botão responde NA HORA: o giro aparece no clique e fica até a ação terminar; enquanto gira, um 2º clique não vale.
 // Fica de fora o que já muda na hora na tela (abas, cores, ouvir trilha, tirar foto, Fechar). Toda função async chamada no clique entra sozinha: o giro dura o tempo dela.
 (function(){
-  const SEM_GIRO = '.voz-bt,.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
+  const SEM_GIRO = '.mic-acao,.mic-cancela,.voz-bt,.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
   const TETO_MS = 180000;   // nenhum botão fica travado para sempre
   const ativos = new Map();  // chave do botão → quantas coisas ainda seguram o giro
   let noClique = null;
