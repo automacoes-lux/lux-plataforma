@@ -1085,7 +1085,7 @@ function salvarRascunho(){
   rascRodando = (async () => {
     const idxs = [], ents = [];
     pers.forEach((x, k) => {
-      if (natal() ? !temAmb(x) : !(temFoto(x) || temAmb(x))) return;
+      if (natal() ? !entraNatal(x, k) : !(temFoto(x) || temAmb(x))) return;
       idxs.push(k);
       ents.push(temPronta(x) ? entPronta(x) : Object.assign({ foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
         ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined }, entPessoa(x)));
@@ -1121,22 +1121,23 @@ function pintarPers(){
   while (pers.length < 3) pers.push({});
   $('boxPers').innerHTML = pers.map((p, k) => {
     const foto = p.fotoNova || p.fotoUrl, amb = p.ambNova || (p.ambTirar ? '' : p.ambUrl);
-    const slot = (tipo, src, nome) =>
+    const slot = (tipo, src, nome, sub) =>
       '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'' + tipo + '\')"/>' +
       '<div class="slot-th">' + (src ? '<img src="' + esc(src) + '" alt=""/>' : (tipo === 'foto' ? IC_ROSTO : IC_AMBIENTE)) + '</div>' +
       '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
       '<span class="slot-acao">' + (src ? 'Trocar' : '+ Enviar') + '</span>' +
-      (tipo === 'amb' && src && (k > 0 || !natal()) ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
+      (tipo === 'amb' && src && (k > 0 || !natal()) ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') +
+      (sub ? '<div class="slot-sub">' + sub + '</div>' : '') + '</div></label>';
     // (15/11, Thiago) do 2º ambiente em diante: a foto de uma PESSOA para conversar com o Papai Noel (o 1º é o da chegada de trenó)
     const pess = p.pessoaNova || (p.pessoaTirar ? '' : p.pessoaUrl);
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
-      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
+      // (15/11, Thiago) só o Ambiente 1 enviado = ele vale para os outros cards (a pessoa do card 2/3 aparece nele)
+      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : ''), k === 0 ? 'Se for o único ambiente, ele vale para todas as cenas.' : '') +
       (k > 0 ? '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'pessoa\')"/>' +
         '<div class="slot-th">' + (pess ? '<img src="' + esc(pess) + '" alt=""/>' : IC_ROSTO) + '</div>' +
         '<div class="slot-info"><div class="slot-nome">Pessoa que conversa com o Papai Noel</div>' +
         '<span class="slot-acao">' + (pess ? 'Trocar' : '+ Enviar') + '</span>' +
-        (pess ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarPessoa(' + k + ')">Tirar</span>' : '') +
-        '<div class="slot-sub">Opcional. Dono, funcionário ou cliente: o Noel aparece ao lado e conversa com ela.</div></div></label>' : '') +
+        (pess ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarPessoa(' + k + ')">Tirar</span>' : '') + '</div></label>' : '') +
       '</div>';
     const tit = '<div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>';
     const rm = '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>';
@@ -1345,7 +1346,11 @@ function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
 function tirarPessoa(k){ pers[k].pessoaNova = null; pers[k].pessoaTirar = true; pintarPers(); agendaRascunho(50); }
 // (15/11) Natal: o que vai para o servidor sobre a pessoa do card (nova em base64, a já enviada pela chave, ou null = tirar)
-const entPessoa = (x) => natal() ? { pessoa: x.pessoaNova ? x.pessoaNova : (x.pessoaTirar ? null : undefined), pessoaKey: (!x.pessoaNova && !x.pessoaTirar) ? (x.pessoaKey || undefined) : undefined } : {};
+const temPessoa = (x) => !!(x && (x.pessoaNova || (x.pessoaUrl && !x.pessoaTirar)));
+// card do Natal que vai para o servidor: com ambiente próprio, ou (do 2º em diante) só com a pessoa — aí usa o ambiente do card 1
+const entraNatal = (x, k) => temAmb(x) || (k > 0 && temPessoa(x) && temAmb(pers[0]));
+const entPessoa = (x) => natal() ? { pessoa: x.pessoaNova ? x.pessoaNova : (x.pessoaTirar ? null : undefined), pessoaKey: (!x.pessoaNova && !x.pessoaTirar) ? (x.pessoaKey || undefined) : undefined,
+  ambienteDo1: !temAmb(x) && temPessoa(x) ? true : undefined } : {};
 const temPronta = (p) => !!(p && (p.prontaNova || p.prontaUrl));
 const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl || temPronta(p)));   // (13/11) a imagem pronta vale como o personagem do card
 const entPronta = (p) => ({ pronta: p.prontaNova || undefined, prontaKey: p.prontaNova ? undefined : (p.prontaKey || undefined) });
@@ -1436,7 +1441,7 @@ async function gerarTudo(){
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
-      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => temPronta(p) && !natal() ? entPronta(p) : Object.assign({
+      personagens: pers.filter((x, k) => natal() ? entraNatal(x, k) : temFoto(x)).map(p => temPronta(p) && !natal() ? entPronta(p) : Object.assign({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
         ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined }, entPessoa(p))) };
     let d = await chama('/pn/roteiro', corpo);
@@ -1459,7 +1464,8 @@ function recebe(p){
   proj = p;
   if (p.modo === 'blackfriday' || p.modo === 'promo') { const pend = fotosBF.filter(x => !x.key); fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url, tipo: f.tipo })).concat(pend); }
   pers = (p.personagens || []).map(s => s.pronta ? { prontaUrl: s.pronta.url, prontaKey: s.pronta.key } : ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
-    ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key, pessoaUrl: s.pessoa && s.pessoa.url, pessoaKey: s.pessoa && s.pessoa.key }));
+    ambUrl: s.ambiente && !s.ambDo1 ? s.ambiente.url : null, ambKey: s.ambiente && !s.ambDo1 ? s.ambiente.key : null,   // (15/11) ambiente copiado do card 1 não aparece como enviado
+    pessoaUrl: s.pessoa && s.pessoa.url, pessoaKey: s.pessoa && s.pessoa.key }));
   while (pers.length < 3) pers.push({});
   $('notaSalvo').textContent = '💾 Salvo automaticamente · ' + (p.cliente || '');
   pintarWz();
