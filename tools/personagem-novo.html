@@ -399,6 +399,8 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .pronta-bt{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;margin-top:.15rem;padding:.55rem .7rem;border:none;border-radius:999px;background:#D9D9DC;color:#000;font-size:12.5px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
 .pronta-bt:hover{background:#C6C6CA}   /* (13/11, Thiago) cinza claro, letras e seta pretas */
 .pronta-bt svg{width:16px;height:16px;flex-shrink:0}
+.btn-ghost.btn-brief{background:#D9D9DC;color:#000;border-color:transparent;font-weight:600}   /* (14/11, Thiago) mesmas cores do "Subir imagem pronta" */
+.btn-ghost.btn-brief:hover{background:#C6C6CA}
 .pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem}
 .pp-card{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.7rem}
 .pp-card img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block;background:#000;cursor:zoom-in}
@@ -646,9 +648,9 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
       <button type="button" class="btn-ghost" onclick="addPron()">+ Adicionar palavra</button>
     </div>
 
+    <!-- (14/11, Thiago) saiu o "Gerar outro texto"; o Copiar briefing ficou sozinho, com as cores do "Subir imagem pronta" -->
     <div class="btn-row" style="margin-bottom:.9rem">
-      <button class="btn-ghost" onclick="copiarBriefing()">📋 Copiar briefing</button>
-      <button class="btn-ghost" onclick="outroTexto()">✨ Gerar outro texto</button>
+      <button class="btn-ghost btn-brief" onclick="copiarBriefing()">📋 Copiar briefing</button>
     </div>
     <button class="btn-gold" id="btnGerarCenas" onclick="gerarCenas()">🎬 GERAR AS CENAS</button>
     <div class="soon-note" id="notaCenas"></div>
@@ -1666,7 +1668,6 @@ function pintarCenas(){
   });
   const prontas = proj.roteiro.cenas.every((x, i) => proj.cenas[i] && proj.cenas[i].video && !proj.cenas[i].desatualizada);
   const gerando = (proj.cenas || []).some(c => c && c.gerando);
-  document.querySelector('[onclick="outroTexto()"]').classList.toggle('hide', proj.roteiro.cenas.some(c => c.audioCliente));   // com áudio do cliente, o texto é o que ele falou
   $('btnGerarCenas').disabled = gerando;
   $('btnGerarCenas').classList.toggle('hide', prontas && !gerando);   // tudo pronto: o que sobra é Refazer em cada cena ou montar
   $('btnGerarCenas').textContent = gerando ? '⏳ GERANDO AS CENAS…' : (proj.cenas.some(c => c && c.video) ? '🎬 GERAR AS CENAS QUE FALTAM' : '🎬 GERAR AS CENAS');
