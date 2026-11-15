@@ -1087,8 +1087,8 @@ function salvarRascunho(){
     pers.forEach((x, k) => {
       if (natal() ? !temAmb(x) : !(temFoto(x) || temAmb(x))) return;
       idxs.push(k);
-      ents.push(temPronta(x) ? entPronta(x) : { foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
-        ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined });
+      ents.push(temPronta(x) ? entPronta(x) : Object.assign({ foto: natal() ? undefined : (x.fotoNova || undefined), fotoKey: (natal() || x.fotoNova) ? undefined : (x.fotoKey || undefined),
+        ambiente: x.ambNova ? x.ambNova : (x.ambTirar ? null : undefined), ambienteKey: (!x.ambNova && !x.ambTirar) ? (x.ambKey || undefined) : undefined }, entPessoa(x)));
     });
     $('notaSalvo').textContent = '💾 Salvando…';
     const fotosEnv = fotosBF.slice();
@@ -1103,6 +1103,8 @@ function salvarRascunho(){
       if (e.foto && c.fotoNova === e.foto && sv.foto) { c.fotoNova = null; c.fotoKey = sv.foto.key; c.fotoUrl = sv.foto.url; }
       if (e.ambiente && c.ambNova === e.ambiente && sv.ambiente) { c.ambNova = null; c.ambKey = sv.ambiente.key; c.ambUrl = sv.ambiente.url; }
       if (e.ambiente === null && c.ambTirar) { c.ambTirar = false; c.ambKey = null; c.ambUrl = null; }
+      if (e.pessoa && c.pessoaNova === e.pessoa && sv.pessoa) { c.pessoaNova = null; c.pessoaKey = sv.pessoa.key; c.pessoaUrl = sv.pessoa.url; }   // (15/11) Natal
+      if (e.pessoa === null && c.pessoaTirar) { c.pessoaTirar = false; c.pessoaKey = null; c.pessoaUrl = null; }
     });
     $('notaSalvo').textContent = '💾 Salvo automaticamente' + (proj.cliente ? ' · ' + proj.cliente : '');
     pintarWz();
@@ -1125,8 +1127,17 @@ function pintarPers(){
       '<div class="slot-info"><div class="slot-nome">' + nome + '</div>' +
       '<span class="slot-acao">' + (src ? 'Trocar' : '+ Enviar') + '</span>' +
       (tipo === 'amb' && src && (k > 0 || !natal()) ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarAmb(' + k + ')">Tirar</span>' : '') + '</div></label>';
+    // (15/11, Thiago) do 2º ambiente em diante: a foto de uma PESSOA para conversar com o Papai Noel (o 1º é o da chegada de trenó)
+    const pess = p.pessoaNova || (p.pessoaTirar ? '' : p.pessoaUrl);
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
-      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) + '</div>';
+      slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : '')) +
+      (k > 0 ? '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'pessoa\')"/>' +
+        '<div class="slot-th">' + (pess ? '<img src="' + esc(pess) + '" alt=""/>' : IC_ROSTO) + '</div>' +
+        '<div class="slot-info"><div class="slot-nome">Pessoa que conversa com o Papai Noel</div>' +
+        '<span class="slot-acao">' + (pess ? 'Trocar' : '+ Enviar') + '</span>' +
+        (pess ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarPessoa(' + k + ')">Tirar</span>' : '') +
+        '<div class="slot-sub">Opcional. Dono, funcionário ou cliente: o Noel aparece ao lado e conversa com ela.</div></div></label>' : '') +
+      '</div>';
     const tit = '<div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>';
     const rm = '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>';
     // (13/11, Thiago) imagem pronta: a cena 9:16 já montada vai direto para o vídeo, sem a IA montar e sem custo de imagem
@@ -1332,6 +1343,9 @@ async function gerarVideoBF(){
 }
 function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
+function tirarPessoa(k){ pers[k].pessoaNova = null; pers[k].pessoaTirar = true; pintarPers(); agendaRascunho(50); }
+// (15/11) Natal: o que vai para o servidor sobre a pessoa do card (nova em base64, a já enviada pela chave, ou null = tirar)
+const entPessoa = (x) => natal() ? { pessoa: x.pessoaNova ? x.pessoaNova : (x.pessoaTirar ? null : undefined), pessoaKey: (!x.pessoaNova && !x.pessoaTirar) ? (x.pessoaKey || undefined) : undefined } : {};
 const temPronta = (p) => !!(p && (p.prontaNova || p.prontaUrl));
 const temFoto = (p) => !!(p && (p.fotoNova || p.fotoUrl || temPronta(p)));   // (13/11) a imagem pronta vale como o personagem do card
 const entPronta = (p) => ({ pronta: p.prontaNova || undefined, prontaKey: p.prontaNova ? undefined : (p.prontaKey || undefined) });
@@ -1393,7 +1407,9 @@ async function escolher(ev, k, tipo){
   const f = ev.target.files && ev.target.files[0]; if (!f) return;
   try {
     const r = await lerImagem(f);
-    if (tipo === 'foto') pers[k].fotoNova = r.url; else { pers[k].ambNova = r.url; pers[k].ambTirar = false; }
+    if (tipo === 'foto') pers[k].fotoNova = r.url;
+    else if (tipo === 'pessoa') { pers[k].pessoaNova = r.url; pers[k].pessoaTirar = false; }   // (15/11) Natal: a pessoa que conversa com o Noel
+    else { pers[k].ambNova = r.url; pers[k].ambTirar = false; }
     if (r.lado < 500) toast('⚠️ Foto pequena (' + r.lado + ' px). Se tiver uma maior, o personagem sai mais fiel.');
     pintarPers();
     if (bf()) pintarBFPers();
@@ -1420,9 +1436,9 @@ async function gerarTudo(){
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
-      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => temPronta(p) && !natal() ? entPronta(p) : ({
+      personagens: pers.filter(natal() ? temAmb : temFoto).map(p => temPronta(p) && !natal() ? entPronta(p) : Object.assign({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
-        ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined })) };
+        ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined }, entPessoa(p))) };
     let d = await chama('/pn/roteiro', corpo);
     if (!d.ok) throw new Error(d.error || 'não consegui escrever o texto');
     recebe(d.projeto);
@@ -1443,7 +1459,7 @@ function recebe(p){
   proj = p;
   if (p.modo === 'blackfriday' || p.modo === 'promo') { const pend = fotosBF.filter(x => !x.key); fotosBF = (p.fotosBF || []).map(f => ({ key: f.key, url: f.url, tipo: f.tipo })).concat(pend); }
   pers = (p.personagens || []).map(s => s.pronta ? { prontaUrl: s.pronta.url, prontaKey: s.pronta.key } : ({ fotoUrl: s.foto && s.foto.url, fotoKey: s.foto && s.foto.key,
-    ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key }));
+    ambUrl: s.ambiente && s.ambiente.url, ambKey: s.ambiente && s.ambiente.key, pessoaUrl: s.pessoa && s.pessoa.url, pessoaKey: s.pessoa && s.pessoa.key }));
   while (pers.length < 3) pers.push({});
   $('notaSalvo').textContent = '💾 Salvo automaticamente · ' + (p.cliente || '');
   pintarWz();
@@ -1452,13 +1468,14 @@ function recebe(p){
 // ── passo 2: personagens prontos + cenas ──
 function pintarPasso2(){
   if (!proj || !proj.roteiro) return;
-  if (!vozesPN && !natal()) carregaVozes();
+  if (!vozesPN && (!natal() || proj.personagens.some(s => s.membros))) carregaVozes();   // (15/11) Natal com pessoa: a voz dela é escolhível
   $('boxPersProntos').innerHTML = proj.personagens.map((s, k) =>
     '<div class="pp-card">' +
       (s.img ? '<img src="' + esc(s.img.url) + '" alt="" onclick="ampliar(this.src)"/>' : '<div class="pp-sem">Sem imagem. Clique em Refazer.</div>') +
       '<div class="pp-tit">' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</div>' +
       // (11/11, Thiago) a atendente escolhe a voz (sem escolher, é a automática); a mesma pessoa em outro card usa a mesma voz
-      (natal() ? '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + '</div>'
+      (natal() ? '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + (s.membros ? ' (Papai Noel)' : '') + '</div>' +
+          (s.membros ? linhaVoz(k, 1, s.membros[1].sexo, s.membros[1].voz, s.membros[1].auto, s.membros[1].vozNome, rotuloPessoa(s.membros, 1, true)) : '')   // (15/11) a voz da pessoa que conversa com o Noel
         : s.membros ? s.membros.map((m, j) => linhaVoz(k, j, m.sexo, m.voz, m.auto, m.vozNome, rotuloPessoa(s.membros, j, true))).join('')
         // (12/11, Thiago) a IA pode errar: a lista fica sempre; trocar a voz aqui separa este card do personagem 1
         : (s.grupo !== undefined && s.grupo !== k && !s.solto) ? linhaVoz(k, -1, s.sexo, s.voz, !(proj.personagens[s.grupo] || {}).vozManual, s.vozNome, '') + '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + '</div>'
@@ -1554,7 +1571,7 @@ function ajustaConversa(card, rc){
   if (conversaCena(rc) && r && !palavras(rc.resposta)) { const t = r.querySelector('textarea'); if (t) t.focus(); }
 }
 function rotuloPessoa(ms, j, curto){
-  const nome = (m) => m.tipo === 'mascote' ? 'Personagem' : (m.sexo === 'F' ? 'Mulher' : 'Homem');
+  const nome = (m) => m.noel ? 'Papai Noel' : m.tipo === 'mascote' ? 'Personagem' : (m.sexo === 'F' ? 'Mulher' : 'Homem');   // (15/11) Natal com pessoa
   const igual = nome(ms[0]) === nome(ms[1]), lado = j ? 'direita' : 'esquerda';
   if (curto) return igual ? (j ? 'Direita' : 'Esquerda') : nome(ms[j]);
   return nome(ms[j]) + ' (' + lado + ')';
