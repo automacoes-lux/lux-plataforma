@@ -494,7 +494,19 @@ button.mini916:hover{border-color:var(--gold)}
 .bloco-tit{font-size:12.5px;font-weight:700;color:var(--text-mid);margin:12px 0 6px;letter-spacing:.02em}
 .bloco-tit span{font-weight:400;color:var(--text-dim)}
 .amb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-@media (max-width:600px){ .amb-grid{grid-template-columns:1fr} }
+.amb-grid .amb-card{grid-row:1}
+.amb-grid .amb-res{grid-row:2;min-width:0}
+@media (max-width:600px){ .amb-grid{grid-template-columns:1fr} .amb-grid .amb-card,.amb-grid .amb-res{grid-row:auto;grid-column:1 !important} }
+.amb-res-img{position:relative;width:100%;max-width:260px;margin:0 auto;aspect-ratio:9/16;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.14);background:#0d0d0f}
+.amb-res-img img{width:100%;height:100%;object-fit:cover;display:block}
+.amb-res-img[onclick]{cursor:pointer}
+.amb-res-img.sel{border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.22)}
+.amb-res-img.gerando img{opacity:.35}
+.amb-res-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;text-shadow:0 1px 3px #000}
+.amb-sel{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.5);cursor:pointer;z-index:2;padding:0}
+.amb-sel.on{background:var(--gold);border-color:var(--gold);box-shadow:inset 0 0 0 4px #1a1a1a}
+.amb-res-vazio{width:100%;max-width:260px;margin:0 auto;aspect-ratio:9/16;border-radius:12px;border:1px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;text-align:center;font-size:12.5px;color:var(--text-dim);padding:10px}
+.amb-res .amb-estado{margin-top:6px}
 .amb-card{border:.5px solid var(--border-bright);border-radius:12px;padding:10px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:8px;min-width:0}
 .amb-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:13px;font-weight:700}
 .amb-tit span{font-family:inherit;font-weight:400;font-size:11px;color:var(--text-dim)}
@@ -525,6 +537,19 @@ button.mini916:hover{border-color:var(--gold)}
 .letra-txt .pal.okd,.letra-txt .pal.tirada{cursor:pointer}
 .letra-txt .pal.tirada{text-decoration:line-through;opacity:.55}
 .letra-dica{margin-top:6px;font-size:11.5px;color:var(--text-dim);line-height:1.45}
+.letra-st{font-weight:600;font-size:12px;color:#ffd75e}
+.letra-st.ok{color:#7ED9A0}
+.letra-ed{margin-top:8px;padding:4px 10px;border-radius:9px;background:var(--bg-input);border:.5px solid var(--border-bright)}
+.letra-ed .lin{padding:6px 4px;font-size:14px;line-height:1.55;color:var(--text);outline:none;border-bottom:1px dashed rgba(255,255,255,.08);min-height:1.55em;cursor:text}
+.letra-ed .lin:last-child{border-bottom:none}
+.letra-ed .lin:focus{background:rgba(201,168,76,.10);border-radius:6px}
+.letra-ed .lin:empty::before{content:'(linha apagada: fica sem legenda)';color:var(--text-dim);font-size:12px}
+.letra-box mark{background:rgba(255,193,7,.30);color:#ffe08a;border-radius:3px;padding:0 2px}
+.letra-box mark.okd{background:rgba(80,200,120,.20);color:#7ED9A0}
+.duv-lin{margin-bottom:9px;line-height:1.5}
+.duv-mot{color:var(--text-dim);font-size:12px}
+.letra-duv .ops .duv-mot{align-self:center;margin-right:2px}
+.letra-okbtn{margin-top:4px;width:100%;padding:10px 12px;border-radius:999px;border:none;background:var(--gold);color:#0d0d0f;font-weight:700;font-size:13px;cursor:pointer}
 .letra-duv{margin-top:10px;padding:10px;border-radius:9px;background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.35);font-size:12.5px;color:#ffe08a}
 .letra-duv .ops{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .letra-duv .ops button{padding:6px 11px;border-radius:999px;border:.5px solid var(--gold);background:transparent;color:var(--gold);font-size:12.5px;cursor:pointer}
@@ -635,19 +660,12 @@ button.mini916:hover{border-color:var(--gold)}
               <span class="sw-knob"></span><span class="sw-txt" id="motorState">Off</span>
             </button>
           </div>
-          <!-- (15/11) VIDEOCLIPE: Legenda off = vídeo sem legenda · Efeito off = sempre no plano aberto (sem zoom nem deslocamento) -->
+          <!-- (15/11) VIDEOCLIPE: Legenda off = vídeo sem legenda · (15/11) a chave Efeito off saiu a pedido do Thiago -->
           <div style="display:flex;align-items:center;gap:8px">
             <span class="sw-label" id="legOffLbl" style="white-space:nowrap">Legenda off</span>
             <button type="button" class="sw" id="btnLegOff" role="switch" aria-checked="false" onclick="toggleLegendaOff()"
                     title="Desligada (padrão): o vídeo sai com a letra na tela. Ligue para o vídeo sair SEM legenda.">
               <span class="sw-knob"></span><span class="sw-txt" id="legOffState">Off</span>
-            </button>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="sw-label" id="efeOffLbl" style="white-space:nowrap">Efeito off</span>
-            <button type="button" class="sw" id="btnEfeOff" role="switch" aria-checked="false" onclick="toggleEfeitoOff()"
-                    title="Desligada (padrão): a câmera se aproxima nas trocas de cenário e anda devagar. Ligue para o vídeo ficar sempre no plano aberto.">
-              <span class="sw-knob"></span><span class="sw-txt" id="efeOffState">Off</span>
             </button>
           </div>
         </div>
@@ -701,14 +719,14 @@ button.mini916:hover{border-color:var(--gold)}
             <button class="btn-mini" id="btnIgnorarAviso" onclick="ignorarAvisoImagem()" style="flex:1 1 140px">Gravar assim mesmo</button>
           </div>
         </div>
-        <div style="text-align:center"><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
+        <div style="display:none"><!-- (15/11) a imagem aparece embaixo do card do Ambiente 1 --><img id="avatarPreviewImg" style="max-height:340px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14)" alt="Avatar gerado"/></div>
         <div style="text-align:center;margin-top:6px"><button class="btn-mini" onclick="baixarAvatar()">⬇ Baixar a imagem</button></div>
         <div class="field" style="margin-top:10px">
-          <label for="avatarNote">O que ajustar? (opcional)</label>
+          <label for="avatarNote" id="avatarNoteLbl">O que ajustar? (opcional)</label>
           <input type="text" id="avatarNote" maxlength="120" placeholder='ex: "boné azul", "sorriso menor" — vazio = só tenta de novo'/>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn-mini" id="btnRegenAvatar" onclick="gerarAvatar()" style="flex:1">🔄 Gerar de novo</button>
+          <button class="btn-mini" id="btnRegenAvatar" onclick="gerarDeNovo()" style="flex:1">🔄 Gerar de novo</button>
 
         </div>
       </div>
@@ -1116,7 +1134,7 @@ let _avisouMidia = false;          // aviso de custo ao mexer nas mídias — 1x
 let transicoes = true;             // Passo 3: transições entre cenas LIGADAS por padrão (desligado = corte seco em todas)
 let mascote = false;               // (13/09) Passo 1: 'Mascote ativado' — DESLIGADO por padrão (pessoa)
 let mascoteOriginal = false;       // (13/09) na edição: como o vídeo original foi feito (mudar = regravar o canto)
-let imagemReal = null;             // (22/10) Passo 1: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
+let imagemReal = true;             // (15/11) Pessoa real vem marcada · (22/10) Passo 1: true = Pessoa real · false = Animação · null = ainda não escolheu (obrigatório)
 let naoDancar = false;             // (01/11) Passo 1: 'Não dançar' — DESLIGADA por padrão (personagem dança). Era 'IA antiga' (12/10)
 let naoDancarOriginal = false;     // (01/11) na edição: como o vídeo original foi feito (mudar = regravar o canto)
 let corpoInteiro = true;   // (14/10) SEMPRE corpo inteiro (a chave saiu da tela)          // (03/10) Passo 1: 'Corpo inteiro' — DESLIGADO por padrão (meio corpo)
@@ -1527,7 +1545,7 @@ async function corrigirImagem() {
     if (eraPronta && avatarPreview) { avatarPreview.pronta = true; refreshAvatarUI(); rascSalvar(); }   // continua sendo a cena final
     toast('✅ Imagem corrigida. Confira antes de seguir.');
   } catch (err) { toast('⚠️ ' + err.message); }
-  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); renderAmbientes(); }
 }
 
 // Normaliza a posição do avatar: mede onde estão os PÉS (ignorando braços esticados) e
@@ -1713,7 +1731,7 @@ async function retomaImagemPendente() {
     const j = await acompanhaImagem(p.jobId);
     if (clientPhoto === foto && rascunhoId === p.pid) { aplicaAvatarGerado(j); toast('✅ A imagem ficou pronta.'); }
   } catch (err) { toast('⚠️ ' + err.message); }
-  finally { imgJobGuarda(null); avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+  finally { imgJobGuarda(null); avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); renderAmbientes(); }
 }
 
 async function gerarAvatar() {
@@ -1725,7 +1743,7 @@ async function gerarAvatar() {
   mostrarAvisoImagem([]);   // (13/11) a imagem vai mudar: o aviso da anterior sai
   const btns = ['btnGenAvatar', 'btnRegenAvatar'].map(id => document.getElementById(id)).filter(Boolean);
   btns.forEach(b => { b.disabled = true; b._txt = b.textContent; b.textContent = '⏳ Gerando… pode sair da tela'; });
-  avatarGerando = true;
+  avatarGerando = true; renderAmbientes();
   const foto = clientPhoto;   // trocou a foto ou abriu outro projeto enquanto esperava → a imagem que chegar não é mais desta tela
   try {
     const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal === true, corpoInteiro: corpoInteiro };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
@@ -1736,7 +1754,7 @@ async function gerarAvatar() {
     if (clientPhoto !== foto) { toast('A imagem ficou pronta, mas a foto mudou enquanto ela era feita. Gere de novo com a foto nova.'); return; }
     aplicaAvatarGerado(j);
   } catch (err) { toast('⚠️ ' + err.message); }
-  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); }
+  finally { avatarGerando = false; btns.forEach(b => { b.disabled = false; if (b._txt) b.textContent = b._txt; }); renderAmbientes(); }
 }
 
 // (10/09/2026) O botão "A Imagem 1 JÁ é o avatar pronto" foi REMOVIDO a pedido do Thiago: a arte
@@ -1755,13 +1773,30 @@ function reabrirAvatar() {
   refreshAvatarUI();
   renderStoryboard();
 }
-function baixarAvatar() {
-  if (!avatarPreview || !avatarPreview.cartoonBase64) { toast('Gere o avatar primeiro.'); return; }
-  const a = document.createElement('a');
-  a.href = 'data:image/png;base64,' + avatarPreview.cartoonBase64;
+async function baixarAvatar() {
+  const l = imagensProntas();
+  if (!l.length) { toast('Gere a imagem primeiro.'); return; }
   const nm = ((document.getElementById('clientName') || {}).value || 'avatar').trim().replace(/[^a-zA-Z0-9_-]/g, '_') || 'avatar';
-  a.download = 'avatar-' + nm + '.png';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const baixa = (href, nome) => { const a = document.createElement('a'); a.href = href; a.download = nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+  if (l.length === 1) { baixa(l[0].src, 'avatar-' + nm + '.png'); return; }
+  // (15/11) 2 ou 3 ambientes: uma imagem 16:9 (1920×1080) com as imagens 9:16 lado a lado, para mostrar ao cliente
+  try {
+    const imgs = await Promise.all(l.map((x) => new Promise((ok, falha) => {
+      const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => ok(im); im.onerror = () => falha(new Error('imagem não carregou')); im.src = x.src;
+    })));
+    const W = 1920, H = 1080, M = 40, G = 40, h = H - 2 * M, w = Math.round(h * 9 / 16);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    g.fillStyle = '#0d0d0f'; g.fillRect(0, 0, W, H);
+    let x = Math.round((W - (imgs.length * w + (imgs.length - 1) * G)) / 2);
+    imgs.forEach((im) => {
+      const r = Math.max(w / im.naturalWidth, h / im.naturalHeight), sw = w / r, sh = h / r;   // cobre o quadro 9:16 (corta o excesso no centro)
+      g.save(); g.beginPath(); if (g.roundRect) g.roundRect(x, M, w, h, 22); else g.rect(x, M, w, h); g.clip();
+      g.drawImage(im, (im.naturalWidth - sw) / 2, (im.naturalHeight - sh) / 2, sw, sh, x, M, w, h);
+      g.restore(); x += w + G;
+    });
+    baixa(c.toDataURL('image/jpeg', 0.92), 'avatar-' + nm + '-' + imgs.length + '-ambientes.jpg');
+  } catch (e) { toast('⚠️ Não consegui montar a imagem para baixar: ' + e.message); }
 }
 
 // ── Calibração da posição do avatar no palco (pés no centro do disco) ──
@@ -2934,39 +2969,69 @@ function pintarCores() {
 }
 function escolherCor(c) { corLeg = c; pintarCores(); rascSalvar(); }
 
-// ── AMBIENTES ──
+// ── AMBIENTES ── (15/11 tarde, Thiago) o card é só o LUGAR; a imagem do personagem naquele lugar aparece EMBAIXO do card (9:16),
+// com um seletor redondo em cima: é a imagem escolhida que o "O que ajustar?" + "Gerar de novo" refazem.
+var imgSel = 1;
+function imagensProntas() {   // [{ n, src }] das imagens que já existem (1 = a principal)
+  const l = [];
+  if (avatarPreview && (avatarPreview.cartoonBase64 || avatarPreview.cartoonUrl))
+    l.push({ n: 1, src: avatarPreview.cartoonBase64 ? 'data:image/png;base64,' + avatarPreview.cartoonBase64 : avatarPreview.cartoonUrl });
+  (ambExtra || []).forEach((a, k) => { if (a.img) l.push({ n: k + 2, src: 'data:image/png;base64,' + a.img }); });
+  return l;
+}
 function cardAmb(n) {
   const um = n === 1, a = um ? null : ambExtra[n - 2];
   const foto = um ? clientPhoto3 : a.foto;
-  const pronta = um ? !!(avatarPreview && avatarPreview.pronta) : !!a.pronta;
   const inp = um ? 'clientPhoto3Input' : 'amb' + n + 'Input', inpP = um ? 'prontaInput' : 'amb' + n + 'ProntaInput';
-  let corpo;
-  if (pronta && !um) {
-    corpo = '<div class="amb-slot"><div class="amb-th th-916"><img src="data:image/png;base64,' + a.img + '" alt="Ambiente ' + n + '"/></div><div class="amb-info"><b>Imagem pronta (9:16)</b>' +
-      '<span class="amb-estado ok">Vai direto para o vídeo, sem custo de imagem.</span><span class="amb-acao"><a onclick="tirarAmb(' + n + ')">Tirar</a></span></div></div>';
-  } else {
-    corpo = '<div class="amb-slot" role="button" tabindex="0" onclick="document.getElementById(\'' + inp + '\').click()"><div class="amb-th">' +
+  const corpo = (!um && a.pronta)
+    ? '<div class="amb-slot"><div class="amb-th">✅</div><div class="amb-info"><b>Imagem pronta (9:16)</b><span class="amb-acao"><a onclick="tirarAmb(' + n + ')">Tirar</a></span></div></div>'
+    : '<div class="amb-slot" role="button" tabindex="0" onclick="document.getElementById(\'' + inp + '\').click()"><div class="amb-th">' +
       (foto ? '<img src="' + foto.thumbUrl + '" alt="Foto do ambiente ' + n + '"/>' : '🏪') + '</div><div class="amb-info"><b>Foto do lugar</b><span class="amb-acao">' +
       (foto ? 'Trocar · <a onclick="event.stopPropagation();tirarAmb(' + n + ')">Tirar</a>' : '+ Enviar') + '</span></div></div>';
-    if (um) {
-      corpo += '<div class="amb-estado' + (avatarPreview ? ' ok' : '') + '">' + (avatarPreview ? (pronta ? '✓ Imagem pronta (aparece abaixo)' : '✓ Imagem principal (aparece abaixo)')
-        : 'A imagem principal nasce das fotos dos personagens' + (foto ? ' neste lugar.' : ' (sem foto aqui, usa o fundo da foto do Personagem 1).')) + '</div>';
-    } else if (a.foto) {
-      if (a.estado === 'gerando') corpo += '<div class="amb-estado">🎨 Criando a imagem neste lugar (mesma pose da imagem principal)…</div>';
-      else if (a.estado === 'erro') corpo += '<div class="amb-estado erro">⚠️ ' + escH(a.erro) + ' <span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">Tentar de novo</a></span></div>';
-      else if (a.img) corpo += '<div class="amb-slot"><div class="amb-th th-916"><img src="data:image/png;base64,' + a.img + '" alt="Imagem do ambiente ' + n + '"/></div><div class="amb-info">' +
-        '<span class="amb-estado ok">✓ Pronta: mesma pose, outro lugar</span><span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">Refazer</a></span></div></div>';
-      else corpo += avatarPreview
-        ? '<div class="amb-estado"><span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">🎨 Criar a imagem deste lugar</a></span></div>'
-        : '<div class="amb-estado">A imagem deste lugar é criada logo depois da imagem principal.</div>';
-    }
-  }
-  return '<div class="amb-card"><div class="amb-tit">Ambiente ' + n + (um ? '' : ' <span>(opcional)</span>') + '</div>' + corpo +
+  return '<div class="amb-card" style="grid-column:' + n + ';order:' + (2 * n - 1) + '"><div class="amb-tit">Ambiente ' + n + (um ? '' : ' <span>(opcional)</span>') + '</div>' + corpo +
     '<button type="button" class="amb-pronta" onclick="document.getElementById(\'' + inpP + '\').click()">⬆ Subir imagem pronta</button></div>';
+}
+function resAmb(n, varias) {
+  const um = n === 1, a = um ? null : ambExtra[n - 2];
+  const src = um ? (avatarPreview ? (avatarPreview.cartoonBase64 ? 'data:image/png;base64,' + avatarPreview.cartoonBase64 : (avatarPreview.cartoonUrl || '')) : '')
+    : (a.img ? 'data:image/png;base64,' + a.img : '');
+  const gerando = um ? !!avatarGerando : a.estado === 'gerando';
+  let dentro = '';
+  if (src) {
+    dentro = '<div class="amb-res-img' + (varias && imgSel === n ? ' sel' : '') + (gerando ? ' gerando' : '') + '"' + (varias ? ' onclick="selecionarImagem(' + n + ')"' : '') + '>' +
+      (varias ? '<button type="button" class="amb-sel' + (imgSel === n ? ' on' : '') + '" title="Escolher esta imagem para ajustar" aria-label="Escolher a imagem do Ambiente ' + n +
+        ' para ajustar" onclick="event.stopPropagation();selecionarImagem(' + n + ')"></button>' : '') +
+      '<img src="' + src + '" alt="Personagem no Ambiente ' + n + '"/>' + (gerando ? '<div class="amb-res-msg">⏳ Gerando…</div>' : '') + '</div>';
+  } else if (gerando) {
+    dentro = '<div class="amb-res-vazio">🎨 Criando a imagem' + (um ? '' : ' neste lugar') + '…</div>';
+  }
+  if (!um && a.foto && !a.pronta) {
+    if (a.estado === 'erro') dentro += '<div class="amb-estado erro">⚠️ ' + escH(a.erro) + ' <span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">Tentar de novo</a></span></div>';
+    else if (!src && !gerando) dentro += avatarPreview
+      ? '<div class="amb-estado"><span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">🎨 Criar a imagem deste lugar</a></span></div>'
+      : '<div class="amb-estado">A imagem deste lugar é criada logo depois da imagem do Ambiente 1.</div>';
+  }
+  return '<div class="amb-res" style="grid-column:' + n + ';order:' + (2 * n) + '">' + dentro + '</div>';
 }
 function renderAmbientes() {
   const box = document.getElementById('ambRow'); if (!box || !ambExtra) return;   // ambExtra: pode ser chamado antes desta parte rodar
-  box.innerHTML = cardAmb(1) + cardAmb(2) + cardAmb(3);
+  const prontas = imagensProntas(), varias = prontas.length > 1;
+  if (!prontas.some((x) => x.n === imgSel)) imgSel = 1;
+  box.innerHTML = cardAmb(1) + cardAmb(2) + cardAmb(3) + resAmb(1, varias) + resAmb(2, varias) + resAmb(3, varias);
+  const lbl = document.getElementById('avatarNoteLbl');
+  if (lbl) lbl.textContent = varias ? 'O que ajustar na imagem do Ambiente ' + imgSel + '? (opcional — escolha a imagem no círculo em cima dela)' : 'O que ajustar? (opcional)';
+}
+function selecionarImagem(n) { imgSel = n; renderAmbientes(); }
+// "Gerar de novo": refaz a imagem ESCOLHIDA no seletor (a 1 refaz pelas fotos; a 2/3, pela imagem 1 + a foto do lugar)
+function gerarDeNovo() {
+  if (imagensProntas().length < 2 || imgSel === 1) { gerarAvatar(); return; }
+  const a = ambExtra[imgSel - 2];
+  if (!a || !a.foto || a.pronta) { toast('Essa é uma imagem pronta: para trocar, use "Subir imagem pronta" no card do Ambiente ' + imgSel + '.'); return; }
+  if (a.estado === 'gerando') { toast('⏳ A imagem do Ambiente ' + imgSel + ' ainda está sendo feita.'); return; }
+  const el = document.getElementById('avatarNote'), nota = ((el && el.value) || '').trim();
+  if (el) el.value = '';   // o texto era só para esta imagem (o da imagem principal é o que fica guardado no pedido)
+  toast('🎨 Refazendo a imagem do Ambiente ' + imgSel + (nota ? ' com o ajuste "' + nota + '"' : '') + '…');
+  gerarAmbiente(imgSel, nota);
 }
 ['2', '3'].forEach((k) => {
   const i1 = document.getElementById('amb' + k + 'Input'), i2 = document.getElementById('amb' + k + 'ProntaInput');
@@ -2977,7 +3042,7 @@ async function setAmbFoto(n, file) {
   try {
     const opt = await fileToOptimizedImage(file, false);
     const a = ambExtra[n - 2];
-    a.seq++; a.foto = { ...opt, name: file.name || ('ambiente' + n + '.jpg') }; a.pronta = false; a.img = null; a.estado = ''; a.erro = ''; a.reaproveitada = false;
+    a.seq++; a.foto = { ...opt, name: file.name || ('ambiente' + n + '.jpg') }; a.pronta = false; a.img = null; a.estado = ''; a.erro = ''; a.reaproveitada = false; a.ajuste = '';
     renderAmbientes(); renderChecklist();
     if (avatarPreview && avatarPreview.cartoonBase64) gerarAmbiente(n);
     rascSalvar();
@@ -3016,12 +3081,13 @@ function tirarAmb(n) {
   renderAmbientes(); renderChecklist(); renderStoryboard(); rascSalvar();
 }
 // Ambiente 2/3: a IMAGEM PRINCIPAL + a foto do lugar → a mesma pessoa e pose, outro lugar (fila de imagens do servidor)
-async function gerarAmbiente(n) {
+async function gerarAmbiente(n, ajuste) {
   const a = ambExtra[n - 2];
   if (!a || a.pronta || !a.foto || !avatarPreview || !avatarPreview.cartoonBase64) return;
+  if (ajuste !== undefined) a.ajuste = String(ajuste || '');   // o ajuste fica: se a imagem 1 mudar, esta nasce de novo com ele
   const base = avatarPreview.cartoonBase64, meu = ++a.seq;
   const vivo = () => ambExtra[n - 2] === a && meu === a.seq;   // tirou, trocou a foto ou limpou a tela: o resultado não vale (nem é cobrado)
-  a.estado = 'gerando'; a.img = null; a.erro = ''; a.reaproveitada = false;
+  a.estado = 'gerando'; a.erro = ''; a.reaproveitada = false;   // a imagem anterior fica na tela (apagada) até a nova chegar
   renderAmbientes(); renderChecklist();
   const jobId = Date.now() + '-' + Math.random().toString(36).slice(2, 12);
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3030,7 +3096,7 @@ async function gerarAmbiente(n) {
     for (let t = 0; t < 4 && !ok; t++) {
       try {
         const r = await api('/avatarCartoonInicia', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId, trocaAmbiente: { base64: base, ambiente: { base64: a.foto.base64, mimeType: a.foto.mimeType || 'image/jpeg' } } }) });
+          body: JSON.stringify({ jobId, trocaAmbiente: { base64: base, ambiente: { base64: a.foto.base64, mimeType: a.foto.mimeType || 'image/jpeg' }, ajuste: a.ajuste || '' } }) });
         const j = await r.json(); if (j.ok) ok = true; else ultimo = j.error || '';
       } catch (e) { ultimo = e.message; }
       if (!ok) await espera(2500);
@@ -3080,83 +3146,131 @@ async function carregarLetra() {
     const j = await r.json();
     if (meu !== letraSeq) return;
     if (!j.ok) throw new Error(j.error || 'não consegui ler a letra');
-    letra = { estado: 'pronta', frases: j.frases || [], duvidas: j.duvidas || [], escolhas: {}, usd: Number(j.usd) || 0, semConferencia: !!j.semConferencia, confirmadaManual: false };
+    letra = { estado: 'pronta', frases: j.frases || [], duvidas: j.duvidas || [], textos: {}, resolvidas: {}, conferidaOk: false, usd: Number(j.usd) || 0, semConferencia: !!j.semConferencia };
   } catch (e) {
     if (meu !== letraSeq) return;
     letra = { estado: 'erro', erro: String(e.message || e).slice(0, 160) };
   }
   renderLetra(); renderChecklist(); rascSalvar();
 }
+// (15/11 tarde, Thiago) a letra inteira numa CAIXA DE TEXTO que a atendente corrige à mão: uma linha = uma frase da legenda;
+// palavra em dúvida marcada em amarelo (verde = já mexida/confirmada); embaixo, as sugestões e o botão "Conferi".
 function letraPendencias() {
   if (legendaOff) return 0;
   if (!letra || letra.estado !== 'pronta') return 1;
-  let n = (letra.duvidas || []).filter((d) => !(String(d.i) in letra.escolhas)).length;
-  if (letra.semConferencia && !letra.confirmadaManual) n++;
+  if (letra.conferidaOk) return 0;
+  const res = letra.resolvidas || {};
+  let n = (letra.duvidas || []).filter((d) => !res[String(d.i)]).length;
+  if (letra.semConferencia) n++;
   return n;
 }
-function escolherPalavra(i, w) {
-  if (!letra || letra.estado !== 'pronta') return;
-  const v = String(w || '').trim(); if (!v) { toast('Escreva a palavra certa.'); return; }
-  letra.escolhas[String(i)] = v; renderLetra(); renderChecklist(); rascSalvar();
+function linhaHtml(f, k) {
+  const duv = new Map((letra.duvidas || []).map((d) => [String(d.i), d]));
+  const mk = (d, txt) => '<mark data-i="' + escH(d.i) + '"' + ((letra.resolvidas[String(d.i)] || letra.conferidaOk) ? ' class="okd"' : '') + '>' + escH(txt) + '</mark>';
+  if (letra.textos[k] != null) {   // linha já corrigida: marca a palavra em dúvida se ela ainda estiver lá
+    const pend = (f.palavras || []).map((p) => duv.get(String(p.i))).filter(Boolean);
+    return String(letra.textos[k]).split(/\s+/).filter(Boolean).map((w) => {
+      const j = pend.findIndex((d) => d.palavra === w);
+      return j < 0 ? escH(w) : mk(pend.splice(j, 1)[0], w);
+    }).join(' ');
+  }
+  return (f.palavras || []).map((p) => { const d = duv.get(String(p.i)); return d ? mk(d, p.w) : escH(p.w); }).join(' ');
 }
-function escolherOutra(i) { const el = document.getElementById('outraPal' + i); escolherPalavra(i, el ? el.value : ''); }
-function desfazerPalavra(i) { if (letra && letra.escolhas) { delete letra.escolhas[String(i)]; renderLetra(); renderChecklist(); } }
-function confirmarLetraManual() { if (letra) { letra.confirmadaManual = true; renderLetra(); renderChecklist(); rascSalvar(); } }
 function renderLetra() {
   const box = document.getElementById('letraBox'); if (!box) return;
   if (legendaOff || (!music && !letra)) { box.style.display = 'none'; return; }
   box.style.display = '';
-  const tit = (txt) => '<div class="letra-tit"><span>📝 Letra da legenda</span><span style="font-weight:400;font-size:12px;color:var(--text-dim)">' + txt + '</span></div>';
-  if (!letra || letra.estado === 'lendo') { box.innerHTML = tit('lendo a música e conferindo a letra (uns 20 s)…'); return; }
+  const tit = (txt) => '<div class="letra-tit"><span>📝 Letra da legenda</span><span id="letraSt" class="letra-st">' + txt + '</span></div>';
+  if (!letra || letra.estado === 'lendo') { box.innerHTML = tit('lendo a música e conferindo a letra (uns 15 s)…'); return; }
   if (letra.estado === 'erro') {
     box.innerHTML = tit('') + '<div class="amb-estado erro" style="margin-top:8px">⚠️ Não consegui ler a letra (' + escH(letra.erro) + ').</div>' +
       '<button class="btn-mini" style="margin-top:8px" onclick="carregarLetra()">🔄 Ler de novo</button>';
     return;
   }
-  const duv = new Map((letra.duvidas || []).map((d) => [String(d.i), d]));
-  const txt = (letra.frases || []).map((f) => (f.palavras || []).map((p, k) => {
-    const id = String(p.i != null ? p.i : ''), d = duv.get(id);
-    if (!d) {   // (15/11) qualquer palavra pode ser corrigida pela atendente (a IA não pega todo erro da transcrição)
-      if (!id) return escH(p.w);
-      if (id in letra.escolhas) return letra.escolhas[id]
-        ? '<span class="pal okd" title="Corrigida — toque para mudar" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(letra.escolhas[id]) + '</span>'
-        : '<span class="pal tirada" title="Tirada da legenda — toque para mudar" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(p.w) + '</span>';
-      return '<span class="pal ed" title="Toque para corrigir" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(p.w) + '</span>';
-    }
-    if (id in letra.escolhas) return '<span class="pal okd" title="Confirmada — clique para mudar" onclick="desfazerPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(letra.escolhas[id]) + '</span>';
-    return '<span class="pal duv" title="Palavra em dúvida — confirme abaixo">' + escH(p.w) + '</span>';
-  }).join(' ')).join(' <span style="color:var(--text-dim)">/</span> ');
-  const pend = (letra.duvidas || []).filter((d) => !(String(d.i) in letra.escolhas));
-  const blocos = pend.map((d) => '<div class="letra-duv"><div>A palavra <b>"' + escH(d.palavra) + '"</b> está certa? <span style="color:var(--text-dim)">' + escH(d.motivo) + '</span></div>' +
-    '<div class="ops">' + [d.palavra, ...(d.opcoes || [])].filter((v, k, arr) => v && arr.indexOf(v) === k).map((o) =>
-      '<button type="button" onclick="escolherPalavra(' + d.i + ',' + escH(JSON.stringify(o)) + ')">' + escH(o) + '</button>').join('') +
-    '<input id="outraPal' + d.i + '" placeholder="outra…" maxlength="40"/><button type="button" onclick="escolherOutra(' + d.i + ')">OK</button></div></div>').join('');
-  const manual = (letra.semConferencia && !letra.confirmadaManual)
-    ? '<div class="letra-duv">A conferência automática não rodou desta vez. Leia a letra acima e confirme se está certa. <div class="ops"><button type="button" onclick="confirmarLetraManual()">✓ A letra está certa</button><button type="button" onclick="carregarLetra()">🔄 Ler de novo</button></div></div>' : '';
-  const n = letraPendencias();
-  box.innerHTML = tit(n ? ('⚠️ ' + n + ' para confirmar') : '✓ conferida') + '<div class="letra-txt">' + (txt || '<i>(a música não tem letra cantada)</i>') + '</div>' +
-    (txt ? '<div class="letra-dica">Leia a letra ouvindo a música. Palavra errada? Toque nela para corrigir (vazio = tira da legenda).</div>' : '') + blocos + manual;
+  if (!letra.textos) letra.textos = {};
+  if (!letra.resolvidas) letra.resolvidas = {};
+  const fr = letra.frases || [];
+  if (!fr.length) { box.innerHTML = tit('') + '<div class="letra-dica">A música não tem letra cantada: o vídeo sai sem legenda.</div>'; return; }
+  box.innerHTML = tit('') +
+    '<div class="letra-dica">Confira ouvindo a música. <b>Clique no texto para corrigir</b> (cada linha é uma frase da legenda). As palavras em <mark>amarelo</mark> podem estar erradas.</div>' +
+    '<div class="letra-ed" id="letraEd">' + fr.map((f, k) => '<div class="lin" contenteditable="true" spellcheck="false" data-k="' + k + '">' + linhaHtml(f, k) + '</div>').join('') + '</div>' +
+    '<div id="letraDuv"></div>';
+  const ed = document.getElementById('letraEd');
+  ed.addEventListener('input', letraEditou);
+  ed.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (e.target && e.target.blur) e.target.blur(); } });   // uma linha = uma frase
+  ed.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const t = (((e.clipboardData || window.clipboardData) || { getData: () => '' }).getData('text') || '').replace(/\s+/g, ' ');
+    document.execCommand('insertText', false, t);
+  });
+  atualizaLetraStatus();
 }
-function corrigirPalavra(id) {
+// a atendente mexeu no texto: guarda cada linha e dá como resolvida a palavra em dúvida que ela trocou ou apagou
+function letraEditou() {
   if (!letra || letra.estado !== 'pronta') return;
-  let orig = '';
-  (letra.frases || []).forEach((f) => (f.palavras || []).forEach((p) => { if (String(p.i) === String(id)) orig = p.w; }));
-  const atual = (String(id) in letra.escolhas) ? letra.escolhas[id] : orig;
-  const v = prompt('Corrigir a palavra "' + orig + '" da legenda.\n\nEscreva como deve aparecer no vídeo (vazio = tira da legenda):', atual);
-  if (v === null) return;
-  const novo = v.trim().replace(/\s+/g, ' ').slice(0, 40);
-  if (novo === orig) delete letra.escolhas[id]; else letra.escolhas[id] = novo;
-  renderLetra(); renderChecklist(); rascSalvar();
+  document.querySelectorAll('#letraEd .lin').forEach((el) => {
+    const k = Number(el.dataset.k), f = (letra.frases || [])[k]; if (!f) return;
+    const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (txt === (f.palavras || []).map((p) => p.w).join(' ')) delete letra.textos[k]; else letra.textos[k] = txt;
+  });
+  (letra.duvidas || []).forEach((d) => {
+    const m = document.querySelector('#letraEd mark[data-i="' + d.i + '"]');
+    if (!m || m.textContent.trim() !== d.palavra) { letra.resolvidas[String(d.i)] = true; if (m) m.classList.add('okd'); }
+  });
+  atualizaLetraStatus(); renderChecklist(); rascSalvar();
 }
-// a letra que vai para o vídeo: as palavras confirmadas no lugar das dúvidas
+function trocarDuvida(i, w) {
+  const m = document.querySelector('#letraEd mark[data-i="' + i + '"]');
+  if (!m) { toast('Essa palavra não está mais no texto.'); return; }
+  m.textContent = w; m.classList.add('okd');
+  letra.resolvidas[String(i)] = true;
+  letraEditou();
+}
+function confirmarLetra() {
+  if (!letra || letra.estado !== 'pronta') return;
+  letra.conferidaOk = true;
+  document.querySelectorAll('#letraEd mark').forEach((m) => m.classList.add('okd'));
+  atualizaLetraStatus(); renderChecklist(); rascSalvar();
+  toast('✓ Letra conferida.');
+}
+function atualizaLetraStatus() {
+  if (!letra || letra.estado !== 'pronta') return;
+  const st = document.getElementById('letraSt'), dv = document.getElementById('letraDuv');
+  const n = letraPendencias();
+  if (st) { st.textContent = n ? '⚠️ ' + n + ' para conferir' : '✓ conferida'; st.classList.toggle('ok', !n); }
+  if (!dv) return;
+  if (!n) { dv.innerHTML = ''; return; }
+  const pend = (letra.duvidas || []).filter((d) => !letra.resolvidas[String(d.i)]);
+  const linhas = pend.map((d) => {
+    const ops = (d.opcoes || []).filter((o, k, arr) => o && o !== d.palavra && arr.indexOf(o) === k);
+    return '<div class="duv-lin"><mark>' + escH(d.palavra) + '</mark> ' + (d.motivo ? '<span class="duv-mot">' + escH(d.motivo) + '</span>' : '') +
+      (ops.length ? '<div class="ops"><span class="duv-mot">Trocar por:</span>' + ops.map((o) =>
+        '<button type="button" onclick="trocarDuvida(' + Number(d.i) + ',' + escH(JSON.stringify(o)) + ')">' + escH(o) + '</button>').join('') + '</div>' : '') + '</div>';
+  }).join('');
+  const sem = letra.semConferencia ? '<div class="duv-lin">A conferência automática não rodou desta vez: leia a letra toda com atenção.</div>' : '';
+  dv.innerHTML = '<div class="letra-duv">' + linhas + sem +
+    '<button type="button" class="letra-okbtn" onclick="confirmarLetra()">✓ Conferi: a letra está certa</button>' +
+    '<div class="duv-mot" style="margin-top:6px">Palavra marcada errada? Corrija no texto acima (ou toque numa sugestão) antes de confirmar.</div></div>';
+}
+// a letra que vai para o vídeo: o texto como a atendente deixou; linha com outro nº de palavras reparte o tempo da linha
+// pelo tamanho das palavras (no vídeo, o Modal ainda puxa cada palavra para a hora em que ela é cantada)
 function letraParaEnvio() {
   if (!letra || letra.estado !== 'pronta') return null;
-  return { conferida: true, frases: (letra.frases || []).map((f) => ({ palavras: (f.palavras || []).map((p) => {
-    const id = String(p.i != null ? p.i : '');
-    return { w: (id && id in letra.escolhas) ? letra.escolhas[id] : p.w, s: p.s, e: p.e };
-  }).filter((p) => String(p.w || '').trim()) })).filter((f) => f.palavras.length) };
+  const textos = letra.textos || {};
+  const frases = (letra.frases || []).map((f, k) => {
+    const ps = f.palavras || [];
+    if (textos[k] == null) return { palavras: ps.map((p) => ({ w: p.w, s: p.s, e: p.e })) };
+    const ws = String(textos[k]).split(/\s+/).filter(Boolean);
+    if (!ws.length || !ps.length) return { palavras: [] };
+    if (ws.length === ps.length) return { palavras: ws.map((w, j) => ({ w, s: ps[j].s, e: ps[j].e })) };
+    const a = Number(ps[0].s), z = Number(ps[ps.length - 1].e);
+    const pesos = ws.map((w) => w.length + 1), tot = pesos.reduce((x, y) => x + y, 0);
+    let acc = 0;
+    return { palavras: ws.map((w, j) => { const s = a + (z - a) * acc / tot; acc += pesos[j]; return { w, s: Number(s.toFixed(2)), e: Number((a + (z - a) * acc / tot).toFixed(2)) }; }) };
+  }).filter((f) => f.palavras.length);
+  return { conferida: true, frases };
 }
-pintarCores(); setLegOffBtn(); setEfeOffBtn(); renderClientPhoto();   // estado inicial da tela (Personagens 1/2 + os 3 ambientes)
+pintarCores(); setLegOffBtn(); setEfeOffBtn(); setRealBtn(); renderClientPhoto();   // estado inicial da tela (Personagens 1/2 + os 3 ambientes)
 
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
 function renderChecklist() {
@@ -3193,7 +3307,7 @@ function renderChecklist() {
     '<li class="modo"><span class="ck-ico">' + (imagemReal === null ? '❔' : imagemReal ? '📸' : '🎨') + '</span><span>' +
       (imagemReal === null ? 'Falta escolher: Pessoa real ou Animação' : imagemReal ? 'Pessoa real' : 'Animação') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (naoDancar ? 'sem dançar' : 'dançando') +
       ' · ' + (legendaOff ? 'sem legenda' : 'legenda ' + ((CORES_LEG || []).find(([c]) => c === corLeg) || [0, ''])[1].replace(/ \(.*\)$/, '').toLowerCase()) +
-      ' · ' + (efeitoOff ? 'plano aberto' : 'com zoom nas trocas') + '</span></li>';
+      '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
@@ -4460,7 +4574,7 @@ async function editarClipe(orderId) {
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     naoDancar = !!d.naoDancar; naoDancarOriginal = naoDancar; setMotorBtn();   // (01/11) volta a chave "Não dançar"
     // (15/11) videoclipe: chaves, cor, ambientes 2/3 (já pagos) e a letra conferida (o trecho é o mesmo → não lê de novo)
-    legendaOff = d.legendaOn === false; efeitoOff = d.efeitosOn === false; corLeg = d.legendaCor || COR_LEG_PADRAO;
+    legendaOff = d.legendaOn === false; efeitoOff = false; corLeg = d.legendaCor || COR_LEG_PADRAO;
     setLegOffBtn(); setEfeOffBtn(); pintarCores();
     ambsPed.forEach((a, k) => {
       if (!a.img) return;
@@ -4469,7 +4583,7 @@ async function editarClipe(orderId) {
     if (d.letra && Array.isArray(d.letra.frases) && !legendaOff) {
       let k = 0;   // índice em cada palavra: dá para corrigir de novo no Editar
       const frs = d.letra.frases.map((f) => ({ palavras: (f.palavras || []).map((p) => ({ i: k++, w: p.w, s: p.s, e: p.e })) }));
-      letra = { estado: 'pronta', frases: frs, duvidas: [], escolhas: {}, usd: 0, reaproveitada: true };
+      letra = { estado: 'pronta', frases: frs, duvidas: [], textos: {}, resolvidas: {}, conferidaOk: true, usd: 0, reaproveitada: true };   // já conferida no pedido
       pularLetra = true;   // o setMusicReady logo abaixo não lê de novo
     }
     renderClientPhoto(); refreshAvatarUI();
@@ -4730,11 +4844,11 @@ async function continuarProjeto(pid) {
       const img = document.getElementById('avatarPreviewImg'); if (img) img.src = 'data:image/png;base64,' + cartoonB64;
     }
     mascote = !!e.mascote; setMascoteBtn();
-    imagemReal = (e.real === true || e.real === false) ? e.real : null; setRealBtn();
+    imagemReal = (e.real === true || e.real === false) ? e.real : true; setRealBtn();
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     naoDancar = !!e.naoDancar; setMotorBtn();
     // (15/11) videoclipe: chaves, cor, ambientes 2/3 (já pagos) e a letra conferida
-    legendaOff = !!e.legendaOff; efeitoOff = !!e.efeitoOff; corLeg = e.corLeg || COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
+    legendaOff = !!e.legendaOff; efeitoOff = false; corLeg = e.corLeg || COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
     for (const [k, bf, bi] of [[0, bA2f, bA2i], [1, bA3f, bA3i]]) {
       const a = ambExtra[k];
       a.foto = await comoFoto(bf, 'ambiente' + (k + 2) + '.jpg');
@@ -4742,7 +4856,7 @@ async function continuarProjeto(pid) {
       a.pronta = !!(a.img && (e.ambPronta || [])[k]); a.estado = a.img ? 'pronta' : ''; a.reaproveitada = !!a.img;
     }
     if (e.letra && Array.isArray(e.letra.frases) && bTrecho && !legendaOff) {
-      letra = Object.assign({}, e.letra, { estado: 'pronta', escolhas: e.letra.escolhas || {} });   // é cobrada no envio (se ainda não foi)
+      letra = Object.assign({ textos: {}, resolvidas: {}, conferidaOk: false }, e.letra, { estado: 'pronta' });   // é cobrada no envio (se ainda não foi)
       pularLetra = true;   // o setMusicReady logo abaixo não lê de novo
     }
     renderClientPhoto(); refreshAvatarUI();
@@ -4958,7 +5072,7 @@ function resetCreateForm() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
-  imagemReal = null; setRealBtn();   // (16/09) volta ao padrão (desenho)
+  imagemReal = true; setRealBtn();   // (15/11) volta ao padrão: Pessoa real
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
   // (15/11) videoclipe volta ao padrão: legenda amarela, com efeitos, só o Ambiente 1, sem letra
@@ -4990,7 +5104,7 @@ function sairEdicao() {
   // (05/09) melhoria das fotos virou automática no servidor — não há mais botão a resetar aqui
   transicoes = true; setTransBtn();   // volta ao padrão (transições ligadas)
   mascote = false; mascoteOriginal = false; setMascoteBtn();   // (13/09) volta ao padrão (pessoa)
-  imagemReal = null; setRealBtn();   // (16/09) volta ao padrão (desenho)
+  imagemReal = true; setRealBtn();   // (15/11) volta ao padrão: Pessoa real
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
   trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
