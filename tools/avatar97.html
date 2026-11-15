@@ -490,6 +490,46 @@ button.mini916:hover{border-color:var(--gold)}
 .es-redo:hover{filter:brightness(1.1)}
 .es-swap{display:block;margin-top:5px;font-size:10.5px;color:var(--text-dim);cursor:pointer;text-decoration:underline}
 .es-swap.has{color:#7ED9A0}
+/* (15/11) VIDEOCLIPE — Personagens em cima, até 3 AMBIENTES embaixo (cada um com "Subir imagem pronta"), cor da legenda e letra */
+.bloco-tit{font-size:12.5px;font-weight:700;color:var(--text-mid);margin:12px 0 6px;letter-spacing:.02em}
+.bloco-tit span{font-weight:400;color:var(--text-dim)}
+.amb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:600px){ .amb-grid{grid-template-columns:1fr} }
+.amb-card{border:.5px solid var(--border-bright);border-radius:12px;padding:10px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:8px;min-width:0}
+.amb-tit{font-family:'Cinzel',serif;color:var(--gold);font-size:13px;font-weight:700}
+.amb-tit span{font-family:inherit;font-weight:400;font-size:11px;color:var(--text-dim)}
+.amb-slot{display:flex;align-items:center;gap:9px;cursor:pointer;min-width:0}
+.amb-th{width:54px;height:72px;flex:0 0 54px;border-radius:8px;border:1px dashed rgba(201,168,76,.45);background:#0d0d0f;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:20px}
+.amb-th.th-916{height:96px}
+.amb-th img{width:100%;height:100%;object-fit:cover;display:block}
+.amb-info{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:12px;color:var(--text-mid)}
+.amb-info b{color:var(--text);font-weight:600}
+.amb-acao{color:var(--gold);font-size:12px}
+.amb-acao a{color:var(--gold);cursor:pointer;text-decoration:underline}
+.amb-estado{font-size:11.5px;line-height:1.35;color:var(--text-dim)}
+.amb-estado.ok{color:#7ED9A0}.amb-estado.erro{color:#ff9a8a}
+.amb-pronta{padding:8px 10px;border-radius:999px;border:none;background:#D9D9DC;color:#0d0d0f;font-size:12px;font-weight:600;cursor:pointer;width:100%}
+.amb-pronta:hover{background:var(--gold)}
+.cores{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.cor{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.18);cursor:pointer;padding:0}
+.cor.on{outline:2px solid var(--gold);outline-offset:3px}
+.cor-nome{font-size:12px;color:var(--text-mid);margin-top:8px}
+.letra-box{margin-top:12px;padding:11px 12px;border-radius:10px;border:.5px solid var(--border-bright);background:rgba(255,255,255,.02)}
+.letra-tit{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:13px;color:var(--text)}
+.letra-txt{margin-top:8px;font-size:13px;line-height:1.75;color:var(--text-mid)}
+.letra-txt .pal{padding:1px 2px;border-radius:4px}
+.letra-txt .pal.duv{background:rgba(255,193,7,.18);border:1px solid rgba(255,193,7,.6);color:#ffd75e;cursor:pointer}
+.letra-txt .pal.okd{background:rgba(80,200,120,.14);border:1px solid rgba(80,200,120,.5);color:#7ED9A0}
+.letra-txt .pal.ed{cursor:pointer}
+.letra-txt .pal.ed:hover{background:rgba(255,255,255,.08)}
+.letra-txt .pal.okd,.letra-txt .pal.tirada{cursor:pointer}
+.letra-txt .pal.tirada{text-decoration:line-through;opacity:.55}
+.letra-dica{margin-top:6px;font-size:11.5px;color:var(--text-dim);line-height:1.45}
+.letra-duv{margin-top:10px;padding:10px;border-radius:9px;background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.35);font-size:12.5px;color:#ffe08a}
+.letra-duv .ops{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.letra-duv .ops button{padding:6px 11px;border-radius:999px;border:.5px solid var(--gold);background:transparent;color:var(--gold);font-size:12.5px;cursor:pointer}
+.letra-duv .ops button:hover{background:rgba(201,168,76,.15)}
+.letra-duv input{padding:6px 9px;border-radius:8px;border:.5px solid var(--border-bright);background:#0d0d0f;color:var(--text);font-size:12.5px;width:130px}
 </style>
 </head>
 <body>
@@ -563,7 +603,7 @@ button.mini916:hover{border-color:var(--gold)}
       </div>
 
       <div class="field" style="margin-bottom:.55rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <label style="margin:0">Foto do personagem / pessoa / ambiente</label>
+        <label style="margin:0">Fotos dos personagens e dos ambientes</label>
         <!-- (13/09) MASCOTE ATIVADO — desligado = pessoa; ligado = mascote, produto ou personagem (o canto usa outro motor) -->
         <!-- (16/09) IMAGEM REAL — desligado = desenho; ligado = a pessoa sai como FOTO, igual à foto enviada -->
         <!-- (29/09) Mascote ESCONDIDO (não apagado): o canto passou para a VisionStory, que mantém o mascote como
@@ -595,8 +635,24 @@ button.mini916:hover{border-color:var(--gold)}
               <span class="sw-knob"></span><span class="sw-txt" id="motorState">Off</span>
             </button>
           </div>
+          <!-- (15/11) VIDEOCLIPE: Legenda off = vídeo sem legenda · Efeito off = sempre no plano aberto (sem zoom nem deslocamento) -->
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="legOffLbl" style="white-space:nowrap">Legenda off</span>
+            <button type="button" class="sw" id="btnLegOff" role="switch" aria-checked="false" onclick="toggleLegendaOff()"
+                    title="Desligada (padrão): o vídeo sai com a letra na tela. Ligue para o vídeo sair SEM legenda.">
+              <span class="sw-knob"></span><span class="sw-txt" id="legOffState">Off</span>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sw-label" id="efeOffLbl" style="white-space:nowrap">Efeito off</span>
+            <button type="button" class="sw" id="btnEfeOff" role="switch" aria-checked="false" onclick="toggleEfeitoOff()"
+                    title="Desligada (padrão): a câmera se aproxima nas trocas de cenário e anda devagar. Ligue para o vídeo ficar sempre no plano aberto.">
+              <span class="sw-knob"></span><span class="sw-txt" id="efeOffState">Off</span>
+            </button>
+          </div>
         </div>
       </div>
+      <div class="bloco-tit">Personagens</div>
       <!-- (12/09) TRÊS espaços com PAPEL fixo. Com um botão só o modelo não sabia qual foto era o quê e
            ignorava o 2º personagem. O papel de cada foto vai junto para o worker e abre o prompt. -->
       <div class="thumb-row" id="clientPhotoRow">
@@ -607,6 +663,14 @@ button.mini916:hover{border-color:var(--gold)}
       <input type="file" id="clientPhotoInput" accept="image/*,.heic,.heif" hidden/>
       <input type="file" id="clientPhoto2Input" accept="image/*,.heic,.heif" hidden/>
       <input type="file" id="clientPhoto3Input" accept="image/*,.heic,.heif" hidden/>
+      <!-- (15/11) VIDEOCLIPE: de 1 a 3 AMBIENTES. O 1 gera a imagem principal (como sempre); o 2 e o 3 nascem DA imagem 1
+           (mesma pessoa e pose, só o lugar muda). Cada um aceita "Subir imagem pronta" (9:16). Com 2 ou 3, o vídeo troca de cenário. -->
+      <div class="bloco-tit">Ambientes <span>(de 1 a 3 — com 2 ou 3, o vídeo troca de cenário)</span></div>
+      <div class="amb-grid" id="ambRow"></div>
+      <input type="file" id="amb2Input" accept="image/*,.heic,.heif" hidden/>
+      <input type="file" id="amb3Input" accept="image/*,.heic,.heif" hidden/>
+      <input type="file" id="amb2ProntaInput" accept="image/*,.heic,.heif" hidden/>
+      <input type="file" id="amb3ProntaInput" accept="image/*,.heic,.heif" hidden/>
 
       <!-- (29/09) IMAGEM PRONTA 9:16 (pedido do Thiago): quem já tem a imagem final — personagem no cenário, em pé,
            no formato do celular — sobe aqui e pula a geração da imagem: não gasta IA de imagem, só o vídeo.
@@ -723,15 +787,29 @@ button.mini916:hover{border-color:var(--gold)}
     <!-- ══════════ PASSO 3 — RESUMO E GERAR ══════════
          (12/09) Antes eram DOIS cartões: "Fotos e vídeos do comércio" (Passo 3) e a "Linha do clipe"
          solta embaixo. Viraram um só, pra tela fechar em 3 passos. -->
+    <!-- (15/11) VIDEOCLIPE — PASSO 3: a cor da palavra cantada na legenda (as mesmas cores do Personagem Animado) -->
+    <div class="card" id="cardCorLegenda">
+      <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
+      <div class="card-title">Cor da legenda</div>
+      <div id="corLegendaCorpo">
+        <div style="font-size:12.5px;color:var(--text-dim)">A palavra que está sendo cantada acende nesta cor.</div>
+        <div class="cores" id="paletaLegenda"></div>
+        <div class="cor-nome" id="corLegendaNome"></div>
+      </div>
+      <div id="corLegendaOff" style="display:none;font-size:12.5px;color:var(--text-dim)">A legenda está desligada (chave <b>Legenda off</b> no Passo 1): o vídeo sai sem letra.</div>
+    </div>
+
     <div class="card storyboard-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div>
-          <div class="step-eyebrow"><span class="dot"></span>Passo 3</div>
+          <div class="step-eyebrow"><span class="dot"></span>Conferência</div>
           <span id="sceneCount" hidden></span>
         </div>
       </div>
       <!-- (13/09) o botão "Personagem agitado" saiu; no lugar, o checklist do que falta antes de gerar -->
       <ul class="checklist" id="checklist"></ul>
+      <!-- (15/11) VIDEOCLIPE: a letra da legenda, lida com DUPLA CHECAGEM. Palavra em dúvida = a atendente confirma antes de gerar. -->
+      <div class="letra-box" id="letraBox" style="display:none"></div>
 
       <!-- (12/09) Avatar 97: controles da linha de fotos ESCONDIDOS, não apagados — há código que roda no
            carregamento e procura estes ids sem testar; apagar derrubaria a tela inteira. -->
@@ -1295,6 +1373,7 @@ async function setImagemProntaFromFile(file) {
     if (typeof rascSalvar === 'function') rascSalvar();   // entra no projeto salvo, como as outras etapas
     toast('✅ Imagem pronta carregada (' + W + ' × ' + H + ') — sem custo de geração de imagem.');
     conferirImagemAtual();   // (13/11) Fase 2: a imagem pronta também passa pela conferência
+    ambientesAposImagem1();   // (15/11) ambientes 2/3 com foto: nascem desta imagem (os prontos ficam como estão)
   } catch (err) {
     toast('⚠️ Não consegui ler essa imagem: ' + err.message);
   }
@@ -1342,9 +1421,10 @@ function renderClientPhoto() {
   // personagem2, ambiente) e abre o prompt — com um botão só o modelo ignorava o 2º personagem.
   const slots = [
     { foto: clientPhoto,  rotulo: 'Personagem 1',            tag: 'Personagem 1', icone: '🧑‍🎤', input: 'clientPhotoInput',  rm: 'removeClientPhoto()' },
-    { foto: clientPhoto2, rotulo: 'Personagem 2 (opcional)', tag: 'Personagem 2', icone: '👥',   input: 'clientPhoto2Input', rm: 'removeClientPhoto2()' },
-    { foto: clientPhoto3, rotulo: 'Ambiente',                tag: 'Ambiente',     icone: '🏪',   input: 'clientPhoto3Input', rm: 'removeClientPhoto3()' }
+    { foto: clientPhoto2, rotulo: 'Personagem 2 (opcional)', tag: 'Personagem 2', icone: '👥',   input: 'clientPhoto2Input', rm: 'removeClientPhoto2()' }
+    // (15/11) a foto do Ambiente (clientPhoto3) saiu daqui: agora é o card "Ambiente 1" (renderAmbientes), com o 2 e o 3
   ];
+  renderAmbientes();
   row.innerHTML = slots.map(s => s.foto
     ? '<div class="thumb"><img src="' + s.foto.thumbUrl + '" alt="' + s.tag + '"/><div class="tag">' + s.tag + '</div><button class="rm" title="Remover" onclick="' + s.rm + '">✕</button></div>'
     : '<div class="upload-tile" role="button" tabindex="0" onclick="document.getElementById(\'' + s.input + '\').click()"><span class="big">' + s.icone + '</span><span>' + s.rotulo + '</span></div>'
@@ -1388,7 +1468,7 @@ function refreshAvatarUI() {
   }
   const seg = document.getElementById('avatarTipoSeg'); if (seg) seg.style.display = '';   // restaura (saiu da edição)
   const cpr = document.getElementById('clientPhotoRow'); if (cpr) cpr.style.display = '';   // restaura (saiu da edição)
-  const pbx = document.getElementById('prontaBox'); if (pbx) pbx.style.display = podePronta() ? '' : 'none';   // (29/10) todos   // (19/10) só admin   // (29/09) idem, imagem pronta
+  const pbx = document.getElementById('prontaBox'); if (pbx) pbx.style.display = 'none';   // (15/11) cada card de Ambiente tem o seu "Subir imagem pronta"   // (29/10) todos   // (19/10) só admin   // (29/09) idem, imagem pronta
   const cp2 = document.getElementById('clientPhoto2Row'); if (cp2) cp2.style.display = '';   // Imagem 2 sempre disponível (UI universal 19/08)
   const genRow  = document.getElementById('avatarGenRow');
   const preview = document.getElementById('avatarPreview');
@@ -1402,6 +1482,7 @@ function refreshAvatarUI() {
   const pa = document.getElementById('prontaAviso');   // (29/09) imagem pronta 9:16: aviso verde de "sem custo"
   if (pa) pa.style.display = (hasPrev && avatarPreview.pronta) ? 'block' : 'none';
   if (!hasPrev) { avisosImagem = []; const ab = document.getElementById('avisoImagemBox'); if (ab) ab.style.display = 'none'; }   // (13/11) sem imagem, sem aviso
+  renderAmbientes();   // (15/11) o card do Ambiente 1 mostra o estado da imagem principal
 }
 
 // ── (13/11) DIRETOR DO CANTO — FASE 2: aviso de defeito que já vem da IMAGEM ─────────────────────────────────
@@ -1612,6 +1693,7 @@ function aplicaAvatarGerado(j) {
   if (avEl) { if (j.aviso) { avEl.textContent = j.aviso; avEl.style.display = ''; toast(j.aviso); } else { avEl.textContent = ''; avEl.style.display = 'none'; } }
   refreshAvatarUI();
   conferirImagemAtual();   // (13/11) Fase 2: defeito que vem da imagem → aviso antes de gravar
+  ambientesAposImagem1();   // (15/11) ambientes 2/3: mesma pose desta imagem, em outro lugar
 }
 // Abriu o Avatar 97 e havia uma imagem sendo feita (o celular recarregou a página): reabre o projeto e espera ela.
 async function retomaImagemPendente() {
@@ -2807,6 +2889,275 @@ function setMotorBtn() {
   if (l) l.classList.toggle('on', naoDancar);
   renderChecklist();
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// (15/11) VIDEOCLIPE — o estilo da Odara (Teste 15) em todo Avatar 97: até 3 AMBIENTES, chaves Legenda off / Efeito off,
+// COR da legenda (Passo 3) e a LETRA com dupla checagem na Conferência (palavra em dúvida = a atendente confirma antes de gerar).
+// var (não let): funções daqui são chamadas por código que pode rodar antes destas linhas.
+// ═══════════════════════════════════════════════════════════════════════════════
+var legendaOff = false, efeitoOff = false;
+var CORES_LEG = [['#FFD400', 'Amarelo (padrão)'], ['#38BDF8', 'Azul'], ['#22C55E', 'Verde'], ['#EF4444', 'Vermelho'], ['#EC4899', 'Rosa'], ['#FFFFFF', 'Branco (sem destaque)']];
+var COR_LEG_PADRAO = '#FFD400', corLeg = COR_LEG_PADRAO;
+function novoAmb() { return { foto: null, img: null, pronta: false, estado: '', erro: '', seq: 0, reaproveitada: false }; }
+var ambExtra = [novoAmb(), novoAmb()];   // Ambiente 2 e 3 (o 1 é o clientPhoto3 + a imagem principal)
+var letra = null, letraSeq = 0, pularLetra = false;
+function escH(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function swLiga(btnId, stId, lblId, on) {
+  const b = document.getElementById(btnId), e = document.getElementById(stId), l = document.getElementById(lblId);
+  if (b) { b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }
+  if (e) e.textContent = on ? 'On' : 'Off';
+  if (l) l.classList.toggle('on', on);
+}
+function setLegOffBtn() {
+  swLiga('btnLegOff', 'legOffState', 'legOffLbl', legendaOff);
+  const c1 = document.getElementById('corLegendaCorpo'), c2 = document.getElementById('corLegendaOff');
+  if (c1) c1.style.display = legendaOff ? 'none' : '';
+  if (c2) c2.style.display = legendaOff ? '' : 'none';
+}
+function setEfeOffBtn() { swLiga('btnEfeOff', 'efeOffState', 'efeOffLbl', efeitoOff); }
+function toggleLegendaOff() {
+  legendaOff = !legendaOff; setLegOffBtn();
+  toast(legendaOff ? 'Legenda off: o vídeo sai sem a letra na tela.' : 'Legenda ligada: a letra aparece no vídeo, na cor do Passo 3.');
+  if (!legendaOff && music && (!letra || letra.estado === 'erro')) carregarLetra();
+  renderLetra(); renderChecklist(); rascSalvar();
+}
+function toggleEfeitoOff() {
+  efeitoOff = !efeitoOff; setEfeOffBtn();
+  toast(efeitoOff ? 'Efeito off: o vídeo fica sempre no plano aberto, sem zoom.' : 'Efeitos ligados: a câmera se aproxima nas trocas de cenário.');
+  renderChecklist(); rascSalvar();
+}
+function pintarCores() {
+  const box = document.getElementById('paletaLegenda'); if (!box) return;
+  if (!CORES_LEG.some(([c]) => c === corLeg)) corLeg = COR_LEG_PADRAO;
+  box.innerHTML = CORES_LEG.map(([c, n]) => '<button type="button" class="cor' + (c === corLeg ? ' on' : '') + '" style="background:' + c + '" title="' + n +
+    '" aria-label="' + n + '" onclick="escolherCor(\'' + c + '\')"></button>').join('');
+  const nm = document.getElementById('corLegendaNome'); if (nm) nm.textContent = 'Escolhida: ' + (CORES_LEG.find(([c]) => c === corLeg) || [0, ''])[1];
+}
+function escolherCor(c) { corLeg = c; pintarCores(); rascSalvar(); }
+
+// ── AMBIENTES ──
+function cardAmb(n) {
+  const um = n === 1, a = um ? null : ambExtra[n - 2];
+  const foto = um ? clientPhoto3 : a.foto;
+  const pronta = um ? !!(avatarPreview && avatarPreview.pronta) : !!a.pronta;
+  const inp = um ? 'clientPhoto3Input' : 'amb' + n + 'Input', inpP = um ? 'prontaInput' : 'amb' + n + 'ProntaInput';
+  let corpo;
+  if (pronta && !um) {
+    corpo = '<div class="amb-slot"><div class="amb-th th-916"><img src="data:image/png;base64,' + a.img + '" alt="Ambiente ' + n + '"/></div><div class="amb-info"><b>Imagem pronta (9:16)</b>' +
+      '<span class="amb-estado ok">Vai direto para o vídeo, sem custo de imagem.</span><span class="amb-acao"><a onclick="tirarAmb(' + n + ')">Tirar</a></span></div></div>';
+  } else {
+    corpo = '<div class="amb-slot" role="button" tabindex="0" onclick="document.getElementById(\'' + inp + '\').click()"><div class="amb-th">' +
+      (foto ? '<img src="' + foto.thumbUrl + '" alt="Foto do ambiente ' + n + '"/>' : '🏪') + '</div><div class="amb-info"><b>Foto do lugar</b><span class="amb-acao">' +
+      (foto ? 'Trocar · <a onclick="event.stopPropagation();tirarAmb(' + n + ')">Tirar</a>' : '+ Enviar') + '</span></div></div>';
+    if (um) {
+      corpo += '<div class="amb-estado' + (avatarPreview ? ' ok' : '') + '">' + (avatarPreview ? (pronta ? '✓ Imagem pronta (aparece abaixo)' : '✓ Imagem principal (aparece abaixo)')
+        : 'A imagem principal nasce das fotos dos personagens' + (foto ? ' neste lugar.' : ' (sem foto aqui, usa o fundo da foto do Personagem 1).')) + '</div>';
+    } else if (a.foto) {
+      if (a.estado === 'gerando') corpo += '<div class="amb-estado">🎨 Criando a imagem neste lugar (mesma pose da imagem principal)…</div>';
+      else if (a.estado === 'erro') corpo += '<div class="amb-estado erro">⚠️ ' + escH(a.erro) + ' <span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">Tentar de novo</a></span></div>';
+      else if (a.img) corpo += '<div class="amb-slot"><div class="amb-th th-916"><img src="data:image/png;base64,' + a.img + '" alt="Imagem do ambiente ' + n + '"/></div><div class="amb-info">' +
+        '<span class="amb-estado ok">✓ Pronta: mesma pose, outro lugar</span><span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">Refazer</a></span></div></div>';
+      else corpo += avatarPreview
+        ? '<div class="amb-estado"><span class="amb-acao"><a onclick="gerarAmbiente(' + n + ')">🎨 Criar a imagem deste lugar</a></span></div>'
+        : '<div class="amb-estado">A imagem deste lugar é criada logo depois da imagem principal.</div>';
+    }
+  }
+  return '<div class="amb-card"><div class="amb-tit">Ambiente ' + n + (um ? '' : ' <span>(opcional)</span>') + '</div>' + corpo +
+    '<button type="button" class="amb-pronta" onclick="document.getElementById(\'' + inpP + '\').click()">⬆ Subir imagem pronta</button></div>';
+}
+function renderAmbientes() {
+  const box = document.getElementById('ambRow'); if (!box || !ambExtra) return;   // ambExtra: pode ser chamado antes desta parte rodar
+  box.innerHTML = cardAmb(1) + cardAmb(2) + cardAmb(3);
+}
+['2', '3'].forEach((k) => {
+  const i1 = document.getElementById('amb' + k + 'Input'), i2 = document.getElementById('amb' + k + 'ProntaInput');
+  if (i1) i1.addEventListener('change', async (e) => { const f = (e.target.files || [])[0]; e.target.value = ''; if (f) await setAmbFoto(Number(k), f); });
+  if (i2) i2.addEventListener('change', async (e) => { const f = (e.target.files || [])[0]; e.target.value = ''; if (f) await setAmbPronta(Number(k), f); });
+});
+async function setAmbFoto(n, file) {
+  try {
+    const opt = await fileToOptimizedImage(file, false);
+    const a = ambExtra[n - 2];
+    a.seq++; a.foto = { ...opt, name: file.name || ('ambiente' + n + '.jpg') }; a.pronta = false; a.img = null; a.estado = ''; a.erro = ''; a.reaproveitada = false;
+    renderAmbientes(); renderChecklist();
+    if (avatarPreview && avatarPreview.cartoonBase64) gerarAmbiente(n);
+    rascSalvar();
+  } catch (err) { toast('⚠️ ' + err.message); }
+}
+// imagem pronta 9:16 (mesma trava da imagem principal) → PNG em base64, ou null se recusada
+async function lerProntaNoveDezesseis(file) {
+  const arq = await converterSeHeic(file);
+  const dataUrl = await readFileAsDataURL(arq);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Arquivo não é uma imagem válida.')); i.src = dataUrl; });
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h || Math.abs(w / h - PRONTA_PROPORCAO) >= PRONTA_TOLERANCIA) {
+    alert('⚠️ A imagem pronta precisa estar no formato 9:16 (em pé, do tamanho da tela do celular).\n\nEssa imagem tem ' + w + ' × ' + h + '.\n\nRecorte em 9:16 e envie de novo, ou use a foto do lugar para a IA criar a imagem.');
+    return null;
+  }
+  if (w < PRONTA_MIN_LARGURA && !confirm('Essa imagem é pequena (' + w + ' × ' + h + '). O vídeo pode sair com menos nitidez.\n\nUsar mesmo assim?')) return null;
+  const escala = Math.min(1, PRONTA_MAX_ALTURA / h), W = Math.round(w * escala), H = Math.round(h * escala);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  c.getContext('2d').drawImage(img, 0, 0, W, H);
+  return c.toDataURL('image/png').split(',')[1];
+}
+async function setAmbPronta(n, file) {
+  try {
+    const png = await lerProntaNoveDezesseis(file);
+    if (!png) return;
+    const a = ambExtra[n - 2];
+    a.seq++; a.img = png; a.pronta = true; a.estado = 'pronta'; a.erro = ''; a.reaproveitada = false;
+    renderAmbientes(); renderChecklist(); renderStoryboard(); rascSalvar();
+    toast('✅ Imagem pronta do Ambiente ' + n + ' carregada — sem custo de imagem.');
+  } catch (err) { toast('⚠️ Não consegui ler essa imagem: ' + err.message); }
+}
+function tirarAmb(n) {
+  if (n === 1) { removeClientPhoto3(); return; }
+  const s = ambExtra[n - 2].seq + 1;
+  ambExtra[n - 2] = novoAmb(); ambExtra[n - 2].seq = s;   // cancela a imagem que estiver sendo feita
+  renderAmbientes(); renderChecklist(); renderStoryboard(); rascSalvar();
+}
+// Ambiente 2/3: a IMAGEM PRINCIPAL + a foto do lugar → a mesma pessoa e pose, outro lugar (fila de imagens do servidor)
+async function gerarAmbiente(n) {
+  const a = ambExtra[n - 2];
+  if (!a || a.pronta || !a.foto || !avatarPreview || !avatarPreview.cartoonBase64) return;
+  const base = avatarPreview.cartoonBase64, meu = ++a.seq;
+  const vivo = () => ambExtra[n - 2] === a && meu === a.seq;   // tirou, trocou a foto ou limpou a tela: o resultado não vale (nem é cobrado)
+  a.estado = 'gerando'; a.img = null; a.erro = ''; a.reaproveitada = false;
+  renderAmbientes(); renderChecklist();
+  const jobId = Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  try {
+    let ok = false, ultimo = '';
+    for (let t = 0; t < 4 && !ok; t++) {
+      try {
+        const r = await api('/avatarCartoonInicia', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, trocaAmbiente: { base64: base, ambiente: { base64: a.foto.base64, mimeType: a.foto.mimeType || 'image/jpeg' } } }) });
+        const j = await r.json(); if (j.ok) ok = true; else ultimo = j.error || '';
+      } catch (e) { ultimo = e.message; }
+      if (!ok) await espera(2500);
+    }
+    if (!ok) throw new Error(ultimo || 'não consegui começar');
+    const t0 = Date.now();
+    while (Date.now() - t0 < 12 * 60 * 1000) {
+      await espera(4000);
+      if (!vivo()) return;
+      let j = null; try { j = await (await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId))).json(); } catch (e) { continue; }
+      if (!vivo()) return;
+      if (j && j.status === 'pronto' && j.cartoonBase64) {
+        a.img = j.cartoonBase64; a.estado = 'pronta'; cartoonGens++;   // cada imagem gerada é cobrada, como a principal
+        renderStoryboard(); renderAmbientes(); renderChecklist(); rascSalvar();
+        return;
+      }
+      if (j && j.status === 'erro') throw new Error(j.error || 'falhou');
+    }
+    throw new Error('demorou demais');
+  } catch (e) {
+    if (!vivo()) return;
+    a.estado = 'erro'; a.erro = 'A imagem deste lugar não saiu (' + String(e.message || e).slice(0, 120) + ').';
+    renderAmbientes(); renderChecklist();
+  }
+}
+// a imagem principal mudou (gerada, corrigida ou pronta): os ambientes 2/3 nascem de novo a partir dela
+function ambientesAposImagem1() { [2, 3].forEach((n) => { const a = ambExtra[n - 2]; if (a.foto && !a.pronta) gerarAmbiente(n); }); renderAmbientes(); }
+function ambientesPendentes() {
+  for (const n of [2, 3]) {
+    const a = ambExtra[n - 2];
+    if (a.estado === 'gerando') return 'Aguarde a imagem do Ambiente ' + n + ' ficar pronta (Passo 1).';
+    if (a.foto && !a.pronta && !a.img) return 'O Ambiente ' + n + ' ainda está sem imagem: clique em "Tentar de novo" ou tire a foto dele (Passo 1).';
+  }
+  return '';
+}
+
+// ── LETRA (dupla checagem) ──
+async function carregarLetra() {
+  if (pularLetra) { pularLetra = false; return; }   // Editar/Projeto: a letra conferida volta junto (não lê de novo)
+  if (legendaOff || !music || !music.base64) return;
+  const meu = ++letraSeq;
+  letra = { estado: 'lendo' }; renderLetra(); renderChecklist();
+  try {
+    const campo = (id) => ((document.getElementById(id) || {}).value || '').trim();
+    const r = await api('/a97Letra', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio: { base64: music.base64, mimeType: music.mimeType || 'audio/mpeg' }, cliente: campo('clientName'), categoria: campo('fCategoria'), nota: campo('avatarNote') }) });
+    const j = await r.json();
+    if (meu !== letraSeq) return;
+    if (!j.ok) throw new Error(j.error || 'não consegui ler a letra');
+    letra = { estado: 'pronta', frases: j.frases || [], duvidas: j.duvidas || [], escolhas: {}, usd: Number(j.usd) || 0, semConferencia: !!j.semConferencia, confirmadaManual: false };
+  } catch (e) {
+    if (meu !== letraSeq) return;
+    letra = { estado: 'erro', erro: String(e.message || e).slice(0, 160) };
+  }
+  renderLetra(); renderChecklist(); rascSalvar();
+}
+function letraPendencias() {
+  if (legendaOff) return 0;
+  if (!letra || letra.estado !== 'pronta') return 1;
+  let n = (letra.duvidas || []).filter((d) => !(String(d.i) in letra.escolhas)).length;
+  if (letra.semConferencia && !letra.confirmadaManual) n++;
+  return n;
+}
+function escolherPalavra(i, w) {
+  if (!letra || letra.estado !== 'pronta') return;
+  const v = String(w || '').trim(); if (!v) { toast('Escreva a palavra certa.'); return; }
+  letra.escolhas[String(i)] = v; renderLetra(); renderChecklist(); rascSalvar();
+}
+function escolherOutra(i) { const el = document.getElementById('outraPal' + i); escolherPalavra(i, el ? el.value : ''); }
+function desfazerPalavra(i) { if (letra && letra.escolhas) { delete letra.escolhas[String(i)]; renderLetra(); renderChecklist(); } }
+function confirmarLetraManual() { if (letra) { letra.confirmadaManual = true; renderLetra(); renderChecklist(); rascSalvar(); } }
+function renderLetra() {
+  const box = document.getElementById('letraBox'); if (!box) return;
+  if (legendaOff || (!music && !letra)) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const tit = (txt) => '<div class="letra-tit"><span>📝 Letra da legenda</span><span style="font-weight:400;font-size:12px;color:var(--text-dim)">' + txt + '</span></div>';
+  if (!letra || letra.estado === 'lendo') { box.innerHTML = tit('lendo a música e conferindo a letra (uns 20 s)…'); return; }
+  if (letra.estado === 'erro') {
+    box.innerHTML = tit('') + '<div class="amb-estado erro" style="margin-top:8px">⚠️ Não consegui ler a letra (' + escH(letra.erro) + ').</div>' +
+      '<button class="btn-mini" style="margin-top:8px" onclick="carregarLetra()">🔄 Ler de novo</button>';
+    return;
+  }
+  const duv = new Map((letra.duvidas || []).map((d) => [String(d.i), d]));
+  const txt = (letra.frases || []).map((f) => (f.palavras || []).map((p, k) => {
+    const id = String(p.i != null ? p.i : ''), d = duv.get(id);
+    if (!d) {   // (15/11) qualquer palavra pode ser corrigida pela atendente (a IA não pega todo erro da transcrição)
+      if (!id) return escH(p.w);
+      if (id in letra.escolhas) return letra.escolhas[id]
+        ? '<span class="pal okd" title="Corrigida — toque para mudar" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(letra.escolhas[id]) + '</span>'
+        : '<span class="pal tirada" title="Tirada da legenda — toque para mudar" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(p.w) + '</span>';
+      return '<span class="pal ed" title="Toque para corrigir" onclick="corrigirPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(p.w) + '</span>';
+    }
+    if (id in letra.escolhas) return '<span class="pal okd" title="Confirmada — clique para mudar" onclick="desfazerPalavra(' + escH(JSON.stringify(id)) + ')">' + escH(letra.escolhas[id]) + '</span>';
+    return '<span class="pal duv" title="Palavra em dúvida — confirme abaixo">' + escH(p.w) + '</span>';
+  }).join(' ')).join(' <span style="color:var(--text-dim)">/</span> ');
+  const pend = (letra.duvidas || []).filter((d) => !(String(d.i) in letra.escolhas));
+  const blocos = pend.map((d) => '<div class="letra-duv"><div>A palavra <b>"' + escH(d.palavra) + '"</b> está certa? <span style="color:var(--text-dim)">' + escH(d.motivo) + '</span></div>' +
+    '<div class="ops">' + [d.palavra, ...(d.opcoes || [])].filter((v, k, arr) => v && arr.indexOf(v) === k).map((o) =>
+      '<button type="button" onclick="escolherPalavra(' + d.i + ',' + escH(JSON.stringify(o)) + ')">' + escH(o) + '</button>').join('') +
+    '<input id="outraPal' + d.i + '" placeholder="outra…" maxlength="40"/><button type="button" onclick="escolherOutra(' + d.i + ')">OK</button></div></div>').join('');
+  const manual = (letra.semConferencia && !letra.confirmadaManual)
+    ? '<div class="letra-duv">A conferência automática não rodou desta vez. Leia a letra acima e confirme se está certa. <div class="ops"><button type="button" onclick="confirmarLetraManual()">✓ A letra está certa</button><button type="button" onclick="carregarLetra()">🔄 Ler de novo</button></div></div>' : '';
+  const n = letraPendencias();
+  box.innerHTML = tit(n ? ('⚠️ ' + n + ' para confirmar') : '✓ conferida') + '<div class="letra-txt">' + (txt || '<i>(a música não tem letra cantada)</i>') + '</div>' +
+    (txt ? '<div class="letra-dica">Leia a letra ouvindo a música. Palavra errada? Toque nela para corrigir (vazio = tira da legenda).</div>' : '') + blocos + manual;
+}
+function corrigirPalavra(id) {
+  if (!letra || letra.estado !== 'pronta') return;
+  let orig = '';
+  (letra.frases || []).forEach((f) => (f.palavras || []).forEach((p) => { if (String(p.i) === String(id)) orig = p.w; }));
+  const atual = (String(id) in letra.escolhas) ? letra.escolhas[id] : orig;
+  const v = prompt('Corrigir a palavra "' + orig + '" da legenda.\n\nEscreva como deve aparecer no vídeo (vazio = tira da legenda):', atual);
+  if (v === null) return;
+  const novo = v.trim().replace(/\s+/g, ' ').slice(0, 40);
+  if (novo === orig) delete letra.escolhas[id]; else letra.escolhas[id] = novo;
+  renderLetra(); renderChecklist(); rascSalvar();
+}
+// a letra que vai para o vídeo: as palavras confirmadas no lugar das dúvidas
+function letraParaEnvio() {
+  if (!letra || letra.estado !== 'pronta') return null;
+  return { conferida: true, frases: (letra.frases || []).map((f) => ({ palavras: (f.palavras || []).map((p) => {
+    const id = String(p.i != null ? p.i : '');
+    return { w: (id && id in letra.escolhas) ? letra.escolhas[id] : p.w, s: p.s, e: p.e };
+  }).filter((p) => String(p.w || '').trim()) })).filter((f) => f.palavras.length) };
+}
+pintarCores(); setLegOffBtn(); setEfeOffBtn(); renderClientPhoto();   // estado inicial da tela (Personagens 1/2 + os 3 ambientes)
+
 // (13/09) Passo 3: checklist vertical — ✅ o que está pronto, ❌ o que está errado ou falta.
 function renderChecklist() {
   const ul = document.getElementById('checklist');
@@ -2821,12 +3172,28 @@ function renderChecklist() {
     [imagemPronta, 'Foto do personagem', (clientPhoto && !imagemPronta) ? 'falta gerar a imagem' : ''],
     [!!music, 'Música', corteAberto ? 'falta clicar em Cortar e usar' : '']
   ];
+  // (15/11) videoclipe: os ambientes 2/3 e a letra conferida da legenda também precisam estar prontos
+  if (ambExtra) {
+    const usados = ambExtra.map((a, k) => ({ a, n: k + 2 })).filter(({ a }) => a.foto || a.img);
+    if (usados.length) {
+      const falta = usados.filter(({ a }) => !a.img);
+      itens.push([!falta.length, 'Ambientes 2/3 (' + (usados.length + 1) + ' cenários no vídeo)',
+        falta.length ? (falta.some(({ a }) => a.estado === 'gerando') ? 'criando a imagem…' : 'falta a imagem do Ambiente ' + falta.map(({ n }) => n).join(' e ')) : '']);
+    }
+  }
+  if (!legendaOff && music) {
+    const np = letraPendencias();
+    itens.push([!np, 'Letra da legenda', !letra || letra.estado === 'lendo' ? 'conferindo…' : letra.estado === 'erro' ? 'não foi lida — Ler de novo'
+      : np ? np + ' palavra' + (np > 1 ? 's' : '') + ' para confirmar abaixo' : '']);
+  }
   ul.innerHTML = itens.map(([ok, nome, dica]) =>
       '<li class="' + (ok ? 'ok' : 'falta') + '"><span class="ck-ico">' + (ok ? '✅' : '❌') + '</span><span>' + nome +
       (dica ? ' <small>— ' + dica + '</small>' : '') + '</span></li>').join('') +
     // (29/09) sem a chave Mascote (o motor novo serve pessoa e mascote), a linha mostra só o estilo da imagem
     '<li class="modo"><span class="ck-ico">' + (imagemReal === null ? '❔' : imagemReal ? '📸' : '🎨') + '</span><span>' +
-      (imagemReal === null ? 'Falta escolher: Pessoa real ou Animação' : imagemReal ? 'Pessoa real' : 'Animação') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (naoDancar ? 'sem dançar' : 'dançando') + '</span></li>';
+      (imagemReal === null ? 'Falta escolher: Pessoa real ou Animação' : imagemReal ? 'Pessoa real' : 'Animação') + ' · ' + (corpoInteiro ? 'corpo inteiro' : 'meio corpo') + ' · ' + (naoDancar ? 'sem dançar' : 'dançando') +
+      ' · ' + (legendaOff ? 'sem legenda' : 'legenda ' + ((CORES_LEG || []).find(([c]) => c === corLeg) || [0, ''])[1].replace(/ \(.*\)$/, '').toLowerCase()) +
+      ' · ' + (efeitoOff ? 'plano aberto' : 'com zoom nas trocas') + '</span></li>';
 }
 // (23/09) o mesmo gancho que atualiza o checklist agora guarda o projeto (com atraso, não por tecla)
 ['fCategoria', 'clientName', 'avatarNote'].forEach(id => {
@@ -2918,6 +3285,7 @@ function setMusicReady(m) {
   document.getElementById('btnReabrirCorte').style.display = rawAudioBuffer ? '' : 'none';   // (20/10) sempre que houver a música original
   renderScenes(); renderStoryboard();   // a música define a duração → recalcula o tempo das fotos/vídeos
   rascSalvar();   // (23/09) trecho cortado → guarda o projeto
+  carregarLetra();   // (15/11) videoclipe: lê e confere a letra da legenda (as dúvidas aparecem na Conferência)
 }
 
 // ───────────────────────────────────────────────
@@ -3056,13 +3424,15 @@ function removerMusica() {
   document.getElementById('cutEditor').classList.remove('show');
   const tile = document.getElementById('musicTile'); if (tile) tile.style.display = '';
   const inp = document.getElementById('musicInput'); if (inp) inp.value = '';
-  renderStoryboard();
+  letraSeq++; letra = null; renderLetra();   // (15/11) a letra da legenda era desta música
+  renderStoryboard(); renderChecklist();
   toast('Música removida — envie outra quando quiser.');
 }
 
 function reabrirCorte() {
   if (!rawAudioBuffer) { toast('Envie a música de novo pra refazer o corte.'); return; }
   music = null;
+  letraSeq++; letra = null; renderLetra();   // (15/11) trecho novo → a letra é lida de novo quando o corte for aplicado
   abrirEditorCorte(corteUsado);   // (13/09) reabre no trecho que estava escolhido
   renderStoryboard();
 }
@@ -3491,7 +3861,14 @@ function validar() {
   }
   if (!clientPhoto) return 'Envie a foto do Personagem 1 (Passo 1).';
   if (!avatarPreview || !avatarPreview.approved) return 'Gere a imagem do personagem (Passo 1).';
+  { const pa = ambientesPendentes(); if (pa) return pa; }   // (15/11) ambientes 2/3 com foto precisam da imagem pronta
   if (!music) return 'Envie a música (Passo 2).';
+  if (!legendaOff) {   // (15/11) legenda: a letra conferida é obrigatória — dúvida = a atendente confirma ANTES de gerar
+    if (!letra || letra.estado === 'lendo') return 'Aguarde: a letra da legenda ainda está sendo conferida (Conferência).';
+    if (letra.estado === 'erro') return 'A letra da legenda não foi lida: clique em "Ler de novo" na Conferência (ou ligue "Legenda off").';
+    const np = letraPendencias();
+    if (np) return 'Confirme ' + (np === 1 ? 'a palavra em dúvida' : 'as ' + np + ' palavras em dúvida') + ' da letra na Conferência antes de gerar.';
+  }
   // (12/09) Avatar 97: não há fotos de fundo para exigir
   if (scenes.length > MAX_MEDIA) return 'Máximo de ' + MAX_MEDIA + ' mídias (Passo 3).';
   if (!lyricOn) { /* (12/09) Avatar 97: sem linha de fotos */ }
@@ -3583,7 +3960,15 @@ async function gerarClipe() {
       montado: !!(avatarPreview && avatarPreview.pronta) && podePronta(),   // (29/10) todos   // (19/10) imagem pronta só ADMIN (o servidor também confere)
       music: { base64: music.base64, name: music.name, mimeType: music.mimeType },
       musicDuration: music.duration,
-      cartoonGens, cartoonGensRes, cartoonPassadas, lyricSeconds: lyricSegs   // (11/09) o que foi gerado/transcrito de verdade · (19/10) + camadas 2 reais
+      cartoonGens, cartoonGensRes, cartoonPassadas, lyricSeconds: lyricSegs,   // (11/09) o que foi gerado/transcrito de verdade · (19/10) + camadas 2 reais
+      // (15/11) VIDEOCLIPE: ambientes 2/3 (imagem da cena + foto do lugar), chaves Legenda off / Efeito off, cor e a letra conferida
+      ambientesExtra: ambExtra.filter((a) => a.img).map((a) => ({
+        imagem: { base64: a.img }, pronta: !!a.pronta,
+        foto: a.foto ? { base64: a.foto.base64, name: a.foto.name, mimeType: a.foto.mimeType } : null })),
+      legenda: { on: !legendaOff, cor: corLeg },
+      efeitos: { on: !efeitoOff },
+      letra: legendaOff ? null : letraParaEnvio(),
+      letraUSD: (!legendaOff && letra && letra.estado === 'pronta' && !letra.reaproveitada) ? (Number(letra.usd) || 0) : 0
     };
 
     const r1 = await api('/createAvatarOrder', {
@@ -3592,6 +3977,7 @@ async function gerarClipe() {
     const d1 = await r1.json();
     if (!d1.ok) throw new Error(d1.error || 'Falha ao criar o pedido.');
     cartoonGens = 0; cartoonGensRes = 0; cartoonPassadas = 0; lyricSegs = 0;   // já foram cobrados neste pedido
+    if (letra) letra.reaproveitada = true;   // (15/11) a leitura da letra também já foi cobrada
 
     // (13/09) guarda a música ORIGINAL (inteira) ANTES de largar a produção: é o que o Editar usa pra reabrir o
     // corte. Se falhar, o vídeo sai do mesmo jeito — o Editar só cai no trecho já cortado.
@@ -4047,6 +4433,12 @@ async function editarClipe(orderId) {
       arquivoDoPedido(orderId, 'music'),
       d.musicaOriginal ? arquivoDoPedido(orderId, 'musicaOriginal').catch(() => null) : null   // sem a original, usa o trecho
     ]);
+    // (15/11) videoclipe: ambientes 2/3 do pedido (a imagem da cena e a foto do lugar)
+    const ambsPed = await Promise.all((Array.isArray(d.ambientes) ? d.ambientes : []).slice(0, 2).map(async (a, k) => ({
+      pronta: !!(a && a.pronta),
+      img: await arquivoDoPedido(orderId, 'amb' + (k + 2) + 'img').then(blobToBase64).catch(() => null),
+      foto: (a && a.foto) ? await fotoDoPedido(orderId, 'amb' + (k + 2) + 'foto', 'ambiente' + (k + 2)).catch(() => null) : null
+    })));
     const imagemB64 = await blobToBase64(imagem);
     const trechoB64 = await blobToBase64(trecho);
     const fonte = original || trecho;
@@ -4067,6 +4459,19 @@ async function editarClipe(orderId) {
     imagemReal = !!d.real; setRealBtn();   // (16/09) volta a chave "Imagem real" do jeito que estava
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     naoDancar = !!d.naoDancar; naoDancarOriginal = naoDancar; setMotorBtn();   // (01/11) volta a chave "Não dançar"
+    // (15/11) videoclipe: chaves, cor, ambientes 2/3 (já pagos) e a letra conferida (o trecho é o mesmo → não lê de novo)
+    legendaOff = d.legendaOn === false; efeitoOff = d.efeitosOn === false; corLeg = d.legendaCor || COR_LEG_PADRAO;
+    setLegOffBtn(); setEfeOffBtn(); pintarCores();
+    ambsPed.forEach((a, k) => {
+      if (!a.img) return;
+      Object.assign(ambExtra[k], { foto: a.foto, img: a.img, pronta: a.pronta, estado: 'pronta', reaproveitada: true });
+    });
+    if (d.letra && Array.isArray(d.letra.frases) && !legendaOff) {
+      let k = 0;   // índice em cada palavra: dá para corrigir de novo no Editar
+      const frs = d.letra.frases.map((f) => ({ palavras: (f.palavras || []).map((p) => ({ i: k++, w: p.w, s: p.s, e: p.e })) }));
+      letra = { estado: 'pronta', frases: frs, duvidas: [], escolhas: {}, usd: 0, reaproveitada: true };
+      pularLetra = true;   // o setMusicReady logo abaixo não lê de novo
+    }
     renderClientPhoto(); refreshAvatarUI();
 
     rawAudioBuffer = audioBuf;
@@ -4082,6 +4487,7 @@ async function editarClipe(orderId) {
       playerSrc: URL.createObjectURL(trecho),
       wasCut: true
     });
+    renderLetra(); renderAmbientes(); renderChecklist();   // (15/11)
     showTab('criar');
     window.scrollTo(0, 0);
     toast('✏️ "' + (d.clientName || '') + '" está de volta no Criar vídeo, do jeito que estava. Ajuste o que quiser e gere de novo.');
@@ -4138,7 +4544,11 @@ async function rascSincroniza() {
     { campo: 'foto2',    b64: clientPhoto2 && clientPhoto2.base64, mime: (clientPhoto2 || {}).mimeType, nome: (clientPhoto2 || {}).name || 'personagem2.jpg' },
     { campo: 'ambiente', b64: clientPhoto3 && clientPhoto3.base64, mime: (clientPhoto3 || {}).mimeType, nome: (clientPhoto3 || {}).name || 'ambiente.jpg' },
     { campo: 'cartoon',  b64: avatarPreview && avatarPreview.cartoonBase64, mime: 'image/png',  nome: 'avatar.png' },
-    { campo: 'trecho',   b64: music && music.base64,                        mime: 'audio/mpeg', nome: (music || {}).name || 'trecho.mp3' }
+    { campo: 'trecho',   b64: music && music.base64,                        mime: 'audio/mpeg', nome: (music || {}).name || 'trecho.mp3' },
+    // (15/11) ambientes 2/3: a foto do lugar e a imagem da cena
+    ...[0, 1].flatMap((k) => { const a = ambExtra[k] || {}, n = k + 2; return [
+      { campo: 'amb' + n + 'foto', b64: a.foto && a.foto.base64, mime: (a.foto || {}).mimeType || 'image/jpeg', nome: 'ambiente' + n + '.jpg' },
+      { campo: 'amb' + n + 'img',  b64: a.img || null,             mime: 'image/png',                        nome: 'ambiente' + n + '-cena.png' }]; })
   ];
   for (const a of alvos) {
     if (!a.b64) { delete _rascArquivos[a.campo]; continue; }
@@ -4186,6 +4596,10 @@ async function rascSalvarAgora() {
       arquivos: _rascArquivos,
       cartoonKey: (_rascArquivos.cartoon || {}).key || '',
       imagemPronta: !!(avatarPreview && avatarPreview.pronta),   // (19/10) imagem pronta do admin volta no rascunho
+      // (15/11) videoclipe: chaves, cor, ambientes prontos e a letra (com as palavras já confirmadas)
+      legendaOff: !!legendaOff, efeitoOff: !!efeitoOff, corLeg: corLeg,
+      ambPronta: ambExtra.map((a) => !!a.pronta),
+      letra: (letra && letra.estado === 'pronta') ? letra : null,
       passo: rascPasso(), passoMax: 3
     };
     const r = await api('/a97RascunhoSalvar', { method: 'POST', body: JSON.stringify({ projectId: rascunhoId, estado }) });
@@ -4289,8 +4703,9 @@ async function continuarProjeto(pid) {
       ? api('/a97RascunhoBaixar?projectId=' + encodeURIComponent(pid) + '&campo=' + encodeURIComponent(campo))
           .then(x => x.ok ? x.blob() : null).catch(() => null)
       : Promise.resolve(null);
-    const [b1, b2, b3, bCartoon, bTrecho, bOriginal] = await Promise.all([
-      baixa('cliente'), baixa('foto2'), baixa('ambiente'), baixa('cartoon'), baixa('trecho'), baixa('original')
+    const [b1, b2, b3, bCartoon, bTrecho, bOriginal, bA2f, bA2i, bA3f, bA3i] = await Promise.all([
+      baixa('cliente'), baixa('foto2'), baixa('ambiente'), baixa('cartoon'), baixa('trecho'), baixa('original'),
+      baixa('amb2foto'), baixa('amb2img'), baixa('amb3foto'), baixa('amb3img')   // (15/11) ambientes 2/3
     ]);
     const comoFoto = async (blob, nome) => {
       if (!blob) return null;
@@ -4318,6 +4733,18 @@ async function continuarProjeto(pid) {
     imagemReal = (e.real === true || e.real === false) ? e.real : null; setRealBtn();
     corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
     naoDancar = !!e.naoDancar; setMotorBtn();
+    // (15/11) videoclipe: chaves, cor, ambientes 2/3 (já pagos) e a letra conferida
+    legendaOff = !!e.legendaOff; efeitoOff = !!e.efeitoOff; corLeg = e.corLeg || COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
+    for (const [k, bf, bi] of [[0, bA2f, bA2i], [1, bA3f, bA3i]]) {
+      const a = ambExtra[k];
+      a.foto = await comoFoto(bf, 'ambiente' + (k + 2) + '.jpg');
+      a.img = bi ? await blobToBase64(bi) : null;
+      a.pronta = !!(a.img && (e.ambPronta || [])[k]); a.estado = a.img ? 'pronta' : ''; a.reaproveitada = !!a.img;
+    }
+    if (e.letra && Array.isArray(e.letra.frases) && bTrecho && !legendaOff) {
+      letra = Object.assign({}, e.letra, { estado: 'pronta', escolhas: e.letra.escolhas || {} });   // é cobrada no envio (se ainda não foi)
+      pularLetra = true;   // o setMusicReady logo abaixo não lê de novo
+    }
     renderClientPhoto(); refreshAvatarUI();
 
     if (bTrecho) {
@@ -4345,7 +4772,8 @@ async function continuarProjeto(pid) {
       rawAudioFile = new File([bOriginal], rawAudioName, { type: bOriginal.type || 'audio/mpeg' });
       abrirEditorCorte();
     }
-    renderChecklist();
+    renderLetra(); renderAmbientes(); renderChecklist();
+    [2, 3].forEach((n) => { const a = ambExtra[n - 2]; if (a.foto && !a.img && !a.pronta) gerarAmbiente(n); });   // (15/11) ambiente com foto e sem imagem: cria agora
     showTab('criar');
     window.scrollTo(0, 0);
     rascAviso('💾 Projeto aberto · continue de onde parou');
@@ -4533,6 +4961,10 @@ function resetCreateForm() {
   imagemReal = null; setRealBtn();   // (16/09) volta ao padrão (desenho)
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
+  // (15/11) videoclipe volta ao padrão: legenda amarela, com efeitos, só o Ambiente 1, sem letra
+  legendaOff = false; efeitoOff = false; corLeg = COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
+  ambExtra = [novoAmb(), novoAmb()];   // a imagem que estiver sendo feita para a tela antiga é descartada (gerarAmbiente confere)
+  letraSeq++; letra = null; pularLetra = false; renderLetra();
   trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
   _cfgCarregada = false;
   music = null; try { stopPreviewCorte(); } catch (e) {} rawAudioBuffer = null;
@@ -4545,7 +4977,7 @@ function resetCreateForm() {
   const cut = document.getElementById('cutEditor'); if (cut) cut.classList.remove('show');
   if (typeof renderClientPhoto === 'function') renderClientPhoto();
   if (typeof refreshAvatarUI === 'function') refreshAvatarUI();
-  renderScenes(); renderStoryboard();
+  renderScenes(); renderStoryboard(); renderLetra();
 }
 
 function sairEdicao() {
@@ -4668,7 +5100,7 @@ async function checkManutencao() {
 // (antes só o refreshAvatarUI mostrava, e ele só rodava depois de alguma foto).
 function mostraProntaAdmin() {
   const pbx = document.getElementById('prontaBox');
-  if (pbx && (!editState || editTrocaAvatar)) pbx.style.display = podePronta() ? '' : 'none';
+  if (pbx) pbx.style.display = 'none';   // (15/11) a caixa saiu: cada card de Ambiente tem o seu "Subir imagem pronta"
 }
 window.addEventListener('DOMContentLoaded', () => {
   renderScenes();
