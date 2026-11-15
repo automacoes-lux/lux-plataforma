@@ -1674,7 +1674,11 @@ function pintarCenas(){
             '<input type="text" data-campo="gestoTexto" maxlength="200" placeholder="Descreva o gesto. Ex: levanta o copo e brinda com a câmera" value="' + esc(rc.gestoTexto || '') + '" class="' + (rc.gesto === 'livre' ? '' : 'hide') + '" style="margin-top:.4rem"/>' +
             '<div class="gesto-desc">' + esc(descGesto(g)) + '</div>' +
             '<div class="mini">Prompt de comando <span class="mini-obs">(para alterar algo na cena)</span></div>' +
-            '<textarea data-campo="comando" maxlength="2000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>') +
+            '<textarea data-campo="comando" maxlength="2000" class="cmd-cena" placeholder="Ex: as pessoas ao fundo acenam com as mãos">' + esc(rc.comando || '') + '</textarea>' +
+            // (15/11, Thiago) pedido por ÁUDIO também aqui (cena 1 do Natal e cenas antigas): no trenó a IA escreve o comando; nas outras, a ação da cena
+            '<div class="mic-linha"><button type="button" class="btn-ghost mic-acao" data-mic="' + i + '" onclick="micAcao(' + i + ')">🎤 Pedir mudança por áudio</button>' +
+              '<button type="button" class="btn-ghost mic-cancela hide" data-mic-x="' + i + '" onclick="micCancela()" title="Cancelar">✕</button></div>' +
+            (rc.ultimoPedido ? '<div class="gesto-desc pedido-acao">Último pedido: “' + esc(rc.ultimoPedido) + '”</div>' : '')) +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
       '</div></div></div>';
@@ -1789,14 +1793,16 @@ async function micParou(m){
   const blob = new Blob(m.chunks, { type: m.rec.mimeType || 'audio/webm' });
   if (blob.size < 1500) { mic = null; micPinta(); return toast('⚠️ O áudio ficou curto demais. Aperte o microfone e explique de novo.'); }
   m.enviando = true; micPinta(); ocupado = true;
-  toast('🎧 Entendendo o pedido e reescrevendo a ação (~20 s)…');
+  toast('🎧 Entendendo o pedido (~20 s)…');
   try {
     await salvaPendentes();
     const audio = await blobParaBase64(blob);
     const d = await chama('/pn/acao', { id: proj.id, cena: m.i + 1, audio, mime: blob.type });
     if (!d.ok) throw new Error(d.error || 'não consegui entender o pedido');
     proj = d.projeto; mic = null; pintarCenas();
-    toast('✅ Ação da cena ' + (m.i + 1) + ' reescrita com o seu pedido. Confira e gere a cena de novo.');
+    const rcN = (proj.roteiro && proj.roteiro.cenas[m.i]) || {};   // (15/11) cena 1 do Natal: o pedido vira o "Prompt de comando"
+    toast(rcN.acao !== undefined ? '✅ Ação da cena ' + (m.i + 1) + ' reescrita com o seu pedido. Confira e gere a cena de novo.'
+      : '✅ Pedido escrito no "Prompt de comando" da cena ' + (m.i + 1) + '. Confira e gere a cena de novo.');
   } catch (e) { toast('⚠️ ' + (e.message || 'não consegui entender o pedido')); }
   finally { mic = null; ocupado = false; micPinta(); }
 }
