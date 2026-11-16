@@ -662,9 +662,9 @@ button.mini916:hover{border-color:var(--gold)}
           </div>
           <!-- (15/11) VIDEOCLIPE: Legenda off = vídeo sem legenda · (15/11) a chave Efeito off saiu a pedido do Thiago -->
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="sw-label" id="legOffLbl" style="white-space:nowrap">Legenda off</span>
+            <span class="sw-label" id="legOffLbl" style="white-space:nowrap">Legenda</span>
             <button type="button" class="sw" id="btnLegOff" role="switch" aria-checked="false" onclick="toggleLegendaOff()"
-                    title="Desligada (padrão): o vídeo sai com a letra na tela. Ligue para o vídeo sair SEM legenda.">
+                    title="Desligada (padrão): o vídeo sai SEM legenda. Ligue (On) para a letra aparecer no vídeo.">
               <span class="sw-knob"></span><span class="sw-txt" id="legOffState">Off</span>
             </button>
           </div>
@@ -814,7 +814,7 @@ button.mini916:hover{border-color:var(--gold)}
         <div class="cores" id="paletaLegenda"></div>
         <div class="cor-nome" id="corLegendaNome"></div>
       </div>
-      <div id="corLegendaOff" style="display:none;font-size:12.5px;color:var(--text-dim)">A legenda está desligada (chave <b>Legenda off</b> no Passo 1): o vídeo sai sem letra.</div>
+      <div id="corLegendaOff" style="display:none;font-size:12.5px;color:var(--text-dim)">A legenda está desligada: o vídeo sai sem letra. Para ter legenda, ligue a chave <b>Legenda</b> (On) no Passo 1.</div>
     </div>
 
     <div class="card storyboard-card">
@@ -2929,7 +2929,7 @@ function setMotorBtn() {
 // COR da legenda (Passo 3) e a LETRA com dupla checagem na Conferência (palavra em dúvida = a atendente confirma antes de gerar).
 // var (não let): funções daqui são chamadas por código que pode rodar antes destas linhas.
 // ═══════════════════════════════════════════════════════════════════════════════
-var legendaOff = false, efeitoOff = false;
+var legendaOff = true, efeitoOff = false;   // (16/11) Thiago: a legenda vem DESLIGADA; a atendente liga na chave "Legenda" (On)
 var CORES_LEG = [['#FFD400', 'Amarelo (padrão)'], ['#38BDF8', 'Azul'], ['#22C55E', 'Verde'], ['#EF4444', 'Vermelho'], ['#EC4899', 'Rosa'], ['#FFFFFF', 'Branco (sem destaque)']];
 var COR_LEG_PADRAO = '#FFD400', corLeg = COR_LEG_PADRAO;
 function novoAmb() { return { foto: null, img: null, pronta: false, estado: '', erro: '', seq: 0, reaproveitada: false }; }
@@ -2943,7 +2943,7 @@ function swLiga(btnId, stId, lblId, on) {
   if (l) l.classList.toggle('on', on);
 }
 function setLegOffBtn() {
-  swLiga('btnLegOff', 'legOffState', 'legOffLbl', legendaOff);
+  swLiga('btnLegOff', 'legOffState', 'legOffLbl', !legendaOff);
   const c1 = document.getElementById('corLegendaCorpo'), c2 = document.getElementById('corLegendaOff');
   if (c1) c1.style.display = legendaOff ? 'none' : '';
   if (c2) c2.style.display = legendaOff ? '' : 'none';
@@ -2951,7 +2951,7 @@ function setLegOffBtn() {
 function setEfeOffBtn() { swLiga('btnEfeOff', 'efeOffState', 'efeOffLbl', efeitoOff); }
 function toggleLegendaOff() {
   legendaOff = !legendaOff; setLegOffBtn();
-  toast(legendaOff ? 'Legenda off: o vídeo sai sem a letra na tela.' : 'Legenda ligada: a letra aparece no vídeo, na cor do Passo 3.');
+  toast(legendaOff ? 'Legenda desligada: o vídeo sai sem a letra na tela.' : 'Legenda ligada: a letra aparece no vídeo, na cor do Passo 3.');
   if (!legendaOff && music && (!letra || letra.estado === 'erro')) carregarLetra();
   renderLetra(); renderChecklist(); rascSalvar();
 }
@@ -3979,7 +3979,7 @@ function validar() {
   if (!music) return 'Envie a música (Passo 2).';
   if (!legendaOff) {   // (15/11) legenda: a letra conferida é obrigatória — dúvida = a atendente confirma ANTES de gerar
     if (!letra || letra.estado === 'lendo') return 'Aguarde: a letra da legenda ainda está sendo conferida (Conferência).';
-    if (letra.estado === 'erro') return 'A letra da legenda não foi lida: clique em "Ler de novo" na Conferência (ou ligue "Legenda off").';
+    if (letra.estado === 'erro') return 'A letra da legenda não foi lida: clique em "Ler de novo" na Conferência (ou desligue a chave "Legenda").';
     const np = letraPendencias();
     if (np) return 'Confirme ' + (np === 1 ? 'a palavra em dúvida' : 'as ' + np + ' palavras em dúvida') + ' da letra na Conferência antes de gerar.';
   }
@@ -5076,7 +5076,7 @@ function resetCreateForm() {
   corpoInteiro = true; setInteiroBtn();   // (14/10) sempre corpo inteiro
   naoDancar = false; naoDancarOriginal = false; setMotorBtn();   // (01/11) volta ao padrão (dançando)
   // (15/11) videoclipe volta ao padrão: legenda amarela, com efeitos, só o Ambiente 1, sem letra
-  legendaOff = false; efeitoOff = false; corLeg = COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
+  legendaOff = true; efeitoOff = false; corLeg = COR_LEG_PADRAO; setLegOffBtn(); setEfeOffBtn(); pintarCores();
   ambExtra = [novoAmb(), novoAmb()];   // a imagem que estiver sendo feita para a tela antiga é descartada (gerarAmbiente confere)
   letraSeq++; letra = null; pularLetra = false; renderLetra();
   trechoLivre = true; setTrechoBtn();   // (20/10) sempre livre   // (12/09) editor de música volta à janela de 1 minuto
