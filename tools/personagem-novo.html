@@ -605,6 +605,15 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 
   <div class="step">
     <div class="step-head"><div class="step-title"><span id="tituloPers">Personagens</span> <span style="color:var(--gold)">*</span></div></div>
+    <!-- (16/11, Thiago) Natal: a atendente escolhe se o vídeo abre com o trenó ou já na conversa do Papai Noel com a pessoa -->
+    <div id="blocoInicioNatal" class="hide" style="margin-bottom:.9rem">
+      <div class="mini" style="margin-top:0">Como o vídeo começa</div>
+      <div class="chips" id="chipsInicio" role="radiogroup" aria-label="Como o vídeo começa">
+        <div class="chip on" data-v="treno" role="radio">Papai Noel chega de trenó</div>
+        <div class="chip" data-v="conversa" role="radio">Já começa na conversa</div>
+      </div>
+      <div class="gesto-desc" id="notaInicio"></div>
+    </div>
     <div class="pers-grid" id="boxPers"></div>
     <div id="blocoConversa" class="hide">
       <div class="mini">Como os personagens falam</div>
@@ -856,6 +865,7 @@ const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).leng
 let proj = null;                 // o projeto como o servidor devolveu
 let estilo = 'real';
 let conversa = false;            // (10/11) Padrão com 2+ personagens: "Conversa entre os personagens"
+let inicioNatal = 'treno';       // (16/11) Natal: 'treno' = chega de trenó · 'conversa' = já começa na conversa (sem trenó)
 let pers = [{}, {}, {}];        // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }] ou, com imagem pronta (13/11), [{ prontaNova, prontaUrl, prontaKey }]
 let gestos = [];
 let trilhas = [], trilhaSel = null, legendas = true;
@@ -903,7 +913,7 @@ function voltarModos(){
   clearTimeout(rascT); clearTimeout(timer);
   proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null; vozModo = 'ia'; vozBusy = '';
   ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
-  if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; inicioNatal = 'treno'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
   $('telaFinal').classList.add('hide');
@@ -957,6 +967,23 @@ document.querySelectorAll('#chipsConversa .chip').forEach(c => c.addEventListene
   pintarConversa();
   agendaRascunho(50);
 }));
+// (16/11, Thiago — cliente da Roberta não queria o trenó) Natal: começa com o trenó ou já na conversa (a pessoa entra no Ambiente 1)
+document.querySelectorAll('#chipsInicio .chip').forEach(c => c.addEventListener('click', () => {
+  const novo = c.dataset.v === 'conversa' ? 'conversa' : 'treno';
+  if (novo === inicioNatal) return;
+  inicioNatal = novo;
+  if (novo === 'treno' && pers[0] && temPessoa(pers[0])) { pers[0].pessoaNova = null; pers[0].pessoaTirar = true; }   // com o trenó, o Ambiente 1 é só do Papai Noel
+  pintarPers();
+  agendaRascunho(50);
+  if (proj && proj.roteiro) toast('Agora clique em "Gerar Papai Noel e texto" de novo: o texto e a imagem do Ambiente 1 são refeitos para o novo começo.');
+}));
+function pintarInicio(){
+  $('blocoInicioNatal').classList.toggle('hide', !natal());
+  document.querySelectorAll('#chipsInicio .chip').forEach(x => x.classList.toggle('on', x.dataset.v === inicioNatal));
+  $('notaInicio').textContent = inicioNatal === 'conversa'
+    ? 'Sem o trenó: o vídeo já abre com o Papai Noel conversando com a pessoa do Ambiente 1. Envie a foto dela no Ambiente 1.'
+    : 'A 1ª cena é o trenó pousando e o Papai Noel descendo para falar.';
+}
 function pintarConversa(){
   const mostra = !!modo && !natal() && !bf() && vozModo !== 'cliente' && pers.filter(temFoto).length > 1;
   $('blocoConversa').classList.toggle('hide', !mostra);
@@ -1093,7 +1120,7 @@ function salvarRascunho(){
     $('notaSalvo').textContent = '💾 Salvando…';
     const fotosEnv = fotosBF.slice();
     const d = await chama('/pn/rascunho', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(),
-      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), conversa: (natal() || bf()) ? undefined : conversa, personagens: ents }, dadosBF()));
+      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), conversa: (natal() || bf()) ? undefined : conversa, natalInicio: natal() ? inicioNatal : undefined, personagens: ents }, dadosBF()));
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
     if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (!x.key && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
@@ -1130,12 +1157,13 @@ function pintarPers(){
       (sub ? '<div class="slot-sub">' + sub + '</div>' : '') + '</div></label>';
     // (15/11, Thiago) do 2º ambiente em diante: a foto de uma PESSOA para conversar com o Papai Noel (o 1º é o da chegada de trenó)
     const pess = p.pessoaNova || (p.pessoaTirar ? '' : p.pessoaUrl);
+    const comPessoa = k > 0 || inicioNatal === 'conversa';   // (16/11) já em conversa: o Ambiente 1 também tem a pessoa (obrigatória)
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       // (15/11, Thiago) só o Ambiente 1 enviado = ele vale para os outros cards (a pessoa do card 2/3 aparece nele)
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : ''), k === 0 ? 'Se for o único ambiente, ele vale para todas as cenas.' : '') +
-      (k > 0 ? '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'pessoa\')"/>' +
+      (comPessoa ? '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolher(event,' + k + ',\'pessoa\')"/>' +
         '<div class="slot-th">' + (pess ? '<img src="' + esc(pess) + '" alt=""/>' : IC_ROSTO) + '</div>' +
-        '<div class="slot-info"><div class="slot-nome">Pessoa que conversa com o Papai Noel</div>' +
+        '<div class="slot-info"><div class="slot-nome">Pessoa que conversa com o Papai Noel' + (k === 0 ? ' *' : '') + '</div>' +
         '<span class="slot-acao">' + (pess ? 'Trocar' : '+ Enviar') + '</span>' +
         (pess ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarPessoa(' + k + ')">Tirar</span>' : '') + '</div></label>' : '') +
       '</div>';
@@ -1156,6 +1184,7 @@ function pintarPers(){
       '</div>';
   }).join('');
   pintarConversa();
+  pintarInicio();
 }
 // ── BLACK FRIDAY: uma página só, como o Avatar 150 ──
 const IC_PESSOA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
@@ -1427,6 +1456,7 @@ async function gerarTudo(){
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
   if (natal() && !pers.some(temAmb)) return toast('🏠 Envie a foto de pelo menos um ambiente.');
+  if (natal() && inicioNatal === 'conversa' && !(temAmb(pers[0]) && temPessoa(pers[0]))) return toast('📷 Para começar já na conversa, envie no Ambiente 1 a foto do ambiente e a da pessoa que conversa com o Papai Noel.');
   if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1 (ou a imagem pronta).');
   const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
@@ -1439,7 +1469,7 @@ async function gerarTudo(){
   try {
     bt.textContent = temVozCliente() ? '🎙️ Dividindo o áudio em cenas…' : '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
-    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa,
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa, natalInicio: natal() ? inicioNatal : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
       personagens: pers.filter((x, k) => natal() ? entraNatal(x, k) : temFoto(x)).map(p => temPronta(p) && !natal() ? entPronta(p) : Object.assign({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
@@ -1646,7 +1676,7 @@ function pintarCenas(){
     const g = gestos.find(x => x.id === rc.gesto) || {};
     // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
     const ordemG = gestos.filter(x => x.id === 'livre').concat(gestos.filter(x => x.id !== 'livre'));
-    const opts = ordemG.filter(x => !(natal() && x.id === 'chegando' && i > 0) && (x.id !== 'livre' || rc.gesto === 'livre')).map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : (natal() && x.id === 'chegando' ? 'Chega de trenó' : esc(x.nome))) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
+    const opts = ordemG.filter(x => !(natal() && x.id === 'chegando' && (i > 0 || proj.natalInicio === 'conversa')) && (x.id !== 'livre' || rc.gesto === 'livre')).map(x => '<option value="' + x.id + '"' + (x.id === rc.gesto ? ' selected' : '') + '>' + (x.id === 'livre' ? '✏️ Escrever o gesto' : (natal() && x.id === 'chegando' ? 'Chega de trenó' : esc(x.nome))) + (x.id === rc.gestoIA && i > 0 ? ' ✨' : '') + '</option>').join('');
     const np = palavras(rc.fala);
     return '<div class="step cena" data-i="' + i + '">' +
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
@@ -2129,6 +2159,7 @@ async function abrirProjeto(id){
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
   conversa = !!p.conversa;
+  inicioNatal = p.natalInicio === 'conversa' ? 'conversa' : 'treno';   // (16/11) projeto antigo = trenó
   const cfg = p.cfgMontagem || {};
   vozModo = p.vozCliente ? 'cliente' : 'ia'; vozBusy = '';
   trilhaSel = cfg.trilha || p.trilha || null; legendas = (cfg.legendas !== undefined ? cfg.legendas : p.legendas) !== false;
