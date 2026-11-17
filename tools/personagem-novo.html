@@ -1621,7 +1621,8 @@ function carregaVozes(){
 function linhaVoz(k, m, sexo, atual, auto, nome, rotulo){
   if (!vozesPN) return '<div class="pp-sub">' + (rotulo ? rotulo + ' · ' : '') + 'Voz ' + esc(nome || 'automática') + '</div>';
   const ord = vozesPN.filter(v => v.sexo === sexo).concat(vozesPN.filter(v => v.sexo !== sexo));
-  const opts = ord.map(v => '<option value="' + v.id + '"' + (v.id === atual ? ' selected' : '') + '>' + esc(v.nome) + ' · ' + (v.sexo === 'F' ? 'feminina' : 'masculina') + (auto && v.id === atual ? ' (automática)' : '') + '</option>').join('');
+  // (16/11) as vozes kids já dizem o sexo no nome ("Kids masculino"): sem o "· masculina" repetido
+  const opts = ord.map(v => '<option value="' + v.id + '"' + (v.id === atual ? ' selected' : '') + '>' + esc(v.nome) + (/^kids/i.test(v.nome) ? '' : ' · ' + (v.sexo === 'F' ? 'feminina' : 'masculina')) + (auto && v.id === atual ? ' (automática)' : '') + '</option>').join('');
   return '<div class="pp-voz">' + (rotulo ? '<span class="pp-voz-lado">' + rotulo + '</span>' : '') +
     '<select aria-label="Voz" onchange="trocaVozPers(' + k + ',' + m + ',this.value)">' + opts + '</select>' +
     '<button type="button" class="pp-ouvir" data-ouvir title="Ouvir esta voz" onclick="ouvirVoz(this.previousElementSibling.value,this)">▶</button></div>';
