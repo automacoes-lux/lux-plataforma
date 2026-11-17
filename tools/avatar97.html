@@ -389,6 +389,13 @@ input[type=range]{width:100%;accent-color:var(--gold);height:28px}
 .busca button{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
 .busca button:hover{color:var(--gold)}
 .busca-cont{font-size:11.5px;color:var(--text-dim);margin:-4px 0 12px}
+/* (17/11, pedido da Roberta) chave "Meus | Todos" em cima da busca dos Resultados */
+.dono-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:6px 0 10px;background:var(--bg-input);border-radius:999px}
+.dono-seg button{min-height:40px;padding:8px 10px;border:none;border-radius:999px;background:transparent;color:var(--text-dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+.dono-seg button:hover{color:var(--text)}
+.dono-seg button.active{background:rgba(201,168,76,.14);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.dono-seg button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.meus-mais{display:block;width:100%;margin-top:10px;min-height:40px;border-radius:999px}
 .order-cat{
   display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
   color:#E8C97A;background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.35);
@@ -889,9 +896,14 @@ button.mini916:hover{border-color:var(--gold)}
       <div class="step-eyebrow"><span class="dot"></span>Vídeos</div>
       <!-- (23/09) VITRINE DA EQUIPE: todo atendente acha o vídeo de qualquer colega pelo ramo
            do cliente, pelo nome do cliente ou pelo atendente — pra mandar exemplo pro lead. -->
+      <!-- (17/11, pedido da Roberta) "Meus" = só os vídeos de quem está logado; "Todos" = a vitrine da equipe -->
+      <div class="dono-seg" id="donoSeg" role="group" aria-label="Quais vídeos mostrar">
+        <button type="button" id="donoMeus" class="active" aria-pressed="true" onclick="trocaDono('meus')">Meus</button>
+        <button type="button" id="donoTodos" aria-pressed="false" onclick="trocaDono('todos')">Todos</button>
+      </div>
       <div class="busca">
         <span class="lupa">🔎</span>
-        <input type="text" id="buscaRes" placeholder="Buscar por categoria, cliente ou atendente" autocomplete="off"/>
+        <input type="text" id="buscaRes" placeholder="Buscar cliente ou categoria" autocomplete="off"/>
         <button type="button" id="buscaLimpa" title="Limpar" style="display:none">✕</button>
       </div>
       <div class="busca-cont" id="buscaCont"></div>
@@ -4282,7 +4294,102 @@ function desenhaResultados(orders, ehAdmin) {
   _meusOrders = orders || [];
   _ehAdmin    = !!ehAdmin;
   mostraProntaAdmin();   // (28/10) a lista confirmou o papel
+  pintaChaveDono();      // (17/11) idem: o admin abre em "Todos"
   pintarResultados();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// (17/11, pedido da Roberta) CHAVE "MEUS | TODOS"
+// ═══════════════════════════════════════════════════════════════════════════════
+// A vitrine sem busca mostra os 60 mais recentes da equipe inteira: a atendente quase não via os dela e tinha
+// que lembrar o nome da empresa. "Meus" monta a lista com os próprios pedidos (o /listOrders já manda TODOS os da
+// atendente) e busca aqui mesmo na tela, sem acento e exigindo todas as palavras. "Todos" = a vitrine, como antes.
+// A atendente abre em "Meus"; o admin, em "Todos" (no "Meus" dele entram só os feitos no login dele).
+// A Roberta atende 2 linhas com o MESMO login, então o "Meus" dela já junta as duas.
+let _dono = null;          // null = ainda não escolheu → padrão pelo papel
+let _meusMostrar = 60;     // "Mostrar mais" de 60 em 60 (celular não aguenta centenas de cards de uma vez)
+let _meusBuscaTimer = null;
+function donoAtual() { return _dono || (souAdmin() ? 'todos' : 'meus'); }
+function meuEmailLogado() {
+  try { return String((window.parent && window.parent.__luxUser && window.parent.__luxUser.email) || '').toLowerCase().trim(); }
+  catch (e) { return ''; }
+}
+function soMeusOrders() {
+  if (!_ehAdmin) return _meusOrders;   // atendente: o servidor só manda os dela
+  const eu = meuEmailLogado();
+  if (!eu) return [];
+  return _meusOrders.filter(o => String(o.attendantEmail || '').toLowerCase().trim() === eu);
+}
+function pintaChaveDono() {
+  const d = donoAtual();
+  [['donoMeus', 'meus'], ['donoTodos', 'todos']].forEach(function (p) {
+    const b = document.getElementById(p[0]);
+    if (!b) return;
+    b.classList.toggle('active', d === p[1]);
+    b.setAttribute('aria-pressed', d === p[1] ? 'true' : 'false');
+  });
+  const cx = document.getElementById('buscaRes');
+  if (cx) cx.placeholder = (d === 'meus') ? 'Buscar cliente ou categoria' : 'Buscar por categoria, cliente ou atendente';
+}
+async function trocaDono(d) {
+  if (donoAtual() === d) return;
+  _dono = d;
+  _meusMostrar = 60;
+  pintaChaveDono();
+  // no "Meus" a busca não vai ao servidor: a vitrine pode estar com outro termo → recarrega ao voltar pro "Todos"
+  if (d === 'todos') await carregaVitrine(termoBusca());
+  pintarResultados();
+}
+function maisMeus() { _meusMostrar += 60; pintarResultados(); }
+function pintarMeus(el, termo) {
+  const meus = soMeusOrders();
+  let html = '';
+  // 1) em produção ou que falharam — no topo, só quando não há busca (igual ao "Todos")
+  if (!termo) {
+    meus.filter(o => !(o.status === 'COMPLETED' && o.videoUrl))
+      .sort((a, b) => (b.startedTs || 0) - (a.startedTs || 0))
+      .forEach(o => { html += cardPedido(o); });
+  }
+  // 2) prontos — no mesmo formato da vitrine, para usar o mesmo card
+  const prontos = meus.filter(o => o.status === 'COMPLETED' && o.videoUrl).map(o => ({
+    orderId: o.orderId, cliente: o.clientName || '', categoria: o.categoria || '',
+    atendente: o.attendantName || '', quando: o.finishedAt || o.createdAt || '',
+    segundos: 0, videoUrl: o.videoUrl, meu: true,
+    refeito: !!o.refeitoDe, jaRefeito: !!o.refeitoReservaId
+  }));
+  const palavras = semAcentoProj(termo).split(/\s+/).filter(Boolean);
+  const tsDe = (id) => Number(String(id).split('_').pop()) || 0;
+  const achados = prontos.filter(v => {
+    if (!palavras.length) return true;
+    const alvo = semAcentoProj(v.categoria + ' ' + v.cliente + ' ' + v.atendente);
+    return palavras.every(p => alvo.indexOf(p) >= 0);
+  }).sort((a, b) => tsDe(b.orderId) - tsDe(a.orderId));
+  const custoDe = {}, luxDe = {};
+  for (const o of meus) {
+    if (o.costBRL != null) custoDe[o.orderId] = o.costBRL;
+    if (o.custoLuxBRL != null) luxDe[o.orderId] = o.custoLuxBRL;
+  }
+  for (const v of achados.slice(0, _meusMostrar)) html += cardVitrine(v, custoDe[v.orderId], luxDe[v.orderId]);
+  const faltam = achados.length - _meusMostrar;
+  if (faltam > 0) html += '<button type="button" class="btn-mini meus-mais" onclick="maisMeus()">Mostrar mais (' + faltam + ')</button>';
+
+  const cont = document.getElementById('buscaCont');
+  const seus = (n) => n + (n === 1 ? ' vídeo seu' : ' vídeos seus');
+  if (cont) cont.textContent = !prontos.length ? '' : (termo ? (achados.length + ' de ' + seus(prontos.length)) : seus(prontos.length));
+
+  if (!html) {
+    if (termo) {
+      html = '<div class="empty-state">Nada encontrado nos seus vídeos para <b>' + escapeHtml(termo) + '</b>.<br/>Tente o ramo do cliente (ex.: <b>açaí</b>) ou toque em <b>Todos</b> para buscar na equipe.</div>';
+    } else if (_ehAdmin && !meuEmailLogado()) {
+      html = '<div class="empty-state">Não consegui identificar o seu login.<br/>Toque em <b>Todos</b> para ver os vídeos.</div>';
+    } else {
+      html = '<div class="empty-state">Você ainda não tem vídeo aqui.<br/>Crie o primeiro na aba <b>Criar vídeo</b>, ou toque em <b>Todos</b> para ver os da equipe.' +
+        '<br/><button class="btn-mini" style="margin-top:10px" onclick="loadOrders()">Atualizar</button></div>';
+    }
+  }
+  const antigos = minisCarregadas(el);   // miniaturas já carregadas não recarregam
+  el.innerHTML = html;
+  ligaMinis(el, antigos);
 }
 
 function pintarResultados() {
@@ -4292,6 +4399,7 @@ function pintarResultados() {
     const termo = termoBusca();
     const btL = document.getElementById('buscaLimpa');
     if (btL) btL.style.display = termo ? '' : 'none';
+    if (donoAtual() === 'meus') { pintarMeus(el, termo); return; }   // (17/11) chave "Meus | Todos"
 
     let html = '';
     // 1) MEUS pedidos em produção ou que falharam — no topo, só quando não há busca
@@ -4508,13 +4616,18 @@ async function alternaEstrela(bt) {
     const cx = document.getElementById('buscaRes'), btL = document.getElementById('buscaLimpa');
     if (cx) cx.addEventListener('input', function () {
       if (_buscaTimer) clearTimeout(_buscaTimer);
+      if (_meusBuscaTimer) clearTimeout(_meusBuscaTimer);
+      // (17/11) no "Meus" a busca é aqui mesmo na tela (os pedidos dela já estão carregados)
+      if (donoAtual() === 'meus') { _meusBuscaTimer = setTimeout(function () { _meusMostrar = 60; pintarResultados(); }, 150); return; }
       _buscaTimer = setTimeout(async function () { await carregaVitrine(termoBusca()); pintarResultados(); }, 300);
     });
     if (btL) btL.addEventListener('click', async function () {
       if (cx) cx.value = '';
+      if (donoAtual() === 'meus') { _meusMostrar = 60; pintarResultados(); if (cx) cx.focus(); return; }   // (17/11)
       await carregaVitrine(''); pintarResultados();
       if (cx) cx.focus();
     });
+    pintaChaveDono();   // (17/11) papel já conhecido pela página principal → admin já abre em "Todos"
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', liga); else liga();
 })();
