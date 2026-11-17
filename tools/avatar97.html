@@ -3971,6 +3971,12 @@ function validar() {
     } else {
       /* (12/09) Avatar 97: sem linha de fotos — o tempo é o da música */
     }
+    if (!legendaOff) {   // (17/11) Editar com legenda: a mesma trava da letra conferida do pedido novo
+      if (!letra || letra.estado === 'lendo') return 'Aguarde: a letra da legenda ainda está sendo conferida (Conferência).';
+      if (letra.estado === 'erro') return 'A letra da legenda não foi lida: clique em "Ler de novo" na Conferência (ou desligue a chave "Legenda").';
+      const np = letraPendencias();
+      if (np) return 'Confirme ' + (np === 1 ? 'a palavra em dúvida' : 'as ' + np + ' palavras em dúvida') + ' da letra na Conferência antes de gerar.';
+    }
     return '';
   }
   if (!clientPhoto) return 'Envie a foto do Personagem 1 (Passo 1).';
@@ -4038,6 +4044,10 @@ async function gerarClipe() {
         payloadE.tipo = avatarTipo;
       }
       payloadE.cartoonGens = cartoonGens; payloadE.cartoonGensRes = cartoonGensRes; payloadE.cartoonPassadas = cartoonPassadas; payloadE.lyricSeconds = lyricSegs;
+      // (17/11, Thiago) LEGENDA NO EDITAR: ligar/desligar, cor e a letra corrigida vão junto — edição rápida (reaproveita o canto)
+      payloadE.legenda = { on: !legendaOff, cor: corLeg };
+      payloadE.letra = legendaOff ? null : letraParaEnvio();
+      payloadE.letraUSD = (!legendaOff && letra && letra.estado === 'pronta' && !letra.reaproveitada) ? (Number(letra.usd) || 0) : 0;
       const re = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadE) });
       const de = await re.json();
       if (!de.ok) throw new Error(de.error || 'Falha ao salvar a edição.');
