@@ -185,8 +185,11 @@
 
   .aviso{border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:14px;display:none}
   .aviso.on{display:block}
-  .aviso-erro{background:rgba(232,122,122,.1);border:1px solid rgba(232,122,122,.35);color:#F0A0A0}
-  .aviso-ok{background:rgba(127,184,122,.1);border:1px solid rgba(127,184,122,.35);color:#A5D3A0}
+  /* 18/11/2026: a mensagem fica PRESA no topo da tela — antes ela aparecia lá no começo da página e quem
+     estava rolado na lista (Roberta, no celular) tocava em "Baixar MP3" e não via erro nem confirmação. */
+  .aviso.on{position:sticky;top:8px;z-index:30;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+  .aviso-erro{background:#2B1E1E;border:1px solid rgba(232,122,122,.45);color:#F0A0A0}
+  .aviso-ok{background:#1D2A1C;border:1px solid rgba(127,184,122,.45);color:#A5D3A0}
 
   .spin{
     display:inline-block;width:12px;height:12px;border:2px solid rgba(201,168,76,.3);
@@ -789,6 +792,10 @@ async function rodarFila(){
   rodandoFila = false;
 }
 
+// iPhone/iPad (o iPad novo se apresenta como Mac, mas tem toque)
+const ehIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 // Salva o arquivo no computador do atendente
 function salvarArquivo(blob, nome){
   const url = URL.createObjectURL(blob);
@@ -842,6 +849,13 @@ async function baixarMp3(id){
       mp3Fazendo.delete(id);
     }
 
+    // 18/11/2026 (Roberta, iPhone): o Safari só aceita salvar arquivo logo depois do toque. Se precisou
+    // esperar a conversão, o "salvar" automático pode ser ignorado em silêncio — então, no iPhone/iPad,
+    // o MP3 fica pronto e o próximo toque salva na hora (cai no caso 1 lá em cima).
+    if(ehIOS){
+      sucesso('MP3 pronto! Toque de novo em "Baixar MP3" para salvar.');
+      return;
+    }
     salvarArquivo(blob, nome);
     sucesso('MP3 salvo: ' + nome);
   }catch(e){
