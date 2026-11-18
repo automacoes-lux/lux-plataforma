@@ -355,8 +355,25 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 
 /* "Adicionar Trilha" é AÇÃO, não é uma faixa: botão branco de texto preto, destacado das 10 */
 .trilha-item.custom{background:#fff;border-color:#fff;color:#141414;font-weight:600;justify-content:center}
-.trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414}
+.trilha-item.custom .trilha-nome{flex:0 1 auto;text-align:center;color:#141414;white-space:normal;line-height:1.25}   /* (18/11) "Subir a música do cliente" quebra em 2 linhas em vez de cortar */
 .trilha-item.custom.sel{background:#fff;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+/* (18/11, Thiago) música do cliente: escolher onde começa. Cores fixas para servir no passo 3 (Padrão/Natal) e no painel do Black Friday */
+.trcli{background:#212226;border-radius:14px;padding:14px;margin:.2rem 0 .8rem;color:#F2F2F3;font-family:'Inter',system-ui,sans-serif}
+.trcli-tit{font-size:14px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trcli-hint{font-size:12.5px;line-height:1.5;color:#9B9BA3;margin-bottom:10px}
+.trcli-hint b{color:#F2F2F3}
+#trCliOnda{width:100%;height:76px;display:block;border-radius:10px;background:#141417;cursor:pointer;touch-action:manipulation}
+.trcli-linha{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:#9B9BA3;margin:8px 0 2px}
+.trcli-linha b{color:#F0CE68;font-variant-numeric:tabular-nums}
+#trCliSl{width:100%;accent-color:#F0CE68;height:28px;padding:0;margin:0;background:transparent;border:none}
+.trcli-aviso{font-size:12px;color:#F0CE68;margin-top:4px}
+.trcli-bts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.trcli-bts button{flex:1;min-width:120px;min-height:42px;border:none;border-radius:999px;font:600 13.5px 'Inter',system-ui,sans-serif;cursor:pointer;padding:8px 14px}
+.trcli-bts .ouvir,.trcli-bts .cancela{background:#2A2B30;color:#F2F2F3}
+.trcli-bts .usar{background:#F2F2F3;color:#0D0D0F}
+.trcli-bts button:disabled{opacity:.5;cursor:not-allowed}
+.trcli-prog{font-size:12.5px;color:#9B9BA3;margin-top:8px;min-height:1em}
+@media(max-width:520px){ .trcli-bts .usar{flex-basis:100%;order:-1} }
 /* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
    Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
 @media(max-width:520px){
@@ -527,6 +544,8 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .bfp .faixas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bfp .faixa{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px 6px 7px;border:1.5px solid transparent;border-radius:999px;background:var(--lx-campo);cursor:pointer;font-size:13.5px;font-weight:500;color:var(--lx-txt2)}
 .bfp .faixa.sel{border-color:var(--lx-cta-b);color:var(--lx-txt)}
+.bfp .faixa.subir{background:var(--lx-txt);color:#0D0D0F;font-weight:600;justify-content:center;padding:6px 12px}   /* (18/11) "Subir a música do cliente" é AÇÃO, não faixa */
+.bfp .faixa.subir .nome{text-align:center}
 .bfp .faixa .play{flex:none;display:grid;place-items:center;width:34px;height:34px;border:none;border-radius:50%;background:var(--lx-txt);color:#0D0D0F;font-size:12px;cursor:pointer}
 .bfp .faixa .nome{flex:1;min-width:0;line-height:1.2}
 .bfp .resumo{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -672,8 +691,24 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
     <div class="sec-title">Passo 3 · 🎵 Montagem</div>
     <div class="step">
       <div class="step-head"><div class="step-title">Música de fundo <span style="color:var(--text-dim);font-weight:400">(opcional)</span></div></div>
-      <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher. A trilha entra abaixo das falas e termina em <b>fade out</b>.</div>
+      <div class="step-hint">Toque no <b>▶</b> pra ouvir e clique no nome pra escolher, ou suba a <b>música do cliente</b>. A trilha entra abaixo das falas e termina em <b>fade out</b>.</div>
       <div class="trilhas-grid" id="trilhasGrid"></div>
+      <!-- (18/11, Thiago) música do cliente: o mesmo editor serve o passo 3 e o Black Friday (vai para baixo da lista do modo aberto) -->
+      <div class="trcli hide" id="trCli">
+        <div class="trcli-tit" id="trCliTit">Música do cliente</div>
+        <div class="trcli-hint">Toque na onda no ponto em que a música deve <b>começar</b> (ex.: o refrão). A parte clara é o que toca no vídeo.</div>
+        <canvas id="trCliOnda"></canvas>
+        <div class="trcli-linha"><span>Começa em <b id="trCliDe">0:00</b></span><span id="trCliInfo"></span></div>
+        <input type="range" id="trCliSl" min="0" max="0" step="0.5" value="0" aria-label="Ponto em que a música começa"/>
+        <div class="trcli-aviso" id="trCliAviso"></div>
+        <div class="trcli-bts">
+          <button type="button" class="ouvir" id="trCliOuvir" onclick="ouvirTrCli()">▶ Ouvir</button>
+          <button type="button" class="usar" id="trCliUsar" onclick="usarTrCli()">Usar esta música</button>
+          <button type="button" class="cancela" onclick="fecharTrCli()">Cancelar</button>
+        </div>
+        <div class="trcli-prog" id="trCliProg"></div>
+      </div>
+      <input type="file" id="trCliInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.opus,.wma,.flac" hidden onchange="escolherTrCli(event)"/>
     </div>
     <div class="step">
       <div class="step-head"><div class="step-title">Legenda</div></div>
@@ -758,7 +793,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
     <div class="card" id="bfCardTrilha">
       <div class="eyebrow"><span class="dot"></span>Passo 3</div>
       <div class="card-title">Trilha sonora</div>
-      <div class="card-hint">Toque no <b>▶</b> para ouvir e clique no nome para escolher.</div>
+      <div class="card-hint">Toque no <b>▶</b> para ouvir e clique no nome para escolher, ou suba a <b>música do cliente</b>.</div>
       <div class="faixas" id="bfFaixas"></div>
     </div>
 
@@ -913,7 +948,7 @@ function voltarModos(){
   clearTimeout(rascT); clearTimeout(timer);
   proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null; vozModo = 'ia'; vozBusy = '';
   ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
-  if (audioTeste) { audioTeste.pause(); audioTeste = null; } trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; inicioNatal = 'treno'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  if (audioTeste) { audioTeste.pause(); audioTeste = null; } fecharTrCli(); trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; inicioNatal = 'treno'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
   $('telaFinal').classList.add('hide');
@@ -1325,17 +1360,20 @@ async function escreverFalaBF(pedirAjuste){
 async function pintarBFFaixas(){
   if (!trilhas.length || trilhasDe !== modo) { const d = await chama('/pn/trilhas-bf'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
   if (!bf()) return;
-  if (trilhasDe === modo && trilhas[0] && (!trilhaSel || !trilhas.some(t => t.id === trilhaSel.id))) { trilhaSel = trilhas[0]; salvarMontagem(); }   // rascunho com trilha que saiu da lista passa para a primeira
+  const lista = listaTrilhas();   // (18/11) as 6 + a música do cliente, se já subiu
+  if (trilhasDe === modo && trilhas[0] && (!trilhaSel || !lista.some(t => t.id === trilhaSel.id))) { trilhaSel = trilhas[0]; salvarMontagem(); }   // rascunho com trilha que saiu da lista passa para a primeira
   const sel = trilhaSel ? trilhaSel.id : '';
-  $('bfFaixas').innerHTML = trilhas.map(t => '<div class="faixa' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><button type="button" class="play" data-ouvir="' + esc(t.id) + '" aria-label="Ouvir">▶</button><span class="nome">' + esc(t.titulo) + '</span></div>').join('');
+  $('bfFaixas').innerHTML = lista.map(t => '<div class="faixa' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><button type="button" class="play" data-ouvir="' + esc(t.id) + '" aria-label="Ouvir">▶</button><span class="nome">' + esc(t.titulo) + '</span></div>').join('') +
+    '<div class="faixa subir" data-subir="1"><span class="nome">' + (lista.some(t => t.id === 'cliente') ? 'Trocar a música do cliente' : 'Subir a música do cliente') + '</span></div>';
   $('bfFaixas').querySelectorAll('.faixa').forEach(el => el.addEventListener('click', (ev) => {
     if (ev.target.closest('[data-ouvir]')) return;
-    trilhaSel = trilhas.find(t => t.id === el.dataset.id);
+    if (el.dataset.subir) return subirTrCli();
+    trilhaSel = lista.find(t => t.id === el.dataset.id);
     $('bfFaixas').querySelectorAll('.faixa').forEach(x => x.classList.toggle('sel', x === el));
     salvarMontagem(); bfEtapas();
   }));
   $('bfFaixas').querySelectorAll('[data-ouvir]').forEach(b => b.addEventListener('click', () => {
-    const t = trilhas.find(x => x.id === b.dataset.ouvir);
+    const t = lista.find(x => x.id === b.dataset.ouvir);
     const mesma = audioTeste && audioTeste._id === t.id;
     if (audioTeste) audioTeste.pause();
     document.querySelectorAll('#bfFaixas [data-ouvir]').forEach(x => { x.textContent = '▶'; });
@@ -1989,22 +2027,231 @@ async function outroTexto(){
   finally { ocupado = false; }
 }
 
+// ── (18/11, Thiago) MÚSICA DO CLIENTE como trilha, nos 3 modos ──
+// A atendente sobe o arquivo e toca na onda onde a música deve começar. O navegador corta só o trecho que vai tocar (o vídeo do
+// Personagem tem no máximo ~1 min), nivela o volume (mesmo nível das trilhas prontas) e converte em MP3; o servidor só guarda.
+function listaTrilhas(){
+  const c = (proj && proj.trilhaCliente && proj.trilhaCliente.url) ? proj.trilhaCliente : (trilhaSel && trilhaSel.id === 'cliente' ? trilhaSel : null);
+  return c ? trilhas.concat([c]) : trilhas;
+}
+let trCliBuf = null, trCliNome = '', trCliPicos = null, trCliCtx = null, trCliSrc = null, trCliRAF = 0, trCliPos = -1, trCliOcupado = false;
+const mmss = (s) => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function trCliAlvo(){   // quanto da música o vídeo usa (só para mostrar a parte que toca)
+  if (bf()) {
+    const s = temVozCliente() ? Number(proj.vozCliente.seg) || 0 : palavras($('bfFala').value) * SEG_POR_PALAVRA_BF;
+    return s ? s + (modo === 'promo' ? 3.5 : 1.5) : 45;
+  }
+  const nC = (proj && proj.roteiro && proj.roteiro.cenas.length) || 0;
+  const t = ((proj && proj.cenas) || []).slice(0, nC || undefined).reduce((s, c) => s + ((c && c.video && Number(c.video.dur)) || 0), 0);
+  return t || 40;
+}
+function subirTrCli(){
+  if (ocupado || trCliOcupado) return toast('⏳ Espere terminar o que está em andamento.');
+  if (bf() && bfRodandoTela()) return toast('⏳ Espere o vídeo que está sendo gerado terminar.');
+  $('trCliInput').click();
+}
+const bfRodandoTela = () => !!(proj && proj.bfJob && !proj.bfJob.pronto && !proj.bfJob.erro);
+async function escolherTrCli(ev){
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if (!f) return;
+  if (f.size > 80 * 1048576) return toast('⚠️ Este arquivo é muito grande.');
+  if (typeof lamejs === 'undefined') return toast('⚠️ O conversor de áudio não carregou. Recarregue a página.');
+  pararTrCli(); if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+  $('trCliProg').textContent = '';
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  let buf = null;
+  try { buf = await ctx.decodeAudioData(await f.arrayBuffer()); }
+  catch (e) { return toast('⚠️ Não consegui abrir esta música. Envie em MP3, M4A ou WAV.'); }
+  finally { try { ctx.close(); } catch (e) {} }
+  if (!buf || buf.duration < 5) return toast('⚠️ A música é muito curta.');
+  trCliBuf = buf; trCliNome = f.name.replace(/\.[^.]+$/, '');
+  const d = buf.getChannelData(0), cols = 600, bloco = Math.max(1, Math.floor(d.length / cols));
+  trCliPicos = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) { let m = 0; for (let i = c * bloco, f2 = i + bloco; i < f2; i += 16) { const v = Math.abs(d[i] || 0); if (v > m) m = v; } trCliPicos[c] = m; }
+  const ed = $('trCli');
+  (bf() ? $('bfFaixas') : $('trilhasGrid')).after(ed);
+  ed.classList.remove('hide');
+  $('trCliTit').textContent = 'Música do cliente · ' + trCliNome;
+  $('trCliSl').max = String(Math.max(0, Math.floor((buf.duration - Math.min(trCliAlvo(), buf.duration)) * 2) / 2));
+  $('trCliSl').value = '0';
+  pintarTrCli();
+  ed.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function pintarTrCli(){
+  if (!trCliBuf) return;
+  const de = Number($('trCliSl').value) || 0, alvo = trCliAlvo(), dur = trCliBuf.duration;
+  $('trCliDe').textContent = mmss(de);
+  $('trCliInfo').textContent = 'música ' + mmss(dur) + ' · vídeo ~' + mmss(alvo);
+  $('trCliAviso').textContent = dur - de < alvo - 1 ? (bf() ? 'A música é mais curta que o vídeo: no fim ela recomeça.' : 'A música é mais curta que o vídeo: ela acaba antes do fim.') : '';
+  $('trCliUsar').textContent = de ? 'Usar a partir de ' + mmss(de) : 'Usar esta música';
+  desenhaTrCli();
+}
+function desenhaTrCli(){
+  const cv = $('trCliOnda');
+  if (!cv || !trCliPicos || !trCliBuf) return;
+  const dpr = window.devicePixelRatio || 1, W = (cv.clientWidth || 600) * dpr, H = 76 * dpr;
+  if (cv.width !== W) cv.width = W;
+  if (cv.height !== H) cv.height = H;
+  const g = cv.getContext('2d'), dur = trCliBuf.duration, de = Number($('trCliSl').value) || 0;
+  const a = (de / dur) * W, b = (Math.min(dur, de + trCliAlvo()) / dur) * W;
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = 'rgba(240,206,104,.12)'; g.fillRect(a, 0, b - a, H);
+  const n = trCliPicos.length, lb = Math.max(1, W / n - 0.6 * dpr);
+  for (let c = 0; c < n; c++) {
+    const x = (c / n) * W, h = Math.max(1.5 * dpr, trCliPicos[c] * (H - 10 * dpr));
+    g.fillStyle = (x >= a && x <= b) ? '#F0CE68' : '#3A3B41';
+    g.fillRect(x, (H - h) / 2, lb, h);
+  }
+  g.fillStyle = '#F2F2F3'; g.fillRect(a, 0, 2 * dpr, H);
+  if (trCliPos >= 0) { const px = (trCliPos / dur) * W; g.fillStyle = '#ffffff'; g.fillRect(px - dpr, 0, 2 * dpr, H); }
+}
+$('trCliSl').addEventListener('input', () => { pararTrCli(); pintarTrCli(); });
+// tocar na onda = a música começa ali (e já toca dali, para conferir)
+$('trCliOnda').addEventListener('click', (ev) => {
+  if (!trCliBuf) return;
+  const r = $('trCliOnda').getBoundingClientRect(); if (!r.width) return;
+  const fr = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+  $('trCliSl').value = String(Math.min(Number($('trCliSl').max) || 0, Math.round(fr * trCliBuf.duration * 2) / 2));
+  pararTrCli(); pintarTrCli(); ouvirTrCli();
+});
+window.addEventListener('resize', () => { if (trCliBuf) desenhaTrCli(); });
+function ouvirTrCli(){
+  if (!trCliBuf) return;
+  if (trCliSrc) return pararTrCli();
+  if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+  const de = Number($('trCliSl').value) || 0, dur = Math.max(1, Math.min(trCliAlvo(), trCliBuf.duration - de));
+  try {
+    trCliCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = trCliCtx.createBufferSource(), ga = trCliCtx.createGain();
+    src.buffer = trCliBuf; ga.gain.value = 0.8;
+    src.connect(ga); ga.connect(trCliCtx.destination);
+    src.onended = () => { if (trCliSrc === src) pararTrCli(); };
+    src.start(0, de, dur); trCliSrc = src;
+    const t0 = trCliCtx.currentTime, ctx = trCliCtx;
+    $('trCliOuvir').textContent = '❚❚ Parar';
+    const tick = () => { if (trCliCtx !== ctx) return; trCliPos = de + (ctx.currentTime - t0); desenhaTrCli(); trCliRAF = requestAnimationFrame(tick); };
+    trCliRAF = requestAnimationFrame(tick);
+  } catch (e) { toast('⚠️ Não consegui tocar esta música.'); pararTrCli(); }
+}
+function pararTrCli(){
+  const s = trCliSrc, c = trCliCtx;
+  trCliSrc = null; trCliCtx = null; trCliPos = -1;
+  if (trCliRAF) { cancelAnimationFrame(trCliRAF); trCliRAF = 0; }
+  try { if (s) s.stop(); } catch (e) {}
+  try { if (c) c.close(); } catch (e) {}
+  $('trCliOuvir').textContent = '▶ Ouvir';
+  desenhaTrCli();
+}
+function fecharTrCli(){
+  pararTrCli();
+  $('trCli').classList.add('hide');
+  trCliBuf = null; trCliPicos = null;
+  $('trCliProg').textContent = '';
+}
+// loudness integrado (BS.1770: blocos de 400 ms com passo de 100 ms, porta absoluta −70 e relativa −10) de um sinal já com o filtro K
+function loudnessK(b, SR){
+  const nc = b.numberOfChannels, ch = [];
+  for (let c = 0; c < nc; c++) ch.push(b.getChannelData(c));
+  const P = Math.floor(0.1 * SR), passos = Math.floor(ch[0].length / P), q = new Float64Array(passos);
+  for (let k = 0; k < passos; k++) { let s = 0; for (let c = 0; c < nc; c++) { const x = ch[c]; for (let i = k * P, f = i + P; i < f; i++) s += x[i] * x[i]; } q[k] = s; }
+  const L = (v) => -0.691 + 10 * Math.log10(v), z = [];
+  for (let k = 0; k + 4 <= passos; k++) { const v = (q[k] + q[k + 1] + q[k + 2] + q[k + 3]) / (4 * P); if (v > 0 && L(v) > -70) z.push(v); }
+  if (!z.length) return -70;
+  const m = z.reduce((s, v) => s + v, 0) / z.length, z2 = z.filter(v => L(v) > L(m) - 10);
+  return L(z2.reduce((s, v) => s + v, 0) / z2.length);
+}
+async function trechoTrCli(buf, de, ate, alvo, alvoLufs, prog){
+  const SR = 44100, nc = Math.min(2, buf.numberOfChannels), n = Math.ceil((ate - de) * SR);
+  const off = new OfflineAudioContext(nc, n, SR);
+  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start(0, de, ate - de);
+  const tr = await off.startRendering();
+  // o volume é medido na parte que toca no vídeo, com o filtro K (o ouvido escuta mais os agudos que os graves)
+  const nM = Math.min(n, Math.ceil(Math.min(ate - de, alvo + 2) * SR));
+  const medeK = async (b) => {
+    const o = new OfflineAudioContext(nc, nM, SR), s = o.createBufferSource(); s.buffer = b;
+    const f1 = o.createBiquadFilter(); f1.type = 'highshelf'; f1.frequency.value = 1681; f1.gain.value = 4;
+    const f2 = o.createBiquadFilter(); f2.type = 'highpass'; f2.frequency.value = 38; f2.Q.value = -6.02;   // ⚠️ no passa-alta do navegador o Q é em dB: −6,02 dB = Q 0,5 da norma (com 0,5 o medidor lia +0,5 dB)
+    s.connect(f1); f1.connect(f2); f2.connect(o.destination); s.start();
+    return loudnessK(await o.startRendering(), SR);
+  };
+  const LIM = 0.8, TETO = 0.89, lim = (v) => { const m = Math.abs(v); return m > LIM ? Math.sign(v) * (LIM + (TETO - LIM) * Math.tanh((m - LIM) / (TETO - LIM))) : v; };   // teto −1 dB: o MP3 passa até ~1 dB do pico
+  const lufs = await medeK(tr);
+  let g = Math.min(4, Math.pow(10, (alvoLufs - lufs) / 20));
+  // o limitador que segura os picos come um pouco do volume (−1 dB numa música real de −15 LUFS): mede de novo já limitado e corrige uma vez
+  const prova = new OfflineAudioContext(nc, nM, SR).createBuffer(nc, nM, SR);
+  for (let c = 0; c < nc; c++) { const x = tr.getChannelData(c), y = prova.getChannelData(c); for (let i = 0; i < nM; i++) y[i] = lim((x[i] || 0) * g); }
+  g = Math.min(4, g * Math.pow(10, (alvoLufs - await medeK(prova)) / 20));
+  const fi = de > 0.2 ? Math.floor(0.6 * SR) : 0, fo = Math.floor(Math.min(2, (ate - de) / 4) * SR);
+  const pcm = [];
+  for (let c = 0; c < nc; c++) {
+    const x = tr.getChannelData(c), o = new Int16Array(n);
+    for (let i = 0; i < n; i++) {
+      let v = (x[i] || 0) * g;
+      if (i < fi) { const t = i / fi; v *= t * t; }
+      if (fo && i > n - fo) { const t = (n - i) / fo; v *= t * t; }
+      o[i] = Math.max(-32768, Math.min(32767, Math.round(lim(v) * 32767)));
+    }
+    pcm.push(o);
+  }
+  const enc = new lamejs.Mp3Encoder(nc, SR, 160), partes = [];
+  const agora = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  let marco = agora();
+  for (let i = 0; i < n; i += 1152) {
+    const b = nc > 1 ? enc.encodeBuffer(pcm[0].subarray(i, i + 1152), pcm[1].subarray(i, i + 1152)) : enc.encodeBuffer(pcm[0].subarray(i, i + 1152));
+    if (b.length) partes.push(new Uint8Array(b));
+    if (agora() - marco > 40) { prog(i / n); await new Promise(r => setTimeout(r, 0)); marco = agora(); }   // o celular continua respondendo
+  }
+  const fim = enc.flush(); if (fim.length) partes.push(new Uint8Array(fim));
+  const tudo = new Uint8Array(partes.reduce((s, x) => s + x.length, 0));
+  let o = 0; partes.forEach(x => { tudo.set(x, o); o += x.length; });
+  let bin = '';
+  for (let i = 0; i < tudo.length; i += 8192) bin += String.fromCharCode.apply(null, tudo.subarray(i, i + 8192));
+  return { base64: btoa(bin), seg: n / SR, lufs };
+}
+async function usarTrCli(){
+  if (!trCliBuf || trCliOcupado) return;
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  pararTrCli();
+  trCliOcupado = true; $('trCliUsar').disabled = true;
+  const prog = (t) => { $('trCliProg').textContent = t; };
+  try {
+    const de = Number($('trCliSl').value) || 0, alvo = trCliAlvo();
+    const ate = Math.min(trCliBuf.duration, de + Math.min(100, Math.max(60, alvo + 20)));
+    prog('Preparando a música…');
+    // Padrão/Natal ≈ −10 LUFS (o nível que a montagem espera de música própria); Black Friday ≈ −12 (o das 6 trilhas)
+    const r = await trechoTrCli(trCliBuf, de, ate, alvo, bf() ? -12 : -10, (p) => prog('Preparando a música… ' + Math.round(p * 100) + '%'));
+    clearTimeout(rascT); if (rascRodando) await rascRodando;
+    if (!proj) await salvarRascunho();
+    prog('Enviando…');
+    const d = await chama('/pn/trilha-cliente', { id: proj ? proj.id : undefined, modo: bf() ? modo : undefined, mp3: r.base64, seg: r.seg, de });
+    if (!d.ok) throw new Error(d.error || 'não consegui enviar a música');
+    proj = d.projeto; trilhaSel = proj.trilhaCliente || null;
+    fecharTrCli();
+    if (bf()) pintarBFFaixas(); else pintarPasso3();
+    toast('✅ Música do cliente escolhida.');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui enviar a música')); }
+  finally { trCliOcupado = false; $('trCliUsar').disabled = false; prog(''); }
+}
+
 // ── passo 3: trilha + legenda + montagem ──
 async function pintarPasso3(){
   if (!trilhas.length || trilhasDe !== modo) { const d = await chama(natal() ? '/pn/trilhas-natal' : '/promoTrilhas'); if (d.ok) { trilhas = d.trilhas || []; trilhasDe = modo; } }
   // (09/11, Thiago) no Natal a trilha Noel já vem marcada; só vale para quem ainda não escolheu nada, então "Sem música" continua respeitado
   if (natal() && trilhasDe === modo && proj && !proj.cfgMontagem && !trilhaSel) { proj.cfgMontagem = {}; trilhaSel = trilhas.find(t => t.id === 'noel') || null; if (trilhaSel) salvarMontagem(); }
   const sel = trilhaSel ? trilhaSel.id : '';
+  const lista = listaTrilhas();   // (18/11) o catálogo + a música do cliente, se já subiu
   $('trilhasGrid').innerHTML = '<div class="trilha-item' + (sel === '' ? ' sel' : '') + '" data-id=""><span class="trilha-nome">Sem música</span></div>' +
-    trilhas.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
-      '<button type="button" class="trilha-play" data-ouvir="' + esc(t.id) + '">▶</button></div>').join('');
+    lista.map(t => '<div class="trilha-item' + (sel === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '"><span class="trilha-nome">' + esc(t.titulo) + '</span>' +
+      '<button type="button" class="trilha-play" data-ouvir="' + esc(t.id) + '">▶</button></div>').join('') +
+    '<div class="trilha-item custom" data-subir="1"><span class="trilha-nome">' + (lista.some(t => t.id === 'cliente') ? 'Trocar a música do cliente' : 'Subir a música do cliente') + '</span></div>';
   $('trilhasGrid').querySelectorAll('.trilha-item').forEach(el => el.addEventListener('click', (ev) => {
     if (ev.target.closest('[data-ouvir]')) return;
-    trilhaSel = el.dataset.id ? trilhas.find(t => t.id === el.dataset.id) : null;
+    if (el.dataset.subir) return subirTrCli();
+    trilhaSel = el.dataset.id ? lista.find(t => t.id === el.dataset.id) : null;
     pintarPasso3(); salvarMontagem();
   }));
   $('trilhasGrid').querySelectorAll('[data-ouvir]').forEach(b => b.addEventListener('click', () => {
-    const t = trilhas.find(x => x.id === b.dataset.ouvir);
+    const t = lista.find(x => x.id === b.dataset.ouvir);
     if (audioTeste) { audioTeste.pause(); if (audioTeste._id === t.id) { audioTeste = null; b.textContent = '▶'; return; } }
     document.querySelectorAll('[data-ouvir]').forEach(x => x.textContent = '▶');
     audioTeste = new Audio(t.url); audioTeste._id = t.id; audioTeste.volume = 0.7; audioTeste.play(); b.textContent = '⏸';
@@ -2204,7 +2451,7 @@ async function apagarProjeto(id){
 // (09/11, Thiago) nos 3 editores, o botão responde NA HORA: o giro aparece no clique e fica até a ação terminar; enquanto gira, um 2º clique não vale.
 // Fica de fora o que já muda na hora na tela (abas, cores, ouvir trilha, tirar foto, Fechar). Toda função async chamada no clique entra sozinha: o giro dura o tempo dela.
 (function(){
-  const SEM_GIRO = '.mic-acao,.mic-cancela,.voz-bt,.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id])';
+  const SEM_GIRO = '.mic-acao,.mic-cancela,.voz-bt,.filtro-cat button,.tabbtn,.modo-card,.voltar-modo,.cor,.play,.trilha-play,[data-ouvir],.rm,.pers-rm,.est-btn,.pj-th,#bfTrilha button,.prev-bts button:not(.ouro):not([id]),.trcli-bts .ouvir,.trcli-bts .cancela';
   const TETO_MS = 180000;   // nenhum botão fica travado para sempre
   const ativos = new Map();  // chave do botão → quantas coisas ainda seguram o giro
   let noClique = null;
