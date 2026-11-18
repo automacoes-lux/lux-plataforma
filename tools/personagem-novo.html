@@ -374,6 +374,16 @@ video{width:100%;max-width:260px;border-radius:10px;display:block;margin:.4rem a
 .trcli-bts button:disabled{opacity:.5;cursor:not-allowed}
 .trcli-prog{font-size:12.5px;color:#9B9BA3;margin-top:8px;min-height:1em}
 @media(max-width:520px){ .trcli-bts .usar{flex-basis:100%;order:-1} }
+/* (18/11, Thiago) texto da legenda por cena (passo 3) e "Corrigir a legenda" do Black Friday */
+.leg-txt{margin-top:.5rem}
+.leg-txt-cab{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:12px;color:var(--text-mid);margin-bottom:.25rem}
+.leg-txt textarea{min-height:58px}
+.leg-corrigida{font-size:10.5px;padding:1px 8px;border-radius:999px;background:rgba(74,222,128,.14);color:#4ADE80}
+.leg-volta{background:none;border:none;color:var(--gold);font-size:11.5px;cursor:pointer;padding:0;text-decoration:underline}
+.leg-nota b{color:var(--text)}
+.bfp .btn-branco{display:block;width:100%;padding:13px;border:none;border-radius:999px;background:var(--lx-txt);color:#0D0D0F;font:600 14.5px 'Inter',sans-serif;cursor:pointer}
+.bfp .btn-branco:disabled{opacity:.5;cursor:not-allowed}
+.bfp .conta b{color:var(--lx-txt)}
 /* celular: 11 faixas em 1 coluna davam 590px e empurravam o botão GERAR CENAS pra fora da tela.
    Item mais baixo resolve sem espremer o nome (Cinematográfico é longo e precisa caber inteiro). */
 @media(max-width:520px){
@@ -731,6 +741,10 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
           <button type="button" class="cor" data-cor="#EC4899" style="background:#EC4899" title="Rosa"></button>
           <button type="button" class="cor" data-cor="#ffffff" style="background:#ffffff" title="Branco (sem destaque)"></button>
         </div>
+        <!-- (18/11, Thiago) corrigir o texto da legenda sem refazer as cenas: montar de novo só por causa da legenda não é cobrado -->
+        <div class="mini" style="margin-top:.9rem">Texto da legenda <span class="mini-obs">(saiu algo escrito errado? corrija aqui)</span></div>
+        <div id="legTextos"></div>
+        <div class="soon-note leg-nota">Corrigir aqui muda só o que aparece escrito: a voz e as cenas continuam as mesmas. Depois é só clicar em <b>MONTAR DE NOVO</b>: montar de novo só por causa da legenda <b>não é cobrado</b>.</div>
       </div>
     </div>
     <button class="btn-gold" id="btnMontar" onclick="montar()">🎬 MONTAR O VÍDEO</button>
@@ -811,6 +825,13 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
     <div id="bfFinal" class="card hide" style="margin-top:12px">
       <video class="final" id="bfVideo" controls playsinline></video>
       <button type="button" class="btn-gold" onclick="baixarFinal()">Baixar vídeo</button>
+      <!-- (18/11, Thiago) corrigir só a legenda: mesma voz, mesmo personagem e mesmas fotos, sem cobrar -->
+      <button type="button" class="btn-mini" id="bfLegAbre" onclick="abrirLegBF()" style="width:100%;margin-top:10px">Corrigir a legenda</button>
+      <div id="bfLegBox" class="hide" style="margin-top:12px">
+        <div class="field" style="margin-bottom:10px"><label for="bfLegTxt">Texto da legenda</label><textarea id="bfLegTxt" maxlength="1500" rows="7"></textarea>
+          <div class="conta">Corrija só o que aparece escrito. A voz, o personagem e as fotos continuam iguais, e esta montagem <b>não é cobrada</b>.</div></div>
+        <button type="button" class="btn-branco" id="bfLegMontar" onclick="montarLegBF()">Montar de novo com esta legenda</button>
+      </div>
       <div class="nota" id="bfCustoFinal"></div>
     </div>
   </div><!-- /telaBF -->
@@ -880,7 +901,16 @@ function api(path, opts){
   return fetch(url, opts);
 }
 // a rede caiu antes do pedido sair → tenta de novo (erro do servidor volta na hora: repetir pode cobrar 2 vezes)
-async function chama(path, corpo){
+// (18/11) os salvamentos do projeto saem UM DE CADA VEZ: dois /pn/salvar ao mesmo tempo (ex.: a legenda corrigida + a cor da legenda)
+// leem o projeto juntos e o último a gravar apagava a mudança do outro (visto no teste da legenda)
+let filaSalvar = Promise.resolve();
+function chama(path, corpo){
+  if (path !== '/pn/salvar' || corpo === undefined) return chamaJa(path, corpo);
+  const vez = filaSalvar.then(() => chamaJa(path, corpo));
+  filaSalvar = vez.catch(() => {});
+  return vez;
+}
+async function chamaJa(path, corpo){
   for (let k = 0; k < 3; k++) {
     try {
       const r = await api(path, corpo === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
@@ -1391,6 +1421,9 @@ function pintarBFFinal(){
   $('bfNota').textContent = jb && jb.erro ? '⚠️ ' + jb.erro : (rodando ? (jb.msg || 'Gerando') + '. Pode levar de 5 a 10 minutos. Pode fechar esta tela: o vídeo aparece em Resultados.' : '');
   $('bfFinal').classList.toggle('hide', !v);
   if (v && $('bfVideo').dataset.k !== v.key) { $('bfVideo').src = v.url; $('bfVideo').dataset.k = v.key; }
+  // (18/11) "Corrigir a legenda": some enquanto o vídeo está sendo feito; outro projeto aberto fecha a caixa
+  $('bfLegAbre').classList.toggle('hide', rodando);
+  if (rodando || !proj || $('bfLegBox').dataset.p !== proj.id) $('bfLegBox').classList.add('hide');
   $('bfCustoFinal').textContent = v && proj.custoBRL ? 'Custo deste vídeo: ' + reais(proj.custoBRL) : '';
 }
 async function gerarVideoBF(){
@@ -1421,6 +1454,34 @@ async function gerarVideoBF(){
     abrirAba('resultados');
   } catch (e) { $('bfNota').textContent = '⚠️ ' + e.message; $('bfBtnGerar').disabled = false; $('bfBtnGerar').textContent = 'Gerar o vídeo'; }
   finally { ocupado = false; }
+}
+// (18/11, Thiago) BLACK FRIDAY — corrigir só a legenda: monta de novo com a mesma voz, o mesmo personagem e as mesmas fotos, sem cobrar
+function abrirLegBF(){
+  const box = $('bfLegBox'), abre = box.classList.contains('hide') || box.dataset.p !== proj.id;
+  box.classList.toggle('hide', !abre);
+  if (!abre) return;
+  box.dataset.p = proj.id;
+  $('bfLegTxt').value = (proj.bf && (proj.bf.legenda || proj.bf.legendaAuto || proj.bf.fala)) || '';
+  $('bfLegTxt').focus();
+}
+async function montarLegBF(){
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  const t = $('bfLegTxt').value.trim();
+  if (!t) return toast('✍️ Escreva o texto da legenda.');
+  clearTimeout(rascT); clearTimeout(bfT); if (rascRodando) await rascRodando;
+  ocupado = true; $('bfLegMontar').disabled = true; $('bfLegMontar').textContent = 'Montando…';
+  try {
+    if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+    const d = await chama('/pn/bf-legenda', { id: proj.id, legenda: t });
+    if (!d.ok) throw new Error(d.error || 'não consegui montar');
+    proj = d.projeto;
+    const s0 = (proj.personagens || [])[0] || {};
+    producao.set(proj.id, { desde: proj.atualizadoEm || 0, cliente: proj.cliente || '', categoria: proj.categoria || '', thumb: (s0.img || {}).url || '', msg: (proj.bfJob || {}).msg || 'Gerando' });
+    ocupado = false; const modoAtual = modo; voltarModos(); escolherModo(modoAtual);
+    toast('🎬 Montando com a legenda corrigida, sem custo. O vídeo aparece em Resultados.');
+    abrirAba('resultados');
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui montar')); }
+  finally { ocupado = false; $('bfLegMontar').disabled = false; $('bfLegMontar').textContent = 'Montar de novo com esta legenda'; }
 }
 function limparPers(k){ pers[k] = {}; pintarPers(); agendaRascunho(50); }
 function tirarAmb(k){ pers[k].ambNova = null; pers[k].ambTirar = true; pintarPers(); agendaRascunho(50); }
@@ -2258,7 +2319,36 @@ async function pintarPasso3(){
     audioTeste.onended = () => { b.textContent = '▶'; };
   }));
   pintarLegenda();
+  pintarTextosLeg();
   pintarFinal();
+}
+// (18/11, Thiago) TEXTO DA LEGENDA de cada cena: a atendente corrige o que saiu escrito errado e monta de novo. A voz e as cenas não mudam,
+// e o servidor não cobra a montagem quando as cenas e a música são as mesmas da última montagem.
+let legT = null;
+const legPend = {};
+function pintarTextosLeg(){
+  const box = $('legTextos'), cs = (proj && proj.roteiro && proj.roteiro.cenas) || [];
+  if (box.contains(document.activeElement)) return;   // está digitando: não apaga o que ela escreve
+  box.innerHTML = cs.map((rc, i) => '<div class="leg-txt"><div class="leg-txt-cab">Cena ' + (i + 1) +
+      (rc.legendaTela ? ' <span class="leg-corrigida">corrigida</span><button type="button" class="leg-volta" data-leg-volta="' + i + '">voltar ao texto original</button>' : '') + '</div>' +
+    '<textarea data-leg-i="' + i + '" maxlength="900">' + esc(rc.legendaTela || rc.legendaAuto || rc.legenda || rc.fala || '') + '</textarea></div>').join('');
+  const altura = (t) => { if (!t.offsetParent) return; t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; };   // a caixa mostra o texto inteiro (no celular cortava); escondida, fica a altura mínima
+  box.querySelectorAll('textarea').forEach(t => {
+    altura(t);
+    t.addEventListener('focus', () => altura(t));
+    t.addEventListener('input', () => { altura(t); legPend[t.dataset.legI] = t.value; clearTimeout(legT); legT = setTimeout(salvarLegendas, 800); });
+    t.addEventListener('blur', () => { setTimeout(() => { salvarLegendas().then(pintarTextosLeg); }, 0); });
+  });
+  box.querySelectorAll('[data-leg-volta]').forEach(b => b.addEventListener('click', () => { legPend[b.dataset.legVolta] = ''; salvarLegendas().then(pintarTextosLeg); }));
+}
+async function salvarLegendas(){
+  clearTimeout(legT);
+  const ks = Object.keys(legPend);
+  if (!ks.length || !proj) return;
+  const cenas = ks.map(k => ({ n: +k + 1, legendaTela: legPend[k] }));
+  ks.forEach(k => delete legPend[k]);
+  const d = await chama('/pn/salvar', { id: proj.id, cenas });
+  if (d.ok) proj = d.projeto; else toast('⚠️ ' + (d.error || 'não consegui salvar a legenda'));
 }
 $('chkLegenda').addEventListener('change', () => { legendas = $('chkLegenda').checked; pintarLegenda(); salvarMontagem(); });
 function pintarLegenda(){
@@ -2296,11 +2386,13 @@ async function montar(){
   ocupado = true; $('btnMontar').disabled = true; $('btnMontar').textContent = '⏳ MONTANDO…';
   try {
     if (audioTeste) { audioTeste.pause(); audioTeste = null; }
+    await salvarLegendas();   // (18/11) a correção da legenda que ainda não foi salva entra nesta montagem
     const d = await chama('/pn/montar', { id: proj.id, musicUrl: trilhaSel ? trilhaSel.url : null, trilha: trilhaSel, legendas, transicoes: true,
       corDestaque: corLeg, estiloLegenda: estiloLeg });
     if (!d.ok) throw new Error(d.error || 'não consegui montar');
     proj = d.projeto;
-    $('notaMontar').textContent = 'Montando o vídeo com a música e a legenda (~1 a 2 min)…';
+    $('notaMontar').textContent = proj.montagem && proj.montagem.soLegenda ? 'Montando de novo só com a legenda (~1 a 2 min). Esta montagem não é cobrada.'
+      : 'Montando o vídeo com a música e a legenda (~1 a 2 min)…';
     acompanhar();
   } catch (e) { $('notaMontar').textContent = '⚠️ ' + e.message; $('btnMontar').disabled = false; $('btnMontar').textContent = '🎬 MONTAR O VÍDEO'; }
   finally { ocupado = false; }
