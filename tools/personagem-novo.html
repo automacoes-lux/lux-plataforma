@@ -982,7 +982,8 @@ function pintarInicio(){
   document.querySelectorAll('#chipsInicio .chip').forEach(x => x.classList.toggle('on', x.dataset.v === inicioNatal));
   $('notaInicio').textContent = inicioNatal === 'conversa'
     ? 'Sem o trenó: o vídeo já abre com o Papai Noel conversando com a pessoa do Ambiente 1. Envie a foto dela no Ambiente 1.'
-    : 'A 1ª cena é o trenó pousando e o Papai Noel descendo para falar.';
+    : (pers[0] && temPronta(pers[0]) ? 'Com imagem pronta no Ambiente 1 não tem o trenó: o vídeo já começa com o Papai Noel falando.'   // (18/11)
+      : 'A 1ª cena é o trenó pousando e o Papai Noel descendo para falar.');
 }
 function pintarConversa(){
   const mostra = !!modo && !natal() && !bf() && vozModo !== 'cliente' && pers.filter(temFoto).length > 1;
@@ -1158,6 +1159,18 @@ function pintarPers(){
     // (15/11, Thiago) do 2º ambiente em diante: a foto de uma PESSOA para conversar com o Papai Noel (o 1º é o da chegada de trenó)
     const pess = p.pessoaNova || (p.pessoaTirar ? '' : p.pessoaUrl);
     const comPessoa = k > 0 || inicioNatal === 'conversa';   // (16/11) já em conversa: o Ambiente 1 também tem a pessoa (obrigatória)
+    // (18/11, Thiago — Marcela: Papai Noel azul p/ cliente da Caixa) imagem pronta também no Natal, em qualquer ambiente: o Papai Noel (de qualquer cor) já está nela
+    const btPronta = '<label class="pronta-bt" title="Já tem a cena 9:16 com o Papai Noel? Suba aqui: ela vai direto para o vídeo, sem custo de imagem.">' +
+      '<input type="file" accept="image/*" hidden onchange="escolherPronta(event,' + k + ')"/>' + IC_SUBIR + 'Subir imagem pronta</label>';
+    if (natal() && temPronta(p)) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
+      '<label class="slot"><input type="file" accept="image/*" hidden onchange="escolherPronta(event,' + k + ')"/>' +
+      '<div class="slot-th th-916"><img src="' + esc(p.prontaNova || p.prontaUrl) + '" alt=""/></div>' +
+      '<div class="slot-info"><div class="slot-nome">Imagem pronta (9:16)</div>' +
+      '<span class="slot-acao">Trocar</span> · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();limparPers(' + k + ')">Tirar</span>' +
+      '<div class="slot-sub">' + (k === 0 && inicioNatal === 'conversa' ? 'Precisa ter o Papai Noel e a pessoa que conversa com ele. '
+        : 'Precisa ter o Papai Noel (de qualquer cor); pode ter também a pessoa que conversa com ele. ') +
+        (k === 0 && inicioNatal !== 'conversa' ? 'Com imagem pronta não tem o trenó: o vídeo já começa com o Papai Noel falando. ' : '') +
+        'Vai direto para o vídeo, sem custo de imagem.</div></div></label></div>';
     if (natal()) return '<div class="pers-card"><div class="pers-tit">Ambiente ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>' +
       // (15/11, Thiago) só o Ambiente 1 enviado = ele vale para os outros cards (a pessoa do card 2/3 aparece nele)
       slot('amb', amb, 'Ambiente' + (k === 0 ? ' *' : ''), k === 0 ? 'Se for o único ambiente, ele vale para todas as cenas.' : '') +
@@ -1166,7 +1179,7 @@ function pintarPers(){
         '<div class="slot-info"><div class="slot-nome">Pessoa que conversa com o Papai Noel' + (k === 0 ? ' *' : '') + '</div>' +
         '<span class="slot-acao">' + (pess ? 'Trocar' : '+ Enviar') + '</span>' +
         (pess ? ' · <span class="slot-acao" onclick="event.preventDefault();event.stopPropagation();tirarPessoa(' + k + ')">Tirar</span>' : '') + '</div></label>' : '') +
-      '</div>';
+      btPronta + '</div>';
     const tit = '<div class="pers-tit">Personagem ' + (k + 1) + (k > 0 ? ' <span class="pers-opc">(opcional)</span>' : '') + '</div>';
     const rm = '<button type="button" class="pers-rm" title="Limpar este personagem" onclick="limparPers(' + k + ')">✕</button>';
     // (13/11, Thiago) imagem pronta: a cena 9:16 já montada vai direto para o vídeo, sem a IA montar e sem custo de imagem
@@ -1377,7 +1390,7 @@ function tirarPessoa(k){ pers[k].pessoaNova = null; pers[k].pessoaTirar = true; 
 // (15/11) Natal: o que vai para o servidor sobre a pessoa do card (nova em base64, a já enviada pela chave, ou null = tirar)
 const temPessoa = (x) => !!(x && (x.pessoaNova || (x.pessoaUrl && !x.pessoaTirar)));
 // card do Natal que vai para o servidor: com ambiente próprio, ou (do 2º em diante) só com a pessoa — aí usa o ambiente do card 1
-const entraNatal = (x, k) => temAmb(x) || (k > 0 && temPessoa(x) && temAmb(pers[0]));
+const entraNatal = (x, k) => temPronta(x) || temAmb(x) || (k > 0 && temPessoa(x) && temAmb(pers[0]));   // (18/11) ou a imagem pronta
 const entPessoa = (x) => natal() ? { pessoa: x.pessoaNova ? x.pessoaNova : (x.pessoaTirar ? null : undefined), pessoaKey: (!x.pessoaNova && !x.pessoaTirar) ? (x.pessoaKey || undefined) : undefined,
   ambienteDo1: !temAmb(x) && temPessoa(x) ? true : undefined } : {};
 const temPronta = (p) => !!(p && (p.prontaNova || p.prontaUrl));
@@ -1455,8 +1468,8 @@ async function gerarTudo(){
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
   const cliente = $('fCliente').value.trim(), briefing = $('fBriefing').value.trim();
   if (!cliente) return toast('✍️ Escreva o nome do cliente.');
-  if (natal() && !pers.some(temAmb)) return toast('🏠 Envie a foto de pelo menos um ambiente.');
-  if (natal() && inicioNatal === 'conversa' && !(temAmb(pers[0]) && temPessoa(pers[0]))) return toast('📷 Para começar já na conversa, envie no Ambiente 1 a foto do ambiente e a da pessoa que conversa com o Papai Noel.');
+  if (natal() && !pers.some(x => temAmb(x) || temPronta(x))) return toast('🏠 Envie a foto de pelo menos um ambiente (ou uma imagem pronta).');
+  if (natal() && inicioNatal === 'conversa' && !temPronta(pers[0]) && !(temAmb(pers[0]) && temPessoa(pers[0]))) return toast('📷 Para começar já na conversa, envie no Ambiente 1 a foto do ambiente e a da pessoa que conversa com o Papai Noel (ou uma imagem pronta com os dois).');
   if (!natal() && !temFoto(pers[0])) return toast('📷 Envie a foto do personagem 1 (ou a imagem pronta).');
   const semFoto = natal() ? -1 : pers.findIndex(p => !temFoto(p) && temAmb(p));
   if (semFoto >= 0) return toast('📷 O personagem ' + (semFoto + 1) + ' tem ambiente, mas falta a foto dele.');
@@ -1471,7 +1484,7 @@ async function gerarTudo(){
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
     const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa, natalInicio: natal() ? inicioNatal : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
-      personagens: pers.filter((x, k) => natal() ? entraNatal(x, k) : temFoto(x)).map(p => temPronta(p) && !natal() ? entPronta(p) : Object.assign({
+      personagens: pers.filter((x, k) => natal() ? entraNatal(x, k) : temFoto(x)).map(p => temPronta(p) ? entPronta(p) : Object.assign({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
         ambiente: p.ambNova ? p.ambNova : (p.ambTirar ? null : undefined), ambienteKey: (!p.ambNova && !p.ambTirar) ? p.ambKey : undefined }, entPessoa(p))) };
     let d = await chama('/pn/roteiro', corpo);
@@ -1511,7 +1524,8 @@ function pintarPasso2(){
       '<div class="pp-tit">' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</div>' +
       // (11/11, Thiago) a atendente escolhe a voz (sem escolher, é a automática); a mesma pessoa em outro card usa a mesma voz
       (natal() ? '<div class="pp-sub">Voz ' + esc(s.vozNome || 'automática') + (s.membros ? ' (Papai Noel)' : '') + '</div>' +
-          (s.membros ? linhaVoz(k, 1, s.membros[1].sexo, s.membros[1].voz, s.membros[1].auto, s.membros[1].vozNome, rotuloPessoa(s.membros, 1, true)) : '')   // (15/11) a voz da pessoa que conversa com o Noel
+          // (15/11) a voz da pessoa que conversa com o Noel (18/11: na imagem pronta ela pode estar à esquerda)
+          (s.membros ? (j => linhaVoz(k, j, s.membros[j].sexo, s.membros[j].voz, s.membros[j].auto, s.membros[j].vozNome, rotuloPessoa(s.membros, j, true)))(s.membros[1].noel ? 0 : 1) : '')
         : s.membros ? s.membros.map((m, j) => linhaVoz(k, j, m.sexo, m.voz, m.auto, m.vozNome, rotuloPessoa(s.membros, j, true))).join('')
         // (12/11, Thiago) a IA pode errar: a lista fica sempre; trocar a voz aqui separa este card do personagem 1
         : (s.grupo !== undefined && s.grupo !== k && !s.solto) ? linhaVoz(k, -1, s.sexo, s.voz, !(proj.personagens[s.grupo] || {}).vozManual, s.vozNome, '') + '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + '</div>'
