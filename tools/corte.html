@@ -416,7 +416,7 @@
 
 <!-- Lib LameJS pra encoding MP3 (MIT, ~80KB).
      Usamos a build UMD do cdnjs (Cloudflare) que expõe `window.lamejs`
-     direto via <script> sem precisar de import. -->
+     direto pela tag script, sem precisar de import. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 
 <script>
@@ -1036,6 +1036,9 @@ async function encodeMP3(buffer, onProgress) {
   const SAMPLE_BLOCK = 1152;
   const totalBlocks = Math.ceil(left.length / SAMPLE_BLOCK);
   let blocksDone = 0;
+  // (20/11) pausa por TEMPO (40 ms): 50 blocos travavam a tela do celular a cada passo
+  const relogio = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  let marco = relogio();
 
   for (let i = 0; i < left.length; i += SAMPLE_BLOCK) {
     const leftChunk = left.subarray(i, i + SAMPLE_BLOCK);
@@ -1051,9 +1054,10 @@ async function encodeMP3(buffer, onProgress) {
 
     blocksDone++;
     // Reporta progresso a cada 50 blocos pra UI respirar
-    if (blocksDone % 50 === 0) {
+    if (relogio() - marco >= 40) {
       if (onProgress) onProgress(blocksDone / totalBlocks);
       await new Promise(r => setTimeout(r, 0));
+      marco = relogio();
     }
   }
 

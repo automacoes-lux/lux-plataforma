@@ -211,10 +211,14 @@
     const dir = buffer.numberOfChannels > 1 ? f16(buffer.getChannelData(1)) : esq;
     const enc = new lamejs.Mp3Encoder(2, buffer.sampleRate, PREVIA.kbps);
     const partes = [], BLOCO = 1152, total = Math.ceil(esq.length / BLOCO);
+    // (20/11) Devolve a vez por TEMPO, não por quantidade: 100 blocos são ~2,6 s de música e,
+    // no celular, seguravam a tela por meio segundo ou mais a cada vez (a prévia é a música INTEIRA).
+    const relogio = () => (window.performance && performance.now) ? performance.now() : Date.now();
+    let marco = relogio();
     for(let i = 0, n = 0; i < esq.length; i += BLOCO, n++){
       const o = enc.encodeBuffer(esq.subarray(i, i + BLOCO), dir.subarray(i, i + BLOCO));
       if(o.length) partes.push(o);
-      if(n % 100 === 0){ aoAvancar(n / total); await cederAVez(); }
+      if(n === 0 || relogio() - marco >= 40){ aoAvancar(n / total); await cederAVez(); marco = relogio(); }
     }
     const fim = enc.flush();
     if(fim.length) partes.push(fim);

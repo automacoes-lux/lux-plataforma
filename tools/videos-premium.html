@@ -4294,7 +4294,8 @@ function atualizarTrilha() {
     const b = e.target.closest('button[data-alvo]'); if (!b) return;
     const c = document.getElementById(b.dataset.alvo); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
-  setInterval(atualizarTrilha, 700);
+  // (20/11) só quando a tela está à vista (aba escondida do menu tem largura 0)
+  setInterval(() => { if (document.hidden || !window.innerWidth) return; atualizarTrilha(); }, 700);
 })();
 // (04/11) o 150 novo foi liberado para TODOS. modoV2Conta = o que o servidor diz para esta conta; modoV2 = o modo da tela agora.
 // Editar um vídeo ANTIGO (feito no 150 de antes) troca a tela para o modo antigo só durante a edição (sairEdicao volta).

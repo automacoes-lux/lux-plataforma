@@ -1126,6 +1126,9 @@ async function pitchTempo(buffer, semitones, tempoPct) {
   const tmp = new Float32Array(CHUNK * 2);
   const chunksL = [], chunksR = [];
   let written = 0, n = 0;
+  // (20/11) pausa por TEMPO (40 ms): 8 pedaços de 16 mil amostras seguravam a tela do celular
+  const relogio = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  let marco = relogio();
 
   while (true) {
     const got = filter.extract(tmp, CHUNK);
@@ -1134,9 +1137,10 @@ async function pitchTempo(buffer, semitones, tempoPct) {
     for (let i = 0; i < got; i++) { l[i] = tmp[2 * i]; r[i] = tmp[2 * i + 1]; }
     chunksL.push(l); chunksR.push(r);
     written += got; n++;
-    if (n % 8 === 0) {
+    if (relogio() - marco >= 40) {
       setProgress(80 + Math.min(10, (written / estFrames) * 10), 'Descaracterizando...');
       await new Promise(res => setTimeout(res, 0));
+      marco = relogio();
     }
     if (written > totalFrames * 4) break;   // trava de segurança
   }

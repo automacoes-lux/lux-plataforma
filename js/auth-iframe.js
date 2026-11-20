@@ -24,7 +24,16 @@
   });
 
   // Pede o ID Token ao pai
-  function requestTokenFromParent(timeoutMs = 5000) {
+  // (20/11) 5 s era pouco: celular voltando do segundo plano precisa RENOVAR o login pela rede
+  // (o do Google vence a cada 1 h) e, em 4G fraco, passava do prazo — a consulta morria calada e a
+  // tela "ficava parada". Agora espera 15 s e tenta mais uma vez antes de desistir.
+  function requestTokenFromParent(timeoutMs = 15000) {
+    return pedirToken(timeoutMs).catch((e) => {
+      if (!/Timeout/.test(String(e && e.message))) throw e;
+      return pedirToken(timeoutMs);
+    });
+  }
+  function pedirToken(timeoutMs) {
     return new Promise((resolve, reject) => {
       if (window.parent === window) {
         reject(new Error('Esta página deve ser aberta dentro da plataforma Lux.'));

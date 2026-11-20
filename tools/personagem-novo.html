@@ -1138,7 +1138,13 @@ async function prepararVozCliente(file){
   src.connect(hp); hp.connect(off.destination); src.start();
   const r = nivelaVoz((await off.startRendering()).getChannelData(0), SR);
   const enc = new lamejs.Mp3Encoder(1, SR, 128), partes = [];
-  for (let i = 0; i < r.pcm.length; i += 1152) { const b = enc.encodeBuffer(r.pcm.subarray(i, i + 1152)); if (b.length) partes.push(new Uint8Array(b)); }
+  // (20/11) esta conversão rodava de uma vez só: um áudio de 1 min congelava o celular até acabar
+  const relogioVoz = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  let marcoVoz = relogioVoz();
+  for (let i = 0; i < r.pcm.length; i += 1152) {
+    const b = enc.encodeBuffer(r.pcm.subarray(i, i + 1152)); if (b.length) partes.push(new Uint8Array(b));
+    if (relogioVoz() - marcoVoz >= 40) { await new Promise(ok => setTimeout(ok, 0)); marcoVoz = relogioVoz(); }
+  }
   const f = enc.flush(); if (f.length) partes.push(new Uint8Array(f));
   const tudo = new Uint8Array(partes.reduce((s, x) => s + x.length, 0));
   let o = 0; partes.forEach(x => { tudo.set(x, o); o += x.length; });

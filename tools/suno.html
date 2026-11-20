@@ -10,7 +10,7 @@
      a conversão pra MP3 acontece aqui no navegador, sem custo. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <!-- a mesma prévia da Lux Music (motor compartilhado) -->
-<script src="../js/previa.js?v=20261110a"></script>
+<script src="../js/previa.js?v=20261120a"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -885,6 +885,9 @@ async function paraMp3(buffer, onProgresso){
   const BLOCO = 1152;
   const total = Math.ceil(esq.length / BLOCO);
   let feitos = 0;
+  // (20/11) pausa por TEMPO (40 ms): 50 blocos travavam a tela do celular a cada passo
+  const relogio = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  let marco = relogio();
 
   for(let i=0; i<esq.length; i+=BLOCO){
     const a = esq.subarray(i, i+BLOCO);
@@ -892,9 +895,10 @@ async function paraMp3(buffer, onProgresso){
     const out = (canais === 1) ? enc.encodeBuffer(a) : enc.encodeBuffer(a, b);
     if(out.length > 0) pedacos.push(out);
     feitos++;
-    if(feitos % 50 === 0){
+    if(relogio() - marco >= 40){
       if(onProgresso) onProgresso(feitos/total);
       await new Promise(r=>setTimeout(r,0));   // deixa a tela respirar
+      marco = relogio();
     }
   }
   const fim = enc.flush();

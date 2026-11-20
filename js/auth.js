@@ -98,6 +98,8 @@ window.addEventListener('message', async (event) => {
 
 // ───────────────────────────────────────────────────────────
 window.__luxSignIn = async () => {
+  // Já está logado no Google e só faltou a conferência do servidor (rede caiu): recarrega e tenta de novo.
+  if (window.__luxTentarDeNovo && auth.currentUser) { location.reload(); return; }
   try {
     await signInWithPopup(auth, provider);
     // A validação real (whitelist) acontece quando o usuário faz
@@ -117,20 +119,50 @@ onAuthStateChanged(auth, async (user) => {
     // Worker se este email está autorizado (KV LUX_USERS).
     // Usuário não autorizado é deslogado IMEDIATAMENTE e NUNCA vê
     // o interior da plataforma.
+    // (20/11) Antes, QUALQUER falha aqui (4G oscilando, servidor lento) deslogava o atendente e
+    // mostrava "Acesso não autorizado" — e a consulta não tinha prazo: em rede ruim a tela de
+    // login ficava parada sem dizer nada. Agora: aviso "Entrando…", prazo de 12 s, 3 tentativas,
+    // e só desloga quando o SERVIDOR responde que o e-mail não está liberado (401/403).
+    // Continua fechado por segurança: sem a confirmação do servidor, a plataforma não abre.
     let authorizedUser = null;
-    try {
-      const idToken = await user.getIdToken();
-      const resp = await fetch(
-        'https://lux-figurinhas.plataformalux.workers.dev/admin/me',
-        { headers: { 'Authorization': 'Bearer ' + idToken } }
-      );
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.ok && data.user) authorizedUser = data.user;
+    let negado = false;
+    setEntrando(true);
+    for (let tentativa = 1; tentativa <= 3 && !authorizedUser && !negado; tentativa++) {
+      const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      const prazo = setTimeout(() => { try { if (ctrl) ctrl.abort(); } catch (_) {} }, 12000);
+      try {
+        const idToken = await user.getIdToken();
+        const resp = await fetch(
+          'https://lux-figurinhas.plataformalux.workers.dev/admin/me',
+          { headers: { 'Authorization': 'Bearer ' + idToken }, signal: ctrl ? ctrl.signal : undefined }
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.ok && data.user) authorizedUser = data.user;
+          else negado = true;
+        } else if (resp.status === 401 || resp.status === 403) {
+          negado = true;
+        }
+      } catch (e) {
+        console.warn('Falha ao validar acesso (tentativa ' + tentativa + '):', e.message);
+      } finally {
+        clearTimeout(prazo);
       }
-    } catch (e) {
-      console.warn('Falha ao validar acesso:', e.message);
-      // Em falha de rede, NÃO libera (fail-closed por segurança).
+      if (!authorizedUser && !negado && tentativa < 3) await new Promise(r => setTimeout(r, 1500));
+    }
+    setEntrando(false);
+
+    if (!authorizedUser && !negado) {
+      // Sem resposta do servidor: NÃO libera, mas também NÃO desloga. O atendente tenta de novo.
+      window.__luxUser = null;
+      window.__luxRole = null;
+      window.__appReady = false;
+      document.getElementById('screen-login').style.display = 'flex';
+      document.getElementById('screen-app').style.display   = 'none';
+      applyRole(null);
+      showAuthError('Sem conexão com o servidor. Confira a internet e toque em "Entrar com Google" de novo.', 15000);
+      window.__luxTentarDeNovo = true;
+      return;
     }
 
     if (!authorizedUser) {
@@ -211,10 +243,27 @@ function applyRole(role) {
   });
 }
 
-function showAuthError(msg) {
+let _authErroTimer = null;
+function showAuthError(msg, ms) {
   const el = document.getElementById('auth-error');
   if (!el) return;
   el.textContent = msg;
   el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 4000);
+  if (_authErroTimer) clearTimeout(_authErroTimer);
+  _authErroTimer = setTimeout(() => el.style.display = 'none', ms || 6000);
+}
+
+// Enquanto o servidor confere o acesso, o botão de login avisa que está entrando
+// (antes parecia que o login não tinha funcionado e o atendente tocava de novo).
+function setEntrando(sim) {
+  const b = document.querySelector('#screen-login .btn-google');
+  if (!b) return;
+  if (sim) {
+    if (!b.dataset.rotulo) b.dataset.rotulo = b.innerHTML;
+    b.disabled = true; b.style.opacity = '.6';
+    b.textContent = 'Entrando…';
+  } else {
+    b.disabled = false; b.style.opacity = '';
+    if (b.dataset.rotulo) b.innerHTML = b.dataset.rotulo;
+  }
 }

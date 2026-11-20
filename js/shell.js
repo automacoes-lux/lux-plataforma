@@ -71,7 +71,7 @@ function lembrarTela(nome) {
 // usuário tem acesso à aba.
 function abrirTelaInicial() {
   const nome = (location.hash || '').replace(/^#/, '').trim();
-  if (!nome || !TOOLS[nome]) { showDashboard(); return; }
+  if (!nome || !Object.prototype.hasOwnProperty.call(TOOLS, nome)) { showDashboard(); return; }
 
   // Não reabre uma aba que este usuário não pode ver (ex.: alguém salvou
   // o link do Financeiro e depois virou atendente). applyRole já escondeu
@@ -84,6 +84,7 @@ function abrirTelaInicial() {
 }
 
 function loadTool(name) {
+  if (!Object.prototype.hasOwnProperty.call(TOOLS, name)) return;   // "#toString" no endereço não é ferramenta
   const url = TOOLS[name];
   if (!url) return;
 
@@ -126,7 +127,9 @@ function loadTool(name) {
     if (slot) {
       const nm = (document.getElementById('user-name') || {}).textContent
               || (document.getElementById('user-email') || {}).textContent || '';
-      slot.innerHTML = nm ? 'Atendente: <strong>' + nm + '</strong>' : '';
+      // como TEXTO: o nome vem da conta Google e não pode ser lido como HTML
+      slot.textContent = '';
+      if (nm) { const forte = document.createElement('strong'); forte.textContent = nm; slot.append('Atendente: ', forte); }
     }
   }
 
