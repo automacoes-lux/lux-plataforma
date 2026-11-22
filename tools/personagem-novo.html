@@ -556,6 +556,11 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .bfp .faixa.sel{border-color:var(--lx-cta-b);color:var(--lx-txt)}
 .bfp .faixa.subir{background:var(--lx-txt);color:#0D0D0F;font-weight:600;justify-content:center;padding:6px 12px}   /* (18/11) "Subir a música do cliente" é AÇÃO, não faixa */
 .bfp .faixa.subir .nome{text-align:center}
+/* (22/11) seletor da voz gerada no Black Friday/Promo */
+.bfp .bf-voz{margin:10px 0 0;gap:8px}
+.bfp .bf-voz select{flex:1;min-width:0;padding:11px 12px;background:var(--lx-campo);border:1px solid transparent;border-radius:12px;color:var(--lx-txt);font:500 14px 'Inter',sans-serif}
+.bfp .bf-voz select:focus{border-color:var(--lx-cta-a);outline:none}
+.bfp .bf-voz .pp-ouvir{width:40px;height:40px;background:var(--lx-txt);color:#0D0D0F;border:none;font-size:13px}
 .bfp .faixa .play{flex:none;display:grid;place-items:center;width:34px;height:34px;border:none;border-radius:50%;background:var(--lx-txt);color:#0D0D0F;font-size:12px;cursor:pointer}
 .bfp .faixa .nome{flex:1;min-width:0;line-height:1.2}
 .bfp .resumo{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -1076,10 +1081,39 @@ function pintarVozCli(){
     if (vozBusy) corpo = '<div class="voz-status"><span class="pj-giro"></span>' + esc(vozBusy) + '</div>';
     else if (vc) corpo = '<audio controls preload="metadata" src="' + esc(vc.url) + '"></audio><div class="voz-info">' + Math.round(vc.seg) + ' s. O personagem vai falar com este áudio.</div><label class="voz-env">Trocar o áudio' + INPUT_VOZ + '</label>';
     else corpo = '<label class="voz-env">Enviar o áudio do cliente' + INPUT_VOZ + '</label><div class="voz-info">MP3, áudio do WhatsApp, M4A ou WAV, até ' + vozMax() + ' s.' + (bf() ? '' : ' Com o áudio, as informações do cliente ficam opcionais.') + '</div>';
-  }
+  } else if (bf()) corpo = linhaVozBF();   // (22/11) Black Friday/Promo: qual voz gerada
   (bf() ? $('vozBF') : $('vozP1')).innerHTML = '<div class="voz-tit">Voz do personagem</div><div class="voz-op">' +
     '<button type="button" class="voz-bt' + (vozModo === 'ia' ? ' on' : '') + '" onclick="trocaVoz(\'ia\')">Voz gerada</button>' +
     '<button type="button" class="voz-bt' + (vozModo === 'cliente' ? ' on' : '') + '" onclick="trocaVoz(\'cliente\')">Áudio do cliente</button></div>' + corpo;
+}
+// (22/11, Thiago — cliente da Marcela: "voz muito fina") Black Friday/Promo: escolher a voz gerada. A padrão continua a mesma
+// (Lax no homem, Roberta na mulher); "Victor (encorpada)" é a grave. Trocar depois do vídeo pronto = "Gerar de novo" refaz o personagem.
+function linhaVozBF(){
+  carregaVozes();
+  if (!vozesPN) return '<div class="voz-info">Carregando as vozes…</div>';
+  const s0 = (proj && proj.personagens && proj.personagens[0]) || {};
+  const sexo = s0.sexo || 'M';
+  const padrao = (vozesPN.find(v => v.sexo === sexo) || {}).id;
+  const atual = (proj && proj.bfVoz) || s0.voz || padrao;
+  const ord = vozesPN.filter(v => v.sexo === sexo).concat(vozesPN.filter(v => v.sexo !== sexo));
+  const opts = ord.map(v => '<option value="' + v.id + '"' + (v.id === atual ? ' selected' : '') + '>' + esc(v.nome) + (/^kids/i.test(v.nome) ? '' : ' · ' + (v.sexo === 'F' ? 'feminina' : 'masculina')) + (v.id === padrao ? ' (padrão)' : '') + '</option>').join('');
+  return '<div class="pp-voz bf-voz"><select aria-label="Voz do personagem" onchange="trocaVozBF(this.value)">' + opts + '</select>' +
+    '<button type="button" class="pp-ouvir" data-ouvir title="Ouvir esta voz" onclick="ouvirVoz(this.previousElementSibling.value,this)">▶</button></div>' +
+    '<div class="voz-info">' + (proj && proj.videoFinal ? 'Trocou a voz? Clique em <b>Gerar de novo</b>: o personagem é refeito falando com a voz nova.' : 'Toque no ▶ para ouvir cada voz.') + '</div>';
+}
+async function trocaVozBF(id){
+  if (ocupado) { toast('⏳ Espere terminar o que está em andamento.'); pintarVozCli(); return; }
+  try {
+    clearTimeout(rascT); if (rascRodando) await rascRodando;
+    if (!proj) await salvarRascunho();
+    if (!proj) throw new Error('Preencha os dados do cliente antes de escolher a voz.');
+    ocupado = true;
+    const d = await chama('/pn/salvar', { id: proj.id, vozBF: id });
+    if (!d.ok) throw new Error(d.error || 'não consegui trocar a voz');
+    proj = d.projeto;
+    toast('✅ Voz escolhida' + (proj.videoFinal ? '. Clique em Gerar de novo para o vídeo usar a voz nova.' : '.'));
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui trocar a voz')); }
+  finally { ocupado = false; pintarVozCli(); }
 }
 async function trocaVoz(m){
   if (vozBusy || m === vozModo) return;
@@ -1310,7 +1344,7 @@ async function gerarPersBF(){
     if (!proj) throw new Error('não consegui salvar');
     const d = await chama('/pn/imagens', { id: proj.id, personagem: 1, ajuste: $('bfAjuste').value });
     if (!d.ok) throw new Error(d.error || 'não consegui criar o personagem');
-    recebe(d.projeto); $('bfAjuste').value = ''; pintarBFPers(); pintarBFFotos();
+    recebe(d.projeto); $('bfAjuste').value = ''; pintarBFPers(); pintarBFFotos(); pintarVozCli();   // (22/11) o sexo do personagem define a voz padrão do seletor
   } catch (e) { toast('⚠️ ' + (e.message || 'não consegui criar o personagem')); }
   finally { ocupado = false; b1.disabled = b2.disabled = false; b1.textContent = t1; b2.textContent = 'Gerar de novo'; }
 }
@@ -1735,7 +1769,7 @@ function rotuloPessoa(ms, j, curto){
 let vozesPN = null, vozesBusca = null, audioVoz = null;
 function carregaVozes(){
   if (vozesBusca) return;
-  vozesBusca = chama('/pn/vozes').then(d => { if (d && d.ok) { vozesPN = d.vozes; if (passo === 2 && proj && proj.roteiro) pintarPasso2(); } else vozesBusca = null; }).catch(() => { vozesBusca = null; });
+  vozesBusca = chama('/pn/vozes').then(d => { if (d && d.ok) { vozesPN = d.vozes; if (passo === 2 && proj && proj.roteiro) pintarPasso2(); if (bf()) pintarVozCli(); } else vozesBusca = null; }).catch(() => { vozesBusca = null; });
 }
 function linhaVoz(k, m, sexo, atual, auto, nome, rotulo){
   if (!vozesPN) return '<div class="pp-sub">' + (rotulo ? rotulo + ' · ' : '') + 'Voz ' + esc(nome || 'automática') + '</div>';
