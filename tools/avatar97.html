@@ -2534,9 +2534,7 @@ async function veCarregarOnda(url) {
   try {
     const r = await fetch(url);
     const bruto = await r.arrayBuffer();
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const audio = await ac.decodeAudioData(bruto);
-    try { ac.close(); } catch (e) {}
+    const audio = await decodificaAudio(bruto);   // (23/11) sem canal de som
     const ch = audio.getChannelData(0), sr = audio.sampleRate;
     const JAN = Math.max(1, Math.round(sr * 0.02));   // uma barrinha a cada 20ms
     const env = [];
@@ -3386,9 +3384,7 @@ document.getElementById('musicInput').addEventListener('change', async (e) => {
 
   try {
     const arrayBuf = await readFileAsArrayBuffer(file);
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const audioBuf = await ctx.decodeAudioData(arrayBuf.slice(0));
-    try { ctx.close(); } catch (e2) {}
+    const audioBuf = await decodificaAudio(arrayBuf);   // (23/11) sem abrir/fechar canal de som (iPhone emudecia)
     const dur = audioBuf.duration;
 
     // (12/09) Avatar 97: o editor de corte abre SEMPRE, igual ao do Vídeo Avatar, só que sem a trava de
@@ -3495,9 +3491,7 @@ async function startVocalAnalysis() {
     if (!vocalB64) throw new Error('demorou demais');
     if (myToken !== vocalToken) return;
     // decodifica o vocal (MP3) e mede a energia
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = await ac.decodeAudioData(b64ToU8(vocalB64).buffer);
-    try { ac.close(); } catch (e) {}
+    const buf = await decodificaAudio(b64ToU8(vocalB64).buffer);   // (23/11) sem canal de som
     const { rms, hop } = audioBufferEnergy(buf, 0.05);
     if (myToken !== vocalToken) return;
     sceneBounds = computeBounds(rms, hop, NUM_SCENES, VIDEO_SECONDS);
@@ -3748,8 +3742,9 @@ function ouvirDaOnda(evt) {
   const dur = rawAudioBuffer.duration;
   const sec = frac * dur;
   stopPreviewCorte();   // encerra qualquer reprodução anterior (preview do trecho ou escuta livre)
+  pausaPlayer();
   try {
-    previewCtxAudio = new (window.AudioContext || window.webkitAudioContext)();
+    previewCtxAudio = somCtx();   // (23/11) o MESMO canal de som sempre (ver somCtx)
     previewSrc = previewCtxAudio.createBufferSource();
     previewSrc.buffer = rawAudioBuffer;                 // música CRUA (sem fades) — é só audição
     previewSrc.connect(previewCtxAudio.destination);
@@ -3771,6 +3766,44 @@ function ouvirDaOnda(evt) {
     if (lbl) lbl.textContent = '🔊 Ouvindo a partir de ' + fmtTime(Math.round(sec)) + ' — clique em outro ponto pra pular, ou em "Parar".';
   } catch (err) { toast('⚠️ ' + err.message); }
 }
+
+// (23/11) SOM NO IPHONE — caso Roberta: no Safari do iPhone o player do Passo 2 pulava pro fim sem tocar e o
+// "Ouvir o resultado" / clique na onda ficavam mudos (mesmo com o celular fora do silencioso). O arquivo estava
+// perfeito (conferido no rascunho). Três cuidados, todos sem efeito no computador:
+// 1) avisar o Safari que a página TOCA MÍDIA ("playback") — sem isso o som segue a chave do silencioso;
+// 2) UM canal de som (AudioContext) para ouvir, aberto no toque e nunca fechado — abrir e fechar um a cada
+//    clique faz o iPhone "interromper" o som da página inteira, player incluído;
+// 3) ler a música (decodificar) num OfflineAudioContext, que não mexe no som do aparelho.
+function somModoMidia() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
+}
+somModoMidia();
+let _somCtx = null;
+function somCtx() {
+  somModoMidia();
+  if (!_somCtx || _somCtx.state === 'closed') _somCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try { if (_somCtx.state !== 'running' && _somCtx.resume) { const p = _somCtx.resume(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
+  return _somCtx;
+}
+async function decodificaAudio(arrayBuf) {
+  const Off = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (Off) {
+    try {
+      const off = new Off(2, 1, 48000);
+      return await new Promise((ok, falha) => {
+        const p = off.decodeAudioData(arrayBuf.slice(0), ok, falha);
+        if (p && p.then) p.then(ok, falha);
+      });
+    } catch (e) { /* navegador antigo: cai no jeito de antes */ }
+  }
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  try { return await ac.decodeAudioData(arrayBuf); } finally { try { ac.close(); } catch (e) {} }
+}
+function pausaPlayer() {
+  try { const pl = document.getElementById('player'); if (pl && !pl.paused) pl.pause(); } catch (e) {}
+}
+{ const pl = document.getElementById('player');   // player tocando → para a escuta do corte (um som de cada vez)
+  if (pl) pl.addEventListener('play', () => { somModoMidia(); try { stopPreviewCorte(); } catch (e) {} }); }
 
 // Corte + fades (curva x² — mesma da ferramenta Corte)
 function processAudio(srcBuffer, startSec, endSec, fadeIn, fadeOut) {
@@ -3806,7 +3839,8 @@ function previewCorte() {
   const { startSec, fadeIn, fadeOut } = getCutValues();
   try {
     const buf = processAudio(rawAudioBuffer, startSec, startSec + trechoLen(startSec), fadeIn, fadeOut);
-    previewCtxAudio = new (window.AudioContext || window.webkitAudioContext)();
+    pausaPlayer();
+    previewCtxAudio = somCtx();   // (23/11) o MESMO canal de som sempre (ver somCtx)
     previewSrc = previewCtxAudio.createBufferSource();
     previewSrc.buffer = buf;
     previewSrc.connect(previewCtxAudio.destination);
@@ -3827,8 +3861,9 @@ function previewCorte() {
 }
 
 function stopPreviewCorte() {
-  try { if (previewSrc) previewSrc.stop(); } catch (e) {}
-  try { if (previewCtxAudio) previewCtxAudio.close(); } catch (e) {}
+  try { if (previewSrc) { previewSrc.onended = null; previewSrc.stop(); } } catch (e) {}   // onended velho não derruba a próxima escuta
+  // (23/11) NÃO fecha mais o canal de som (no iPhone, fechar emudecia a página): só pausa até o próximo toque
+  try { if (previewCtxAudio && previewCtxAudio.state === 'running' && previewCtxAudio.suspend) { const p = previewCtxAudio.suspend(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
   previewSrc = null; previewCtxAudio = null; previewPlaying = false;
   if (playheadRAF) { cancelAnimationFrame(playheadRAF); playheadRAF = 0; }
   playheadFrac = -1;
@@ -4686,9 +4721,7 @@ async function editarClipe(orderId) {
     const imagemB64 = await blobToBase64(imagem);
     const trechoB64 = await blobToBase64(trecho);
     const fonte = original || trecho;
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    let audioBuf;
-    try { audioBuf = await ac.decodeAudioData(await fonte.arrayBuffer()); } finally { try { ac.close(); } catch (e) {} }
+    const audioBuf = await decodificaAudio(await fonte.arrayBuffer());   // (23/11) sem canal de som
 
     resetCreateForm();
     document.getElementById('clientName').value = d.clientName || '';
@@ -4994,8 +5027,7 @@ async function continuarProjeto(pid) {
     if (bTrecho) {
       const trechoB64 = await blobToBase64(bTrecho);
       const fonte = bOriginal || bTrecho;
-      const ac = new (window.AudioContext || window.webkitAudioContext)();
-      try { rawAudioBuffer = await ac.decodeAudioData(await fonte.arrayBuffer()); } finally { try { ac.close(); } catch (x) {} }
+      rawAudioBuffer = await decodificaAudio(await fonte.arrayBuffer());   // (23/11) sem canal de som
       rawAudioName = e.origName || 'musica.mp3';
       rawAudioFile = new File([fonte], rawAudioName, { type: fonte.type || 'audio/mpeg' });
       corteUsado = (bOriginal && e.corte) ? e.corte
@@ -5010,8 +5042,7 @@ async function continuarProjeto(pid) {
       });
     } else if (bOriginal) {
       // música enviada, corte ainda não aplicado: reabre o editor no mesmo ponto
-      const ac = new (window.AudioContext || window.webkitAudioContext)();
-      try { rawAudioBuffer = await ac.decodeAudioData(await bOriginal.arrayBuffer()); } finally { try { ac.close(); } catch (x) {} }
+      rawAudioBuffer = await decodificaAudio(await bOriginal.arrayBuffer());   // (23/11) sem canal de som
       rawAudioName = e.origName || 'musica.mp3';
       rawAudioFile = new File([bOriginal], rawAudioName, { type: bOriginal.type || 'audio/mpeg' });
       abrirEditorCorte();
