@@ -1181,6 +1181,13 @@ function api(path, opts) {
   if (typeof window.__luxFetch === 'function') return window.__luxFetch(url, opts);
   return fetch(url, opts);
 }
+// (23/11, Roberta pelo celular) PRAZO das chamadas da imagem: no iPhone, uma consulta feita com a aba em 2º plano às vezes
+// nunca responde (nem dá erro) e a tela ficava parada em "Gerando…". Com prazo, ela larga essa consulta e pergunta de novo.
+function sinalPrazo(ms) {
+  try { if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) return AbortSignal.timeout(ms); } catch (e) {}
+  const c = new AbortController(); setTimeout(() => { try { c.abort(); } catch (e) {} }, ms); return c.signal;
+}
+function noMaximo(promessa, ms) { return Promise.race([promessa, new Promise((ok) => setTimeout(ok, ms))]); }
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -1550,7 +1557,7 @@ async function corrigirImagem() {
   avatarGerando = true;
   const foto = clientPhoto, eraPronta = !!avatarPreview.pronta;
   try {
-    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await rascSalvarAgora(); } catch (e) {}
+    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await noMaximo(rascSalvarAgora(), 20000); } catch (e) {}   // (23/11) internet lenta: não segura a imagem
     const j = await gerarAvatarNaFila({ corrigir: { base64: avatarPreview.cartoonBase64, codigos: avisosImagem.map(a => a.codigo) } });
     if (clientPhoto !== foto) { toast('A imagem corrigida chegou, mas a foto mudou enquanto ela era feita. Gere de novo.'); return; }
     aplicaAvatarGerado(j);   // conta como uma geração de imagem (mesmo custo do "Gerar de novo") e confere de novo
@@ -1687,7 +1694,7 @@ async function acompanhaImagem(jobId) {
   while (true) {
     await esperaOuVolta(4000);
     let s = null;
-    try { const r = await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId)); s = await r.json(); } catch (e) { s = null; }
+    try { const r = await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId), { signal: sinalPrazo(20000) }); s = await r.json(); } catch (e) { s = null; }
     if (s && s.status === 'pronto' && s.ok && s.cartoonBase64) return s;
     if (s && s.status === 'erro') throw new Error(s.error || 'Falha ao gerar o avatar.');
     if (s && s.status === 'gerando') { falhas = 0; continue; }
@@ -1701,7 +1708,7 @@ async function gerarAvatarNaFila(payload) {
   const corpo = JSON.stringify(payload);
   let j = null;
   for (let k = 0; k < 5 && !j; k++) {
-    try { const r = await api('/avatarCartoonInicia', { method: 'POST', body: corpo }); j = await r.json(); }
+    try { const r = await api('/avatarCartoonInicia', { method: 'POST', body: corpo, signal: sinalPrazo(120000) }); j = await r.json(); }
     catch (e) { if (k === 4) throw new Error('Sem conexão com o servidor. Confira a internet e clique de novo.'); await esperaOuVolta(2000 * (k + 1)); }
   }
   if (!j.ok || !j.jobId) throw new Error(j.error || 'Falha ao gerar o avatar.');
@@ -1761,7 +1768,7 @@ async function gerarAvatar() {
     const payload = { personagem1: { base64: clientPhoto.base64, mimeType: clientPhoto.mimeType, name: clientPhoto.name }, note, tipo: avatarTipo, real: imagemReal === true, corpoInteiro: corpoInteiro };   // (12/09) cada foto vai com o seu papel · (16/09) real = foto em vez de desenho
     if (clientPhoto2) payload.personagem2 = { base64: clientPhoto2.base64, mimeType: clientPhoto2.mimeType, name: clientPhoto2.name }; if (clientPhoto3) payload.ambiente = { base64: clientPhoto3.base64, mimeType: clientPhoto3.mimeType, name: clientPhoto3.name };   // Imagem 2 vai sempre que existir (UI universal)
     // (10/11) o projeto fica salvo ANTES (fotos e escolhas): se o celular recarregar a página, a tela reabre e pega a imagem
-    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await rascSalvarAgora(); } catch (e) {}
+    try { if (_rascTimer) { clearTimeout(_rascTimer); _rascTimer = null; } await noMaximo(rascSalvarAgora(), 20000); } catch (e) {}   // (23/11) internet lenta: não segura a imagem
     const j = await gerarAvatarNaFila(payload);
     if (clientPhoto !== foto) { toast('A imagem ficou pronta, mas a foto mudou enquanto ela era feita. Gere de novo com a foto nova.'); return; }
     aplicaAvatarGerado(j);
@@ -3108,7 +3115,7 @@ async function gerarAmbiente(n, ajuste) {
     for (let t = 0; t < 4 && !ok; t++) {
       try {
         const r = await api('/avatarCartoonInicia', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId, trocaAmbiente: { base64: base, ambiente: { base64: a.foto.base64, mimeType: a.foto.mimeType || 'image/jpeg' }, ajuste: a.ajuste || '' } }) });
+          body: JSON.stringify({ jobId, trocaAmbiente: { base64: base, ambiente: { base64: a.foto.base64, mimeType: a.foto.mimeType || 'image/jpeg' }, ajuste: a.ajuste || '' } }), signal: sinalPrazo(120000) });
         const j = await r.json(); if (j.ok) ok = true; else ultimo = j.error || '';
       } catch (e) { ultimo = e.message; }
       if (!ok) await espera(2500);
@@ -3118,7 +3125,7 @@ async function gerarAmbiente(n, ajuste) {
     while (Date.now() - t0 < 12 * 60 * 1000) {
       await espera(4000);
       if (!vivo()) return;
-      let j = null; try { j = await (await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId))).json(); } catch (e) { continue; }
+      let j = null; try { j = await (await api('/avatarCartoonStatus?jobId=' + encodeURIComponent(jobId), { signal: sinalPrazo(20000) })).json(); } catch (e) { continue; }
       if (!vivo()) return;
       if (j && j.status === 'pronto' && j.cartoonBase64) {
         a.img = j.cartoonBase64; a.estado = 'pronta'; cartoonGens++;   // cada imagem gerada é cobrada, como a principal
