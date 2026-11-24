@@ -1169,6 +1169,23 @@ let rawAudioName = '';
 let rawAudioFile = null;           // (13/09) o arquivo ORIGINAL da música: vai pro servidor com o pedido (o Editar traz de volta)
 let corteUsado = null;             // (13/09) { inicio, fim, fadeIn, fadeOut, livre } do último "Cortar e usar"
 let restaurando = false;           // (13/09) trava de clique duplo no Editar
+// (24/11, Thiago — Diogo/Marco Aurélio Imóveis) o Editar trazia tudo de volta e gerar de novo REGRAVAVA o canto inteiro
+// (R$ 16 só para ligar a legenda). editOrigem = "impressão digital" do vídeo que voltou pelo Editar: se na hora de gerar
+// a imagem, o trecho da música, os ambientes, "Não dançar" e mascote continuam iguais (só a legenda mudou), vai pela
+// edição rápida do servidor (/editAvatarOrder): reaproveita os pedaços já cantados e cobra só a montagem.
+let editOrigem = null;             // { orderId, img, trecho, ambs, naoDancar, mascote } | null
+function marcaForte(s) {           // FNV-1a do texto INTEIRO (a rascMarca olha só o começo: dois MP3 do mesmo tamanho empatam)
+  s = String(s || ''); let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return s.length + ':' + (h >>> 0).toString(16);
+}
+function marcaAmbientes() { return ambExtra.map((a) => (a && a.img) ? marcaForte(a.img) : '').join('|'); }
+function soLegendaMudou() {
+  const o = editOrigem;
+  if (!o || !avatarPreview || !avatarPreview.reaproveitada || !avatarPreview.cartoonBase64 || !music || !music.base64) return false;
+  return marcaForte(avatarPreview.cartoonBase64) === o.img && marcaForte(music.base64) === o.trecho &&
+    !!naoDancar === o.naoDancar && !!mascote === o.mascote && marcaAmbientes() === o.ambs;
+}
 const MUSICA_ORIGINAL_MAX = 60 * 1024 * 1024;   // (13/09) acima disso a original não é guardada (o Editar usa o trecho)
 let wavePeaks = null;
 let previewCtxAudio = null, previewSrc = null, previewPlaying = false;
@@ -4113,6 +4130,40 @@ async function gerarClipe() {
       startPolling();
       return;
     }
+    // (24/11, Thiago — Diogo/Marco Aurélio) veio pelo Editar e SÓ a legenda mudou (ligar/desligar, cor ou letra): edição rápida.
+    // O servidor reaproveita os pedaços já cantados e cobra só a montagem (+ a leitura da letra, se leu de novo).
+    // Trocou imagem, música/corte, ambientes, "Não dançar" ou mascote → segue abaixo o pedido completo (canto novo), como antes.
+    if (soLegendaMudou()) {
+      btn.textContent = 'Remontando o vídeo…';
+      const nomeR = document.getElementById('clientName').value.trim();
+      const payloadR = {
+        sourceOrderId: editOrigem.orderId, clientName: nomeR, categoria: (document.getElementById('fCategoria').value || '').trim(),
+        backgrounds: bgs, bgExpected: scenes.length, avatarCalib: avatarCalib, avScale: avScale, semTransicao: !transicoes,
+        mascote: mascote, motor: 'minimax', naoDancar: !!naoDancar, cfgFromEdit: false,   // false = tamanho/transições do original
+        cartoonGens: 0, cartoonGensRes: 0, cartoonPassadas: 0, lyricSeconds: 0,
+        legenda: { on: !legendaOff, cor: corLeg },
+        letra: legendaOff ? null : letraParaEnvio(),
+        letraUSD: (!legendaOff && letra && letra.estado === 'pronta' && !letra.reaproveitada) ? (Number(letra.usd) || 0) : 0
+      };
+      let dr = null;
+      try {
+        const rr = await api('/editAvatarOrder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadR) });
+        dr = await rr.json();
+      } catch (e) { dr = { ok: false, error: e.message || 'rede' }; }
+      if (dr && dr.ok) {
+        addPending(dr.orderId, nomeR + ' (edição)');
+        if (rascunhoId) { try { await api('/a97RascunhoApagar?projectId=' + encodeURIComponent(rascunhoId), { method: 'POST' }); } catch (e) {} }
+        resetCreateForm();   // form limpo: evita 2º clique gerar outra edição sem querer
+        toast(dr.refazCanto ? '🎬 Edição em produção — o canto é regravado (uns minutos a mais).'
+          : '🎬 Edição em produção — aproveitei o canto do vídeo e só remonto com a legenda (fica pronto em poucos minutos).');
+        showTab('resultados');
+        startPolling();
+        return;
+      }
+      // não deu para reaproveitar: NUNCA cobra o canto de novo sem a atendente saber
+      if (!confirm('Não consegui reaproveitar o canto deste vídeo (' + ((dr && dr.error) || 'erro') + ').\n\nQuer gerar o vídeo completo de novo? O canto será cobrado de novo.')) return;
+      btn.textContent = 'Enviando os arquivos…';
+    }
     const payload = {
       clientName: document.getElementById('clientName').value.trim(),
       categoria: (document.getElementById('fCategoria').value || '').trim(),
@@ -4765,6 +4816,8 @@ async function editarClipe(orderId) {
       wasCut: true
     });
     renderLetra(); renderAmbientes(); renderChecklist();   // (15/11)
+    // (24/11) impressão digital do que voltou: se só a legenda mudar, o gerar vira edição rápida (reaproveita o canto)
+    editOrigem = { orderId, img: marcaForte(imagemB64), trecho: marcaForte(trechoB64), ambs: marcaAmbientes(), naoDancar: !!naoDancar, mascote: !!mascote };
     showTab('criar');
     window.scrollTo(0, 0);
     toast('✏️ "' + (d.clientName || '') + '" está de volta no Criar vídeo, do jeito que estava. Ajuste o que quiser e gere de novo.');
@@ -5225,6 +5278,7 @@ function avisarCustoMidia() {
 function resetCreateForm() {
   // (23/09) form vazio = nenhum projeto em edição. Quem for continuar um projeto reassume o id logo depois.
   rascunhoId = null; _rascArquivos = {}; if (typeof rascAviso === 'function') rascAviso('');
+  editOrigem = null;   // (24/11) form limpo = não está mais editando um vídeo pronto
   clientPhoto = null; clientPhoto2 = null; clientPhoto3 = null; avatarPreview = null;
   try { renderClientPhoto2(); } catch (e) {}
   avatarCalib = { dx: 0, dy: 0, px: 0 }; avScale = AVSCALE_MAX;
