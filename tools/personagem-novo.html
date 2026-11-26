@@ -2520,7 +2520,7 @@ async function carregaAntigos(){
 }
 async function carregarLista(){
   const [d] = await Promise.all([chama('/pn/lista'), carregaAntigos()]);
-  if (!d.ok) { $('listaProjetos').innerHTML = $('listaResultados').innerHTML = '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'; vigiaLista(); return; }
+  if (!d.ok) { poeLista('listaProjetos', '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'); poeLista('listaResultados', '<div class="pj-vazio">⚠️ ' + esc(d.error || 'erro') + '</div>'); vigiaLista(); return; }
   const antes = new Set(listaTodos.filter(p => p.gerando).map(p => p.id));
   listaTodos = juntaProducao(d.projetos || []).concat(antigos || []).sort((a, b) => b.atualizadoEm - a.atualizadoEm);
   listaTodos.forEach(p => {
@@ -2539,7 +2539,8 @@ function juntaProducao(lst){
   return lst;
 }
 // enquanto houver vídeo em produção, a etapa não fica congelada na tela e o aviso de "pronto" chega
-function vigiaLista(){ clearTimeout(listaT); if (listaTodos.some(p => p.gerando)) listaT = setTimeout(carregarLista, 15000); }
+// (26/11) com a tela escondida (outra ferramenta aberta) não consulta: só espera e confere de novo
+function vigiaLista(){ clearTimeout(listaT); if (listaTodos.some(p => p.gerando)) listaT = setTimeout(() => (document.hidden || !window.innerWidth) ? vigiaLista() : carregarLista(), 15000); }
 // (09/11, Thiago) categoria do vídeo: etiqueta ao lado do nome e botões em cima da busca (clicar de novo mostra todos)
 let catRes = '';
 const catDe = (p) => p.natal ? 'natal' : (p.bf ? 'bf' : (p.promo ? 'promo' : 'padrao'));
@@ -2563,8 +2564,11 @@ function cardLista(p, pronto){
   const data = p.atualizadoEm ? new Date(p.atualizadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   const th = p.antigo
     ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">' + (p.thumb ? '<img loading="lazy" src="' + esc(p.thumb) + '" alt=""/>' : '') + '<span class="mini-play">▶</span></button>'
+    // (26/11, Thiago travando ao abrir) capa = a IMAGEM do projeto (lazy), não o vídeo: o admin vê ~200 cartões e cada vídeo baixava
+    // e decodificava um quadro — com a lista refeita a cada 15 s a página parava de responder. Sem imagem, o vídeo não carrega nada antes do clique.
     : pronto && p.video
-    ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')"><video muted playsinline preload="metadata" src="' + esc(p.video) + '#t=1"></video><span class="mini-play">▶</span></button>'
+    ? '<button type="button" class="pj-th" title="Ver o vídeo" onclick="abrePrevia(\'' + esc(p.video) + '\',\'' + esc(p.videoKey) + '\',\'' + esc(p.cliente) + '\')">' +
+      (p.thumb ? '<img loading="lazy" src="' + esc(p.thumb) + '" alt=""/>' : '<video muted playsinline preload="none"></video>') + '<span class="mini-play">▶</span></button>'
     : '<div class="pj-th">' + (p.thumb ? '<img src="' + esc(p.thumb) + '" alt=""/>' : '') + '</div>';
   return '<div class="pj">' + th + '<div class="pj-in">' + (p.categoria ? '<div class="pj-cat">' + esc(p.categoria) + '</div>' : '') +
     '<div class="pj-lin"><div class="pj-nm">' + esc(p.cliente || '(sem nome)') + '</div>' + (pronto ? etiquetaCat(p) : '') + '</div><div class="pj-sb">' + (pronto ? '🎬 vídeo pronto · ' : (p.natal ? 'Natal · ' : (p.bf ? 'Black Friday · ' : (p.promo ? 'Promo · ' : '')))) + esc(data) + '</div>' +
@@ -2579,9 +2583,12 @@ function pintarListas(){
   const prontos = filtra(listaTodos.filter(p => p.status === 'pronto' && !p.gerando && naCat(p)), $('buscaRes').value);
   // em produção ou que falhou nas últimas 24 h: no topo, só quando não há busca (igual ao Avatar 97)
   const topo = $('buscaRes').value.trim() ? '' : listaTodos.filter(p => naCat(p) && (p.gerando || (p.falhou && Date.now() - p.atualizadoEm < 86400000))).map(cardProducao).join('');
-  $('listaProjetos').innerHTML = rasc.length ? rasc.map(p => cardLista(p, false)).join('') : '<div class="pj-vazio">Nenhum projeto em andamento.</div>';
-  $('listaResultados').innerHTML = (topo || prontos.length) ? topo + prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">' + (catRes ? 'Nenhum vídeo nesta categoria.' : 'Nenhum vídeo pronto ainda.') + '</div>';
+  poeLista('listaProjetos', rasc.length ? rasc.map(p => cardLista(p, false)).join('') : '<div class="pj-vazio">Nenhum projeto em andamento.</div>');
+  poeLista('listaResultados', (topo || prontos.length) ? topo + prontos.map(p => cardLista(p, true)).join('') : '<div class="pj-vazio">' + (catRes ? 'Nenhum vídeo nesta categoria.' : 'Nenhum vídeo pronto ainda.') + '</div>');
 }
+// (26/11) só redesenha a lista quando ela MUDOU (a consulta de 15 s refazia ~200 cartões toda vez, mesmo igual)
+const ultLista = {};
+function poeLista(id, html){ if (ultLista[id] === html) return; ultLista[id] = html; $(id).innerHTML = html; }
 $('buscaProj').addEventListener('input', pintarListas);
 $('buscaRes').addEventListener('input', pintarListas);
 function abrePrevia(url, key, nome){
