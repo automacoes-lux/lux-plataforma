@@ -445,6 +445,12 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .cena-media{position:relative}
 .cena-media video,.cena-media img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block;background:#000}
 .cena-media .cena-espera{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);border-radius:8px;color:var(--gold);font-size:12.5px;text-align:center;padding:.6rem}
+/* (26/11, Thiago) "Subir imagem" embaixo da imagem da cena (a imagem vale só para ela) */
+.img-cena-bt{margin-top:.45rem}
+.img-cena-bt.desab{opacity:.5;pointer-events:none}
+.img-cena-nota{margin-top:.35rem;font-size:11.5px;color:var(--lx-txt2);text-align:center}
+.img-cena-volta{display:block;width:100%;margin-top:.1rem;padding:.2rem;background:none;border:none;color:var(--lx-txt2);font-size:12px;text-decoration:underline;cursor:pointer}
+.img-cena-volta:disabled{opacity:.5;cursor:not-allowed}
 .cena select,.cena textarea,.cena input{width:100%}
 .cena textarea{min-height:92px}
 .cena textarea.cmd-cena{min-height:64px}
@@ -485,6 +491,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 @media(max-width:600px){
   .cena-grid{grid-template-columns:1fr}
   .cena-media{max-width:220px;margin:0 auto}
+  .img-cena-bt,.img-cena-nota,.img-cena-volta{max-width:220px;margin-left:auto;margin-right:auto}
   .pers-grid,.pp-grid{grid-template-columns:1fr}
 }
 .modo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.9rem;margin-top:1.4rem}
@@ -1855,9 +1862,14 @@ function pintarCenas(){
   $('boxCenas').innerHTML = proj.roteiro.cenas.map((rc, i) => {
     const c = (proj.cenas || [])[i] || {}, s = proj.personagens[rc.p] || {};
     const st = statusCena(i);
+    const imgC = (rc.imgCena && rc.imgCena.url) ? rc.imgCena : s.img;   // (26/11) a imagem própria da cena, se a atendente subiu uma
     const media = c.video
       ? '<video src="' + esc(c.video.url) + '#t=0.5" controls playsinline preload="metadata"' + (Array.isArray(c.video.pedacos) && c.video.pedacos.length > 1 ? ' data-pedacos="' + esc(JSON.stringify(c.video.pedacos.map(x => x.url))) + '"' : '') + '></video>'
-      : (s.img ? '<img src="' + esc(s.img.url) + '" alt=""/>' : '<div class="pp-sem">Sem imagem</div>');
+      : (imgC ? '<img src="' + esc(imgC.url) + '" alt=""/>' : '<div class="pp-sem">Sem imagem</div>');
+    // (26/11, Thiago) "Subir imagem" embaixo da imagem: a imagem pronta vale SÓ para esta cena (as outras continuam com a do personagem)
+    const subirImg = '<label class="pronta-bt img-cena-bt' + (c.gerando ? ' desab' : '') + '" title="Suba uma imagem 9:16 pronta só para esta cena (sem custo de imagem). As outras cenas continuam como estão.">' +
+        '<input type="file" accept="image/*" hidden onchange="subirImgCena(event,' + i + ')"' + (c.gerando ? ' disabled' : '') + '/>' + IC_SUBIR + 'Subir imagem</label>' +
+      (rc.imgCena ? '<div class="img-cena-nota">Imagem só desta cena</div><button type="button" class="img-cena-volta" onclick="tirarImgCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>Voltar à imagem do ' + (natal() ? 'ambiente' : 'personagem') + '</button>' : '');
     const g = gestos.find(x => x.id === rc.gesto) || {};
     // (08/11, Thiago) em qualquer cena dá para escrever o gesto à mão: a opção fica no TOPO da lista
     const ordemG = gestos.filter(x => x.id === 'livre').concat(gestos.filter(x => x.id !== 'livre'));
@@ -1865,7 +1877,7 @@ function pintarCenas(){
     const np = palavras(rc.fala);
     return '<div class="step cena" data-i="' + i + '">' +
       '<div class="step-head"><div class="step-title">Cena ' + (i + 1) + ' · ' + esc(rc.objetivo || '') + '</div><span class="selo ' + st.cls + '">' + st.txt + '</span></div>' +
-      '<div class="cena-grid"><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' +
+      '<div class="cena-grid"><div><div class="cena-media">' + media + (c.gerando ? '<div class="cena-espera">⏳ Gerando o vídeo desta cena… (1 a 2 min)</div>' : '') + '</div>' + subirImg + '</div>' +
       '<div>' +
         (membrosCena(rc) ? '<div class="mini">Quem fala</div><select data-campo="q">' + opcoesQuemFala(rc) + '</select>' : '') +
         (n > 1 && !(natal() && i === 0) ? '<div class="mini">' + (natal() ? 'Ambiente' : 'Personagem') + '</div><select data-campo="p">' + proj.personagens.map((x, k) => '<option value="' + k + '"' + (k === rc.p ? ' selected' : '') + '>' + (natal() ? 'Ambiente ' : 'Personagem ') + (k + 1) + '</option>').join('') + '</select>' : '') +
@@ -2057,6 +2069,39 @@ async function removerCena(i){
     const q = proj.roteiro.cenas.length;
     toast('✅ Cena removida. O vídeo agora tem ' + q + (q > 1 ? ' cenas.' : ' cena.'));
   } catch (e) { toast('⚠️ ' + (e.message || 'não consegui remover a cena')); }
+  finally { ocupado = false; }
+}
+// (26/11, Thiago) "Subir imagem" embaixo da imagem da cena: uma imagem 9:16 pronta SÓ para esta cena (sem custo de imagem). A IA reescreve a
+// ação da cena olhando a imagem nova (se não foi a atendente que escreveu). O vídeo pronto desta cena fica para refazer.
+async function subirImgCena(ev, i){
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if (!f) return;
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  if (natal() && i === 0 && proj.natalInicio !== 'conversa' && !(proj.personagens[0] || {}).pronta &&
+      !confirm('Com uma imagem própria, a cena 1 não tem a chegada de trenó: o Papai Noel já começa no lugar, falando. Continuar?')) return;
+  ocupado = true;
+  try {
+    const r = await lerPronta(f);
+    toast('📷 Enviando a imagem da cena ' + (i + 1) + '…');
+    await salvaPendentes();   // o texto que acabou de ser digitado vai antes
+    const d = await chama('/pn/imagem-cena', { id: proj.id, cena: i + 1, imagem: r.url });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto); pintarPasso2();
+    toast(d.aviso ? '⚠️ ' + d.aviso : (r.cortou ? '⚠️ A imagem não era 9:16: cortei as sobras das bordas. Confira se ficou bom.'
+      : '✅ Imagem da cena ' + (i + 1) + ' trocada.' + (((proj.cenas || [])[i] || {}).video ? ' Clique em "Refazer esta cena" para valer no vídeo.' : '')));
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui enviar a imagem')); }
+  finally { ocupado = false; }
+}
+async function tirarImgCena(i){
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  ocupado = true;
+  try {
+    await salvaPendentes();
+    const d = await chama('/pn/imagem-cena', { id: proj.id, cena: i + 1, tirar: true });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto); pintarPasso2();
+    toast(d.aviso ? '⚠️ ' + d.aviso : '✅ A cena ' + (i + 1) + ' voltou a usar a imagem do ' + (natal() ? 'ambiente.' : 'personagem.'));
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui voltar a imagem')); }
   finally { ocupado = false; }
 }
 async function gerarCena(i){ await gerar(i + 1); }
