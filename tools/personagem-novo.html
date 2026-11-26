@@ -462,6 +462,7 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
 .gesto-desc{font-size:11.5px;color:var(--text-dim);margin-top:.25rem;line-height:1.4}
 .gesto-ia{color:var(--gold)}
 .cena .btn-ghost{margin-top:.6rem;width:100%}
+.cena .btn-remover-cena{margin-top:.45rem;background:transparent;border:1px solid var(--lx-line);color:var(--lx-txt2)}   /* (25/11) secundário: não compete com o Gerar */
 /* (08/11) estilos de legenda (animação de cada um) */
 .leg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.4rem}
 .leg-op{background:var(--bg-input);border:.5px solid var(--border);border-radius:var(--radius);padding:.45rem;cursor:pointer;text-align:center;transition:border-color .15s}
@@ -655,6 +656,17 @@ button.btn-proc::before{content:'';display:inline-block;flex:none;width:1em;heig
         <div class="chip on" data-v="cliente" role="radio">Com o cliente</div>
         <div class="chip" data-v="conversa" role="radio">Conversa entre os personagens</div>
       </div>
+    </div>
+    <!-- (25/11, Thiago — Diogo: "usei 2 imagens e mesmo assim ele usou 3 cenas") quantas cenas o vídeo tem -->
+    <div id="blocoNCenas" class="hide">
+      <div class="mini">Quantas cenas</div>
+      <div class="chips" id="chipsNCenas" role="radiogroup" aria-label="Quantas cenas">
+        <div class="chip on" data-v="auto" role="radio">Automático</div>
+        <div class="chip" data-v="2" role="radio">2 cenas</div>
+        <div class="chip" data-v="3" role="radio">3 cenas</div>
+        <div class="chip" data-v="4" role="radio">4 cenas</div>
+      </div>
+      <div class="gesto-desc" id="notaNCenas"></div>
     </div>
   </div>
 
@@ -935,6 +947,7 @@ const palavras = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).leng
 let proj = null;                 // o projeto como o servidor devolveu
 let estilo = 'real';
 let conversa = false;            // (10/11) Padrão com 2+ personagens: "Conversa entre os personagens"
+let nCenas = 'auto';             // (25/11) "Quantas cenas": 'auto' | '2' | '3' | '4'
 let inicioNatal = 'treno';       // (16/11) Natal: 'treno' = chega de trenó · 'conversa' = já começa na conversa (sem trenó)
 let pers = [{}, {}, {}];        // passo 1: os 3 cards fixos [{ fotoNova, ambNova, fotoUrl, fotoKey, ambUrl, ambKey, ambTirar }] ou, com imagem pronta (13/11), [{ prontaNova, prontaUrl, prontaKey }]
 let gestos = [];
@@ -983,7 +996,7 @@ function voltarModos(){
   clearTimeout(rascT); clearTimeout(timer);
   proj = null; pers = []; fotosBF = []; bfEstiloOk = false; modo = null; vozModo = 'ia'; vozBusy = '';
   ['bfCategoria', 'bfContato', 'bfEmpresa', 'bfWhats', 'bfEndereco', 'bfOferta', 'bfFala', 'bfAjuste'].forEach(id => { $(id).value = ''; });
-  if (audioTeste) { audioTeste.pause(); audioTeste = null; } fecharTrCli(); trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; inicioNatal = 'treno'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
+  if (audioTeste) { audioTeste.pause(); audioTeste = null; } fecharTrCli(); trilhaSel = null; legendas = true; estilo = 'real'; conversa = false; nCenas = 'auto'; inicioNatal = 'treno'; corLeg = COR_PADRAO; estiloLeg = LEG_PADRAO;
   $('fCliente').value = ''; $('fCategoria').value = ''; $('fBriefing').value = ''; $('contBriefing').textContent = '0 / 1500'; $('notaSalvo').textContent = ''; $('notaTudo').textContent = '';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === 'real'));
   $('telaFinal').classList.add('hide');
@@ -1059,6 +1072,23 @@ function pintarConversa(){
   const mostra = !!modo && !natal() && !bf() && vozModo !== 'cliente' && pers.filter(temFoto).length > 1;
   $('blocoConversa').classList.toggle('hide', !mostra);
   document.querySelectorAll('#chipsConversa .chip').forEach(x => x.classList.toggle('on', (x.dataset.v === 'conversa') === conversa));
+  pintarNCenas();
+}
+// (25/11, Thiago — Diogo) QUANTAS CENAS: Automático = uma cena por personagem quando há 2 ou 3 (Padrão); o resto, 3 (4 se o texto for longo)
+document.querySelectorAll('#chipsNCenas .chip').forEach(c => c.addEventListener('click', () => {
+  if (c.dataset.v === nCenas) return;
+  nCenas = c.dataset.v;
+  pintarNCenas();
+  agendaRascunho(50);
+  if (proj && proj.roteiro) toast('Para valer, clique em "' + rotuloTudo().replace(/^\S+\s/, '') + '" de novo: o texto é reescrito com ' + (nCenas === 'auto' ? 'o número automático de cenas' : nCenas + ' cenas') + '. Ou remova a cena que sobrou no passo 2.');
+}));
+function pintarNCenas(){
+  $('blocoNCenas').classList.toggle('hide', !modo || bf());
+  document.querySelectorAll('#chipsNCenas .chip').forEach(x => x.classList.toggle('on', x.dataset.v === nCenas));
+  const n = natal() ? 0 : pers.filter(temFoto).length;
+  $('notaNCenas').textContent = nCenas !== 'auto' ? 'O texto vem dividido em ' + nCenas + ' cenas (cada cena tem cerca de 10 segundos).'
+    : (n >= 2 && !conversa && vozModo !== 'cliente') ? 'Automático: uma cena para cada personagem (' + n + ' cenas).'
+    : (vozModo === 'cliente' ? 'Automático: o áudio do cliente é dividido pelo tamanho dele.' : 'Automático: 3 cenas (4 se o texto for longo).');
 }
 $('fBriefing').addEventListener('input', () => { $('contBriefing').textContent = $('fBriefing').value.length + ' / 1500'; agendaRascunho(); });
 $('fCliente').addEventListener('input', () => agendaRascunho());
@@ -1226,7 +1256,7 @@ function salvarRascunho(){
     $('notaSalvo').textContent = '💾 Salvando…';
     const fotosEnv = fotosBF.slice();
     const d = await chama('/pn/rascunho', Object.assign({ id: proj ? proj.id : undefined, cliente: vCliente(), categoria: vCategoria(),
-      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), conversa: (natal() || bf()) ? undefined : conversa, natalInicio: natal() ? inicioNatal : undefined, personagens: ents }, dadosBF()));
+      briefing: vBriefing(), estilo, modo: natal() ? 'natal' : (bf() ? modo : undefined), conversa: (natal() || bf()) ? undefined : conversa, nCenas: bf() ? undefined : nCenas, natalInicio: natal() ? inicioNatal : undefined, personagens: ents }, dadosBF()));
     if (!d.ok) { $('notaSalvo').textContent = '⚠️ Não consegui salvar: ' + (d.error || 'tente de novo'); return; }
     proj = d.projeto;
     if (bf()) fotosEnv.forEach((x, j) => { const sv = (proj.fotosBF || [])[j]; if (!x.key && sv) { x.nova = null; x.key = sv.key; x.url = sv.url; } });
@@ -1621,7 +1651,7 @@ async function gerarTudo(){
   try {
     bt.textContent = temVozCliente() ? '🎙️ Dividindo o áudio em cenas…' : '✍️ Escrevendo o texto…';
     $('notaTudo').textContent = temVozCliente() ? 'Lendo as fotos e dividindo o áudio do cliente em cenas (~20 s).' : 'A IA está lendo as fotos e escrevendo as cenas (~20 s).';
-    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa, natalInicio: natal() ? inicioNatal : undefined,
+    const corpo = { id: proj ? proj.id : undefined, cliente, categoria: $('fCategoria').value.trim(), briefing, estilo, modo: natal() ? 'natal' : undefined, conversa: natal() ? undefined : conversa, nCenas, natalInicio: natal() ? inicioNatal : undefined,
       // só os cards preenchidos, na ordem; a foto já enviada vai pela chave (preencher o 1 e o 3 desloca a posição)
       personagens: pers.filter((x, k) => natal() ? entraNatal(x, k) : temFoto(x)).map(p => temPronta(p) ? entPronta(p) : Object.assign({
         foto: natal() ? undefined : (p.fotoNova || undefined), fotoKey: (natal() || p.fotoNova) ? undefined : p.fotoKey,
@@ -1821,6 +1851,7 @@ function statusCena(i){
 }
 function pintarCenas(){
   const n = proj.personagens.length;
+  const algumaGerando = (proj.cenas || []).some(c => c && c.gerando);
   $('boxCenas').innerHTML = proj.roteiro.cenas.map((rc, i) => {
     const c = (proj.cenas || [])[i] || {}, s = proj.personagens[rc.p] || {};
     const st = statusCena(i);
@@ -1865,6 +1896,8 @@ function pintarCenas(){
             (rc.ultimoPedido ? '<div class="gesto-desc pedido-acao">Último pedido: “' + esc(rc.ultimoPedido) + '”</div>' : '')) +
         (c.erro ? '<div class="alerta">' + esc(c.erro) + '</div>' : '') +
         '<button class="btn-ghost" onclick="gerarCena(' + i + ')"' + (c.gerando ? ' disabled' : '') + '>' + (c.video ? '🔁 Refazer esta cena' : '🎬 Gerar esta cena') + '</button>' +
+        // (25/11, Thiago — Diogo: "não tem opção de apagar uma cena") a partir da cena 2; a cena 1 é a abertura
+        (i > 0 ? '<button type="button" class="btn-ghost btn-remover-cena" onclick="removerCena(' + i + ')"' + (algumaGerando ? ' disabled title="Espere as cenas que estão sendo geradas"' : '') + '>✕ Remover esta cena</button>' : '') +
       '</div></div></div>';
   }).join('');
   document.querySelectorAll('.cena [data-campo]').forEach(el => {
@@ -2008,6 +2041,23 @@ async function salvaPendentes(){
   const ks = Object.keys(salvarT); if (!ks.length) return;
   ks.forEach(k => clearTimeout(salvarT[k])); salvarT = {};
   for (const k of ks) await salvarCena(+k);
+}
+// (25/11, Thiago — Diogo) tira a cena do vídeo. As outras ficam como estão (texto e vídeo já gerado), sem custo.
+async function removerCena(i){
+  if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
+  if (!confirm('Remover a cena ' + (i + 1) + '? O texto e o vídeo dela saem do vídeo final. As outras cenas continuam como estão.')) return;
+  ocupado = true;
+  try {
+    await salvaPendentes();   // o texto que acabou de ser digitado vai antes (os números das cenas mudam depois da remoção)
+    const d = await chama('/pn/remover-cena', { id: proj.id, n: i + 1 });
+    if (!d.ok) throw new Error(d.error);
+    recebe(d.projeto);
+    if (proj.nCenas) nCenas = String(proj.nCenas);
+    pintarPasso2();
+    const q = proj.roteiro.cenas.length;
+    toast('✅ Cena removida. O vídeo agora tem ' + q + (q > 1 ? ' cenas.' : ' cena.'));
+  } catch (e) { toast('⚠️ ' + (e.message || 'não consegui remover a cena')); }
+  finally { ocupado = false; }
 }
 async function gerarCena(i){ await gerar(i + 1); }
 async function gerarCenas(){ await gerar(0); }
@@ -2553,6 +2603,7 @@ async function abrirProjeto(id){
   estilo = p.estilo === 'animado' ? 'animado' : 'real';
   document.querySelectorAll('#chipsEstilo .chip').forEach(x => x.classList.toggle('on', x.dataset.v === estilo));
   conversa = !!p.conversa;
+  nCenas = p.nCenas ? String(p.nCenas) : 'auto';   // (25/11)
   inicioNatal = p.natalInicio === 'conversa' ? 'conversa' : 'treno';   // (16/11) projeto antigo = trenó
   const cfg = p.cfgMontagem || {};
   vozModo = p.vozCliente ? 'cliente' : 'ia'; vozBusy = '';
