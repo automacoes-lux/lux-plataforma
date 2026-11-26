@@ -1072,7 +1072,7 @@ function pintarInicio(){
   document.querySelectorAll('#chipsInicio .chip').forEach(x => x.classList.toggle('on', x.dataset.v === inicioNatal));
   $('notaInicio').textContent = inicioNatal === 'conversa'
     ? 'Sem o trenó: o vídeo já abre com o Papai Noel conversando com a pessoa do Ambiente 1. Envie a foto dela no Ambiente 1.'
-    : (pers[0] && temPronta(pers[0]) ? 'Com imagem pronta no Ambiente 1 não tem o trenó: o vídeo já começa com o Papai Noel falando.'   // (18/11)
+    : (pers[0] && temPronta(pers[0]) ? 'Com imagem pronta no Ambiente 1, a IA estaciona o trenó ao lado do Papai Noel e a 1ª cena é ele chegando de trenó. Sem trenó: escolha "Já começa na conversa".'   // (26/11, Rayane: antes a pronta não tinha trenó)
       : 'A 1ª cena é o trenó pousando e o Papai Noel descendo para falar.');
 }
 function pintarConversa(){
@@ -1707,7 +1707,11 @@ function pintarPasso2(){
         : (s.grupo !== undefined && s.grupo !== k && !s.solto) ? linhaVoz(k, -1, s.sexo, s.voz, !(proj.personagens[s.grupo] || {}).vozManual, s.vozNome, '') + '<div class="pp-sub">Mesma pessoa do personagem ' + (s.grupo + 1) + '</div>'
         : linhaVoz(k, -1, s.sexo, s.voz, !s.vozManual, s.vozNome, '')) +
       // (13/11) imagem pronta: não tem "Refazer" (a IA não monta nada); para trocar, envia outra no passo 1
-      (s.pronta ? '<div class="pp-sub">Imagem pronta enviada por você · sem custo de imagem. Para trocar, volte ao passo 1.</div>'
+      // (26/11) com o trenó, a IA estacionou o trenó na imagem pronta: dá para refazer só o trenó
+      (s.pronta && !(s.img && s.img.treno) ? '<div class="pp-sub">Imagem pronta enviada por você · sem custo de imagem. Para trocar, volte ao passo 1.</div>'
+        : s.pronta ? '<div class="pp-sub">Sua imagem pronta, com o trenó estacionado pela IA (sem custo). Para trocar a imagem, volte ao passo 1.</div>' +
+          '<input type="text" id="ajP' + k + '" placeholder="O que mudar no trenó? (opcional)"/>' +
+          '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer o trenó</button>'
         : '<input type="text" id="ajP' + k + '" placeholder="O que mudar? (opcional)"/>' +
           '<button class="btn-ghost" onclick="refazerPers(' + k + ')">🔄 Refazer ' + (natal() ? 'imagem' : 'personagem') + '</button>') +
     '</div>').join('');
@@ -2077,7 +2081,7 @@ async function subirImgCena(ev, i){
   const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
   if (!f) return;
   if (ocupado) return toast('⏳ Espere terminar o que está em andamento.');
-  if (natal() && i === 0 && proj.natalInicio !== 'conversa' && !(proj.personagens[0] || {}).pronta &&
+  if (natal() && i === 0 && proj.natalInicio !== 'conversa' &&
       !confirm('Com uma imagem própria, a cena 1 não tem a chegada de trenó: o Papai Noel já começa no lugar, falando. Continuar?')) return;
   ocupado = true;
   try {
